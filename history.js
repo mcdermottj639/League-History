@@ -1536,8 +1536,14 @@
   const VIEWS = {
     hon: () => heroHTML() + keyHTML() + champsHTML() + trophyHTML() + ringlessHTML(),
     sea: () => seasonsHTML(),
-    rec: () => storiesHTML() + recordHTML() + luckHTML() + rivalsHTML() + curseHTML() + seedHTML(),
-    cb: () => cumbowlHTML() + playoffHTML(),
+    /* Playoff record + Finals reached sit HERE, not on Cum Bowl (v9, owner's
+       call). They are career résumé — who gets in, who reaches the final —
+       and the Cum Bowl is the opposite bracket, for the teams that missed.
+       Filing them there put the league's best achievement behind the tab
+       named for its worst. Ordered baseline-first: who makes the playoffs,
+       then the two cards that comment on what happens once you are in. */
+    rec: () => storiesHTML() + recordHTML() + luckHTML() + rivalsHTML() + playoffHTML() + curseHTML() + seedHTML(),
+    cb: () => cumbowlHTML(),
     you: () => youHTML(),
   };
   window.LeagueHistory = {

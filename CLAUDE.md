@@ -84,6 +84,10 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 - `history.js` — **the archive** (~1,130 lines): the curated 13-season data,
   a single-pass stats engine, and every view. Exposes ONE global,
   `window.LeagueHistory`:
+  - ⚠️ **Playoff record + Finals reached are in `rec`, not `cb` (v9).** They are
+    career résumé — who gets in, who reaches the final — and the Cum Bowl is
+    the opposite bracket, for the teams that missed. Filing them there put the
+    league's best achievement behind the tab named for its worst.
   - `SUBS` — the five history sub-tabs, **in display order**: Honours · You ·
     Records · Cum Bowl · Seasons (v6 — "You" was fifth and is second now; the
     owner's call). Reordering is that array alone; `VIEWS` is a map and
@@ -91,6 +95,18 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   - `view(key)` — `hon` · `you` · `rec` · `cb` · `sea`
   - `profile(mgr)` — the drill-down every name opens
   - `setMe(mgr)` / `me()` / `name(mgr)` / `roster()` — identity
+- ⚠️ **Two render faults the v9 move exposed, both pre-existing and both
+  invisible to every assertion — see the two 🚨 comments in `league.css`:**
+  (a) `el.hidden = true` on `#lg-jump` was a **visual no-op**, because
+  `:root[data-palette] .lg-jump { display: flex }` is (0,2,1) and the UA's
+  `[hidden] { display: none }` is (0,1,0). `buildJump()` has always hidden a
+  nav with under two chips and no view had under two until now, so the branch
+  had never run — it painted an empty 13px bordered strip. **Hide by property,
+  add a `[hidden]` rule at your own specificity.** (b) `.fh-sub` is
+  `font: 800 9.5px/1` and a provenance badge inside it is ~19px tall, so it
+  overflowed its line box and printed **on top of** its own heading once the
+  pair wrapped at 390px. **A line box cannot contain an inline taller than its
+  line-height** — use flex when a heading carries a badge.
 - `styles.css` — **a full copy of Sports-Hub's stylesheet**, brought over
   whole. See "The stylesheet" below before touching it.
 - `power.html` / `power.css` / `power.js` — the **commissioner's** authoring

@@ -143,6 +143,15 @@
 :root[data-palette] .lg-jump {
   display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 0 2px;
   border-bottom: 1px solid var(--tr); margin-bottom: 4px; }
+/* 🚨 `el.hidden = true` is a VISUAL NO-OP without this. The UA sheet's
+   `[hidden] { display: none }` is (0,1,0) and the rule directly above is
+   (0,2,1), so it wins and the element keeps painting — an empty 13px strip
+   with a bottom border. buildJump() has always set `hidden` when a view has
+   under two chips; no view had under two until Playoff record moved off Cum
+   Bowl, so the branch had never once run. Same fault as Sports-Hub v218's
+   ghost control row. Hide by property, add a [hidden] rule at your own
+   specificity. */
+:root[data-palette] .lg-jump[hidden] { display: none; }
 :root[data-palette] .lg-jump .chip {
   min-height: 38px; padding: 0 11px; border-radius: 999px;
   border: 1px solid var(--tr2); background: var(--sf); color: var(--mu);
@@ -151,3 +160,15 @@
 /* the card you are actually in, not just one you can reach */
 :root[data-palette] .lg-jump .chip.here {
   background: var(--grad); border-color: transparent; color: var(--on-ac); }
+
+/* 🚨 A 9.5px LINE BOX CANNOT HOLD A 19px BADGE. `.fh-sub` is
+   `font: 800 9.5px/1` and the provenance badge inside it is 9px text plus 4px
+   padding and a border — so on "Finals reached · bracket record ⚑ PLAYOFFS
+   ONLY" the badge overflowed its own line and printed ON TOP of the heading
+   as soon as the pair wrapped at phone width. Pre-existing and invisible
+   until the card was rendered at 390px; every assertion about it was green.
+   Flex makes the badge a laid-out item instead of an inline overflowing a box
+   it does not fit in. */
+:root[data-palette] .fh-sub {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px; line-height: 1.35; }
+:root[data-palette] .fh-sub .fh-src { margin-left: 0; vertical-align: baseline; }
