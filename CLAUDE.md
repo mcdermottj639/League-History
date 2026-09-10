@@ -205,8 +205,10 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 - `sw.js` — network-first service worker. Bump `CACHE` on every release.
 - `checks.js` — **run `node checks.js` after ANY data or detector change.** It
   runs the conservation laws below plus the storyline laws: every manager has
-  one, none has a template hole, each reader's own storyline is in second
-  person, and no superlative fires for two people at once.
+  one **and is on the rendered Storylines card** (v7 — those are different
+  assertions; see Storylines), none has a template hole, each reader's own
+  storyline is in second person, the card is still ranked by weight, and no
+  superlative fires for two people at once.
 
 ## localStorage keys
 
@@ -306,6 +308,25 @@ something computed is wrong the first time somebody changes it.
   to avoid. It finds the stat they sit furthest from the middle on and states
   it, low-weighted so it never displaces a real find. `checks.js` asserts all
   twelve are covered.
+- **🚨 COVERAGE IS SELECTED FOR, NOT HOPED FOR (v7).** `signature` guaranteed
+  every manager *had* a storyline; the card then printed `stories().slice(0, 10)`
+  and showed **eight of twelve**. CC, Gotch, Hyman and Slemp were absent from
+  the one screen in the app that is a roll-call of the league — in a link handed
+  to those same four people. And the miss is not random: the detectors look for
+  EXTREMES, so the manager whose story is "solid for thirteen years" is exactly
+  the one who ranks last and gets cut. **The fault landed hardest on the people
+  it was least fair to.** `pickStories()` now takes every manager's best card
+  first, fills the rest of `STORY_CAP` (14) with the strongest remaining, then
+  sorts the whole selection by weight — so everyone is on the card and it still
+  opens on the biggest story in the league. The cap is a floor, not a ceiling:
+  a thirteenth manager is never dropped to respect a display limit.
+- **⚠️ And the CHECK was reading the wrong thing, which is why this shipped.**
+  It asserted `_stories()` — "18 across 12 of 12" — while the card rendered ten.
+  A detector finding a story and a reader seeing it are two different facts and
+  only the second one matters. `checks.js` now asserts `_cardStories()`, the
+  exact list the card maps over, and re-checks that it is still ranked. Verified
+  by reverting the fix: the new check reports four failures, one per absent
+  manager. **Assert what renders.**
 - **🚨 Built per READER, not once at load** — and this fault was written into
   this file twice. The first cut ran the detectors at module init, which is
   before `setMe`, so every headline froze with the manager's own name in it and

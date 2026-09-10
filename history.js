@@ -1265,6 +1265,30 @@
   }
   const storiesFor = (m) => stories().filter((x) => x.m === m);
 
+  /* 🚨 WHAT THE CARD SHOWS, and it is NOT just the top N.
+     `stories()` ranks 18 storylines by weight and the card used to print
+     `slice(0, 10)` — which covered 8 of the 12 managers. So four people
+     (CC, Gotch, Hyman, Slemp) were absent from the one screen in the app that
+     is a roll-call of the league, in a link handed to those same four people.
+     The detectors look for EXTREMES, so the manager whose story is "solid for
+     thirteen years" is exactly the one who ranks last and gets cut — the fault
+     lands hardest on the people it is least fair to.
+     So coverage comes FIRST: every manager's best card is taken, the rest of
+     the cap is filled with the strongest remaining, and the whole selection is
+     then sorted by weight for display. Everyone is in the card, and the card
+     still opens on the biggest story in the league. */
+  const STORY_CAP = 14;
+  function pickStories(cap = STORY_CAP) {
+    const all = stories();
+    const best = {}, rest = [];
+    all.forEach((x) => { if (!best[x.m]) best[x.m] = x; else rest.push(x); });
+    const out = Object.values(best);
+    /* The cap is a floor, not a ceiling, when the league outgrows it: a
+       twelfth manager must never be dropped to respect a display limit. */
+    rest.slice(0, Math.max(0, cap - out.length)).forEach((x) => out.push(x));
+    return out.sort((a, b) => b.w - a.w);
+  }
+
   function storyCardHTML(s) {
     return `<div class="fh-story">
       <div class="fh-story-c">${crest(s.m, 34)}</div>
@@ -1283,7 +1307,7 @@
     return `<h2 class="section-title">📌 Storylines</h2>
     <div class="ffp-card fh-stories">
       <p class="fh-lead">Thirteen seasons, read for the things worth arguing about. <b>Every number here is worked out from the archive on the spot</b> — nothing is typed in, so none of it goes stale when a season lands.</p>
-      ${stories().slice(0, 10).map(storyCardHTML).join('')}
+      ${pickStories().map(storyCardHTML).join('')}
     </div>`;
   }
 
@@ -1505,5 +1529,6 @@
     /* Exposed for the repo's own checks — nothing in the app reads these. */
     _stats: { SEASON, ALL, MEET, PAIRS, CUMBOWL, PLAYOFF_GAMES },
     _stories: () => stories(),
+    _cardStories: () => pickStories(),
   };
 })();

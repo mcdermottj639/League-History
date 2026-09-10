@@ -80,6 +80,19 @@ Object.entries(byId).forEach(([id, ms]) => {
   const uniq = [...new Set(ms)];
   if (uniq.length > 1 && !/scorer|cbking|stuck/.test(id)) { console.log(`  ❌ superlative "${id}" fires for ${uniq.length} managers`); bad++; }
 });
-console.log(`  ${bad ? '❌' : '✅'} storylines: ${window.LeagueHistory._stories().length} across ${new Set(window.LeagueHistory._stories().map((x) => x.m)).size} of ${window.LeagueHistory.roster().length} managers`);
+/* 🚨 ASSERT THE CARD, NOT THE ENGINE. This check used to read `_stories()` and
+   report "18 across 12 of 12" — while the Storylines card printed `slice(0, 10)`
+   and showed EIGHT. Every assertion was green over a screen that left four
+   managers out. A detector finding a story is not the same fact as a reader
+   seeing it, and only the second one matters. */
+const card = window.LeagueHistory._cardStories();
+const onCard = new Set(card.map((x) => x.m));
+window.LeagueHistory.roster().forEach((r) => {
+  if (!onCard.has(r.m)) { console.log(`  ❌ ${r.name} is not on the Storylines card`); bad++; }
+});
+/* And it must still LEAD with the biggest story — coverage that reordered the
+   card into a flat roll-call would have fixed one thing by breaking another. */
+if (card.length > 1 && card[0].w < card[card.length - 1].w) { console.log('  ❌ Storylines card is not ranked by weight'); bad++; }
+console.log(`  ${bad ? '❌' : '✅'} storylines: ${window.LeagueHistory._stories().length} found, ${card.length} on the card, covering ${onCard.size} of ${window.LeagueHistory.roster().length} managers`);
 console.log(bad ? `\n${bad} FAILURES` : '\n✅ all conservation laws hold');
 process.exit(bad ? 1 : 0);
