@@ -408,8 +408,14 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     league's own artwork, so a swap or re-crop is a DATA change — no version
     bump, same as publishing a week.
     - ⚠️ **Keyed by MANAGER, never by team name** — the names change every year
-      (the 2023 sheet says "Death Dont Hurts Very Long" where the league now
-      says "Current Champ") while the twelve people do not. And it keys off
+      while the twelve people do not. 🚨 **But the manager itself is resolved
+      FROM the team name** (`MANAGERS`, team-name → code), so that map goes
+      stale every season: an unmapped 2026 name silently degrades to the
+      generated helmet AND publishes a blank manager code, costing that team
+      its crest and its YOU row in the members' app. v36 rebuilt `MANAGERS`
+      from the live 2026 ESPN names, owner-column verified. **This is the one
+      part of the Lab that needs a human every season** — see Open / next.
+      And it keys off
       **`mgrFor`, NOT `mgrLabel`**: `mgrLabel` deliberately returns `''` when
       the label would just repeat the team name (the "CC CC" rule), so keying
       off it would have silently denied CC — and only CC — its own logo.
@@ -988,6 +994,40 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v36 — the crests came back: the name map was a year stale (10 Sep
+  2026)** — the owner, on his live phone: *"Pics still not loading here and
+  this is v35."*
+  - 🚨 **NOT the letterboxing from the crop pass — a genuinely different fault
+    I had flagged and then had to be shown.** Crests resolve MANAGER from team
+    NAME (`MANAGERS`), and this league renames every season. Half the 2026
+    names — "Aarogant Fraudgers", "Mortal Wombats", "Gregs Morning Dew Dew" —
+    were not in the map, so `mgrFor` returned `''`, `crestSrc` returned null,
+    and the row fell back to the generated helmet. The four that still matched
+    ("Slob on my Cobb", "Morning Woods", "Thurgood Marshall", and Slemp) were
+    exactly the teams whose names had not changed, which is why it looked like
+    "some pics load, some don't" rather than an outage.
+  - **And it is worse than a missing picture.** The same `mgrFor` writes the
+    manager CODE into the published payload (index 7), so an unmapped team
+    ships to the members' app with no code — no crest AND no YOU highlight on
+    that person's own row. A rename quietly de-personalises the one screen the
+    app exists to personalise.
+  - 🚨 **Mapped from ESPN's OWN OWNER COLUMN, never by name similarity.** The
+    owner sent the season table with the owner names showing, and gave the
+    twelve in order — so "Aarogant Fraudgers (Will…)" → Hurd (Will Hurd, the
+    exact "Christels Mattress is Will Hurd" lesson), "Pepperoni TDs (David
+    Hy…)" → Hyman, and so on. The name-similarity trap is the repo's oldest
+    data rule and this is precisely the case that tempts it.
+  - **Old names kept as aliases**, additively: a team that reverts mid-season
+    still resolves, and nothing that worked was removed.
+  - ⚠️ **Verified without the backend, which the sandbox cannot reach**: drove
+    the Lab against a fixture built from the twelve real 2026 names and
+    asserted every row's crest `src` is a real `logos/*.png` (zero
+    `data:`-URL helmets) and that the reader's own team ("Death Dont Hurts
+    Very Long" = McD) carries the YOU marker. Then rendered it.
+  - **No data to backfill**: `rankings/index.json` is still empty, so no
+    already-published week carries the stale codes — the first real publish
+    from the fixed Lab ships correct ones.
 
 - **v35 — the lock moves to the bottom (10 Sep 2026)** — the owner: *"Move
   that lock button way down to the bottom. It'll only cause problems."*
@@ -2056,6 +2096,16 @@ stale entry written in the present tense reads as current to anyone who greps.
   `rankings/index.json` actually published, which is the real source of truth
   for "the last set the league saw". Deliberately not folded into v33: it needs
   a manager-code → `teamId` remap that survives a team being renamed mid-season.
+- **`MANAGERS` goes stale every season, by design of ESPN not this app**
+  (v36). It resolves manager from team NAME, and names change yearly, so a
+  rename drops that team's crest and YOU highlight until the map is updated
+  from the new season — a human step, because the only safe source is ESPN's
+  owner column (never name similarity). The durable fix is to key off a stable
+  identifier the payload already carries — ESPN's `teamId` is the franchise id
+  and does NOT change on a rename — but that needs a one-time `teamId` →
+  manager capture from the owner's device (the sandbox cannot reach the
+  backend), and the team-name map is the honest interim. Offered; the owner
+  chose the name update for now.
 - **Not built:** any way for a member to write anything back (a reaction, a
   pick, a comment). That needs a backend and is a real product decision, not a
   missing feature.

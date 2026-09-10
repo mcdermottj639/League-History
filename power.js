@@ -57,10 +57,29 @@ const W = { allPlay: 0.40, ppg: 0.25, recent: 0.25, record: 0.10 };
 
 /* Manager names, mirroring LEAGUE_ORDER in app.js. Display-only garnish: a row
    renders fine with no match, so a renamed team degrades to just its name. */
+/* Team name -> manager. 🚨 KEYED ON THE NAME, WHICH CHANGES EVERY SEASON, so
+   this map goes stale the moment somebody renames — and an unmapped name is
+   not an error, it silently degrades to the generated helmet AND drops the
+   published row's manager code (so the members' app loses that team's crest
+   and its YOU highlight too). v36 rebuilt it from the 2026 ESPN season,
+   cross-checked against ESPN's own owner column (the rule the archive follows:
+   NEVER map a team to a person by name similarity — that is how "Christels
+   Mattress" once became the wrong Will). Old names are kept as aliases below,
+   harmlessly, so a mid-season revert still resolves.
+   ⚠️ Normalised with lowercase+trim only (see `mgrFor`), so keys are
+   lowercase; a double space in an ESPN name would miss — none here do. */
 const MANAGERS = {
-  'thurgood marshall': 'Gotch', samrizz: 'Riz', cummish: 'Hurd', 'cheeky clapz': 'Hyman',
-  christel: 'Christel', 'slob on my cobb': 'Slemp', 'morning woods': 'Woods',
-  'goff hits women': 'Zach', cc: 'CC', 'current champ': 'McD', gmdd: 'Buley', 'future champ': 'Wolff',
+  // ── 2026 names (ESPN season, owner column verified) ──────────────────────
+  'aarogant fraudgers': 'Hurd',        'mortal wombats': 'Christel',
+  'slob on my cobb': 'Slemp',          'morning woods': 'Woods',
+  'gregs morning dew dew': 'Buley',    'jared goff hits women': 'Zach',
+  'death dont hurts very long': 'McD', 'joe sleepin on dee teetees': 'CC',
+  'puka atta adonai': 'Wolff',         'thurgood marshall': 'Gotch',
+  'jefferson airplane': 'Riz',         'pepperoni tds': 'Hyman',
+  // ── legacy aliases from prior seasons — kept so an old name still resolves ─
+  samrizz: 'Riz', cummish: 'Hurd', 'cheeky clapz': 'Hyman', christel: 'Christel',
+  'goff hits women': 'Zach', cc: 'CC', 'current champ': 'McD', gmdd: 'Buley',
+  'future champ': 'Wolff',
 };
 const mgrFor = (name) => MANAGERS[String(name || '').toLowerCase().trim()] || '';
 /* A manager label that just repeats the team name is noise ("CC CC"). */
