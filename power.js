@@ -1639,6 +1639,19 @@ function inviteRoster() {
 
 const addDays = (n) => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10);
 
+/* 🚨 STANDING ACCESS IS A DATE, NOT A SPECIAL CASE (v34, the owner: *"Can't
+   just grant them access to the lab"*). A pass with no end is stored as a date
+   so far out that it never arrives, rather than as a missing `u` or a null —
+   which means `owner.js` keeps ONE expiry rule with no branch for "forever",
+   and a pass that never ends cannot become a pass that never expires *because
+   of a bug*. The only thing that changes is how it is WRITTEN on screen. */
+const NO_END = '9999-12-31';
+const openEnded = (u) => String(u || '') >= NO_END;
+/* ⚠️ And it must never be PRINTED. `niceDate('9999-12-31')` renders "Fri, 31
+   Dec 9999", which reads as a glitch rather than as "no end date" — the same
+   class of thing as a raw `2026-09-07` reading like a database field. */
+const untilTxt = (u) => (openEnded(u) ? 'no end date' : niceDate(u));
+
 function inviteHTML() {
   if (!(window.LeagueOwner && window.LeagueOwner.is())) return '';
   const who = inviteRoster();
@@ -1656,6 +1669,7 @@ function inviteHTML() {
             <option value="7">This week (7 days)</option>
             <option value="30">A month</option>
             <option value="120">The rest of the season</option>
+            <option value="-1">Until I turn it off — no end date</option>
             <option value="0">A date I pick…</option>
           </select>
         </label>
@@ -1664,7 +1678,7 @@ function inviteHTML() {
         </label>
         <button type="button" class="pr-btn primary" id="pr-inv-go">Create the invite</button>
         <div id="pr-inv-out"></div>
-        <p class="pr-note">⚠️ Be straight with yourself about what this is: it opens the Lab on their phone and stops on the date, but it is a key you are handing out, not a password only they know. It runs on <i>their</i> clock, so treat the date as a courtesy rather than a lock. Your passphrase is never in it.</p>
+        <p class="pr-note">⚠️ Be straight with yourself about what this is: it is a key you are handing out, not a password only they know, and your passphrase is never in it. A dated pass stops on its own — on <i>their</i> clock, so treat the date as a courtesy rather than a lock. <b>A no-end-date pass lasts until they sign out or you cancel</b>, and cancelling is all-or-nothing: it takes a one-line change in the repo and it ends <i>every</i> invite at once. Pick a date if you want it to clean up after itself.</p>
       </div>
     </details>
   </div>`;
@@ -1681,12 +1695,16 @@ function wireInvite() {
   go.onclick = async () => {
     const code = $('#pr-inv-who').value;
     const days = Number(len.value);
-    const until = days ? addDays(days) : ($('#pr-inv-date').value || addDays(7));
+    const until = days < 0 ? NO_END
+      : days ? addDays(days)
+      : ($('#pr-inv-date').value || addDays(7));
     if (until < addDays(0)) { toast('Pick a date in the future'); return; }
     const url = location.href.split('#')[0] + '#invite=' + window.LeagueOwner.invite(code, until);
     const out = $('#pr-inv-out');
     out.innerHTML = `<div class="pr-share-out">
-      <div class="t">Send this to <b>${esc(code)}</b> — it opens the Lab on their phone until <b>${esc(niceDate(until))}</b>:</div>
+      <div class="t">Send this to <b>${esc(code)}</b> — it opens the Lab on their phone ${openEnded(until)
+        ? 'and <b>stays open</b> until you cancel it'
+        : `until <b>${esc(niceDate(until))}</b>`}:</div>
       <textarea readonly rows="3"></textarea>
     </div>`;
     const ta = out.querySelector('textarea');
@@ -2071,7 +2089,7 @@ function guestBanner() {
   const d = el('div', 'pr-card pr-guestbar');
   d.id = 'pr-guest';
   d.innerHTML = `<b>👥 You're building this week's rankings.</b>
-    <p>The commissioner handed you the tool${g.until ? ` until <b>${esc(niceDate(g.until))}</b>` : ''}. Build the order, write the takes, then send it out — 📤 and 📋 go straight to the league chat, and 🚀 hands you the file for the commissioner to put in the app.</p>`;
+    <p>The commissioner handed you the tool${g.until && !openEnded(g.until) ? ` until <b>${esc(niceDate(g.until))}</b>` : ''}. Build the order, write the takes, then send it out — 📤 and 📋 go straight to the league chat, and 🚀 hands you the file for the commissioner to put in the app.</p>`;
   main.insertBefore(d, main.firstChild);
 }
 

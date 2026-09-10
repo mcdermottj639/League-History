@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v33';
+  const APP_VERSION = 'v34';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -660,7 +660,11 @@
        simply stops working one morning reads as the app breaking; a date
        turns the same event into something that was always going to happen. */
     p.innerHTML = g
-      ? `<a href="power.html">🏆 Power Rankings Lab</a> — yours to build this week's set${g.until ? `, until ${esc(niceDate(g.until))}` : ''}.`
+      /* ⚠️ An open-ended pass is stored as a date so far out it never arrives
+         (v34), which keeps ONE expiry rule in `owner.js` with no branch for
+         "forever" — but it must never be printed: "until Dec 31, 9999" reads
+         as a glitch, not as standing access. */
+      ? `<a href="power.html">🏆 Power Rankings Lab</a> — yours to build this week's set${g.until && g.until < '9999-12-31' ? `, until ${esc(niceDate(g.until))}` : ''}.`
       : '<a href="power.html">🏆 Power Rankings Lab</a> — your tool for building the weekly set.';
     foot.appendChild(p);
   }

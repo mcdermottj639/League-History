@@ -478,6 +478,19 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       and getting it wrong is worse than omitting it. `teamForMgr()` walks
       `MANAGERS` rather than keeping a second map, because team names change
       every year and the twelve people do not.
+    - **Four durations, and one of them has no end** (v34): this week · a month
+      · the rest of the season · **until he turns it off** · or a date he picks.
+      🚨 **"No end" is stored as a DATE so far out it never arrives**
+      (`9999-12-31`), never as a missing expiry or a null — so `owner.js` keeps
+      exactly one expiry rule with no "forever" branch, and a pass that never
+      ends cannot become a pass that never expires *because of a bug*.
+      ⚠️ **And it must never be printed.** "until Fri, 31 Dec 9999" reads as a
+      glitch rather than as standing access, so `untilTxt`/`openEnded` gate
+      every place a pass date is shown — the invite output, the guest banner
+      and the members' app footer link, all three checked by render.
+      ⚠️ **An open-ended pass is the one grant with no natural end, so
+      `checks.js` asserts `INVITES_FROM` still kills it** — otherwise it would
+      be the single thing he could never take back.
     - A guest gets a banner saying what they have and until when, and 🔒 turns
       into **Sign out** with its own confirm — "access until Saturday" is only
       safe on a borrowed phone if it can be ended before Saturday.
@@ -957,6 +970,43 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v34 — a pass that does not run out (10 Sep 2026)** — the owner, reading
+  v33: *"Wait so if I send the link this week and in a month want to assign
+  someone they need a new link? Can't just grant them access to the lab"*.
+  - **Half the answer was that he already could** — the duration is his choice
+    when he makes the link, and "the rest of the season" is one link, sent
+    once, covering every week of the year. He had read the 7-day option in the
+    worked example as the mechanism rather than as one of the choices. ⚠️ Worth
+    recording as a documentation fault rather than a code one: **an example
+    that uses the narrowest option teaches the narrowest option.**
+  - **The other half was real and is now built: a pass with NO end date.**
+    "Grant them access to the Lab" is a different intent from "lend it for a
+    week", and the app only expressed the second.
+  - 🚨 **"Forever" is stored as a DATE, not as a special case.** `9999-12-31`,
+    so `owner.js` keeps exactly one expiry rule and there is no "no expiry"
+    branch to get wrong. A standing pass and a dated one travel the same code
+    path; the only thing that differs is how the date is written on screen.
+  - ⚠️ **And it must never be written on screen.** "until Fri, 31 Dec 9999" is
+    the same class of thing as a raw `2026-09-07` reading like a database
+    field — it looks like a glitch, not like standing access. Three places show
+    a pass date (the invite output, the guest's banner, the footer link in the
+    members' app) and all three were checked by rendering rather than by
+    reading the code, because two of them are on a device the owner never sees.
+  - 🚨 **The one grant with no natural end must still be cancellable.**
+    `checks.js` asserts `INVITES_FROM` kills an open-ended pass, because
+    otherwise it would be the single thing he could hand out and never take
+    back — and it would look identical to every other pass while being it.
+  - ⚠️ **The honesty note grew a sentence rather than being left to imply.**
+    Cancelling is all-or-nothing: it takes a line changed in the repo and it
+    ends *every* outstanding invite. So the card now says plainly that a dated
+    pass cleans up after itself and a standing one does not, which is the
+    trade he is actually making when he picks.
+  - Verified at 390px: the owner minting an open-ended pass (copy reads "stays
+    open until you cancel it", no `9999` anywhere), a guest redeeming it
+    (twelve editable rows, banner with no date, own byline, 🔒 Sign out), and
+    that guest in the members' app (footer link with no date, eleven names on
+    the picker). No page errors, checks.js green.
 
 - **v33 — the Lab can be lent out (10 Sep 2026)** — the owner: *"And allow me
   the ability to give another member access to do the rankings. Whether for a

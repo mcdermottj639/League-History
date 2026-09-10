@@ -304,7 +304,22 @@ function inviteLaws(O) {
   } catch (_) { return fail('could not reach the stored pass'); }
   if (O.guest() || O.mayLab()) return fail('a pass that ran out was still open on the next read');
 
-  console.log('  ✅ invites: expire, revocable, damaged ones refused, and never grant owner');
+  /* 🚨 AN OPEN-ENDED PASS MUST STILL BE KILLABLE (v34). "No end date" is
+     stored as a date that never arrives rather than as a missing expiry, so
+     there is no "forever" branch to get wrong — but the whole point of the
+     revoke line is that it reaches the passes with no other way to end. A
+     standing pass that outlived a cancellation would be the one grant the
+     owner could never take back. */
+  O.endGuest();
+  if (O.accept(O.invite('Hyman', '9999-12-31')) !== 'ok') return fail('an open-ended invite was refused');
+  if (!O.mayLab() || O.is()) return fail('an open-ended pass did not behave like a guest pass');
+  O.endGuest();
+  const forever = JSON.parse(Buffer.from(O.invite('Hyman', '9999-12-31').replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString());
+  forever.i = '2000-01-01';
+  const dead = Buffer.from(JSON.stringify(forever)).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  if (O.accept(dead) !== 'revoked') return fail('a cancelled open-ended invite still worked — it could never be taken back');
+
+  console.log('  ✅ invites: expire, revocable (open-ended too), damaged refused, never grant owner');
 }
 
 function done() {
