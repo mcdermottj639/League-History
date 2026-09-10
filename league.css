@@ -30,6 +30,18 @@
 
 :root[data-palette] .lg-main { padding: 0 16px 28px; }
 :root[data-palette] .lg-main > .ai-sub { margin-top: 12px; }
+/* 🚨 THE SAME SPECIFICITY TRAP, A THIRD TIME — and this one had been shipping
+   since v4. `paint()` has always done `$('#lg-sub2').hidden = true` on the
+   Rankings tab and on a profile, and it has always been a VISUAL NO-OP:
+   `:root[data-palette] .ai-sub { display: flex }` in styles.css is (0,2,1) and
+   the UA's `[hidden] { display: none }` is (0,1,0), so the palette layer wins.
+   The history sub-tabs stayed on screen over the Power Rankings with
+   "Honours" still lit — a nav highlighting a page you are not on, which is
+   the exact thing hiding it was meant to prevent.
+   ⚠️ `#lg-sub` (level 1) is also `.ai-sub` and is never hidden, so this rule
+   only ever fires for `#lg-sub2`. Hide by property, add a `[hidden]` rule at
+   your own specificity — every time. */
+:root[data-palette] .lg-main > .ai-sub[hidden] { display: none; }
 
 /* ── the name picker ────────────────────────────────────────────────────── */
 :root[data-palette] .lg-pick { padding: 22px 16px 40px; }

@@ -186,6 +186,15 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   - `profile(mgr)` — the drill-down every name opens
   - `setMe(mgr)` / `me()` / `name(mgr)` / `roster()` — identity
   - `key()` — the three-badge provenance key, for the ? sheet in `league.js`
+- 🚨 **THE `hidden` SPECIFICITY TRAP HAS NOW BITTEN THIS APP THREE TIMES.**
+  `:root[data-palette] .X { display: … }` is (0,2,1); the UA's
+  `[hidden] { display: none }` is (0,1,0); the palette layer wins and
+  `el.hidden = true` paints nothing but a no-op. It hit `.lg-jump` (v9),
+  was pre-empted for `.lg-sheet` (v13), and was found in `.ai-sub` in v21
+  after shipping since v4 — the history sub-tabs stayed on screen over the
+  Power Rankings with "Honours" still lit. **Hide by property AND add a
+  `[hidden]` rule at your own specificity. Every time, in the same edit as
+  the markup.** No assertion can see this; only a render can.
 - ⚠️ **Two render faults the v9 move exposed, both pre-existing and both
   invisible to every assertion — see the two 🚨 comments in `league.css`:**
   (a) `el.hidden = true` on `#lg-jump` was a **visual no-op**, because
@@ -707,6 +716,16 @@ stale entry written in the present tense reads as current to anyone who greps.
     to `.pr-load p` (0,1,1), so **the wrong-passphrase line painted the same
     muted grey as the body copy** — a failure message that does not look like
     one. Scoped to `.pr-gate`. Nothing asserts a colour.
+  - 🚨 **AND LOOKING AT THE RANKINGS TAB — the second thing anyone will tap —
+    found a bug that had been shipping since v4.** `paint()` has always done
+    `$('#lg-sub2').hidden = true` there and on a profile, and it has always
+    been a **visual no-op**: `:root[data-palette] .ai-sub { display: flex }` is
+    (0,2,1) against the UA's (0,1,0), so the five history sub-tabs stayed on
+    screen over the Power Rankings **with "Honours" still lit** — a nav
+    highlighting a page you are not on, which is the exact thing hiding it was
+    for. **Third instance of the same trap** (`.lg-jump` v9, `.lg-sheet` v13).
+    It survived seventeen versions because nothing asserts it and the two tabs
+    it breaks are the two nobody screenshots.
   - Verified in headless Chromium at 390px over HTTP, against the real files:
     a stranger gets eleven names and no mention of `power.html` in the served
     DOM; a member switches between members; his own phone keeps his name; the
