@@ -1,2 +1,7 @@
 _drive.html
 .DS_Store
+
+# the render harness: a copy of index.html with a driver script injected,
+# rebuilt from index.html on every run. Never committed — a second copy of
+# the app in the repo is exactly the thing this project has a rule against.
+_drv.html
