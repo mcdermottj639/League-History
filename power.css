@@ -40,7 +40,8 @@ body.pr-page {
 .pr-shield { font-size: 26px; }
 .pr-top h1 {
   margin: 0; font-size: 19px; letter-spacing: 1.2px; text-transform: uppercase;
-  font-weight: 900; line-height: 1; color: var(--text);
+  font-weight: 900; line-height: 1.05; color: var(--text);
+  min-width: 0; overflow-wrap: anywhere;
 }
 .pr-top h1 small {
   display: block; font-size: 10px; letter-spacing: 3px; margin-top: 3px;
@@ -294,3 +295,10 @@ body.pr-page {
 /* The index.json line is one short entry, not a document — a 10-row box
    around it reads as "more work than it is". */
 .pr-share-out .pr-idx { min-height: 0; }
+
+/* The recent-form line sits under the season line; one notch quieter so the
+   season numbers still lead, but not so quiet it reads as a footnote. */
+.pr-form { opacity: .82; }
+/* "Checking for newer" is a status, not a warning — it must not wear the
+   same colour as "the backend didn't answer". */
+.pr-chk { color: var(--muted); font-weight: 700; }

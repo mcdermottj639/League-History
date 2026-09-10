@@ -250,8 +250,25 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   - **Data: ONE call**, `/api/fantasy/football/season` (v195), which already
     carries per-team `scores`/`outcomes`/W-L/`pointsFor` plus the derived
     **all-play** record off the backend's cached League snapshot. No new
-    endpoint, no extra ESPN request. Last good payload cached on device
-    (`powerlab:season`).
+    endpoint, no extra ESPN request.
+    - 🚨 **CACHE FIRST, THEN REVALIDATE (v25).** `powerlab:season` held the
+      last good payload from v1, but only as a FALLBACK for a failed fetch —
+      so every visit still sat through a 30-60s cold start with the answer
+      already on the phone. It paints from the cache immediately and asks the
+      backend behind you (`cachedSeason` / `fetchSeason` / `revalidate`).
+      Measured: 122ms against a 3s backend.
+    - ⚠️ **The refresh must not yank the page out from under him.** Same week
+      key → the numbers can only have been corrected, so they update in place
+      and his order and takes are untouched. A NEW key → that is a different
+      ranking, and rebuilding silently would delete an order he spent ten
+      minutes on, so it OFFERS (`S.pending`, the `#pr-newweek` button).
+      And `repaintUnlessTyping()` defers a repaint while a take has focus,
+      because dropping his caret mid-sentence is its own kind of data loss.
+    - ⚠️ **Four load states, four different facts** (`freshLine()`): live ·
+      checking · stale · newweek. "Showing saved data because the backend
+      didn't answer" and "showing saved data while I check" are opposite
+      situations and the old single `S.stale` banner said the first when it
+      meant the second — the same rule the app's rankings view follows.
   - **The model** (`buildModel`): all-play win% **40%** · points per game
     **25%** · last `RECENT_N` (3) weeks **25%** · actual record **10%**, the
     three continuous inputs z-normalised across the league first so they are
@@ -271,6 +288,24 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   - **Reordering:** ▲▼ for nudges plus an invisible `<select>` over each rank
     number, so tapping the number opens the native iOS picker and 12th → 1st
     is one gesture. Deliberately not HTML5 drag (dead under iOS touch).
+  - **Every row carries what it takes to JUDGE it (v25, owner's ask).** Season
+    line: record · ppg · all-play · PF. Form line (`formOf`, `.pr-form`): last
+    week's result and score · last-3 average · high · low.
+    - ⚠️ **`outcomes` is padded exactly like `scores`**, so it is sliced to the
+      PLAYED length before the last one is read — otherwise "last week" is
+      whatever ESPN left in an unplayed slot.
+    - ⚠️ **The last-3 average is on the row because the model weights it 25%**
+      and the row never showed it: the owner was being asked to argue with a
+      number he could not see.
+    - The read-only SHARED view deliberately does not get these — its payload
+      carries no per-week scores, and widening it would grow every link.
+  - 🚨 **`teamById` compares ids as STRINGS (v25), and that is not
+    defensiveness.** `S.model` and `S.comments` are objects keyed by team id,
+    so `Object.keys()` returns `"7"`, never `7`, and a `===` against a numeric
+    `teamId` never matched. **"Model's own top 3 this week" rendered
+    `? · ? · ?` for its entire life.** Bracket access coerces and `find` does
+    not, which is exactly why the bug sat next to working code and no
+    assertion saw it. Asserted now.
   - **Sharing** — `power.html#r=<base64url>`, a **self-contained** payload
     (names, records, ppg, takes, the model's rank, movement), so a recipient
     makes **no backend call**: it survives a sleeping backend, and a link that
@@ -733,6 +768,53 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v25 — the Lab opens from memory, and the rows say enough to argue with
+  (10 Sep 2026)** — the owner, watching the loading card: *"Don't make me wait
+  every time. Once it loads once make sure there's a memory and content
+  stays"*, then *"show me season stats and prev week stats on this screen to
+  help me judge"*.
+  - 🚨 **The cache had been there since v1 and was only ever used when the
+    fetch FAILED.** `loadSeason()` awaited the network first, every time, so a
+    device holding a perfectly good copy of a week of finished results still
+    sat through a 30-60s free-tier cold start to be told the same thing. **A
+    fallback and a first choice are different jobs**, and the payload — a
+    week of games that already happened — does not go stale in the seconds it
+    takes to check. Cache first, revalidate behind: **122ms against a 3s
+    backend**, measured.
+  - ⚠️ **The hard part is not the caching, it is not destroying his work.**
+    Same week key → the numbers can only have been corrected, so they refresh
+    in place and his order and takes are untouched. A NEW key → that is a
+    different ranking, and silently rebuilding would delete an order he may
+    have spent ten minutes on, so it offers a button instead. And a repaint
+    while he is typing would drop his caret mid-take, so a focused textarea
+    defers it.
+  - ⚠️ **Four states, four facts.** "Showing saved data because the backend
+    didn't answer" and "showing saved data while I check" are opposite
+    situations; the old single `S.stale` banner said the first when it meant
+    the second. That is the app's own rankings-view rule (an empty archive and
+    an unreachable one are not the same sentence) applied where it was missing.
+  - **The rows now carry season AND recent form**, because the model's own
+    inputs were invisible: it weights the last three weeks at 25% and the row
+    never showed them. Season · record, ppg, all-play, PF. Form · last week's
+    result and score, last-3 average, high, low. Two lines, because "how good
+    have they been" and "how good are they now" are the two questions a power
+    ranking settles and neither should read as a qualifier on the other.
+  - 🚨 **AND THE RENDER TURNED UP A BUG THAT HAS ALWAYS SHIPPED.** "Model's own
+    top 3 this week" was printing **`? · ? · ?`**. `Object.keys(S.model)`
+    returns `"7"`, never `7`, and `teamById` matched with `===` against a
+    numeric `teamId` — so it never found anybody. **Bracket access coerces and
+    `find` does not**, which is why the broken lookup sat inches from working
+    code and nothing failed. Compared as strings now, and asserted.
+  - **Also found by looking: the header brand rode over its own buttons.** A
+    flex item will not shrink below its content without `min-width: 0`, and
+    v21 had added a third child (🔒 Lock) to that row. Latent at Archivo's
+    metrics, live in a fallback font or at a larger accessibility size.
+  - Verified against a mocked backend across all four paths: first-ever visit
+    with a slow backend, second visit (122ms, "checking" note, then silent),
+    a new week landing mid-session (offers, then builds on tap), and the
+    backend down (instant from cache, then the honest warning). Plus twelve
+    form lines, no overflow, no header overlap, no page errors.
 
 - **v24 — the publish step hands over the whole commit (10 Sep 2026)** — the
   owner, on the weekly loop: *"I have to do all this. Can't u"*.

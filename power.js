@@ -86,6 +86,8 @@ const S = {
   scores: {},        // teamId -> model score
   ready: false,      // did the model have anything to work with?
   stale: false,      // painted from cache rather than a live pull
+  fresh: '',         // '' | 'checking' | 'live' | 'stale' | 'newweek' — see freshLine()
+  pending: null,     // a newer week fetched in the background, waiting to be accepted
   shared: null,      // decoded payload when opened via #r=
 };
 
@@ -104,15 +106,20 @@ async function fetchJSON(url, ms = API_TIMEOUT) {
   } finally { clearTimeout(t); }
 }
 
+const cachedSeason = () => { const c = load(K_SEASON, null); return c && c.data ? c : null; };
+
+async function fetchSeason() {
+  const d = await fetchJSON(`${API}/api/fantasy/football/season`);
+  if (!d || !Array.isArray(d.teams) || !d.teams.length) throw new Error('empty');
+  save(K_SEASON, { at: Date.now(), data: d });
+  return d;
+}
+
 async function loadSeason() {
-  try {
-    const d = await fetchJSON(`${API}/api/fantasy/football/season`);
-    if (!d || !Array.isArray(d.teams) || !d.teams.length) throw new Error('empty');
-    save(K_SEASON, { at: Date.now(), data: d });
-    return { data: d, stale: false };
-  } catch (_) {
-    const c = load(K_SEASON, null);
-    if (c && c.data) return { data: c.data, stale: true, at: c.at };
+  try { return { data: await fetchSeason(), stale: false }; }
+  catch (_) {
+    const c = cachedSeason();
+    if (c) return { data: c.data, stale: true, at: c.at };
     return null;
   }
 }
@@ -184,11 +191,41 @@ function buildModel(season) {
 
 /* --------------------------------------------------------------- labels -- */
 const keyLabel = (k) => (k === 0 ? 'Preseason' : `After Week ${k}`);
-const teamById = (id) => (S.season.teams || []).find((t) => t.teamId === id) || { team: '?', teamId: id };
+/* 🚨 COMPARED AS STRINGS, AND THAT IS NOT DEFENSIVENESS (v25). `S.model` and
+   `S.comments` are objects keyed by team id, so `Object.keys()` hands back
+   "7", never 7 — and a `===` against a numeric `teamId` never matches. The
+   "Model's own top 3 this week" line has been rendering "? · ? · ?" for its
+   whole life because of it. Bracket access coerces and `find` does not, which
+   is exactly why the bug could sit next to working code. */
+const teamById = (id) => (S.season.teams || []).find((t) => String(t.teamId) === String(id)) || { team: '?', teamId: id };
 
 function recordOf(t) {
   const w = Number(t.wins) || 0, l = Number(t.losses) || 0, ti = Number(t.ties) || 0;
   return ti ? `${w}-${l}-${ti}` : `${w}-${l}`;
+}
+
+const one1 = (v) => (Math.round(Number(v) * 10) / 10).toFixed(1);
+
+/* What a row needs to be JUDGED on rather than just labelled with (v25).
+   ⚠️ `outcomes` is padded the same way `scores` is, so it is sliced to the
+   PLAYED length before the last one is read — otherwise "last week" is
+   whatever ESPN left in an unplayed slot.
+   ⚠️ And the last-3 average is here because the model weights it 25% and the
+   row never showed it: the owner was being asked to argue with a number he
+   could not see. */
+function formOf(t) {
+  const ps = played(t.scores);
+  if (!ps.length) return null;
+  const outs = (t.outcomes || []).slice(0, ps.length);
+  const l3 = ps.slice(-Math.min(RECENT_N, ps.length));
+  const res = outs.length ? String(outs[outs.length - 1] || '').toUpperCase().slice(0, 1) : '';
+  return {
+    last: ps[ps.length - 1],
+    res: 'WLT'.includes(res) && res ? res : '',
+    l3: l3.reduce((a, b) => a + b, 0) / l3.length,
+    n3: l3.length,
+    hi: Math.max(...ps), lo: Math.min(...ps),
+  };
 }
 
 /* Movement vs the last week the owner actually PUBLISHED. No published prior
@@ -1421,6 +1458,23 @@ function paintLoad(msg, retry) {
   }
 }
 
+/* 🚨 FOUR STATES, AND THEY ARE FOUR DIFFERENT FACTS (v25). "Showing saved
+   data because the backend didn't answer" and "showing saved data while I
+   check" are opposite situations, and the old single `S.stale` banner said
+   the first when it meant the second. Same rule the app's rankings view
+   follows: an empty archive and an unreachable one must never share a
+   sentence. */
+function freshLine() {
+  if (S.fresh === 'checking') return `<p class="pr-note pr-chk">↻ Opened from what this device saved — checking the league for anything newer.</p>`;
+  if (S.fresh === 'stale') return `<p class="pr-warn">⚠️ Showing the last league data this device saved — the backend didn't answer just now. Records and points may be a week behind.</p>`;
+  if (S.fresh === 'newweek') {
+    const k = S.pending ? buildModel(S.pending).weeks : 0;
+    return `<p class="pr-warn">🆕 <b>${esc(keyLabel(k))}</b> results are in. Building it starts a fresh ranking — the order and takes on screen belong to ${esc(keyLabel(S.key))} and will be replaced.</p>
+      <button type="button" class="pr-btn" id="pr-newweek">Build ${esc(keyLabel(k))}</button>`;
+  }
+  return '';
+}
+
 /* ---- the editor ---------------------------------------------------------- */
 function paintRank() {
   show('#pr-rank');
@@ -1439,7 +1493,7 @@ function paintRank() {
       <p class="pr-sub">${S.ready
         ? `Pre-built from ${S.key} week${S.key === 1 ? '' : 's'} of results — then it's yours. Reorder anyone, write the take, send it to the league.`
         : `No games have been played yet, so the model has nothing to rank on and has not invented an order. Drag the league into whatever order you like and write the takes — this is the preseason edition.`}</p>
-      ${S.stale ? `<p class="pr-warn">⚠️ Showing the last league data this device saved — the backend didn't answer just now. Records and points may be a week behind.</p>` : ''}
+      ${freshLine()}
       ${prev ? `<p class="pr-note">▲▼ is movement since <b>${esc(prev.label || 'last week')}</b>, the last set you shared. A team that held its spot reads <b>—</b>.</p>`
              : `<p class="pr-note">No movement arrows yet — they appear once you've shared a set and a new week lands.</p>`}
       <label class="pr-by">
@@ -1457,12 +1511,24 @@ function paintRank() {
     const modelRank = S.model[id];
     const moved = modelRank && modelRank !== i + 1;
     const stats = [];
+    const form = S.ready ? formOf(t) : null;
     if (S.ready) {
       stats.push(recordOf(t));
       if (row) {
-        stats.push(`${(Math.round(row.ppg * 10) / 10).toFixed(1)} ppg`);
+        stats.push(`${one1(row.ppg)} ppg`);
         stats.push(`all-play ${row.apW}-${row.apL}`);
       }
+      if (Number(t.pointsFor)) stats.push(`${one1(t.pointsFor)} PF`);
+    }
+    /* Season above, recent form below — the two questions a power ranking is
+       actually settling ("how good have they been" vs "how good are they
+       now"), on separate lines so neither reads as a qualifier on the other. */
+    const form2 = [];
+    if (form) {
+      form2.push(`Last week ${form.res ? form.res + ' ' : ''}${one1(form.last)}`);
+      if (form.n3 > 1) form2.push(`last ${form.n3} avg ${one1(form.l3)}`);
+      form2.push(`high ${one1(form.hi)}`);
+      form2.push(`low ${one1(form.lo)}`);
     }
     const opts = Array.from({ length: n }, (_, k) =>
       `<option value="${k}"${k === i ? ' selected' : ''}>${k + 1}</option>`).join('');
@@ -1479,6 +1545,7 @@ function paintRank() {
         <div class="pr-body">
           <div class="pr-team"><img class="pr-helm-sm" src="${crestURL(t.team, 30)}" alt="" width="30" height="30" /><span class="pr-tn">${esc(t.team)}</span>${mgr ? ` <span class="pr-mgr">${esc(mgr)}</span>` : ''}${t.isMe ? ' <span class="pr-you">you</span>' : ''}</div>
           ${stats.length ? `<div class="pr-stats">${esc(stats.join(' · '))}</div>` : ''}
+          ${form2.length ? `<div class="pr-stats pr-form">${esc(form2.join(' · '))}</div>` : ''}
           ${moved ? `<div class="pr-moved">Model had them <b>${modelRank}${ord(modelRank)}</b> — you moved them ${modelRank > i + 1 ? 'up' : 'down'}.</div>` : ''}
           <textarea class="pr-take" rows="3" maxlength="${MAX_COMMENT}" placeholder="Your take on ${esc(t.team)}…"></textarea>
           <div class="pr-count">${S.ready ? `<button type="button" class="pr-re" data-re aria-label="Rewrite the take for ${esc(t.team)}">🎲 rewrite</button>` : ''}<span class="pr-cn"><b class="pr-cnum">${c.length}</b>/${MAX_COMMENT}</span></div>
@@ -1553,6 +1620,19 @@ function paintRank() {
   const by = $('#pr-byline');
   by.value = S.byline || '';   // assigned, never interpolated into markup
   by.addEventListener('input', () => { S.byline = by.value; persist(); });
+
+  const nw = $('#pr-newweek');
+  if (nw) nw.onclick = () => {
+    if (!S.pending) return;
+    S.season = S.pending; S.pending = null;
+    S.stale = false; S.fresh = 'live';
+    /* Straight through `restoreOrBuild`, which is the one place that knows
+       the draft rules — a new key means it builds fresh, and a draft for the
+       new key (he started it on another tab) is restored rather than lost. */
+    restoreOrBuild();
+    paintRank();
+    window.scrollTo({ top: 0 });
+  };
 
   const pubBtn = $('#pr-publish');
   if (pubBtn) pubBtn.onclick = async () => {
@@ -1748,7 +1828,25 @@ async function boot() {
   if (!window.LeagueOwner || !window.LeagueOwner.is()) { paintGate(''); return; }
   addLock();
 
-  paintLoad(`<b>Loading your league…</b><p>The free-tier backend takes ~30s to wake up if it has been idle.</p>`);
+  /* 🚨 CACHE FIRST, THEN REVALIDATE (v25). The device has held the last good
+     payload since v1 (`powerlab:season`) — but only as a FALLBACK for a failed
+     fetch, so every visit still sat through a 30-60s cold start with the
+     answer already on the phone. Owner: *"Don't make me wait every time."*
+     The data is a week of finished results; it does not go stale in the
+     seconds it takes to check. So: paint from the cache immediately, ask the
+     backend in the background, and reconcile when it answers. */
+  const c = cachedSeason();
+  if (c) {
+    S.season = c.data;
+    S.stale = false;
+    S.fresh = 'checking';
+    restoreOrBuild();
+    paintRank();
+    revalidate();
+    return;
+  }
+
+  paintLoad(`<b>Loading your league…</b><p>The free-tier backend takes ~30s to wake up if it has been idle. This only happens once on this device — after that it opens straight from what it saved.</p>`);
   const res = await loadSeason();
   if (!res) {
     paintLoad(`<b>Can't reach the league right now.</b>
@@ -1758,7 +1856,46 @@ async function boot() {
   }
   S.season = res.data;
   S.stale = !!res.stale;
+  S.fresh = res.stale ? 'stale' : 'live';
   restoreOrBuild();
+  paintRank();
+}
+
+/* The background half of the above.
+   🚨 IT MUST NOT YANK THE PAGE OUT FROM UNDER HIM. Two cases, and they are
+   genuinely different:
+     · SAME week key — the numbers can only have been corrected, so refresh
+       them in place and keep his order and his takes untouched.
+     · A NEW week key — that is a different ranking, and silently rebuilding
+       would delete an order he may have spent ten minutes on. It offers.
+   ⚠️ And a repaint while he is typing would drop his caret mid-take, so a
+   focused textarea defers it: the data is already updated, the next natural
+   repaint (any reorder) shows it. */
+async function revalidate() {
+  let d = null;
+  try { d = await fetchSeason(); } catch (_) {}
+  if (!d) { S.fresh = 'stale'; S.stale = true; repaintUnlessTyping(); return; }
+
+  const built = buildModel(d);
+  if (built.weeks !== S.key) {
+    S.pending = d;
+    S.fresh = 'newweek';
+    repaintUnlessTyping();
+    return;
+  }
+  S.season = d;
+  S.stale = false;
+  S.fresh = 'live';
+  S.model = built.model; S.scores = built.scores; S.rows = built.rows; S.ready = built.ready;
+  repaintUnlessTyping();
+}
+
+function repaintUnlessTyping() {
+  const a = document.activeElement;
+  if (a && a.classList && a.classList.contains('pr-take')) {
+    a.addEventListener('blur', () => paintRank(), { once: true });
+    return;
+  }
   paintRank();
 }
 
