@@ -13,12 +13,12 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=20" />
+  <link rel="stylesheet" href="styles.css?v=21" />
   <!-- The rankings view reuses the Power Rankings Lab's own row styling, so
        what a member reads is pixel-identical to what the commissioner built.
        Loaded BEFORE league.css, which stays the last layer. -->
-  <link rel="stylesheet" href="power.css?v=2" />
-  <link rel="stylesheet" href="league.css?v=20" />
+  <link rel="stylesheet" href="power.css?v=3" />
+  <link rel="stylesheet" href="league.css?v=21" />
 </head>
 <body class="lg-body">
   <header class="lg-top">
@@ -58,11 +58,13 @@
     <div id="lg-body"></div>
     <footer class="lg-foot">
       <p>Thirteen seasons, 2013–2025 · every finish mapped to a person and cross-checked against ESPN's own owner column.</p>
-      <p><a href="power.html">🏆 Power Rankings Lab</a> — the commissioner's tool for building the weekly set.</p>
     </footer>
   </main>
 
-  <script src="history.js?v=20" defer></script>
-  <script src="league.js?v=20" defer></script>
+  <!-- The commissioner's gate. Loaded before league.js, which asks it
+       whether to offer his name in the picker and link his Lab. -->
+  <script src="owner.js?v=1" defer></script>
+  <script src="history.js?v=21" defer></script>
+  <script src="league.js?v=21" defer></script>
 </body>
 </html>

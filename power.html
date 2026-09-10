@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css?v=1" />
-  <link rel="stylesheet" href="power.css?v=1" />
+  <link rel="stylesheet" href="power.css?v=2" />
 </head>
 <body class="pr-page">
   <header class="pr-top">
@@ -30,6 +30,9 @@
     <section id="pr-shared" hidden></section>
   </main>
 
-  <script src="power.js?v=1" defer></script>
+  <!-- Shared with the league app, so its ?v= is its own: bump it in BOTH
+       pages together or one of them serves a stale gate. -->
+  <script src="owner.js?v=1" defer></script>
+  <script src="power.js?v=2" defer></script>
 </body>
 </html>

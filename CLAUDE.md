@@ -71,6 +71,9 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 - **No model identifier** (exact model name/ID) in commits, code, PRs or any
   pushed artifact. Chat only.
 - Don't create PRs unless explicitly asked.
+- **The Lab is gated, the archive never is.** `power.html` asks for a
+  passphrase; `index.html` must keep working for a stranger who taps nothing.
+  ⚠️ And a **shared `#r=` link stays open** — that is what goes in the chat.
 - ⚠️ **This repo is PUBLIC.** Everything in it — real first names, the takes,
   the team names — is world-readable. That was the owner's setting, not an
   accident, but weigh it before adding anything new about a person.
@@ -79,9 +82,44 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 
 - `index.html` — the members' app. Header (brand · **?** · who-you-are chip),
   name picker, two-level nav, and the empty `#lg-sheet` the ? fills.
+  ⚠️ **It does not name `power.html` anywhere** (v21). The Lab link is appended
+  by `league.js` on an unlocked device; markup behind `hidden` would still be
+  in view-source for the other eleven. `checks.js` fails if it comes back.
+- `owner.js` — **the commissioner's gate** (v21), ~60 lines, loaded by BOTH
+  `index.html` and `power.html`. Exposes `LeagueOwner.is()` / `unlock(phrase)`
+  / `lock()` off one localStorage key.
+  - 🚨 **The repo is PUBLIC, so it holds the passphrase's SHA-256 and never the
+    passphrase.** A token compared with `===` is the passphrase, published.
+  - ⚠️ **One file, both pages, one `?v=`.** A second copy of that hash would be
+    a second source of truth for the same fact. It is `owner.js?v=1` in both
+    pages and **both must bump together**, or one of them serves a stale gate.
+  - ⚠️ **The input is normalised (trim · collapse spaces · lowercase) before
+    hashing.** Safari autocapitalises the first letter of a text field, so a
+    byte-exact hash would lock the owner out of his own tool on the one device
+    it is for.
+  - ⚠️ **Be honest about what it is.** It stops eleven relatives with the link
+    — the whole threat. It does not stop someone who reads `owner.js` and runs
+    a wordlist at that hash: a static site has no server to rate-limit anyone.
+    `checks.js` refuses the obvious guesses; length is the only real defence.
+  - `crypto.subtle` is https-only, so `unlock` returns `'ok' | 'no' |
+    'insecure'` — "wrong passphrase" and "this browser can't check one" are
+    opposite problems and the message shown has to say which.
 - `league.js` — the shell: identity, router, jump nav, the rankings view, and
   the **? sheet** (`helpHTML` / `openHelp` / `closeHelp`).
   It is deliberately small; all the archive logic lives in `history.js`.
+  - 🚨 **`pickList()` keeps the commissioner off the picker (v21).** Anyone in
+    the league can be anyone else in the league — that is the whole point of
+    the thing — but nobody gets to put the app into his voice. Two escapes,
+    both for HIM: an unlocked device, or a device already reading as him
+    (which is what stops the lock arriving as "your phone has forgotten who
+    you are" on the one phone that was already right). Neither is reachable
+    from a member's device.
+  - ⚠️ **The gate is deliberately NOT `LH.me()`.** Identity here is an
+    invitation; wiring a lock to it would turn the friendliest thing in the
+    app into a credential, and tapping a name must never open a door.
+  - ⚠️ **It filters in the PICKER, not in `LH.roster()`.** `roster()` is the
+    league and `checks.js` asserts all twelve are covered by a storyline —
+    filtering there would have quietly narrowed the archive to eleven people.
   - ⚠️ **The ? sheet's tab list is BUILT FROM `L1` + `LH.SUBS`** — the app's own
     source of truth for what the tabs are and what they are called. `HELP` adds
     only the one sentence a tab cannot know about itself, keyed by the same
@@ -163,8 +201,18 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 - `styles.css` — **a full copy of Sports-Hub's stylesheet**, brought over
   whole. See "The stylesheet" below before touching it.
 - `power.html` / `power.css` / `power.js` — the **commissioner's** authoring
-  tool. Members never need it; it is not part of `index.html` and shares only
-  the stylesheet and the crests. It talks to the owner's Render backend
+  tool, and **passphrase-gated since v21** (`paintGate` in `power.js`, keyed
+  off `owner.js`). Members never need it; it is not part of `index.html` and
+  shares only the stylesheet, the crests and the gate.
+  - 🚨 **A SHARED LINK IS NOT GATED, DELIBERATELY.** `boot()` reads `#r=`
+    BEFORE it reaches the gate: that payload is self-contained and read-only
+    and is the thing he pastes into the group chat. Gating the page he sends
+    people to would have locked the league out of the rankings themselves.
+  - Nothing below the gate runs until the device answers — no backend call, no
+    draft restored. A member who lands here gets a card that says whose page
+    it is and a 40px link to the app that IS theirs.
+  - `addLock()` injects a 🔒 Lock button once unlocked: "unlock once per
+    device" is only safe if a device can be un-unlocked. It talks to the owner's Render backend
   (`sports-hub-fantasy-api.onrender.com`, overridable via localStorage
   `sportshub:api`), which is on Render's **free tier** and cold-starts ~30-60s
   after 15 minutes idle — hence the 45s timeout in `API_TIMEOUT`.
@@ -273,6 +321,12 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 - `logos/` — the league's own twelve crests, keyed by manager.
 - `sw.js` — network-first service worker. Bump `CACHE` on every release.
 - `checks.js` — **run `node checks.js` after ANY data or detector change.** It
+  also holds the **gate laws** (v21): `index.html` must not name `power.html`,
+  `owner.js` must hold a 64-hex hash rather than a phrase, and the phrase must
+  not be one of sixteen obvious guesses. None of that is visible in a render,
+  which is exactly why it is asserted. ⚠️ The first law is about `power.html`
+  only — `power.css` is legitimately in `index.html`, because the rankings view
+  reuses the Lab's row styling so a member reads what the commissioner built. It
   runs the conservation laws below plus the storyline laws: every manager has
   one **and is on the rendered Storylines card** (v7 — those are different
   assertions; see Storylines), none has a template hole, each reader's own
@@ -281,8 +335,9 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 
 ## localStorage keys
 
-The members' app writes **two keys and no more**. Everything else here belongs
-to the Lab, which only the commissioner opens.
+The members' app writes **three keys and no more**, and the third is only ever
+written on the commissioner's own device. Everything else here belongs to the
+Lab, which only he opens.
 
 - `lh:me` — the manager code the reader picked. There is no account and there
   must never be one: twelve relatives are not going to sign in to read a
@@ -290,6 +345,11 @@ to the Lab, which only the commissioner opens.
 - `lh:skipped` — set when someone taps "I'm just looking". ⚠️ It exists so the
   picker **never asks twice**. A prompt that returns every visit is a nag, and
   this app's whole posture is that picking is an invitation, not a gate.
+- `lh:owner` — `'1'` on the commissioner's device, set by `owner.js` when the
+  passphrase is entered. It does two things and no more: puts his name back on
+  the picker, and puts the Lab link back in the footer. ⚠️ **It is not an
+  account and it holds nothing** — no name, no token, no phrase. Clearing site
+  data locks the device and he types the phrase again.
 - `powerlab:draft` — the Power Rankings Lab's week in progress
   (`{key, order, comments, at}`, autosaved on every edit). `key` = weeks
   played, so it is restored only for the week it belongs to — a new week's
@@ -548,10 +608,12 @@ guaranteed to break rendering in ways no assertion catches.
 
 1. Bump `APP_VERSION` in `league.js`.
 2. Bump the matching `?v=N` on every asset in `index.html` (and `power.html`
-   if you touched its files).
+   if you touched its files). ⚠️ **`owner.js` is in BOTH pages on one shared
+   `?v=` — bump it in both or one of them serves a stale gate.**
 3. Bump `CACHE` in `sw.js`.
-4. `node --check` every JS file — there is no test suite; syntax check plus a
-   headless render is the gate.
+4. `node --check` every JS file, then `node checks.js` — there is no test
+   suite; syntax check, the conservation and gate laws, plus a headless
+   render are the gate.
 5. Update this file in the SAME commit if you changed architecture, data or a
    feature.
 
@@ -593,6 +655,64 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v21 — the Lab gets a lock, and the commissioner leaves the picker (10 Sep
+  2026)** — the owner, getting ready to send the link: *"the power ranking lab
+  has to be closed off to just me[.] the rest of them they can switch between
+  their accounts, but they can't switch to my account"*.
+  - **Two asks, and they wanted two different mechanisms.** The obvious build
+    is one: gate the Lab on "are you McD". 🚨 **That would have made the name
+    picker a login** — the one screen in this app whose entire posture is that
+    picking is an invitation, not a gate — and it would have been a login
+    anyone could pass by tapping a face. The lock is a passphrase in
+    `owner.js`; the picker just stops offering one name. **Tapping a name must
+    never be able to open a door.**
+  - 🚨 **The repo is PUBLIC, so what ships is the SHA-256 and not the phrase.**
+    A token compared with `===` is the passphrase, written out in a file
+    anybody can open on github.com — a lock drawn on a door. ⚠️ **And the
+    honest limit is stated in the file itself**: this stops eleven relatives
+    with the link, which is the whole threat; it does not stop somebody who
+    reads `owner.js` and runs a wordlist, because a static site has no server
+    to rate-limit them. `checks.js` refuses the sixteen guesses a relative
+    would actually try. Length is the only real defence.
+  - ⚠️ **The input is normalised before hashing, or iOS locks him out of his
+    own tool.** Safari autocapitalises the first letter of a text field, so
+    "bologna" is typed as "Bologna" and a byte-exact hash says no — on the one
+    device this whole feature is for. Trim, collapse spaces, lowercase: three
+    things a phone keyboard does *to* you, none of them things you meant.
+  - 🚨 **A SHARED `#r=` LINK IS NOT GATED, AND ALMOST WAS.** Gating at the top
+    of `power.js` was the one-line version; `power.html#r=` is also what the
+    owner pastes into the group chat, so it would have locked the league out
+    of the rankings themselves. The gate sits *inside* `boot()`, after the
+    shared-payload branch, which is why that branch is worth reading before
+    touching either.
+  - **The Lab link left `index.html` entirely** rather than hiding behind
+    `hidden`: markup behind an attribute is still in view-source, and a lock
+    that announces its own door to the eleven people it excludes is most of
+    the way to no lock. `league.js` appends it on an unlocked device.
+  - **Two escapes from the picker filter, and both are for him**: an unlocked
+    device, or a device already reading as him. The second exists so the lock
+    does not arrive as *"your phone has forgotten who you are"* on the one
+    phone that was already right, and it is unreachable from a member's device
+    because it needs a name that is not on offer.
+  - ⚠️ **Filtered in the PICKER, not in `LH.roster()`.** `roster()` is the
+    league — `checks.js` asserts all twelve managers are covered by a
+    storyline — so filtering at the source would have quietly narrowed the
+    archive to eleven people to solve a display problem. The v3 lesson, again.
+  - **Two render faults, neither assertable, both found by looking.** (a) The
+    gate's way out was `<a>` inside a sentence and measured **15px** — the v1
+    footer fault, on the one screen a member of the league ever reaches; it is
+    its own 40px row now, and `.pr-back` beside it went from 33px to 38px
+    while the floor was being enforced anyway. (b) `.pr-gate-no` (0,1,0) lost
+    to `.pr-load p` (0,1,1), so **the wrong-passphrase line painted the same
+    muted grey as the body copy** — a failure message that does not look like
+    one. Scoped to `.pr-gate`. Nothing asserts a colour.
+  - Verified in headless Chromium at 390px over HTTP, against the real files:
+    a stranger gets eleven names and no mention of `power.html` in the served
+    DOM; a member switches between members; his own phone keeps his name; the
+    Lab shows the gate and makes **no backend call** until it is answered;
+    capitals and a trailing space still unlock; Lock puts it back; a `#r=`
+    link renders ungated. The `index.html` law verified by reverting.
 
 - **v20 — the newest champion is a row like the others (10 Sep 2026)** — the
   owner, on the 2025 card: *"This 2025 champion card should be same as
@@ -1032,6 +1152,10 @@ stale entry written in the present tense reads as current to anyone who greps.
   short name the league already uses, same as every other manager. He still
   reads as "You" on his own device — `nm()` checks `isMe` first — so this
   string is only ever seen by somebody else.
+- **The Lab passphrase is not in this repo and not in this file** (v21) — only
+  its SHA-256, in `owner.js`. Changing it is one line: hash the new phrase
+  (normalised: trimmed, spaces collapsed, lowercased) and replace `HASH`.
+  Nobody can recover the old one from here, which is the point.
 - **Not built:** any way for a member to write anything back (a reaction, a
   pick, a comment). That needs a backend and is a real product decision, not a
   missing feature.

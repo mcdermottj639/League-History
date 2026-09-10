@@ -1642,6 +1642,63 @@ function paintShared(p) {
   };
 }
 
+/* ------------------------------------------------------------------ gate -- */
+/* 🔒 THE LAB IS ONE PERSON'S TOOL AND THE ARCHIVE IS TWELVE PEOPLE'S.
+   This page talks to the owner's own backend and holds a half-written week in
+   a draft; the league gets the ranking when he publishes it, not while he is
+   still arguing with the model about it.
+
+   ⚠️ WHAT IS *NOT* GATED: a shared link. `boot` reads `#r=` before it gets
+   here, deliberately — that payload is self-contained, read-only, and is the
+   thing he pastes into the group chat. Locking the page he sends people to
+   would have locked the league out of the rankings themselves. */
+function paintGate(msg) {
+  show('#pr-load');
+  $('#pr-load').innerHTML = `<div class="pr-card pr-load pr-gate">
+    <b>🔒 Commissioner's tool</b>
+    <p>This is where the week gets built. The finished set goes to the league in the app — and thirteen seasons of history are in there too, open to everyone.</p>
+    <form id="pr-gate-f" autocomplete="off">
+      <input id="pr-gate-i" type="password" inputmode="text" autocapitalize="none" autocorrect="off"
+             spellcheck="false" placeholder="Passphrase" aria-label="Passphrase" />
+      <button type="submit" class="pr-btn">Unlock</button>
+    </form>
+    ${msg ? `<p class="pr-gate-no">${esc(msg)}</p>` : ''}
+    <!-- ⚠️ Its own row, not a link inside the sentence above. An inline <a> in
+         a paragraph has no height of its own and measured 15px here — the v1
+         footer fault, on the one screen a member of the league ever reaches. -->
+    <a class="pr-gate-out" href="index.html">📜 Open the league app</a>
+  </div>`;
+  const f = $('#pr-gate-f'), i = $('#pr-gate-i');
+  f.onsubmit = async (e) => {
+    e.preventDefault();
+    const r = await window.LeagueOwner.unlock(i.value);
+    /* Three outcomes, three messages. "Wrong passphrase" when the truth is
+       "this browser cannot check one" sends him hunting for a typo that is
+       not there — the same class of lie as "nothing published yet" over an
+       offline archive. */
+    if (r === 'ok') { boot(); return; }
+    paintGate(r === 'insecure'
+      ? 'This browser can\'t check a passphrase here — open the page over https rather than from a file.'
+      : 'That is not it. Mind the spelling; capitals and spacing do not matter.');
+  };
+  i.focus();
+}
+
+/* A way back out, because "unlock once per device" is only safe if a device
+   can be un-unlocked. Injected rather than sitting in `power.html`, for the
+   same reason the app's Lab link is: markup that is only ever right for one
+   person should not ship to the other eleven. */
+function addLock() {
+  const top = document.querySelector('.pr-top');
+  if (!top || $('#pr-lock')) return;
+  const b = el('button', 'pr-lock', '🔒 Lock');
+  b.type = 'button';
+  b.id = 'pr-lock';
+  b.title = 'Lock this device — you will need the passphrase again';
+  b.onclick = () => { window.LeagueOwner.lock(); location.reload(); };
+  top.appendChild(b);
+}
+
 /* ------------------------------------------------------------------ boot -- */
 function sharedFromHash() {
   const m = /[#&]r=([A-Za-z0-9\-_]+)/.exec(location.hash || '');
@@ -1662,6 +1719,13 @@ async function boot() {
     // A hash that isn't a valid payload: don't strand the reader on a blank page.
     history.replaceState(null, '', location.pathname + location.search);
   }
+
+  /* Everything past here is the authoring tool, so the gate goes here rather
+     than at the top of the file: the shared view above must stay open, and
+     nothing below should run — no backend call, no draft restored — until the
+     device has answered. */
+  if (!window.LeagueOwner || !window.LeagueOwner.is()) { paintGate(''); return; }
+  addLock();
 
   paintLoad(`<b>Loading your league…</b><p>The free-tier backend takes ~30s to wake up if it has been idle.</p>`);
   const res = await loadSeason();

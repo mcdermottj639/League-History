@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v20';
+  const APP_VERSION = 'v21';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -35,6 +35,18 @@
   const writeMe = (m) => { try { m ? localStorage.setItem(ME_KEY, m) : localStorage.removeItem(ME_KEY); } catch (_) {} };
   const skipped = () => { try { return localStorage.getItem(SKIP_KEY) === '1'; } catch (_) { return false; } };
   const markSkipped = () => { try { localStorage.setItem(SKIP_KEY, '1'); } catch (_) {} };
+
+  /* ── 🔒 whose phone is this ────────────────────────────────────────────
+     `owner.js` holds the whole gate; this file only asks. Two things change
+     on the commissioner's own device and nothing else in the app differs:
+     his name is on offer in the picker, and the Lab is linked in the footer.
+
+     ⚠️ It is deliberately NOT the same question as `LH.me()`. Identity here
+     is an invitation — you tap a name and the archive re-voices itself — and
+     wiring a lock to it would turn the friendliest thing in the app into a
+     credential. Tapping a name must never be able to open a door. */
+  const OWNER = 'McD';
+  const isOwner = () => !!(window.LeagueOwner && window.LeagueOwner.is());
 
   const LH = window.LeagueHistory;
   /* Opens on the archive, not the rankings — the history is the thing that is
@@ -57,8 +69,25 @@
   }
 
   /* ══ THE NAME PICKER ═══════════════════════════════════════════════════
-     Twelve faces, tapped once. It is also reachable forever from the header,
-     because a phone gets handed around and the first tap is often wrong. */
+     Eleven faces, tapped once. It is also reachable forever from the header,
+     because a phone gets handed around and the first tap is often wrong.
+
+     🚨 THE COMMISSIONER IS NOT ONE OF THE ELEVEN. Anyone else in the league
+     can be anyone else in the league — that is the point of the thing — but
+     nobody gets to put the app into his voice, and no amount of tapping here
+     gets near his tools.
+
+     ⚠️ Two escapes, and both are for HIM rather than for a member. An unlocked
+     device offers him his own name; so does a device already reading as him,
+     which is what stops the lock arriving as "your phone has forgotten who
+     you are" on the one phone that was already right. Neither can be reached
+     from a member's device: the second needs a name that is not on offer, and
+     the first needs the passphrase. */
+  function pickList() {
+    const me = LH.me();
+    return LH.roster().filter((r) => r.m !== OWNER || isOwner() || me === OWNER);
+  }
+
   function pickerHTML(canDismiss) {
     const me = LH.me();
     return `<div class="lg-pick-in">
@@ -67,7 +96,7 @@
         <h2>${me ? 'Not you?' : 'Who are you?'}</h2>
         <p>Tap your name and the whole app starts talking to <i>you</i> — your seasons, your medals, your Cum Bowls, your row highlighted everywhere it appears.</p>
       </div>
-      <div class="lg-grid">${LH.roster().map((r) => `
+      <div class="lg-grid">${pickList().map((r) => `
         <button type="button" class="lg-who${r.m === me ? ' on' : ''}" data-me="${esc(r.m)}">
           ${crest(r.m, 46)}
           <b>${esc(r.name)}</b>
@@ -438,6 +467,21 @@
 
   /* ══ BOOT ══════════════════════════════════════════════════════════════ */
   const ver = $('#lg-ver'); if (ver) ver.textContent = APP_VERSION;
+
+  /* 🚨 The Lab is not in `index.html` at all — it is APPENDED here, and only
+     on an unlocked device. A link sitting in the markup behind `hidden` is
+     still there in view-source, and "closed off" that announces its own door
+     to eleven people is most of the way to not being closed off. He reaches
+     it by URL the first time on a device; after that it is back in the
+     footer where it always was. */
+  if (isOwner()) {
+    const foot = document.querySelector('.lg-foot');
+    if (foot) {
+      const p = document.createElement('p');
+      p.innerHTML = '<a href="power.html">🏆 Power Rankings Lab</a> — your tool for building the weekly set.';
+      foot.appendChild(p);
+    }
+  }
   if (!LH) {
     $('#lg-app').hidden = false;
     $('#lg-body').innerHTML = '<div class="ffp-card"><div class="ffp-empty"><b>The archive didn\'t load.</b>Reload the page — history.js ships as its own file and the browser didn\'t get it.</div></div>';

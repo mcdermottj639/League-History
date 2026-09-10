@@ -181,5 +181,57 @@ console.log(`  ${bad ? '❌' : '✅'} own-page stories: ${owned.length} kept off
    card into a flat roll-call would have fixed one thing by breaking another. */
 if (card.length > 1 && card[0].w < card[card.length - 1].w) { console.log('  ❌ Storylines card is not ranked by weight'); bad++; }
 console.log(`  ${bad ? '❌' : '✅'} storylines: ${window.LeagueHistory._stories().length} found, ${card.length} on the card, covering ${onCard.size} of ${window.LeagueHistory.roster().length} managers`);
-console.log(bad ? `\n${bad} FAILURES` : '\n✅ all conservation laws hold');
-process.exit(bad ? 1 : 0);
+
+/* ══ 🔒 THE GATE ═══════════════════════════════════════════════════════════
+   The link goes to eleven other people. Two things have to stay true about
+   the commissioner's tool, and neither is visible in any render of the app —
+   which is exactly why they are asserted here. */
+{
+  const fs = require('fs');
+  const idx = fs.readFileSync('./index.html', 'utf8');
+  /* 1. THE DOOR IS NOT ADVERTISED. `league.js` appends the Lab link on an
+     unlocked device; a link sitting in the markup behind `hidden` would still
+     be in view-source for the other eleven, and a lock that announces itself
+     to everyone it excludes is most of the way to no lock at all. */
+  if (/power\.html/.test(idx.replace(/<!--[\s\S]*?-->/g, ''))) {
+    console.log('  ❌ index.html names the Lab in its own markup — it must be appended by league.js on an unlocked device only');
+    bad++;
+  }
+
+  /* 2. THE REPO CARRIES A HASH, NEVER THE PHRASE. This repo is PUBLIC. A
+     token compared with `===` would be the passphrase, published. */
+  const own = fs.readFileSync('./owner.js', 'utf8');
+  const h = /const HASH = '([^']*)'/.exec(own);
+  if (!h || !/^[0-9a-f]{64}$/.test(h[1])) {
+    console.log('  ❌ owner.js does not hold a SHA-256 hash — a plaintext passphrase in a public repo is not a lock');
+    bad++;
+  }
+
+  /* 3. AND THE PHRASE IS NOT A GUESS AWAY. Nothing here can measure how good
+     a passphrase is, but it can refuse the ones a relative would actually
+     try first — the league's own words above all. There is no server to
+     rate-limit anybody, so a guessable phrase is the whole lock gone. */
+  const { webcrypto } = require('crypto');
+  global.window = { crypto: webcrypto };
+  const store = {};
+  global.localStorage = { getItem: (k) => (k in store ? store[k] : null),
+    setItem: (k, v) => { store[k] = String(v); }, removeItem: (k) => { delete store[k]; } };
+  delete require.cache[require.resolve('./owner.js')];
+  require('./owner.js');
+  const O = global.window.LeagueOwner;
+  const GUESSES = ['', 'password', '1234', 'admin', 'letmein', 'nectars', 'bolonga',
+    'nectars bolonga', 'mcd', 'jack', 'league history', 'power rankings',
+    'commissioner', 'football', 'fantasy', 'cum bowl'];
+  Promise.all(GUESSES.map((g) => O.unlock(g))).then((r) => {
+    const got = GUESSES.filter((_, i) => r[i] === 'ok');
+    if (got.length) { console.log(`  ❌ the passphrase is one of the obvious guesses: ${got.join(', ')}`); bad++; }
+    else if (O.is()) { console.log('  ❌ a failed unlock still set the key'); bad++; }
+    else console.log(`  ✅ the gate: hash only, ${GUESSES.length} obvious guesses refused`);
+    done();
+  });
+}
+
+function done() {
+  console.log(bad ? `\n${bad} FAILURES` : '\n✅ all conservation laws hold');
+  process.exit(bad ? 1 : 0);
+}
