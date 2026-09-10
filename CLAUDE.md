@@ -447,6 +447,11 @@ something computed is wrong the first time somebody changes it.
   Fourteen of those is a page, not a column you can scan. **Keep a heading
   under ~45 characters** — one fact in the head, the evidence in the body —
   and remember `nm()` makes it longer or shorter depending on who is reading.
+  `checks.js` fails over 62 (raised from 58 in v18 for a card the owner asked
+  to keep word-for-word). ⚠️ **The number is a tripwire for drift; the render
+  is the test.** One heading does run to three lines — that one — and
+  `text-wrap: balance` on `.fh-story-h` is what keeps a long one from leaving
+  a single word and a badge stranded on the last line.
 - **🚨 ONE CARD PER MANAGER on the league roll-call (v16), no display cap.**
   The old cap filled its spare slots with the strongest leftovers, which twice
   handed one manager a second card while everyone else had one — and both times
@@ -579,6 +584,23 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v18 — Hurd's card, in his words (10 Sep 2026)** — the owner, with the
+  scoring card circled on Hurd's You page: *"Use this one for Hurd's honors
+  page. Keep it exactly like this."*
+  - Same trade as v16's: both Hurd cards make the same case (scores like a
+    champion, wins nothing), the roll-call gives everyone exactly one, so the
+    collapse card steps back to his You page and profile.
+  - ⚠️ **"Exactly like this" included the wording, which v14 had shortened.**
+    "…has 3 scoring titles and no ring" went back to "…has led the league in
+    scoring 3 times and won nothing". That is 59 characters and my own
+    heading-length check failed it at 58 — **a limit I invented, against a
+    sentence the owner chose.** The limit moved to 62.
+  - ⚠️ **And it renders on three lines, which is what the limit existed to
+    prevent.** The words are not the thing to change here, so the wrap is:
+    `text-wrap: balance` spreads it evenly instead of leaving "nothing." and a
+    badge alone on the last line. It improves every other heading too. A
+    number in a test is a tripwire for drift; **the render is the test.**
 
 - **v17 — two numerals must not touch (10 Sep 2026)** — the owner, on Buley's
   card: *"Should say 11th seven times."*

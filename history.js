@@ -1124,7 +1124,12 @@
            them what it said (v14, owner's call). The shape here is a scorer
            who cannot convert, so the heading says that and the numbers stay
            in the body. */
-        out.push({ id: 'collapse', m, w: 95, src: 'po',
+        /* `own` (v18, owner's call): the scoring card is Hurd's Honours card
+           now — *"Use this one for Hurd's honors page."* Both cards make the
+           same case about the same person (scores like a champion, wins
+           nothing) and the roll-call gives everyone exactly one, so this is
+           the one that steps back to the You page and the profile. */
+        out.push({ id: 'collapse', m, w: 95, src: 'po', own: true,
           head: topReg[0] === m
             ? `${nm(m)} ${vb(m, 'outscore', 'outscores')} everyone, then ${vb(m, 'disappear', 'disappears')}.`
             : `${nm(m)} ${vb(m, 'lose', 'loses')} more scoring in the playoffs than anyone.`,
@@ -1259,7 +1264,7 @@
       const mx = Math.max(...es.map((e) => e[1]));
       return es.filter((e) => e[1] === mx && !MGRS[e[0]].t1).map(([m, n]) => ({
         id: 'scorer', m, w: 52, src: 'reg',
-        head: `${nm(m)} ${vb(m, 'have', 'has')} ${pl(n, 'scoring title')} and no ring.`,
+        head: `${nm(m)} ${vb(m, 'have', 'has')} led the league in scoring ${pl(n, 'time')} and won nothing.`,
         body: (() => { const others = tiedWith(es.filter((e) => e[1] === mx).map(([mm]) => ({ m: mm })), m);
           return others.length ? `Tied for the most with ${others.join(' and ')}.` : 'The most of anyone.'; })() }));
     },

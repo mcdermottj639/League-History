@@ -112,14 +112,18 @@ window.LeagueHistory._cardStories().forEach((x) => {
      cards are a column to scan; past ~50 characters a heading wraps to three
      lines at 390px once its badge is beside it, and the card becomes an
      article. The v8 rule put the claim in the heading and never bounded its
-     length, so three-liners had quietly become normal. Longest today is 50. */
+     length, so three-liners had quietly become normal.
+     ⚠️ The bound is 62, not the 58 it started at: the owner picked "…has led
+     the league in scoring 3 times and won nothing" (59) as a card they wanted
+     kept exactly, and it renders on two lines. The number is a tripwire for
+     drift, not the real test — the real test is a render at 390px. */
   /* 🚨 Two numerals must not touch in a heading (v17, owner's call): "finished
      11th 7 times" makes the reader parse "11th 7" before the sentence
      resolves. `plWord` spells the second one out. */
   if (/\d(?:st|nd|rd|th)?\s+\d/.test(x.head)) {
     console.log(`  ❌ story "${x.id}/${x.m}" puts two numerals side by side: "${x.head}"`); bad++;
   }
-  if (x.head.length > 58) {
+  if (x.head.length > 62) {
     console.log(`  ❌ story "${x.id}/${x.m}" heading is ${x.head.length} chars, too long to scan: "${x.head}"`); bad++;
   }
 });
@@ -161,7 +165,7 @@ owned.forEach((x) => {
    and said the other one is better. Recorded by detector id — never by
    manager — so it cannot be quietly undone, and so it goes quiet on its own
    if the detector ever stops firing. */
-['wb0', 'dynasty'].forEach((id) => {
+['wb0', 'dynasty', 'collapse'].forEach((id) => {
   const st = window.LeagueHistory._stories().find((x) => x.id === id);
   if (st && !st.own) { console.log(`  ❌ story "${id}" is a league headline again; the owner made it own-page only (v15)`); bad++; }
 });
