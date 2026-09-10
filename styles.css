@@ -3385,18 +3385,11 @@ tr.fav td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .fh-med-v.zero { color: var(--tr2); font-weight: 700; }
 .fh-med-v.g { font-size: 17px; } .fh-med-v.s, .fh-med-v.b { font-size: 13px; }
 
-/* champion hero */
-.fh-crown { background: var(--sf); border-radius: var(--r2); box-shadow: var(--e1); padding: 20px 16px 18px;
-  margin: 0 0 12px; text-align: center; position: relative; overflow: hidden; }
-.fh-crown::before { content: ''; position: absolute; inset: 0 0 auto; height: 4px; background: var(--grad); }
-.fh-crown-k { font: 800 9.5px/1 Archivo, system-ui, sans-serif; letter-spacing: .12em;
-  text-transform: uppercase; color: var(--ac6); margin-bottom: 12px; }
-.fh-crown .fh-crest { margin: 0 auto 10px; display: block; box-shadow: 0 0 0 3px var(--sf), 0 0 0 5px var(--ac); }
-.fh-crown-n { font: 900 24px/1.1 Archivo, system-ui, sans-serif; color: var(--ink); letter-spacing: -.01em; }
-.fh-crown-t { font-size: 11.5px; color: var(--mu); margin-top: 4px; }
-.fh-crown-s { font-size: 11.5px; color: var(--gy); margin-top: 9px; padding-top: 9px;
-  box-shadow: inset 0 1px 0 var(--l07); }
-.fh-crown-s b { color: var(--ink); font-weight: 900; }
+/* The `.fh-crown` champion hero was deleted in v20 — the newest champion is a
+   row like the other twelve now, so nothing renders these. Left as a note
+   rather than a block of rules nothing reaches: this stylesheet already
+   carries plenty of dead weight from Sports-Hub, and the `.fh-` layer is the
+   one part of it that is genuinely this app's, so it stays honest. */
 
 /* medal pips */
 .fh-pips { display: flex; gap: 2px; margin-top: 4px; }

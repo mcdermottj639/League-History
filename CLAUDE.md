@@ -594,6 +594,27 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
 
+- **v20 — the newest champion is a row like the others (10 Sep 2026)** — the
+  owner, on the 2025 card: *"This 2025 champion card should be same as
+  others."*
+  - The Champions section opened with a **crown**: 64px crest, 24px name, a
+    gold rule across the top and the final score, above twelve uniform rows.
+    It made the current champion **a different kind of thing** from the twelve
+    before him — on a page whose whole job is to line thirteen seasons up
+    against each other.
+  - ⚠️ **It was also the only place in the app printing two decimals.**
+    "124.04–107.28" comes straight off Sleeper; everything else here rounds to
+    one. A hero card is exactly where an unrounded number survives longest,
+    because it is the one card nothing else sits beside.
+  - **The final score went with it, deliberately.** Only 5 of 13 seasons have
+    one on file, so putting it on the rows that have it rebuilds the same
+    problem one row down — some champions with a detail, some without. The
+    2025 final is still in the archive: it is folded into `MEET`, so it shows
+    on the head-to-head between the two people who played it.
+  - `.fh-crown*` deleted from `styles.css` rather than left orphaned. The `.fh-`
+    layer is the one part of that stylesheet that is genuinely this app's, so
+    it does not get to accumulate the dead weight the copied layers carry.
+
 - **v19 — final fours are the whole playoff résumé (10 Sep 2026)** — the
   owner, in one message: *"Title brackets have to be changed to final 4s
   everywhere… For 13 and 14 silver just write Ebzery here."*
@@ -655,8 +676,10 @@ stale entry written in the present tense reads as current to anyone who greps.
   the playoff-rise card circled on their own You page: *"Change my honors page
   storyline to this actually."*
   - **The titles card was redundant with the page it sat on.** Storylines opens
-    Honours, and the next two cards down are the Champions crown and the trophy
-    case — which ARE the title count, ranked. So "4 titles" as a storyline told
+    Honours, and the next two cards down are the Champions list and the trophy
+    case — which ARE the title count, ranked. (⚠️ It said "the Champions crown"
+    when this was written; **v20 deleted that crown**, and the reasoning holds
+    either way.) So "4 titles" as a storyline told
     a reader something the rest of that page tells them better, while spending
     the title-holder's one slot. It is `own`-flagged now: still on that
     manager's You page and profile, where the surrounding page is about them

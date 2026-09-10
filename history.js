@@ -772,18 +772,22 @@
      `mgrRaw` knows them; only `mgrOf` deliberately does not. */
   const podium = (r) => esc(nm(r.mgr) || mgrRaw(r.t) || r.t);
 
+  /* 🚨 THE NEWEST CHAMPION IS A ROW LIKE THE OTHERS (v20, owner's call:
+     *"This 2025 champion card should be same as others"*). It used to be a
+     crown — a 64px crest, a 24px name, a gold rule and the final score —
+     above twelve uniform rows. Two problems with that, and the owner saw the
+     second: it made the current champion a different KIND of thing from the
+     twelve before him, and it printed the only two-decimal numbers in the app
+     (124.04–107.28, straight off Sleeper) next to a page that rounds
+     everything to one.
+     ⚠️ The final score goes with it. Only 5 of 13 seasons have one on file,
+     so putting it on the rows that have it would rebuild the same problem one
+     row down: some champions with a detail and some without. The 2025 final
+     is still in the archive — it is folded into MEET, so it shows up in the
+     head-to-head between the two people who played it. */
   function champsHTML() {
-    const latest = SEASON[0], f = latest.final;
-    const rest = SEASON.slice(1);
     return `<h2 class="section-title">🏆 Champions</h2>
-    <div class="fh-crown">
-      <div class="fh-crown-k">Champion · ${latest.yr}</div>
-      ${crest(latest.champ.mgr, 64)}
-      <div class="fh-crown-n">${esc(nm(latest.champ.mgr))}</div>
-      <div class="fh-crown-t">${esc(latest.champ.t)} · ${rec(latest.champ)}</div>
-      ${f ? `<div class="fh-crown-s">beat ${esc(nm(mgrOf(f.l)))} <b>${f.ws}</b>–${f.ls} in the final</div>` : ''}
-    </div>
-    <div class="ffp-card fh-pad0">${rest.map((s) => {
+    <div class="ffp-card fh-pad0">${SEASON.map((s) => {
       const c = s.champ, you = isMe(c.mgr);
       return `<div class="fh-yr${you ? ' you' : ''}">
         <div class="fh-yr-n">${s.yr}${s.platform === 'sleeper' ? '<i class="fh-plat">SLEEPER</i>' : ''}</div>
