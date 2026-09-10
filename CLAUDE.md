@@ -500,6 +500,42 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
 
+- **v11 — the standfirst is a panel now, and it has a line length (10 Sep
+  2026)** — the owner, with a screenshot of the Storylines intro: *"make this
+  look niceer"*.
+  - **Every view opens with a `.fh-lead`** — the sentence that says what the
+    table under it means — and it was plain 12px grey body copy, flush against
+    the card's own padding and the same size as the story text beneath it. So
+    it read as the first paragraph OF the content rather than the note ABOUT
+    it, and nothing told a reader where the preamble ended. It is a panel now:
+    a neutral ink wash, a gold rule down the left, the card's own radius.
+  - **The actual defect in the screenshot was the MEASURE, not the styling.**
+    `.lg-main` has no width cap, so on a laptop that paragraph ran the full
+    window — about 120 characters a line, roughly double what prose stays
+    readable at, which is why it looked like a stray band of text. `max-width:
+    64ch` is the fix and it is the half that matters away from a phone.
+    ⚠️ The rest of the app still runs full-bleed on a desktop; capping the
+    whole shell is a separate change and needs every table re-rendered wide.
+  - ⚠️ **The fill is a NEUTRAL wash, not the champagne tint, and that was a
+    correction.** The first cut used `rgba(var(--acRGB), .09)` — which is
+    exactly the tint `.fh-tr.you` and `.fh-cbt-r.you` use to mean **this row
+    is you**. Rendered beside the Cum Bowl table the two read as the same
+    signal, so a decorative panel was quietly spending the one colour this app
+    reserves for identity. The gold survives as the left rule only.
+  - **The Storylines lead is two voices** (`.fh-lead-2`): the claim as a block
+    line, the derivation note under it at 11.5px. A `<b>` that happens to wrap
+    mid-sentence is emphasis, not a heading — so the claim is `display: block`
+    rather than relying on where the text breaks. Both stay `--gy`/`--ink`;
+    dropping the note to `--mu` measures ~3.7:1 on the tinted ground.
+  - **Applied to all six leads, not just the one in the screenshot** — Honours,
+    the luck index, the champion's curse, the Cum Bowl and Rivalries carry the
+    same element, and fixing only the card someone pointed at is the v3 fault
+    (a symptom fixed where you happen to be looking while the same display
+    keeps doing it elsewhere).
+  - Verified in headless Chromium against the real `index.html` over HTTP at
+    390px and 1180px, all five leads rendered: no horizontal overflow, nothing
+    under the 9px type floor, no console errors, conservation laws green.
+
 - **v4 — jump nav, a real icon, and the luck rows put back (10 Sep 2026)**
   - **A jump nav on every page** (`buildJump`), one chip per card, tapping
     straight to it. **Built from the rendered DOM, never from a list of what

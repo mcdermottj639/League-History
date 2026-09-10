@@ -184,3 +184,37 @@
 :root[data-palette] .fh-you-t i {
   line-height: 1.3; min-height: 2.6em; display: flex; align-items: center;
   justify-content: center; text-align: center; }
+
+/* ── the standfirst that opens a card ─────────────────────────────────────
+   Every view starts with one `.fh-lead`: the sentence that says what the
+   table under it means. It was plain grey body copy, flush against the card's
+   own padding and set at the same size as the story text below it — so it
+   read as the first paragraph of the content rather than as the note ABOUT
+   the content, and there was nothing to tell a reader where the preamble
+   ended and the archive began.
+   Two changes, and the second is the one that matters on a desktop: a wash
+   with a gold rule down the left gives it a shape of its own, and `max-width`
+   gives it a LINE LENGTH. `.lg-main` has no width cap, so on
+   a laptop this paragraph ran the full window — ~120 characters a line, about
+   double the measure prose stays readable at, which is why it looked like a
+   stray band of text rather than a caption. */
+/* ⚠️ The wash is NEUTRAL ink, not `--acRGB`. The champagne tint at .09 is
+   what `.fh-tr.you` and `.fh-cbt-r.you` use to mean THIS ROW IS YOU — the
+   first cut used it here and, rendered above the Cum Bowl table, a decorative
+   panel and the reader's own row read as the same signal. The gold stays as
+   the rule only. */
+:root[data-palette] .fh-lead {
+  margin: 0 0 13px; padding: 11px 13px 11px 15px; max-width: 64ch;
+  border-radius: var(--r1);
+  background: linear-gradient(180deg, rgba(var(--base), .055), rgba(var(--base), .022));
+  box-shadow: inset 3px 0 0 rgba(var(--acRGB), .55);
+  font-size: 12px; line-height: 1.6; color: var(--gy); }
+:root[data-palette] .fh-lead b { color: var(--ink); font-weight: 800; }
+
+/* Two voices in one lead: the claim, then the note under it. The claim is a
+   block so it holds the top line on its own — an inline <b> that happens to
+   wrap mid-sentence is emphasis, not a heading. Both stay `--gy`/`--ink`
+   rather than dropping to `--mu`: 11.5px muted on a tinted ground measures
+   around 3.7:1, and the hierarchy is already carried by size and weight. */
+:root[data-palette] .fh-lead-2 b { display: block; font-size: 13px; line-height: 1.35; margin-bottom: 5px; }
+:root[data-palette] .fh-lead-2 i { display: block; font-style: normal; font-size: 11.5px; }

@@ -1332,7 +1332,7 @@
   function storiesHTML() {
     return `<h2 class="section-title">📌 Storylines</h2>
     <div class="ffp-card fh-stories">
-      <p class="fh-lead">Thirteen seasons, read for the things worth arguing about. <b>Every number here is worked out from the archive on the spot</b> — nothing is typed in, so none of it goes stale when a season lands.</p>
+      <p class="fh-lead fh-lead-2"><b>Thirteen seasons, read for the things worth arguing about.</b><i>⚡ Every number here is worked out from the archive on the spot — nothing is typed in, so none of it goes stale when a season lands.</i></p>
       ${pickStories().map(storyCardHTML).join('')}
     </div>`;
   }
