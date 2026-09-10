@@ -558,29 +558,30 @@
   /* 🚨 Keyed by YEAR+TEAM. Keying on the team name alone and adding it once per
      season row makes a long-lived franchise re-count itself every year. */
   const key = (yr, t) => yr + '\u0000' + t;
-  /* 🚨 THREE BRACKETS RUN EVERY DECEMBER AND ONLY ONE OF THEM DECIDES
-     ANYTHING (v14). The archive files them as:
-       W   the TITLE bracket — six teams: round 1, the final four, the final
+  /* 🚨 THE APP KEEPS NO BRACKET WIN-LOSS RECORD AT ALL (v19, owner's call:
+     *"Title brackets have to be changed to final 4s everywhere"*). What a
+     manager did in the playoffs is stated as FINAL FOURS — `f4`, below.
+
+     Three brackets run every December and the data files them as `br`:
+       W   the championship bracket — six teams: round 1, the final four, the
+           final. Its R2 IS the final four.
        WC  the placement ladder below it, for teams knocked out of W (3rd, 5th)
-       C   the consolation ladder for the six that missed, GmC1-9
-     `bw`/`bl` is **W only**. It used to be W *and* WC, which is why the app
-     showed three different playoff records for the same person on one page:
-     the career tile said 11-4 (W+WC), the storyline beside it said 10-3 (W),
-     and the head-to-head said 22 meetings (every bracket plus the Cum Bowls).
-     Each was computed correctly and the page still lied, because nothing said
-     which population each one counted — the v3 fault exactly.
-     ⚠️ Consolation records are not kept AT ALL. A 9-1 run through GmC1-9 is
-     nine games between teams that are already eliminated; the one consolation
-     result that means anything is the Cum Bowl, which has its own field. Those
-     games are still real meetings and still appear in rivalries and
-     head-to-heads — as MEETINGS, never as a record. */
-  const PG = { w: {} };
-  PLAYOFF_GAMES.forEach((g) => {
-    if (g.br !== 'W') return;
-    const [W, L] = g.as > g.bs ? [g.a, g.b] : [g.b, g.a];
-    (PG.w[key(g.yr, W)] = PG.w[key(g.yr, W)] || { w: 0, l: 0 }).w++;
-    (PG.w[key(g.yr, L)] = PG.w[key(g.yr, L)] || { w: 0, l: 0 }).l++;
-  });
+       C   the consolation ladder for the six that missed, GmC1-9 (GmC3 = the
+           Cum Bowl)
+     None of them produces a W-L on a manager any more, and the reason is two
+     versions of the same fault. v14 found the app printing three different
+     "playoff records" for one person (11-4 for W+WC, 10-3 for W, 22 meetings
+     for everything) and fixed it by picking one. That left a record covering
+     7 of 13 seasons sitting beside stats covering all 13 — and a 6-team
+     bracket carrying a name that made it sound like the final four.
+     **Final fours are knowable for every season and need no caveat**, so they
+     are the whole story now. ⚠️ Deliberately NOT a final-four W-L either: "8
+     final fours" over "5-3 in the final four" is two denominators side by
+     side inviting the reader to add them up, which is the v3 fault wearing
+     the new name.
+     The games themselves are still used — head-to-heads, playoff scores, the
+     regular-season-to-playoff scoring gap — as MEETINGS and SCORES, never
+     totalled into a record. */
   const CB_APP = {};
   CUMBOWL.forEach((c) => [c.s11, c.s12].forEach((t) => { CB_APP[key(c.yr, t)] = 1; }));
 
@@ -590,7 +591,7 @@
     if (!r.mgr) return;
     const a = MGRS[r.mgr] || (MGRS[r.mgr] = { m: r.mgr, logo: MGR_LOGO[r.mgr],
       seasons: 0, w: 0, l: 0, pf: 0, pa: 0, t1: 0, t2: 0, t3: 0, po: 0, fin: 0, f4: 0, cb: 0, cbA: 0,
-      bw: 0, bl: 0, yrs: [], allW: 0, allL: 0, pfRankSum: 0, placeSum: 0 });
+      yrs: [], allW: 0, allL: 0, pfRankSum: 0, placeSum: 0 });
     a.seasons++; a.w += r.w; a.l += r.l; a.pf += r.pf; a.pa += r.pa;
     a.yrs.push(r);
     /* All-play: rank the 12 teams by points, then play everyone. Season-level,
@@ -611,8 +612,6 @@
     } else if (s.champ && s.champ.t === r.t) a.t1++;
     if (CB_LOSER[s.yr] === r.t) a.cb++;
     a.cbA += CB_APP[key(s.yr, r.t)] || 0;
-    const b = PG.w[key(s.yr, r.t)];
-    if (b) { a.bw += b.w; a.bl += b.l; }
   }));
   /* 🚨 `name` is a LIVE getter, not a value. It was a plain field copied from
      nm() at build time — which is before anyone has picked a name — so every
@@ -651,7 +650,7 @@
   /* ⚠️ `plc` (the placement ladder) used to be folded in with `brk`, so a
      5th-place game and a semi-final printed the same word on a head-to-head
      row. Every meeting still counts as a meeting; the label says which. */
-  const MEET = PLAYOFF_GAMES.map((g) => ({ ...g, kind: g.br === 'C' ? (g.rd === 'GmC3' ? 'cb' : 'con') : g.br === 'WC' ? 'plc' : g.rd === 'FINAL' ? 'fin' : 'brk' }));
+  const MEET = PLAYOFF_GAMES.map((g) => ({ ...g, kind: g.br === 'C' ? (g.rd === 'GmC3' ? 'cb' : 'con') : g.br === 'WC' ? 'plc' : g.rd === 'FINAL' ? 'fin' : g.rd === 'R2' ? 'f4' : 'r1' }));
   CUMBOWL.forEach((c) => { const k = c.yr + '|' + [c.s11, c.s12].sort().join('|');
     if (!seen.has(k)) { seen.add(k); MEET.push({ yr: c.yr, br: 'C', rd: 'GmC3', kind: 'cb', a: c.s12, as: c.p12, b: c.s11, bs: c.p11 }); } });
   LH.forEach((s2) => { if (!s2.final) return; const k = s2.yr + '|' + [s2.final.w, s2.final.l].sort().join('|');
@@ -732,7 +731,7 @@
   const who = (r, extra) => {
     const m = r.mgr || mgrOf(r.t);
     return `<span class="fh-who${isMe(m) ? ' you' : ''}"><b>${esc(m ? nm(m) : r.t)}</b>` +
-      `<i>${m ? esc(r.t) : (untracked(r.t) ? 'not tracked' : 'unclaimed')}${extra ? ` · ${extra}` : ''}</i></span>`;
+      `<i>${m ? esc(r.t) : (untracked(r.t) ? `${esc(mgrRaw(r.t))} · not tracked` : 'unclaimed')}${extra ? ` · ${extra}` : ''}</i></span>`;
   };
   /* Every name is a door to that manager's profile. */
   const tap = (m, inner) => (m ? `<button type="button" class="fh-tap" data-mgr="${m}">${inner}</button>` : inner);
@@ -765,7 +764,13 @@
      stats, and printing their team name here would put them straight back in
      — while deleting the row would make a silver medal vanish, which is the
      older and worse fault (a list that is silently shorter than the truth). */
-  const podium = (r) => esc(nm(r.mgr) || (untracked(r.t) ? 'not tracked' : r.t));
+  /* 🚨 AN UNTRACKED MANAGER IS STILL A PERSON ON A PODIUM (v19, owner's call
+     on the 2013 and 2014 silvers: *"just write Ebzery here"*). "not tracked"
+     was the right answer to the wrong question: the rule is that these two
+     carry no CAREER — no row in a table, no rate, no tally, no profile — and
+     nothing about that requires a medal line to refuse to say who won it.
+     `mgrRaw` knows them; only `mgrOf` deliberately does not. */
+  const podium = (r) => esc(nm(r.mgr) || mgrRaw(r.t) || r.t);
 
   function champsHTML() {
     const latest = SEASON[0], f = latest.final;
@@ -942,13 +947,13 @@
       <p class="ffp-cap">The bar <b>is</b> the rate — a top-6 seed always finishes top 6 in this format, verified on every bracket, so this covers all ${SEASON.length} seasons.</p>
     </div>
     <div class="ffp-card">
-      <div class="fh-sub">Final fours · title-bracket record ${tag('po')}</div>
-      ${[...ALL].sort((a, b) => b.f4 - a.f4 || b.fin - a.fin || b.bw - a.bw).map((a) => `<div class="fh-fr${isMe(a.m) ? ' you' : ''}">
+      <div class="fh-sub">Final fours ${tag('fin')}</div>
+      ${[...ALL].sort((a, b) => b.f4 - a.f4 || b.fin - a.fin || b.t1 - a.t1).map((a) => `<div class="fh-fr${isMe(a.m) ? ' you' : ''}">
         ${tap(a.m, `<b>${esc(a.name)}</b>`)}
         <span class="fh-fr-f">${a.f4 ? `${a.f4} final four${a.f4 > 1 ? 's' : ''}` : '<i>no final fours</i>'}${a.fin ? ` · ${a.fin} final${a.fin > 1 ? 's' : ''}` : ''}</span>
-        <span class="fh-fr-g">${a.bw + a.bl ? `<span class="mono">${a.bw}-${a.bl}</span> in the title bracket` : '<i>no games on file</i>'}</span>
+        <span class="fh-fr-g">${a.t1 ? `<span class="mono">${a.t1}</span> won` : '<i>none won</i>'}</span>
       </div>`).join('')}
-      <p class="ffp-cap"><b>The title bracket</b> is the six teams that make the playoffs: round one, then the <b>final four</b>, then the final — ${PLAYOFF_GAMES.filter((g) => g.br === 'W').length} games across the ${new Set(PLAYOFF_GAMES.map((g) => g.yr)).size} brackets on file. Placement games below it, and the consolation ladder for the teams that missed, decide nothing and are not counted as a record anywhere in this app — the one that matters is the Cum Bowl, which has its own tab.<br><br><b>Final fours cover all ${SEASON.length} seasons</b>, not just the ${PO_YRS} with a bracket: the two semi-final losers play each other for 3rd, so places 1-4 <b>are</b> the final four. Verified against every bracket on file.</p>
+      <p class="ffp-cap"><b>The final four is places 1-4</b>, and it covers all ${SEASON.length} seasons rather than the ${PO_YRS} with a bracket on file: the two teams that lose in the final four play each other for 3rd, so the four left after round one <b>are</b> the top four finishers. Verified against every bracket on file.<br><br>Six teams make the playoffs, so getting to the last four is the cut that means something. The app keeps <b>no bracket win-loss record</b> — placement games and the consolation ladder decide nothing, and a record from the ${PO_YRS} seasons with a bracket on file would sit beside these ${SEASON.length}-season numbers pretending to be comparable.</p>
     </div>`;
   }
 
@@ -1134,7 +1139,7 @@
             ? `${nm(m)} ${vb(m, 'outscore', 'outscores')} everyone, then ${vb(m, 'disappear', 'disappears')}.`
             : `${nm(m)} ${vb(m, 'lose', 'loses')} more scoring in the playoffs than anyone.`,
           body: `${one(e.reg)} ppg in the regular season → ${one(e.po)} in the playoffs, a ${sgn(e.d)} drop and the league's biggest. `
-            + `${pl(ST.scoring[m] || 0, 'scoring title')}, ${MGRS[m].t1 ? pl(MGRS[m].t1, 'ring') : 'zero rings'}, ${MGRS[m].bw}-${MGRS[m].bl} in the title bracket.` });
+            + `${pl(ST.scoring[m] || 0, 'scoring title')}, ${pl(MGRS[m].f4, 'final four')}, ${MGRS[m].t1 ? pl(MGRS[m].t1, 'ring') : 'zero rings'}.` });
       }
       if (best[1].d > 4) {
         const m = best[0], e = best[1];
@@ -1213,30 +1218,26 @@
       return out;
     },
 
-    /* ── nobody has beaten them in the title bracket ─────────────────────
-       🚨 THIS CARD SAID "NEVER" AND "NEVER" WAS NOT KNOWABLE (v14). The owner
-       asked whether it was accurate; it was not. Brackets exist for 7 of 13
-       seasons, and Wolff — the manager it fires for — finished 4TH IN 2017,
-       which in a six-team bracket means he was still playing in the final
-       four. So he won or was gifted a round-1 game in a season this archive
-       cannot see, and the card called that "never".
-       The claim is scoped to the seasons on file now, and any final four in a
-       season WITHOUT a bracket is named in the body rather than quietly
-       counted as a loss. A superlative is only as wide as its sample. */
-    function bracket() {
-      const es = ALL.filter((a) => a.bw + a.bl >= 4);
-      if (es.length < 4) return [];
-      const worst = es.slice().sort((a, b) => (a.bw / (a.bw + a.bl)) - (b.bw / (b.bw + b.bl)) || b.bl - a.bl)[0];
-      if (worst.bw > 0) return [];
-      const blind = worst.yrs.filter((r) => r.place && r.place <= 4 && !PO_YEARS.includes(r.yr)).map((r) => r.yr);
-      /* `own`: this one lives on that manager's own pages only. The owner read
-         it beside the win%-and-no-title card about the same person and said
-         the other one is better — two cards making the same case about one
-         manager is one slot spent twice on the league's roll-call. */
-      return [{ id: 'wb0', m: worst.m, w: 58, src: 'po', own: true,
-        head: `${nm(worst.m)} ${vb(worst.m, 'are', 'is')} ${worst.bw}-${worst.bl} in the title bracket.`,
-        body: `The only manager without a win in it, across the ${PO_YRS} seasons with a bracket on file.`
-          + (blind.length ? ` ${vb(worst.m, 'You reached', nm(worst.m) + ' reached')} the final four in ${blind.join(' and ')} too — those brackets are not on file, so they are not in this record either way.` : '') }];
+    /* ── as close as anyone has come without ever getting there ─────────
+       🚨 THIS CARD USED TO SAY "NEVER WON A WINNER'S-BRACKET GAME" AND THAT
+       WAS FALSE (v14). Brackets exist for 7 of 13 seasons and Wolff — the
+       manager it fires for — reached the final four in 2017 and 2014, which
+       the archive could not see, so it counted six missing seasons as losses.
+       v14 scoped it to the seasons on file; v19 removed the underlying stat
+       altogether, because a record that needs a "seasons on file" caveat
+       every time it is printed is a record that will eventually be printed
+       without one. **Final fours need no caveat** — places 1-4, all 13
+       seasons — so the same manager, the same shape, on a number that is
+       whole: got to the last four more than anyone who has never played for
+       the title. */
+    function noFinal() {
+      const none = ALL.filter((a) => !a.fin && a.f4);
+      if (!none.length) return [];
+      const top = leaders(none, (a) => a.f4);
+      if (top[0].f4 < 2) return [];
+      return top.map((a) => ({ id: 'nofinal', m: a.m, w: 58, src: 'fin', own: true,
+        head: `${nm(a.m)} ${vb(a.m, 'have', 'has')} ${pl(a.f4, 'final four')} and no final${alsoTxt(tiedWith(top, a.m))}.`,
+        body: `Nobody who has never played for the title has got that close that often. ${pl(a.seasons, 'season')}, ${a.po} playoff appearances.` }));
     },
 
     /* ── luck, at both ends ─────────────────────────────────────────────── */
@@ -1337,8 +1338,6 @@
           head: (a, r) => (a.f4
             ? `${nm(a.m)} ${vb(a.m, 'have', 'has')} ${pl(a.f4, 'final four')}, ${rk(r)}.`
             : `${nm(a.m)} ${vb(a.m, 'have', 'has')} never reached the final four.`) },
-        { val: (a) => a.bw - a.bl, hi: true,
-          head: (a, r) => `${nm(a.m)} ${vb(a.m, 'are', 'is')} ${a.bw}-${a.bl} in the title bracket, ${rk(r)}.` },
       ];
       return pool.map((a) => {
         let best = null;
@@ -1549,7 +1548,7 @@
     ${h2hFor(ME).length ? `<h2 class="section-title">Your playoff head-to-head ${tag('po')}</h2>
     <div class="ffp-card">
       ${h2hFor(ME).map((v) => `<div class="fh-h2h">${tap(v.opp, `<b>${esc(nm(v.opp))}</b>`)}<i>${one(v.pf)}–${one(v.pa)}</i><span class="${v.w > v.l ? 'pos' : v.l > v.w ? 'neg' : ''}">${v.w}-${v.l}</span></div>`).join('')}
-      <p class="ffp-cap">⚠️ <b>Every playoff meeting, not a record.</b> This counts all ${h2hFor(ME).reduce((n, v) => n + v.n, 0)} games on file against these people — title bracket, placement, consolation and Cum Bowl — so it will not match the title-bracket record, which counts only the games that decide the championship. There is no regular-season schedule in the archive, so this is not a career head-to-head. Points are per-game averages.</p>
+      <p class="ffp-cap">⚠️ <b>Every playoff meeting, not a record.</b> This counts all ${h2hFor(ME).reduce((n, v) => n + v.n, 0)} games on file against these people — every bracket, including the placement games and the consolation ladder. Winning those decides nothing, which is why the app keeps no bracket record — but a meeting is still a meeting. There is no regular-season schedule in the archive, so this is not a career head-to-head. Points are per-game averages.</p>
     </div>` : ''}
     <h2 class="section-title">Your franchises</h2>
     <div class="ffp-card"><div class="fh-fr-list">${[...new Set([...a.yrs].sort((x, y) => y.yr - x.yr).map((r) => r.t))].map((t) => `<span>${esc(t)}</span>`).join('')}</div></div>`;
@@ -1569,10 +1568,10 @@
       </div>
       ${full ? `<div class="fh-you-g">
         ${[['Avg finish', one(a.avgPlace)], ['Playoff apps', `${a.po}/${a.seasons}`], ['Points/gm', one(a.ppg)],
-           ['vs league', sgn(a.ppg - LEAGUE_PPG)], ['Title bracket ⚑', `${a.bw}-${a.bl}`], ['Luck', sgn(a.luck)]]
+           ['vs league', sgn(a.ppg - LEAGUE_PPG)], ['Final fours', `${a.f4}/${a.seasons}`], ['Luck', sgn(a.luck)]]
           .map(([k, v]) => `<div class="fh-you-t"><b>${v}</b><i>${k}</i></div>`).join('')}
       </div>` : ''}
-      ${full ? '<p class="ffp-cap">Squares are the <b>playoff finish</b>; the totals under them are the <b>regular season</b>. <b>Title bracket ⚑</b> is the games that decide the championship — ' + a.bw + '-' + a.bl + ' from the ' + PO_YRS + ' brackets on file. The placement and consolation ladders decide nothing, so they are not counted as a record anywhere in this app.</p>' : ''}
+      ${full ? '<p class="ffp-cap">Squares are the <b>playoff finish</b>; the totals under them are the <b>regular season</b>. <b>Final fours</b> is places 1-4 — the four teams left after round one, which is knowable for every season, not just the ' + PO_YRS + ' with a bracket on file.</p>' : ''}
       <div class="fh-car-f">
         <span><b>Best</b> ${bestPf.yr} · ${one(bestPf.ppg)} per game · finished ${bestPf.place ? ord(bestPf.place) : '?'}</span>
         <span><b>Worst</b> ${a.worst.yr} · ${ord(a.worst.place)} · ${rec(a.worst)}</span>
@@ -1596,7 +1595,7 @@
     ${pairs.length ? `<h2 class="section-title">Playoff head-to-head ${tag('po')}</h2>
       <div class="ffp-card">
         ${pairs.map((v) => `<div class="fh-h2h">${tap(v.opp, `<b>${esc(nm(v.opp))}</b>`)}<i>${one(v.pf)}–${one(v.pa)}</i><span class="${v.w > v.l ? 'pos' : v.l > v.w ? 'neg' : ''}">${v.w}-${v.l}</span></div>`).join('')}
-        <p class="ffp-cap">⚠️ <b>Every playoff meeting, not a record.</b> All ${pairs.reduce((n, v) => n + v.n, 0)} games on file — title bracket, placement, consolation and Cum Bowl — so it will not match the title-bracket record above, which counts only the games that decide the championship. No regular-season schedule exists in the archive, so this is not a career head-to-head. Points are per-game averages.</p>
+        <p class="ffp-cap">⚠️ <b>Every playoff meeting, not a record.</b> All ${pairs.reduce((n, v) => n + v.n, 0)} games on file — every bracket, including the placement games and the consolation ladder, which decide nothing and are kept as meetings rather than as a record. No regular-season schedule exists in the archive, so this is not a career head-to-head. Points are per-game averages.</p>
       </div>` : ''}
       <h2 class="section-title">Franchises</h2>
       <div class="ffp-card"><div class="fh-fr-list">${teams.map((t) => `<span>${esc(t)}</span>`).join('')}</div></div>
@@ -1611,7 +1610,12 @@
   const ab = (m) => nm(m).slice(0, 3);
   const PAIRC = (ALL.length * (ALL.length - 1)) / 2;
 
-  const KIND = { fin: '🏆 final', brk: 'title bracket', plc: 'placement', con: 'consolation', cb: '🚽 Cum Bowl' };
+  /* ⚠️ There was a `KIND` label map here — '🏆 final', 'title bracket',
+     'consolation' — and NOTHING RENDERED IT. Dead since individual meetings
+     stopped being listed; it never ran, so no test could see it, and v19
+     dutifully updated its wording before noticing. Same shape as the `STATS`
+     array deleted in v8. Deleted. `kind` itself stays: `fin` is read when a
+     rivalry line counts how many of the meetings were finals. */
 
   function rivalsHTML() {
     const top = PAIRS.filter((p) => p.n >= 3);
@@ -1643,7 +1647,7 @@
           <div class="fh-rv-n">${tap(w, `<b class="up">${esc(nm(w))}</b>`)}<span>owns</span>${tap(l, `<b>${esc(nm(l))}</b>`)}</div>
           <div class="fh-rv-s"><b class="pos">${n}–0</b><i>${fins ? `${fins} of them a final` : `${n} meetings`}</i></div>
         </div>`; }).join('')}` : ''}
-      <p class="ffp-cap">⚠️ <b>Every playoff meeting.</b> The archive has final standings and playoff brackets — <b>no regular-season schedule</b> — so these are title-bracket, placement, consolation and Cum Bowl games, not career head-to-head. Sample sizes are 1–5 games: read them as stories, not settled arguments.</p>
+      <p class="ffp-cap">⚠️ <b>Every playoff meeting.</b> The archive has final standings and playoff brackets — <b>no regular-season schedule</b> — so these are championship, placement, consolation and Cum Bowl games, not career head-to-head. Sample sizes are 1–5 games: read them as stories, not settled arguments.</p>
     </div>
     <details class="ffp-card fh-det">
       <summary><b>The full grid</b><span>every pair</span><i>▾</i></summary>

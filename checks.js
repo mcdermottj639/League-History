@@ -11,18 +11,15 @@ const exRows = rows.filter((r) => !r.mgr);          // the two untracked manager
 const exYrs = new Set(exRows.map((r) => r.yr + '\0' + r.t));
 const exCB = CUMBOWL.filter((c) => [c.s11, c.s12].some((t) => exYrs.has(c.yr + '\0' + t))).length;
 const exCBloss = CUMBOWL.filter((c) => exYrs.has(c.yr + '\0' + (c.p12 > c.p11 ? c.s11 : c.s12))).length;
-/* Only the TITLE bracket is kept as a record (v14): the placement ladder
-   below it and the consolation ladder for the teams that missed are real
-   meetings but decide nothing, so no manager carries a W-L for them. The
-   law therefore counts W games only — it used to count every game, which
-   is what let `bw` quietly mean two different things. */
-const WG = PLAYOFF_GAMES.filter((g) => g.br === 'W');
-const exPG = WG.reduce((a, g) => a + (exYrs.has(g.yr + '\0' + g.a) ? 1 : 0) + (exYrs.has(g.yr + '\0' + g.b) ? 1 : 0), 0);
+/* ⚠️ No bracket W-L is kept on a manager any more (v19) — final fours are the
+   whole playoff résumé — so the law that totalled bracket slots has nothing
+   left to conserve, and the per-game exclusion it needed goes with it. The
+   untracked pair are still excluded from the final-four law below, which is
+   now the only one derived from placements. */
 const T = [
   ['seasons counted', ALL.reduce((a, x) => a + x.seasons, 0), rows.length - exRows.length],
   ['cum bowls played', ALL.reduce((a, x) => a + x.cbA, 0), CUMBOWL.length * 2 - exCB],
   ['cum bowls lost', ALL.reduce((a, x) => a + x.cb, 0), CUMBOWL.length - exCBloss],
-  ['title bracket slots', ALL.reduce((a, x) => a + x.bw + x.bl, 0), WG.length * 2 - exPG],
   /* Places 1-4 ARE the final four in this format (the semi-final losers play
      for 3rd), so every season with placements contributes exactly four. */
   ['final fours', ALL.reduce((a, x) => a + x.f4, 0), SEASON.filter((s) => s.fin).length * 4 - exRows.filter((r) => r.place && r.place <= 4).length],
@@ -165,7 +162,7 @@ owned.forEach((x) => {
    and said the other one is better. Recorded by detector id — never by
    manager — so it cannot be quietly undone, and so it goes quiet on its own
    if the detector ever stops firing. */
-['wb0', 'dynasty', 'collapse'].forEach((id) => {
+['nofinal', 'dynasty', 'collapse'].forEach((id) => {
   const st = window.LeagueHistory._stories().find((x) => x.id === id);
   if (st && !st.own) { console.log(`  ❌ story "${id}" is a league headline again; the owner made it own-page only (v15)`); bad++; }
 });

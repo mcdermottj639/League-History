@@ -99,36 +99,40 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     career résumé — who gets in, who reaches the final — and the Cum Bowl is
     the opposite bracket, for the teams that missed. Filing them there put the
     league's best achievement behind the tab named for its worst.
-  - 🚨 **THREE BRACKETS RUN EVERY DECEMBER AND ONLY ONE COUNTS (v14).** The
-    data files them as `br`: **W** the title bracket (six teams — round 1, the
-    final four, the final), **WC** the placement ladder below it for teams
-    knocked out of W, **C** the consolation ladder for the six that missed
-    (GmC1-9, of which GmC3 is the Cum Bowl).
-    - **`bw`/`bl` is W ONLY.** It used to be W *and* WC, which is how the app
-      came to print three different playoff records for the same person: the
-      career tile said 11-4 (W+WC), the storyline beside it said 10-3 (W), and
-      the head-to-head said 22 meetings (every bracket plus Cum Bowls). All
-      three were computed correctly and the page still lied, because nothing
-      said which population each counted. **The owner spotted it, not a test.**
-    - **No consolation record is kept anywhere** (owner's call): a 9-1 run
-      through GmC1-9 is nine games between eliminated teams, and putting it in
-      a heading beside four titles asks the reader to weigh them. The one
-      consolation result that means anything is the Cum Bowl, which has its
-      own field and its own tab. Those games still count as MEETINGS in
-      rivalries and head-to-heads — labelled, never totalled into a record.
-    - **`f4` = final fours = places 1-4**, and that is structural, not a
-      guess: the two semi-final losers play for 3rd, so the four survivors of
-      round 1 are exactly the top four finishers. Verified against the R2
-      pairings of all 7 brackets on file, which is what makes final fours
-      knowable for all 13 seasons — the same shape as "a top-6 seed always
+  - 🚨 **THE APP KEEPS NO BRACKET WIN-LOSS RECORD (v19, owner's call:
+    *"Title brackets have to be changed to final 4s everywhere"*).** A
+    manager's playoff résumé is **final fours**, then finals, then titles.
+    - The data still files three brackets as `br`: **W** the championship
+      bracket (six teams — round 1, the final four, the final), **WC** the
+      placement ladder below it, **C** the consolation ladder for the six that
+      missed (GmC1-9, of which GmC3 is the Cum Bowl). None of them produces a
+      W-L on a manager.
+    - **Why it went, in two steps.** v14 found the app printing three different
+      "playoff records" for one person — 11-4 (W+WC) on the career tile, 10-3
+      (W) in the storyline beside it, 22 meetings in the head-to-head — each
+      computed correctly, and the page still lied because nothing said which
+      population each counted. Picking one left a record covering 7 of 13
+      seasons sitting beside stats covering all 13, under a name that made a
+      six-team bracket sound like the final four. **A number that needs a
+      "seasons on file" caveat every single time it is printed will eventually
+      be printed without one.**
+    - **`f4` = final fours = places 1-4**, and it is structural, not a guess:
+      the two teams that lose in the final four play each other for 3rd, so the
+      four left after round one are exactly the top four finishers. Verified
+      against the R2 pairings of all 7 brackets on file — which is what makes
+      it knowable for all 13 seasons, the same shape as "a top-6 seed always
       finishes top 6".
-    - ⚠️ **The title bracket is NOT the final four**, however often it gets
-      called that: it is six teams, and the final four is the round after
-      round 1. Say "final four" only about places 1-4.
-  - ⚠️ **The career tiles are `Playoff apps` (10/13) and `Title bracket ⚑`
-    (10-3) — renamed in v10, then corrected in v14** when "Playoff record"
-    turned out to be counting placement games too. Two knock-ons, both found
-    by rendering: the caption under the strip
+    - ⚠️ **And deliberately NOT a final-four W-L either.** "8 final fours" over
+      "5-3 in the final four" is two denominators side by side inviting the
+      reader to add them up — the v3 fault wearing the new name.
+    - The games are still used as MEETINGS and SCORES: head-to-heads,
+      rivalries, the highest playoff score, the regular-season-to-playoff
+      scoring gap. Never totalled into a record.
+  - ⚠️ **The career tiles are `Playoff apps` (10/13) and `Final fours` (8/13)**
+    — renamed in v10, corrected in v14 when "Playoff record" turned out to be
+    counting placement games, and replaced outright in v19 when the record
+    itself went. Two knock-ons, both found by rendering: the caption under the
+    strip
     names that tile in bold, so it had to be renamed in the same edit or it
     pointed at a label no longer on screen; and the longer label wraps at
     390px, so `.fh-you-t i` reserves two lines on EVERY tile (else row 2 came
@@ -316,9 +320,14 @@ correction, zero unresolved conflicts**.
   team to a person by name similarity.**
 - **Two managers are deliberately untracked** (Kitchen, Ebzery — owner's call).
   Their SEASONS stay in the standings, because the standings are the standings
-  and a 12-team league that renders 10 rows is lying. They carry no person, so
-  they never enter a table, a rate, a tally or a podium line — a podium place
-  held by one of them reads **"not tracked"**, never their team name.
+  and a 12-team league that renders 10 rows is lying. They carry **no career**:
+  no row in any table of managers, no rate, no tally, no profile, and they can
+  never be picked in the name picker.
+  ⚠️ **But they are still named where they placed (v19, owner's call).** A
+  medal line reads **"🥈 Ebzery"**, not "not tracked" — the rule is that these
+  two have no career, and nothing about that requires a podium to refuse to say
+  who was on it. `mgrRaw` knows them; only `mgrOf` deliberately does not, and
+  every stat goes through `mgrOf`.
 - **Conservation laws** are the guard against double-counting: 150 season
   finishes · 24 Cum Bowl appearances · 11 losses · 70 title-bracket slots ·
   50 final fours · 13 titles · 76 playoff berths · h2h games == meetings.
@@ -584,6 +593,34 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v19 — final fours are the whole playoff résumé (10 Sep 2026)** — the
+  owner, in one message: *"Title brackets have to be changed to final 4s
+  everywhere… For 13 and 14 silver just write Ebzery here."*
+  - **The bracket W-L is gone, not renamed.** A pure rename would have left
+    "10-3 in the final four" describing a number that counts round-one games —
+    the exact class of bug v14 existed to fix. What replaces it is **final
+    fours**, which need no caveat: places 1-4, all 13 seasons, one denominator.
+    Career tile, playoff card, storyline claims, the collapse card's body — all
+    of it. `bw`/`bl` are deleted rather than hidden, and the conservation law
+    that totalled bracket slots went with them: **a law over a value nothing
+    displays is testing dead code.**
+  - ⚠️ **Not a final-four W-L either**, though that was the obvious compromise.
+    "8 final fours" beside "5-3 in the final four" is two denominators side by
+    side, and a reader will try to add them — v3, in a new costume.
+  - **The playoff card is a funnel now**: final fours · finals · won. Three
+    numbers from one source, each a subset of the one before it.
+  - 🚨 **And the "never won a bracket game" card finally got a stat it can
+    stand on.** v14 caught it counting six missing seasons as losses and scoped
+    it; v19 removes the caveat entirely — Wolff has **4 final fours and no
+    final**, which is true across all 13 seasons and is a better line anyway.
+  - **Untracked ≠ nameless.** 2013 and 2014 silver now read **Ebzery**. The
+    exclusion is about a CAREER — tables, rates, tallies, a profile — and a
+    medal line was refusing to say who won a medal on that basis. The season
+    tables say "Ebzery · not tracked", which is both facts at once.
+  - Verified: Wolff, McD, Buley and Hurd each hold exactly one slot on the
+    Honours roll-call, which the owner asked for and v16 had already made
+    structural.
 
 - **v18 — Hurd's card, in his words (10 Sep 2026)** — the owner, with the
   scoring card circled on Hurd's You page: *"Use this one for Hurd's honors
