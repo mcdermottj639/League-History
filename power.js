@@ -1843,7 +1843,7 @@ function paintRank() {
       </details>
     </div>`;
 
-  host.innerHTML = head + `<ol class="pr-list">${rows}</ol>` + foot + inviteHTML();
+  host.innerHTML = head + `<ol class="pr-list">${rows}</ol>` + foot + inviteHTML() + lockBarHTML();
 
   // Textareas get their value assigned, never interpolated into markup.
   $$('.pr-row', host).forEach((li) => {
@@ -1939,6 +1939,8 @@ function paintRank() {
     p.innerHTML = `Model's own top 3 this week: <b>${modelTop}</b>`;
     $('.pr-head', host).appendChild(p);
   }
+
+  wireLock();
 }
 
 const ord = (n) => (n % 100 >= 11 && n % 100 <= 13) ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th');
@@ -2061,23 +2063,47 @@ function paintGate(msg, note) {
    can be un-unlocked. Injected rather than sitting in `power.html`, for the
    same reason the app's Lab link is: markup that is only ever right for one
    person should not ship to the other eleven. */
-function addLock() {
-  const top = document.querySelector('.pr-top');
-  if (!top || $('#pr-lock')) return;
+/* 🔒 THE LOCK LIVES AT THE VERY BOTTOM (v35, owner: "Move that lock button way
+   down to the bottom. It'll only cause problems").
+
+   It sat in the header, one tap from everything, and locking is the one action
+   on this page that cannot be undone from the page — the owner re-types the
+   passphrase, a guest needs a fresh invite. A destructive, irreversible
+   control does not belong next to the brand where a thumb lands by accident.
+   So it renders last, below every action card, as a quiet full-width row —
+   and its removal from the header un-crowds the three-child flex row that
+   forced the v32 wrap, which is a real bonus, not the reason.
+
+   ⚠️ Built INTO the rank view (`lockBarHTML` + wiring), not appended once at
+   boot: `paintRank` rewrites `#pr-rank` on every edit, so a node hung off
+   `.pr-main` would survive but a node hung off `#pr-rank` would vanish — and
+   the bottom of the page IS `#pr-rank`. Rendering it in the template and
+   wiring it beside the other buttons keeps it where a repaint can find it. */
+function lockBarHTML() {
   const g = window.LeagueOwner.guest && window.LeagueOwner.guest();
-  const b = el('button', 'pr-lock', g ? '🔒 Sign out' : '🔒 Lock');
-  b.type = 'button';
-  b.id = 'pr-lock';
+  return `<div class="pr-lockbar">
+    <button type="button" class="pr-lock" id="pr-lock">${g ? '🔒 Sign out of the Lab' : '🔒 Lock this device'}</button>
+    <p class="pr-note">${g
+      ? 'Ends your access on this device. You would need a new invite from the commissioner to get back in.'
+      : 'Closes the Lab on this device — you would type the passphrase again to reopen it. Nothing you have published is affected.'}</p>
+  </div>`;
+}
+function wireLock() {
+  const b = $('#pr-lock');
+  if (!b) return;
+  const g = window.LeagueOwner.guest && window.LeagueOwner.guest();
   /* ⚠️ A guest's way out is not the owner's. His restores the passphrase
-     prompt; theirs ends a pass they cannot re-enter — so the label and the
-     warning have to say which, or one of them taps expecting the other. */
-  b.title = g ? 'End your access on this device — you would need a new invite' : 'Lock this device — you will need the passphrase again';
+     prompt; theirs ends a pass they cannot re-enter — so both the label above
+     and this confirm have to say which, or one of them taps expecting the
+     other. */
   b.onclick = () => {
-    if (g && !confirm('Sign out of the Lab?\n\nYou would need a new invite from the commissioner to get back in.')) return;
+    const msg = g
+      ? 'Sign out of the Lab on this device?\n\nYou would need a new invite from the commissioner to get back in.'
+      : 'Lock the Lab on this device?\n\nYou would type the passphrase again to reopen it.';
+    if (!confirm(msg)) return;
     if (g) window.LeagueOwner.endGuest(); else window.LeagueOwner.lock();
     location.reload();
   };
-  top.appendChild(b);
 }
 
 /* 👥 Who this device is building as, and until when. A guest who does not know
@@ -2145,7 +2171,6 @@ async function boot() {
      `is()` that decides whose VOICE the app speaks in and who may hand out
      further invites; those are different questions and stay different. */
   if (!window.LeagueOwner || !window.LeagueOwner.mayLab()) { paintGate(''); return; }
-  addLock();
   guestBanner();
 
   /* 🚨 CACHE FIRST, THEN REVALIDATE (v25). The device has held the last good

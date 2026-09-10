@@ -292,8 +292,14 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   - Nothing below the gate runs until the device answers — no backend call, no
     draft restored. A member who lands here gets a card that says whose page
     it is and a 40px link to the app that IS theirs.
-  - `addLock()` injects a 🔒 Lock button once unlocked: "unlock once per
-    device" is only safe if a device can be un-unlocked. It talks to the owner's Render backend
+  - **🔒 Lock / Sign out lives at the very BOTTOM** (v35, `lockBarHTML` +
+    `wireLock`), not in the header. "Unlock once per device" is only safe if a
+    device can be un-unlocked, but locking is irreversible FROM the page — the
+    owner re-types the passphrase, a guest needs a fresh invite — so the one
+    destructive control does not sit a thumb-width from the brand. It renders
+    last, below every action, and it is built INTO the rank view (a repaint
+    rewrites `#pr-rank`, so a node hung off `.pr-main` would linger but one at
+    the bottom of the page must be part of what gets repainted). It talks to the owner's Render backend
   (`sports-hub-fantasy-api.onrender.com`, overridable via localStorage
   `sportshub:api`), which is on Render's **free tier** and cold-starts ~30-60s
   after 15 minutes idle — hence the 45s timeout in `API_TIMEOUT`.
@@ -437,7 +443,10 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     only decides how it is spelled. The members' app is immune by a different
     route — `.lg-brand h1` is `white-space: nowrap` inside an `overflow:
     hidden` brand, so it clips rather than shatters; **checked rather than
-    assumed, and deliberately left alone.**
+    assumed, and deliberately left alone.** ⚠️ **v35 moved 🔒 Lock OUT of this
+    header** (to the page bottom, an accidental-tap fix), so the row is back to
+    two children — the `flex-wrap` stays as the guard, not because it is needed
+    at two.
   - ⚠️ **Two lines in the paragraph above are Sports-Hub history and are no
     longer true here**, and they are left as a warning about how a moved
     document goes stale: the palette is pinned in the markup (`data-palette` +
@@ -979,6 +988,32 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v35 — the lock moves to the bottom (10 Sep 2026)** — the owner: *"Move
+  that lock button way down to the bottom. It'll only cause problems."*
+  - **He is right about the shape of the risk.** 🔒 Lock sat in the header, one
+    tap from everything, and it is the ONE control on the page that cannot be
+    undone from the page: the owner has to re-type the passphrase, a guest
+    needs a whole new invite. An irreversible, destructive action next to the
+    brand where a thumb lands reaching for the top of the screen is a
+    lock-yourself-out waiting to happen. It renders last now, below every
+    action card, as a quiet ruled-off row with a line saying exactly what it
+    does.
+  - ⚠️ **Built INTO the rank view, not appended once at boot.** `paintRank`
+    rewrites `#pr-rank` on every edit — a reorder, a rebuild, accepting a new
+    week — so a node hung off `.pr-main` would survive a repaint but a node at
+    the bottom of the page IS inside `#pr-rank` and must be re-rendered with
+    it. `lockBarHTML()` goes in the template and `wireLock()` runs beside the
+    other button handlers, so the control is always where a repaint leaves it.
+    Verified by driving a reorder: still last, still wired, after the repaint.
+  - **A bonus, not the reason: the header is back to two children.** v32 fixed
+    the brand shattering when 🔒 Lock made the header a three-child flex row;
+    removing it un-crowds that row outright. The `flex-wrap` guard stays — a
+    fix that only holds until the next thing is added back is not a fix.
+  - Verified in headless Chromium at 390px, owner and guest: no lock in the
+    header, the lock last on the page (owner reads "Lock this device", guest
+    "Sign out of the Lab"), 44px tap target, survives a reorder repaint, no
+    overflow, no page errors, checks.js green.
 
 - **v34 — a pass that does not run out (10 Sep 2026)** — the owner, reading
   v33: *"Wait so if I send the link this week and in a month want to assign
