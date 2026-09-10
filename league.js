@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v37';
+  const APP_VERSION = 'v38';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -185,7 +185,7 @@
       </div>
       <div class="lg-grid">${pickList().map((r) => `
         <button type="button" class="lg-who${r.m === me ? ' on' : ''}" data-me="${esc(r.m)}">
-          ${crest(r.m, 46)}
+          ${crest(r.m, 54)}
           <b>${esc(r.name)}</b>
           <i>${r.seasons} season${r.seasons === 1 ? '' : 's'}${r.t1 ? ` · ${r.t1}🏆` : ''}</i>
         </button>`).join('')}</div>
@@ -225,7 +225,7 @@
   function paintHead() {
     const me = LH.me();
     $('#lg-me').innerHTML = me
-      ? `${crest(me, 26)}<span>${esc(LH.name(me))}</span>`
+      ? `${crest(me, 32)}<span>${esc(LH.name(me))}</span>`
       : '<span>👤 Who are you?</span>';
     $('#lg-me').setAttribute('title', me ? `Reading as ${LH.name(me)} — tap to change` : 'Tap to pick your name');
   }
@@ -405,7 +405,7 @@
           ${hasMove(mv) ? `<span class="pr-mv ${moveCls(mv)}">${moveStr(mv)}</span><span class="pr-lw">LW ${i + 1 + mv}</span>` : ''}
         </div>
         <div class="pr-body">
-          <div class="pr-team">${code ? crest(code, 34) : ''}<span class="pr-tn">${esc(name)}</span>${own ? ` <span class="pr-mgr">${esc(own)}</span>` : ''}${mine ? ' <span class="lg-you">YOU</span>' : ''}</div>
+          <div class="pr-team">${code ? crest(code, 40) : ''}<span class="pr-tn">${esc(name)}</span>${own ? ` <span class="pr-mgr">${esc(own)}</span>` : ''}${mine ? ' <span class="lg-you">YOU</span>' : ''}</div>
           ${stats.length ? `<div class="pr-stats">${esc(stats.join(' · '))}</div>` : ''}
           ${note ? `<div class="pr-take-ro">${esc(note)}</div>` : ''}
           ${moved ? `<div class="pr-moved">The numbers had them ${modelRank}${ord(modelRank)}.</div>` : ''}

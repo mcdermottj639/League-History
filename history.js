@@ -792,7 +792,7 @@
       return `<div class="fh-yr${you ? ' you' : ''}">
         <div class="fh-yr-n">${s.yr}${s.platform === 'sleeper' ? '<i class="fh-plat">SLEEPER</i>' : ''}</div>
         <div class="fh-yr-b">
-          <div class="fh-champ">${crest(c.mgr, 32)}${tap(c.mgr, who(c, rec(c)))}</div>
+          <div class="fh-champ">${crest(c.mgr, 38)}${tap(c.mgr, who(c, rec(c)))}</div>
           <div class="fh-updown">${s.fin
             ? `<span>🥈 ${podium(s.rows[1])}</span><span>🥉 ${podium(s.rows[2])}</span>`
             : '<span class="fh-unk">runner-up not known — that table is sorted by win%</span>'}</div>
@@ -807,7 +807,7 @@
     <div class="ffp-card">
       <div class="fh-med-h"><span></span><span>🥇</span><span>🥈</span><span>🥉</span><span class="cbh">CB</span><span>🚽</span></div>
       ${byMedals.map((a) => `<div class="fh-med${isMe(a.m) ? ' you' : ''}">
-        ${tap(a.m, `<div class="fh-med-n">${crest(a.m, 30)}
+        ${tap(a.m, `<div class="fh-med-n">${crest(a.m, 36)}
           <div><b>${esc(a.name)}</b><i>${a.seasons} seasons · ${a.w}-${a.l} reg. season</i>
             <div class="fh-pips">${'<i class="g"></i>'.repeat(a.t1)}${'<i class="s"></i>'.repeat(a.t2)}${'<i class="b"></i>'.repeat(a.t3)}${a.t1 + a.t2 + a.t3 === 0 ? '<i class="n"></i>' : ''}</div>
           </div></div>`)}
@@ -826,7 +826,7 @@
     return `<h2 class="section-title">💔 Still waiting</h2>
     <div class="ffp-card">
       <p class="fh-lead"><b>${r.length} of ${ALL.length} managers have never won it.</b> Between them they have <b>${r.reduce((a, x) => a + x.fin, 0)} finals</b> and <b>${r.reduce((a, x) => a + x.t2 + x.t3, 0)} podiums</b>.</p>
-      ${r.map((a) => `<div class="fh-rl">${tap(a.m, `<div class="fh-rl-n">${crest(a.m, 26)}<b>${esc(a.name)}</b></div>`)}
+      ${r.map((a) => `<div class="fh-rl">${tap(a.m, `<div class="fh-rl-n">${crest(a.m, 32)}<b>${esc(a.name)}</b></div>`)}
         <span class="fh-rl-s">${a.seasons} seasons · ${a.fin ? `${a.fin} final${a.fin > 1 ? 's' : ''}` : 'no finals'} · best ${ord(a.best.place)}</span>
       </div>`).join('')}
     </div>`;
@@ -1547,7 +1547,7 @@
      ⚠️ Nothing inside may be a button now — a button inside a button is
      invalid and the inner one is what a browser gives the tap to. */
   function storyCardHTML(s) {
-    const inner = `<span class="fh-story-c">${crest(s.m, 28)}</span>
+    const inner = `<span class="fh-story-c">${crest(s.m, 34)}</span>
       <span class="fh-story-b">
         <b class="fh-story-h">${esc(s.head)}${tag(s.src)}</b>
         ${s.body ? `<span class="fh-story-p">${esc(s.body)}</span>` : ''}
@@ -1685,7 +1685,7 @@
     const pairs = h2hFor(m);
     const teams = [...new Set([...a.yrs].sort((x, y) => y.yr - x.yr).map((r) => r.t))];
     return `<div class="fh-prof">
-      <div class="fh-prof-h">${crest(m, 56)}
+      <div class="fh-prof-h">${crest(m, 66)}
         <div><h3>${esc(a.name)}</h3><p>${a.seasons} seasons · ${a.w}-${a.l} · ${one(a.ppg)} per game</p></div>
       </div>
       <div class="fh-prof-m"><span>${a.t1} 🥇 · ${a.t2} 🥈 · ${a.t3} 🥉 · ${a.cb} 🚽 · ${a.po} playoffs · ${sgn(a.luck)} luck</span></div>

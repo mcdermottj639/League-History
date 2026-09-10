@@ -1869,7 +1869,7 @@ function paintRank() {
           ${hasMove(mv) ? `<span class="pr-mv ${moveCls(mv)}">${moveStr(mv)}</span><span class="pr-lw">${lastWk(mv, i)}</span>` : ''}
         </div>
         <div class="pr-body">
-          <div class="pr-team"><img class="pr-helm-sm" src="${crestURL(t.team, 30)}" alt="" width="30" height="30" /><span class="pr-tn">${esc(t.team)}</span>${mgr ? ` <span class="pr-mgr">${esc(mgr)}</span>` : ''}${t.isMe ? ' <span class="pr-you">you</span>' : ''}</div>
+          <div class="pr-team"><img class="pr-helm-sm" src="${crestURL(t.team, 36)}" alt="" width="36" height="36" /><span class="pr-tn">${esc(t.team)}</span>${mgr ? ` <span class="pr-mgr">${esc(mgr)}</span>` : ''}${t.isMe ? ' <span class="pr-you">you</span>' : ''}</div>
           ${stats.length ? `<div class="pr-stats">${esc(stats.join(' · '))}</div>` : ''}
           ${form2.length ? `<div class="pr-stats pr-form">${esc(form2.join(' · '))}</div>` : ''}
           ${moved ? `<div class="pr-moved">Model had them <b>${modelRank}${ord(modelRank)}</b> — you moved them ${modelRank > i + 1 ? 'up' : 'down'}.</div>` : ''}
@@ -2043,7 +2043,7 @@ function paintShared(p) {
           ${hasMove(mv) ? `<span class="pr-mv ${moveCls(mv)}">${moveStr(mv)}</span><span class="pr-lw">${lastWk(mv, i)}</span>` : ''}
         </div>
         <div class="pr-body">
-          <div class="pr-team"><img class="pr-helm-sm" src="${crestURL(name, 34)}" alt="" width="34" height="34" /><span class="pr-tn">${esc(name)}</span>${mgr ? ` <span class="pr-mgr">${esc(mgr)}</span>` : ''}</div>
+          <div class="pr-team"><img class="pr-helm-sm" src="${crestURL(name, 40)}" alt="" width="40" height="40" /><span class="pr-tn">${esc(name)}</span>${mgr ? ` <span class="pr-mgr">${esc(mgr)}</span>` : ''}</div>
           ${stats.length ? `<div class="pr-stats">${esc(stats.join(' · '))}</div>` : ''}
           ${note ? `<div class="pr-take-ro">${esc(note)}</div>` : ''}
           ${moved ? `<div class="pr-moved">Numbers had them ${modelRank}${ord(modelRank)}.</div>` : ''}

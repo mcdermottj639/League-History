@@ -397,9 +397,18 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     fallback** (`logos/`, `CREST_SRC`, `crestSrc`/`crestURL`/`drawCrest`,
     `preloadSrcs`/`CREST_READY`). **All twelve** teams carry their real logo,
     lifted from the owner's own 2023 rankings sheet, as a 144px same-origin
-    PNG (~420 KB for the set). ⚠️ **Several were re-cropped in 2026**: the 2023
+    PNG (~420 KB for the set) — the FILE is 144px everywhere; what changed in
+    v38 is only how big it is DRAWN. ⚠️ **Every draw size stepped up ~20% in
+    v38** (owner: *"Make all the pics slightly bigger so u can see them
+    better"*): rankings row 34→40, Lab row 30→36, shared view 34→40, picker
+    46→54, header chip 26→32, profile 56→66, champions 32→38, medals 30→36,
+    record lists 26→32, storyline cards 28→34. They are set INLINE by
+    `crest(m, size)` / `crestURL(team, size)` at each call site, not in one
+    stylesheet rule, so a size change means walking all three files
+    (`league.js`, `history.js`, `power.js`) plus `.pr-helm-sm` and
+    `.lg-me .fh-crest`. ⚠️ **Several were re-cropped in 2026**: the 2023
     sheet padded non-square logos to 144px with arbitrary letterbox BANDS
-    (Zach filled 54% of its tile, McD 97%), so at the 34px a rankings row uses
+    (Zach filled 54% of its tile, McD 97%), so at the size a rankings row uses
     they read as different KINDS of thing. The bands are trimmed and the image
     centre-cropped square on the nine where nothing is lost — plus Hurd, a new
     2026 diner photo the owner supplied. The three wordmark crests (Woods
