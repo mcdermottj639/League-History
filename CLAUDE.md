@@ -88,6 +88,15 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     career résumé — who gets in, who reaches the final — and the Cum Bowl is
     the opposite bracket, for the teams that missed. Filing them there put the
     league's best achievement behind the tab named for its worst.
+  - ⚠️ **The career tiles are `Playoff apps` (10/13) and `Playoff record ⚑`
+    (11-4), renamed in v10** — "Playoffs" and "Bracket" did not say which was
+    which. Two knock-ons, both found by rendering: the caption under the strip
+    names that tile in bold, so it had to be renamed in the same edit or it
+    pointed at a label no longer on screen; and the longer label wraps at
+    390px, so `.fh-you-t i` reserves two lines on EVERY tile (else row 2 came
+    out 55px against row 1's 46px) and the ⚑ is bound to "record" with a
+    non-breaking space, because a provenance flag alone on a line reads as a
+    stray mark rather than a badge.
   - `SUBS` — the five history sub-tabs, **in display order**: Honours · You ·
     Records · Cum Bowl · Seasons (v6 — "You" was fifth and is second now; the
     owner's call). Reordering is that array alone; `VIEWS` is a map and

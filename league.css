@@ -172,3 +172,15 @@
 :root[data-palette] .fh-sub {
   display: flex; flex-wrap: wrap; align-items: center; gap: 6px; line-height: 1.35; }
 :root[data-palette] .fh-sub .fh-src { margin-left: 0; vertical-align: baseline; }
+
+/* 🚨 "PLAYOFF RECORD ⚑" is twice the length of the "BRACKET ⚑" it replaced
+   (v10), so it wraps to two lines at 390px while its five neighbours stay on
+   one — which made row 2 of the 3x2 grid 55px against row 1's 46px. Measured,
+   not guessed. Reserving two lines on EVERY label keeps the grid uniform and
+   means the next label that grows costs nothing, and 1.3 stops the two wrapped
+   lines touching (the base rule is line-height 1, which is fine for one line
+   and cramped for two). The v196 Sports-Hub lesson: a stat strip whose tiles
+   are different heights reads as broken, not as informative. */
+:root[data-palette] .fh-you-t i {
+  line-height: 1.3; min-height: 2.6em; display: flex; align-items: center;
+  justify-content: center; text-align: center; }
