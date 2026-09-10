@@ -83,8 +83,9 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 - `index.html` — the members' app. Header (brand · **?** · who-you-are chip),
   name picker, two-level nav, and the empty `#lg-sheet` the ? fills.
   ⚠️ **It does not name `power.html` anywhere** (v21). The Lab link is appended
-  by `league.js` on an unlocked device; markup behind `hidden` would still be
-  in view-source for the other eleven. `checks.js` fails if it comes back.
+  by `league.js` on the commissioner's device; markup behind `hidden` would
+  still be in view-source for the other eleven. `checks.js` fails if it comes
+  back.
 - `owner.js` — **the commissioner's gate** (v21), ~60 lines, loaded by BOTH
   `index.html` and `power.html`. Exposes `LeagueOwner.is()` / `unlock(phrase)`
   / `lock()` off one localStorage key.
@@ -114,6 +115,20 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     (which is what stops the lock arriving as "your phone has forgotten who
     you are" on the one phone that was already right). Neither is reachable
     from a member's device.
+  - **`ownerHere()` is that question, asked once (v23), by BOTH the picker and
+    the footer's Lab link.** v21 gated the link on the unlock alone, which
+    made the app's only route to the Lab appear after you had already got in —
+    and the way in *is* the Lab. The owner opened the app on his own phone,
+    reading as himself, with no way to reach his own tool.
+    ⚠️ **The link is a door, not a key.** `power.html` still demands the
+    passphrase on every device, every time; `ownerHere()` only decides what is
+    on OFFER. Keeping those separate is the v21 design.
+  - 🚨 **`labLink()` runs AFTER `setMe`, and that is load-bearing.** It asks
+    `LH.me()`, which at the top of boot is still null — so the first cut
+    answered "not him" on his own phone. **A value derived at init cannot
+    answer a question asked later** (v1), hit again in the file that documents
+    it twice. Three of four cases passed, because the unlocked one does not
+    depend on `setMe`; only rendering the exact case caught it.
   - ⚠️ **The gate is deliberately NOT `LH.me()`.** Identity here is an
     invitation; wiring a lock to it would turn the friendliest thing in the
     app into a credential, and tapping a name must never open a door.
@@ -690,6 +705,38 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v23 — the owner could not reach his own Lab (10 Sep 2026)** — the owner,
+  with a screenshot of the app on his phone: *"I don't see the lab or
+  passphrase"*.
+  - 🚨 **v21 built a door that only opened from the inside.** The footer link
+    was gated on the unlock, and the only place to unlock is the Lab — so the
+    app's single route to it appeared *after* you had already got there. On
+    his own phone, reading as himself, there was nothing to tap. The
+    workaround shipped in v21 was "type the URL the first time", which is a
+    workaround written into a design rather than a design.
+  - **The picker already had the right rule, so the link now uses it too.**
+    `ownerHere()` — unlocked, OR already reading as him, a name no member is
+    offered. One question, asked once, in both places.
+  - ⚠️ **This is not a weakening of the lock, and the distinction is the whole
+    v21 design: the link is a DOOR, not a key.** `power.html` still demands
+    the passphrase on every device, every time. What changed is what is on
+    OFFER, which was never the security boundary — a member who hand-set
+    `lh:me` in devtools would see a link and then meet the gate, exactly as a
+    member who types the URL does today. Asserted: following the link while
+    only *reading as* McD still gets the gate and no editor.
+  - 🚨 **AND THE FIRST CUT PUT THE CALL FOUR LINES TOO EARLY.** It ran at the
+    top of boot, before `setMe`, so `LH.me()` was still null and it answered
+    "not him" — reproducing the exact bug it was meant to fix. **A value
+    derived at init cannot answer a question asked later**: the v1 lesson, in
+    the file that documents it twice, and it still happened. What makes it
+    worth recording is that **three of the four cases passed** — the unlocked
+    one does not depend on `setMe` at all — so a suite that checked "does the
+    owner see the link" with the obvious fixture would have gone green over
+    it. Only rendering *his* case, the one in the screenshot, caught it.
+  - Verified at 390px across all four devices: reading as McD but not unlocked
+    (link ✅, twelve names), unlocked (link ✅, twelve), a member reading as
+    Buley (no link, eleven), a stranger with nobody picked (no link, eleven).
 
 - **v22 — two storylines each, and the floor is measured on the render (10 Sep
   2026)** — the owner, before sending the link: *"Make sure everyone has at

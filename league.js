@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v22';
+  const APP_VERSION = 'v23';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -40,6 +40,10 @@
      `owner.js` holds the whole gate; this file only asks. Two things change
      on the commissioner's own device and nothing else in the app differs:
      his name is on offer in the picker, and the Lab is linked in the footer.
+     ⚠️ They are the SAME condition (v23). Gating the link on the unlock alone
+     made the app's only route to the Lab appear after you had already got in
+     — and the way in is the Lab. The owner opened the app on his own phone,
+     reading as himself, with no way to reach his own tool.
 
      ⚠️ It is deliberately NOT the same question as `LH.me()`. Identity here
      is an invitation — you tap a name and the archive re-voices itself — and
@@ -47,6 +51,17 @@
      credential. Tapping a name must never be able to open a door. */
   const OWNER = 'McD';
   const isOwner = () => !!(window.LeagueOwner && window.LeagueOwner.is());
+  /* 🚨 "IS THIS HIS PHONE" IS ONE QUESTION, ASKED IN TWO PLACES (v23) — the
+     picker and the footer link — so it is written once. Two ways to be true,
+     both of them only reachable by him:
+       · the device is unlocked, or
+       · the device is already reading as him, which needs a name the picker
+         does not offer to anybody else.
+     ⚠️ AND IT IS NOT A LOCK. It decides what is on OFFER; `power.html` still
+     asks for the passphrase, every time, on every device. Keeping those two
+     separate is the whole v21 design — a door you can see is not a door you
+     can open, and tapping a name must never be able to open one. */
+  const ownerHere = () => isOwner() || LH.me() === OWNER;
 
   const LH = window.LeagueHistory;
   /* Opens on the archive, not the rankings — the history is the thing that is
@@ -84,8 +99,7 @@
      from a member's device: the second needs a name that is not on offer, and
      the first needs the passphrase. */
   function pickList() {
-    const me = LH.me();
-    return LH.roster().filter((r) => r.m !== OWNER || isOwner() || me === OWNER);
+    return LH.roster().filter((r) => r.m !== OWNER || ownerHere());
   }
 
   function pickerHTML(canDismiss) {
@@ -465,23 +479,31 @@
     if (e.target.closest('[data-back]')) { S.prof = null; paint(); window.scrollTo({ top: 0 }); }
   });
 
+  /* 🚨 The Lab is not in `index.html` at all — it is APPENDED here. A link
+     sitting in the markup behind `hidden` is still there in view-source, and
+     "closed off" that announces its own door to eleven people is most of the
+     way to not being closed off.
+
+     🚨 AND IT RUNS **AFTER** `setMe`, WHICH IS THE WHOLE BUG THIS FIXES.
+     `ownerHere()` asks `LH.me()`, and at the top of boot nobody has been set
+     yet — so on the owner's own phone, reading as himself, it answered "not
+     him" and his tool had no link anywhere in the app. **A value derived at
+     init cannot answer a question asked later** — the v1 lesson, in the file
+     that documents it twice, hit again by putting the call four lines too
+     early. Three of the four cases passed, because the unlocked one does not
+     depend on `setMe`; only a render of the exact case caught it. */
+  function labLink() {
+    if (!ownerHere()) return;
+    const foot = document.querySelector('.lg-foot');
+    if (!foot || foot.querySelector('[href="power.html"]')) return;
+    const p = document.createElement('p');
+    p.innerHTML = '<a href="power.html">🏆 Power Rankings Lab</a> — your tool for building the weekly set.';
+    foot.appendChild(p);
+  }
+
   /* ══ BOOT ══════════════════════════════════════════════════════════════ */
   const ver = $('#lg-ver'); if (ver) ver.textContent = APP_VERSION;
 
-  /* 🚨 The Lab is not in `index.html` at all — it is APPENDED here, and only
-     on an unlocked device. A link sitting in the markup behind `hidden` is
-     still there in view-source, and "closed off" that announces its own door
-     to eleven people is most of the way to not being closed off. He reaches
-     it by URL the first time on a device; after that it is back in the
-     footer where it always was. */
-  if (isOwner()) {
-    const foot = document.querySelector('.lg-foot');
-    if (foot) {
-      const p = document.createElement('p');
-      p.innerHTML = '<a href="power.html">🏆 Power Rankings Lab</a> — your tool for building the weekly set.';
-      foot.appendChild(p);
-    }
-  }
   if (!LH) {
     $('#lg-app').hidden = false;
     $('#lg-body').innerHTML = '<div class="ffp-card"><div class="ffp-empty"><b>The archive didn\'t load.</b>Reload the page — history.js ships as its own file and the browser didn\'t get it.</div></div>';
@@ -494,6 +516,7 @@
     if (!me && !skipped()) showPicker(false);
     else { $('#lg-app').hidden = false; paint(); }
     paintHead();
+    labLink();
   }
 
   if ('serviceWorker' in navigator) {
