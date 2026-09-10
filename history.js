@@ -850,7 +850,7 @@
     return `<h2 class="section-title">🎲 The luck index ${tag('reg')}</h2>
     <div class="ffp-card">
       <p class="fh-lead">Rank all twelve teams by <b>points</b> each season and play everyone: that is the record your scoring deserved.<br><br>
-      <b>The number on the right is the gap, in win rate.</b> ${(() => { const a = rows[0]; return `${esc(a.name)} scored like a ${pct1(a.allPct)} team and actually went ${pct1(a.pct)} — that is ${sgn(a.luck)}.`; })()}</p>
+      <b>The number on the right is the gap, in win rate.</b> ${(() => { const a = rows[0]; return `${esc(a.name)} scored like a ${pct1(a.allPct)} team and actually went ${pct1(a.pct)} — that is ${sgn(a.luck)}.`; })()} <b>The bigger the minus, the worse the luck</b> — a plus means the schedule was kind.</p>
       ${rows.map((a) => `<div class="fh-lx${isMe(a.m) ? ' you' : ''}">
         ${tap(a.m, `<div class="fh-lx-n"><b>${esc(a.name)}</b><i>${a.allW}-${a.allL} deserved · ${a.w}-${a.l} actual</i></div>`)}
         <div class="fh-lx-bar"><span class="${lkCls(a.luck)}" style="width:${(Math.abs(a.luck) / mx) * 50}%;${a.luck < 0 ? 'right' : 'left'}:50%"></span><em></em></div>

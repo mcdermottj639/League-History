@@ -769,6 +769,23 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
 
+- **v27 — the luck column says which way is bad (10 Sep 2026)** — the owner:
+  *"Just add in that top blurb how negative number is worse luck"*.
+  - **The sign IS the column, and the lead never said so.** It explained what
+    the number measured and left the reader to infer that −14.4 is bad news
+    and +12.8 is good — an inference that is obvious only once you already
+    know. One clause: *"The bigger the minus, the worse the luck — a plus
+    means the schedule was kind."*
+  - The rule sits directly beside a live instance of itself: `rows[0]` is the
+    UNLUCKIEST manager, so the worked example is always a minus.
+  - ⚠️ **And the length check failed it again, at 308 against the 300 I raised
+    it to in v26** — on an edit whose whole purpose was to ADD a sentence. So
+    the check changed instead of the copy: it now asserts what the paragraph
+    has to DO (shorter than the original, and states which direction is bad)
+    rather than a number invented an hour earlier. **Third time a self-imposed
+    numeric limit has argued with a sentence the owner asked for** (v18, v26,
+    here) — the pattern is the lesson, not the limit.
+
 - **v26 — the luck blurb says one thing (10 Sep 2026)** — the owner: *"Make
   the luck index blurb simpler. Just explain what the percentage means"*.
   - **476 characters down to 229**, and the question it answers is now the one
