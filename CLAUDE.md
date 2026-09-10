@@ -500,6 +500,26 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
 
+- **v12 — the styling was the ask; the words were not (10 Sep 2026)** — the
+  owner, on v11's Storylines lead: *"U changed the story lines. Change them
+  back."*
+  - **v11 restyled the lead AND re-cut the sentence.** The ask was to make that
+    paragraph look nicer; splitting it into a claim line plus a ⚡ note under
+    it answered a question nobody asked, and it did it to the one paragraph in
+    the app that states how the archive works. Reverted to the exact original
+    copy, `.fh-lead-2` deleted — the panel and the `max-width` are the whole
+    change now, and every lead in the app reads the way it always has.
+  - ⚠️ **A styling request is not a licence to edit copy**, and it is worth
+    naming because the temptation is structural: a two-voice layout looks
+    better than one grey block, so the layout starts asking for the sentence
+    to be re-cut to fit it. When the display is the problem, fix the display —
+    the v3 lesson, arrived at from the other direction (there, changing the
+    DATA to fix a confusing display; here, changing the PROSE).
+  - ⚠️ **The owner's screenshot said `LEAGUE HISTORY V10`** — they were reading
+    a cached build and had not yet seen v11 at all. **The version in the header
+    is the first thing to check on any "this looks wrong" report**, and it is
+    why it is in the header.
+
 - **v11 — the standfirst is a panel now, and it has a line length (10 Sep
   2026)** — the owner, with a screenshot of the Storylines intro: *"make this
   look niceer"*.
@@ -522,7 +542,9 @@ stale entry written in the present tense reads as current to anyone who greps.
     is you**. Rendered beside the Cum Bowl table the two read as the same
     signal, so a decorative panel was quietly spending the one colour this app
     reserves for identity. The gold survives as the left rule only.
-  - **The Storylines lead is two voices** (`.fh-lead-2`): the claim as a block
+  - **The Storylines lead is two voices** (`.fh-lead-2`) — ⚠️ **SUPERSEDED in
+    v12: reverted, class deleted, the copy is the original again.** The claim
+    as a block
     line, the derivation note under it at 11.5px. A `<b>` that happens to wrap
     mid-sentence is emphasis, not a heading — so the claim is `display: block`
     rather than relying on where the text breaks. Both stay `--gy`/`--ink`;

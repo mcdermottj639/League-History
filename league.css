@@ -211,10 +211,11 @@
   font-size: 12px; line-height: 1.6; color: var(--gy); }
 :root[data-palette] .fh-lead b { color: var(--ink); font-weight: 800; }
 
-/* Two voices in one lead: the claim, then the note under it. The claim is a
-   block so it holds the top line on its own — an inline <b> that happens to
-   wrap mid-sentence is emphasis, not a heading. Both stay `--gy`/`--ink`
-   rather than dropping to `--mu`: 11.5px muted on a tinted ground measures
-   around 3.7:1, and the hierarchy is already carried by size and weight. */
-:root[data-palette] .fh-lead-2 b { display: block; font-size: 13px; line-height: 1.35; margin-bottom: 5px; }
-:root[data-palette] .fh-lead-2 i { display: block; font-style: normal; font-size: 11.5px; }
+/* 🚨 THE STYLING WAS THE ASK; THE WORDS WERE NOT (v12). v11 also rewrote the
+   Storylines lead into two voices — a `.fh-lead-2` with the claim as a block
+   line and the derivation note under it — and the owner asked for it back:
+   *"U changed the story lines. Change them back."* The request was to make
+   that paragraph LOOK nicer, and re-cutting the sentence to fit the styling
+   answered a question nobody asked. The panel and the measure below are the
+   whole change now; every lead is the exact copy it has always been.
+   Same family as v3: the display was the problem, so fix the display. */
