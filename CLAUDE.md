@@ -144,6 +144,30 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   - ⚠️ **The badge key inside it comes from `LH.key()`, not from prose here.**
     It quotes "119 bracket games from 7 of 13 seasons" — counts that must
     re-derive, so they stay in `history.js` where the data is.
+  - 📤 **The link to send lives in the ? sheet** (`appURL` / `copyText` /
+    `shareApp`, v28), under "Send it to someone" — one tap from every screen,
+    because the ? is the only control that is on every screen.
+    - 🚨 **The URL is DERIVED from `location`, never typed in.** A hard-coded
+      address in `league.js` would be a second source of truth for the address
+      of the file it is written in, and it would go on handing out a dead link
+      with total confidence the day the repo or the account is renamed. The
+      members' app has no routing — no hash, no query — so the link to send is
+      simply where you already are with `search`/`hash` stripped and a trailing
+      `index.html` removed.
+    - ⚠️ **The URL is on screen AS TEXT whether or not the button works.**
+      `navigator.share` → the iOS share sheet, which is the actual job (it
+      lands straight in the group chat); then the clipboard; then select the
+      field and say so. A copy button that fails silently on an unknown
+      browser would leave a reader holding nothing, which is the one outcome
+      the section exists to prevent.
+    - ⚠️ **The field is 16px, and that is not a style choice.** iOS Safari
+      zooms the page in when a text input under 16px takes focus and does not
+      zoom back out. It is an `input` rather than a `<code>` so a long URL
+      SCROLLS instead of wrapping — a link broken across two lines is the
+      classic way a pasted address arrives dead.
+    - It is offered to **everyone**, not just the commissioner: the link
+      getting lost in a group chat is a real way this app goes unread, and any
+      of the twelve re-sending it is a feature.
 - `league.css` — the `.lg-` layer. Loaded LAST, so it wins ties.
 - `history.js` — **the archive** (~1,130 lines): the curated 13-season data,
   a single-pass stats engine, and every view. Exposes ONE global,
@@ -768,6 +792,43 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v28 — the link is in the app, and the live site was nine versions behind
+  (10 Sep 2026)** — the owner, before sending it out: *"somewhere in the app
+  just put the link that I can always copy and paste to send"*, alongside a
+  pre-send check of the whole thing.
+  - 🚨 **THE BIGGEST FINDING WAS NOT IN THE CODE, IT WAS IN `main`.** Pages
+    deploys from `main` and `main` was still on **v20** — so the site the link
+    would have gone to was the build from BEFORE the lock: `power.html` named
+    in the footer markup for all eleven to read, and **McD on the name
+    picker**. Every protection this file documents at length (v21's gate,
+    v23's `ownerHere`) existed only on a branch. **A feature that is written,
+    tested, documented and unmerged is a feature the league does not have** —
+    and nothing in the repo says so out loud, because the working tree looks
+    finished from the inside. Check what `main` is on before believing any of
+    this section.
+  - **The link itself is in the ? sheet**, which is the one control on every
+    screen. `navigator.share` first (the iOS share sheet lands straight in the
+    group chat, which is the actual job), then the clipboard, then select the
+    field and say so — with **the URL on screen as text at every step**,
+    because a copy button that fails silently leaves a reader holding nothing.
+  - ⚠️ **Derived from `location`, never typed in** — see the `league.js` bullet
+    above. And offered to all twelve rather than just the commissioner: the
+    link getting lost in a group chat is a real way this app goes unread.
+  - 🚨 **AND A SECOND SOURCE OF TRUTH FOR ONE FILE'S FRESHNESS, FOUND BY
+    READING BOTH PAGES SIDE BY SIDE.** `styles.css` was `?v=1` in `power.html`
+    and `?v=27` in `index.html`; `power.css` was `?v=4` against `?v=5`. Both
+    files are loaded by both pages, so each had two independent counters — and
+    `styles.css` had never been bumped on the Lab side at all, pinning any
+    device that had opened the Lab to the pre-v20 stylesheet there for good.
+    **This is the `owner.js` rule, which this file already states, applied to
+    the two files nobody noticed were shared** — `power.css` only became
+    shared when the rankings view started reusing it in v1. They ride
+    `index.html`'s numbers now; `power.js` stays on its own, being Lab-only.
+  - The share section sits BELOW "Tap your name" in the sheet, not above it.
+    The first thing the app asks of a reader is still the invitation; asking a
+    stranger to forward the link before they have picked a name is a favour
+    requested before anything has been given.
 
 - **v27 — the luck column says which way is bad (10 Sep 2026)** — the owner:
   *"Just add in that top blurb how negative number is worse luck"*.

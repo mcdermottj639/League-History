@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v27';
+  const APP_VERSION = 'v28';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -81,6 +81,68 @@
     if (!LOGO[m]) return fb;
     return `<img class="fh-crest" style="width:${size}px;height:${size}px" src="logos/${LOGO[m]}.png" alt=""
       onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'fh-crest fh-crest-x',textContent:${JSON.stringify(nm.slice(0, 1))}}))">`;
+  }
+
+  /* ══ 📤 THE LINK ═══════════════════════════════════════════════════════
+     The app has ONE address and no routing — no hash, no query — so the link
+     to send is simply where you already are, minus whatever a browser may
+     have hung off the end of it.
+
+     🚨 DERIVED, NEVER TYPED IN. A hard-coded URL in here would be a second
+     source of truth for the address of the file it is written in, and the day
+     the repo or the account is renamed is the day it starts handing out a
+     dead link with total confidence. Same rule as every other fact in this
+     app: work it out, don't store it. */
+  const appURL = () => {
+    try {
+      const u = new URL(location.href);
+      u.hash = ''; u.search = '';
+      u.pathname = u.pathname.replace(/index\.html?$/i, '');
+      return u.href;
+    } catch (_) { return location.href; }
+  };
+
+  /* Clipboard, with the same three-step ladder the Lab uses. `navigator.share`
+     is the one that matters on the owner's phone: it opens the iOS share sheet
+     straight into the group chat, which is the actual job. */
+  async function copyText(txt) {
+    try {
+      if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(txt); return true; }
+    } catch (_) {}
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = txt;
+      ta.setAttribute('readonly', '');
+      ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0';
+      document.body.appendChild(ta);
+      ta.select(); ta.setSelectionRange(0, txt.length);
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch (_) { return false; }
+  }
+
+  /* ⚠️ THE URL IS ON SCREEN AS TEXT WHETHER OR NOT ANY OF THIS WORKS. A copy
+     button that fails silently — and on an unknown browser it can — leaves a
+     reader holding nothing at all, which is the one outcome this section
+     exists to prevent. The button is a convenience over the link, never the
+     only way to it. */
+  async function shareApp() {
+    const url = appURL();
+    const note = $('#lg-share-n');
+    const say = (m) => { if (note) note.textContent = m; };
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Nectars Bolonga — League History', url }); say('Link shared.'); return; }
+      /* A cancelled share sheet is a decision, not a failure — don't fall
+         through and quietly copy something they backed out of sending. */
+      catch (e) { if (e && (e.name === 'AbortError' || e.name === 'NotAllowedError')) { say(''); return; } }
+    }
+    if (await copyText(url)) say('Copied — paste it into the chat.');
+    else {
+      const i = $('.lg-share-u');
+      if (i) { i.focus(); i.select(); }
+      say('Press and hold the link above to copy it.');
+    }
   }
 
   /* ══ THE NAME PICKER ═══════════════════════════════════════════════════
@@ -212,6 +274,16 @@
           <button type="button" class="lg-sheet-go" data-pickme="1">${me
             ? `👤 Reading as ${esc(LH.name(me))} — change`
             : '👤 Pick your name'}</button>
+        </section>
+
+        <section class="lg-sh">
+          <h3>Send it to someone</h3>
+          <p>The whole thing lives at one address, and it never changes. Send it once — every week that gets published, and every fix, arrives on their phone by itself.</p>
+          <div class="lg-share">
+            <input class="lg-share-u" type="text" readonly spellcheck="false" aria-label="Link to this app" value="${esc(appURL())}" />
+            <button type="button" class="lg-sheet-go" data-share="1">${navigator.share ? '📤 Share the link' : '📋 Copy the link'}</button>
+          </div>
+          <p class="lg-share-n" id="lg-share-n" role="status"></p>
         </section>
 
         <section class="lg-sh">
@@ -461,6 +533,11 @@
     /* The sheet's own "pick your name" button lands here too, so it has to
        close behind itself — otherwise the picker opens UNDER the sheet. */
     if (e.target.closest('#lg-me') || e.target.closest('[data-pickme]')) { closeHelp(); showPicker(!!LH.me() || skipped()); return; }
+    if (e.target.closest('[data-share]')) { shareApp(); return; }
+    /* Tapping the link itself selects the whole thing, so a long-press menu
+       lands on the URL rather than on one word of it. */
+    const uu = e.target.closest('.lg-share-u');
+    if (uu) { uu.focus(); uu.select(); return; }
     const jump = e.target.closest('[data-jump]');
     if (jump) {
       const t = document.getElementById(jump.dataset.jump);

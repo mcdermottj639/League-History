@@ -12,8 +12,17 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=1" />
-  <link rel="stylesheet" href="power.css?v=4" />
+  <!-- ⚠️ SHARED FILES, ONE ?v= EACH — the same rule `owner.js` follows, and
+       for the same reason. `styles.css` and `power.css` are BOTH loaded by
+       `index.html` too, so a second counter here is a second source of truth
+       for the freshness of one file: bump one and the other page goes on
+       serving the copy it cached. (`styles.css` sat at ?v=1 from the move
+       until v28 while index.html walked it to 28, so a device that had opened
+       the Lab was pinned to the pre-v20 stylesheet on this page indefinitely.)
+       These two ride index.html's numbers; `power.js` below is Lab-only and
+       keeps its own. -->
+  <link rel="stylesheet" href="styles.css?v=28" />
+  <link rel="stylesheet" href="power.css?v=5" />
 </head>
 <body class="pr-page">
   <header class="pr-top">
