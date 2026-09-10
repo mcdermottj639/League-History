@@ -479,7 +479,7 @@
      map hardcoded `McD: 'You'`, because that app had exactly one reader. This
      one has twelve, so 'You' is not a name: it is a ROLE, handed to whoever
      is holding the phone. See `setMe`. */
-  const MGR_NAME = { McD: 'Jack', Wickman: 'CC', Kitchen: 'Kitchen', Ebzery: 'Ebzery', Slemp: 'Slemp', Woods: 'Woods', Gotch: 'Gotch',
+  const MGR_NAME = { McD: 'McD', Wickman: 'CC', Kitchen: 'Kitchen', Ebzery: 'Ebzery', Slemp: 'Slemp', Woods: 'Woods', Gotch: 'Gotch',
     Buley: 'Buley', Zach: 'Zach', Wolff: 'Wolff', Christel: 'Christel',
     Hyman: 'Hyman', Riz: 'Riz', Hurd: 'Hurd', CC: 'CC' };
 
@@ -515,7 +515,7 @@
      so pointing it at a different manager re-voices the entire archive with
      no other edit. That is the whole mechanism. */
   const nm = (m) => (isMe(m) ? 'You' : (MGR_NAME[m] || m));
-  /* When a sentence needs the NAME even for the reader ("Jack has won 3"),
+  /* When a sentence needs the NAME even for the reader ("McD has won 3"),
      e.g. a possessive that would read badly as "You's". */
   const realNm = (m) => MGR_NAME[m] || m;
   /* "You HAVE outscored" but "Buley HAS outscored" — second person changes the

@@ -578,10 +578,12 @@ stale entry written in the present tense reads as current to anyone who greps.
 - **The members' app has no rankings yet** — `rankings/index.json` ships empty
   and the app says so honestly. The first real publish is the first test of
   that path end to end.
-- **`MGR_NAME.McD` is `'Jack'`** — every other manager goes by the short name
-  the league already uses, but the owner needed a label that isn't "You" now
-  that "You" is a role. If the league calls him something else, that one string
-  is the only edit.
+- **`MGR_NAME.McD` is `'McD'`** (v5) — the owner needed a label that isn't
+  "You" now that "You" is a role, and **the label the other eleven see is his
+  call, not a guess**: it was `'Jack'` for one version and he asked for the
+  short name the league already uses, same as every other manager. He still
+  reads as "You" on his own device — `nm()` checks `isMe` first — so this
+  string is only ever seen by somebody else.
 - **Not built:** any way for a member to write anything back (a reaction, a
   pick, a comment). That needs a backend and is a real product decision, not a
   missing feature.
