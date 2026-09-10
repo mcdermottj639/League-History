@@ -105,6 +105,31 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   - `crypto.subtle` is https-only, so `unlock` returns `'ok' | 'no' |
     'insecure'` — "wrong passphrase" and "this browser can't check one" are
     opposite problems and the message shown has to say which.
+  - 👥 **It also mints and checks GUEST PASSES (v33)** — `invite(who, until)` /
+    `accept(token)` / `guest()` / `mayLab()` / `endGuest()`, off a second key
+    (`lh:guest`).
+    - 🚨 **A GUEST IS NOT THE OWNER, AND THEY ARE TWO DIFFERENT KEYS ON
+      PURPOSE.** `is()` stays FALSE on a guest's device, which is the single
+      fact keeping the commissioner's name off their name picker (v21 — nobody
+      gets to put the app into his voice) and keeping them from minting further
+      invites. It is one boolean away from being wrong and **nothing on screen
+      would show it**, so `checks.js` asserts it by name.
+    - `mayLab()` = `is() || guest()` is the question `power.html` asks; `is()`
+      alone still governs the picker and the invite card.
+    - ⚠️ **Be as honest about an invite as about the passphrase.** It is a door
+      key, not a proof: the repo is public, so anybody who reads `owner.js`
+      could craft one — the same bar the published hash already sets, against
+      the same eleven relatives. What it genuinely buys is a pass that runs out
+      on its own and a passphrase that never leaves his head.
+    - ⚠️ **The expiry runs on the GUEST'S clock**, so it is a courtesy to an
+      honest person, not a lock on a determined one. `INVITES_FROM` is the
+      answer to a determined one: every invite records its issue date, and
+      moving that constant forward kills every outstanding pass at once. It
+      costs a commit, which is the point — a fire alarm, not a control.
+    - `accept()` returns `'ok' | 'bad' | 'expired' | 'revoked'` — four
+      outcomes for the reason `unlock` has three: a guest stuck at the gate has
+      nobody to ask but the screen, and "ran out" and "arrived broken" send
+      them to two different places.
 - `league.js` — the shell: identity, router, jump nav, the rankings view, and
   the **? sheet** (`helpHTML` / `openHelp` / `closeHelp`).
   It is deliberately small; all the archive logic lives in `history.js`.
@@ -129,6 +154,14 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     answer a question asked later** (v1), hit again in the file that documents
     it twice. Three of four cases passed, because the unlocked one does not
     depend on `setMe`; only rendering the exact case caught it.
+  - 🚨 **`labHere()` is a DIFFERENT question from `ownerHere()` (v33), and the
+    split is the whole safety of guest passes.** `ownerHere()` — "is this his
+    phone" — still governs `pickList()`. `labHere()` = that, or a live guest
+    pass, and it governs only the footer's Lab link. Wiring the picker to the
+    weaker one would have handed every guest the commissioner's name, which is
+    exactly what v21 exists to prevent. A guest's link names the date the pass
+    runs out, because a pass that simply stops one morning reads as the app
+    breaking rather than as something that was always going to happen.
   - ⚠️ **The gate is deliberately NOT `LH.me()`.** Identity here is an
     invitation; wiring a lock to it would turn the friendliest thing in the
     app into a credential, and tapping a name must never open a door.
@@ -421,6 +454,37 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     - **The week is pre-written, order AND all twelve takes** (`restoreOrBuild`
       → `writeWeek`). Editing is optional: open, tap 🚀, paste. That is the
       difference between a weekly column that happens and one that doesn't.
+  - **👥 Let someone else build a week** (v33, `inviteHTML`/`wireInvite`) — the
+    commissioner hands the Lab to another manager for a week or a season.
+    - 🚨 **Gated on `is()`, NEVER `mayLab()`.** A guest holding a pass must not
+      mint further passes — that is the difference between lending a key and
+      lending the ability to cut keys. The card is **absent** from a guest's
+      DOM rather than hidden, for the reason `index.html` carries no Lab link:
+      markup behind an attribute is still in view-source.
+    - 🚨 **`boot()` redeems `#invite=` BEFORE the gate**, for the same reason it
+      reads `#r=` first: the invite is the thing that gets somebody past the
+      gate, so a gate in front of it is a key locked inside its own door — the
+      v23 fault exactly. ⚠️ **And it must read the hash before anything CLEARS
+      it**: the first cut sat below the existing "don't strand the reader"
+      branch, which `replaceState`s the hash away, so every invite landed on
+      the passphrase gate with no message and looked like a link that had never
+      worked. **A value consumed at init cannot answer a question asked later**
+      — the v1 lesson again, caught only by rendering the guest's own case.
+    - 🚨 **A GUEST'S BYLINE IS THEIR OWN, and this is where the leak would have
+      been.** `defaultByline()` used the backend's `isMe`, which is the flag on
+      the account it authenticates as — the OWNER's, always — so a guest's
+      rankings would have gone to the group chat under **his** team name. The
+      shared view carries a byline for exactly one reason (whose take is this),
+      and getting it wrong is worse than omitting it. `teamForMgr()` walks
+      `MANAGERS` rather than keeping a second map, because team names change
+      every year and the twelve people do not.
+    - A guest gets a banner saying what they have and until when, and 🔒 turns
+      into **Sign out** with its own confirm — "access until Saturday" is only
+      safe on a borrowed phone if it can be ended before Saturday.
+    - ⚠️ **`.pr-inv-f[hidden]` is written in the same edit as the markup that
+      toggles it.** `.pr-inv-f` is `display: flex` at (0,1,0) and the UA's
+      `[hidden]` is also (0,1,0) — a tie the later sheet wins, so `el.hidden`
+      would have been a visual no-op. Fourth outing for that trap.
   - **↩️ Unpublish this week** (v31, `pubStateHTML`/`paintPubState`/`unpublish`)
     — the mirror of 🚀, and the reason publishing is safe to get wrong.
     - 🚨 **A RETRACTION HAS TWO HALVES AND ONLY ONE OF THEM IS A COMMIT.** The
@@ -477,6 +541,13 @@ Lab, which only he opens.
   the picker, and puts the Lab link back in the footer. ⚠️ **It is not an
   account and it holds nothing** — no name, no token, no phrase. Clearing site
   data locks the device and he types the phrase again.
+- `lh:guest` — a **guest pass** (v33): `{w, u, i}` — which manager, the last
+  day it works, and the day it was issued. Written by `owner.js` when an
+  invite link is opened, and **checked for expiry on every read** rather than
+  on a timer, so a page left open for three days is not still inside.
+  ⚠️ **It is deliberately not `lh:owner`.** A guest gets the Lab and nothing
+  else: not his name on the picker, not the ability to invite anybody. Clearing
+  site data, or 🔒 Sign out, ends it.
 - `powerlab:draft` — the Power Rankings Lab's week in progress
   (`{key, order, comments, at}`, autosaved on every edit). `key` = weeks
   played, so it is restored only for the week it belongs to — a new week's
@@ -886,6 +957,73 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v33 — the Lab can be lent out (10 Sep 2026)** — the owner: *"And allow me
+  the ability to give another member access to do the rankings. Whether for a
+  week or for extended time."*
+  - **He sends an invite link; it expires on its own.** 👥 in the Lab: pick a
+    manager, pick how long (this week · a month · the season · a date), and it
+    produces a link that opens the Lab on their phone until that date. No
+    session, no commit, no passphrase leaving his head.
+  - 🚨 **A GUEST IS NOT THE OWNER, AND THAT IS ONE BOOLEAN.** `lh:guest` is a
+    separate key and `LeagueOwner.is()` stays **false** on a guest's device.
+    That single fact is what keeps his name off their name picker — v21 exists
+    because tapping a name must never open a door, and lending somebody the
+    rankings tool is not lending them his voice — and what stops a guest
+    minting further invites. **Nothing on screen would show it if it were
+    wrong**, so `checks.js` asserts it by name; verified by reverting (a
+    one-line "also set the owner key" makes the suite say so).
+  - 🚨 **THE FIRST CUT PUT THE REDEMPTION FOUR LINES TOO LATE.** `boot()` has
+    always had a "don't strand the reader on a blank page" branch that
+    `replaceState`s any unrecognised hash away — and the invite reader sat
+    below it, so `location.hash` was **already empty** by the time it looked.
+    Every invite landed on the passphrase gate with no message, indistinguishable
+    from a link that had never worked. **A value consumed at init cannot answer
+    a question asked later** — the v1 lesson, third costume (v23 was the last),
+    and again only rendering the exact case caught it: the owner's side passed
+    perfectly.
+  - 🚨 **AND A GUEST WOULD HAVE PUBLISHED UNDER HIS NAME.** `defaultByline()`
+    read the backend's `isMe`, which flags the account it authenticates as —
+    his, always. So Hyman's rankings would have gone to the group chat bylined
+    **Current Champ**. The byline exists for exactly one reason (*"someone
+    shared their power rankings"* is useless in a twelve-person league), and a
+    byline that is confidently wrong is worse than none.
+  - ⚠️ **Be as honest about an invite as this repo is about the passphrase.**
+    It is a door key, not a proof: the repo is public, so anyone who reads
+    `owner.js` could craft one — the same bar the published hash already sets,
+    against the same eleven relatives. And **the expiry runs on the guest's own
+    clock**, so "until Saturday" is a courtesy to an honest person. The card
+    says all of this to his face rather than implying a lock that isn't there.
+    `INVITES_FROM` is the real take-back: every invite carries its issue date
+    and moving that constant kills every outstanding pass at once. It costs a
+    commit, which is right — a fire alarm, not a control.
+  - **Three ways an invite fails, three sentences** — ran out · arrived damaged
+    · revoked. The app's own rule (an empty archive and an unreachable one are
+    not the same sentence) applied to the one screen a guest can get stuck on,
+    where they have nobody to ask but the copy.
+  - ⚠️ **A fourth outing for the `hidden` specificity trap, pre-empted.**
+    `.pr-inv-f` is `display: flex` at (0,1,0) against the UA's `[hidden]` at
+    (0,1,0) — a tie the later sheet wins — so the date row's rule was written
+    in the same edit as the markup, and the render confirms `display: none`
+    rather than trusting it.
+  - **Found while measuring, and fixed with its twin:** the new `<summary>` was
+    a **21px** tap target against this app's 38px floor — and so was the
+    existing "How the model ranks" one, which has always been. Fixing only the
+    new one would have been the v3 fault.
+  - ⚠️ **A KNOWN LIMIT, STATED RATHER THAN PAPERED OVER.** ▲▼ movement lives in
+    `powerlab:pub` on whichever device published, so a week a GUEST builds is
+    not marked on the commissioner's phone — his next week's arrows measure
+    against the last week *he* published. Pre-existing in shape (a second
+    device, or clearing site data, does the same) and the honest fix is for the
+    Lab to seed movement from `rankings/`, which is its own change. See
+    Open / next.
+  - Verified in headless Chromium at 390px against the real files: the owner
+    (invite card, link minted, date row genuinely hidden), a guest redeeming a
+    link (twelve editable rows, banner with the date, **no** invite card, 🔒
+    Sign out, byline **Cheeky Clapz**), that guest in the members' app (Lab
+    link with its date, **eleven** names on the picker, no McD), sign-out
+    (pass cleared, gate back), and expired and damaged invites each saying
+    their own thing. No overflow, no page errors, checks.js green.
 
 - **v32 — the brand stopped shattering (10 Sep 2026)** — the owner, with a
   screenshot of the Lab on his phone: *"Look fine?"*
@@ -1816,6 +1954,14 @@ stale entry written in the present tense reads as current to anyone who greps.
   its SHA-256, in `owner.js`. Changing it is one line: hash the new phrase
   (normalised: trimmed, spaces collapsed, lowercased) and replace `HASH`.
   Nobody can recover the old one from here, which is the point.
+- **Movement is per-device, and a guest's week does not reach his phone**
+  (v33). `powerlab:pub` is the ▲▼ baseline and it lives in localStorage, so a
+  week built by an invited manager — or by him on a second device, or after
+  clearing site data — leaves the next set of arrows measuring against an older
+  week. The honest fix is to seed `powerlab:pub` at boot from what
+  `rankings/index.json` actually published, which is the real source of truth
+  for "the last set the league saw". Deliberately not folded into v33: it needs
+  a manager-code → `teamId` remap that survives a team being renamed mid-season.
 - **Not built:** any way for a member to write anything back (a reaction, a
   pick, a comment). That needs a backend and is a real product decision, not a
   missing feature.

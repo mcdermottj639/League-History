@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v32';
+  const APP_VERSION = 'v33';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -62,6 +62,17 @@
      separate is the whole v21 design — a door you can see is not a door you
      can open, and tapping a name must never be able to open one. */
   const ownerHere = () => isOwner() || LH.me() === OWNER;
+
+  /* 🚨 A DIFFERENT QUESTION, AND KEEPING IT SEPARATE IS THE POINT (v33).
+     `ownerHere()` is "is this HIS phone" and it still governs the picker —
+     lending somebody the rankings tool for a week is not lending them his
+     voice, and `LeagueOwner.is()` stays false on a guest's device precisely
+     so this cannot leak. `labHere()` is the weaker question the FOOTER asks:
+     is there any reason to put the Lab on offer here? Wiring the picker to
+     this instead would have handed every guest McD's name, which is the one
+     thing v21 exists to prevent. */
+  const guestPass = () => (window.LeagueOwner && window.LeagueOwner.guest && window.LeagueOwner.guest()) || null;
+  const labHere = () => ownerHere() || !!guestPass();
 
   const LH = window.LeagueHistory;
   /* Opens on the archive, not the rankings — the history is the thing that is
@@ -640,11 +651,17 @@
      early. Three of the four cases passed, because the unlocked one does not
      depend on `setMe`; only a render of the exact case caught it. */
   function labLink() {
-    if (!ownerHere()) return;
+    if (!labHere()) return;
     const foot = document.querySelector('.lg-foot');
     if (!foot || foot.querySelector('[href="power.html"]')) return;
+    const g = guestPass();
     const p = document.createElement('p');
-    p.innerHTML = '<a href="power.html">🏆 Power Rankings Lab</a> — your tool for building the weekly set.';
+    /* ⚠️ A guest is told WHEN IT RUNS OUT, here and in the Lab. A pass that
+       simply stops working one morning reads as the app breaking; a date
+       turns the same event into something that was always going to happen. */
+    p.innerHTML = g
+      ? `<a href="power.html">🏆 Power Rankings Lab</a> — yours to build this week's set${g.until ? `, until ${esc(niceDate(g.until))}` : ''}.`
+      : '<a href="power.html">🏆 Power Rankings Lab</a> — your tool for building the weekly set.';
     foot.appendChild(p);
   }
 

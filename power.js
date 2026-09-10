@@ -307,11 +307,34 @@ function rewriteOne(id) {
   persist();
 }
 
-/* Default the byline to the owner's own team — it's the name the league knows
-   them by, and it means sharing works without filling anything in first. */
+/* Default the byline to whoever is building — it is the name the league knows
+   them by, and it means sharing works without filling anything in first.
+
+   🚨 A GUEST IS NOT THE OWNER, AND THIS IS WHERE THAT WOULD HAVE LEAKED
+   (v33). `isMe` is ESPN's flag for the account the backend authenticates as,
+   which is the owner's, always — so a guest's rankings would have gone to the
+   group chat bylined with HIS team name. The shared view carries a byline for
+   exactly one reason: *"someone shared their power rankings"* is useless in a
+   twelve-person league and the first thing a recipient needs is whose take it
+   is. Getting that wrong is worse than omitting it. */
 function defaultByline() {
+  const g = window.LeagueOwner && window.LeagueOwner.guest && window.LeagueOwner.guest();
+  if (g && g.who) {
+    const t = teamForMgr(g.who);
+    if (t) return t;
+  }
   const me = (S.season.teams || []).find((t) => t.isMe);
   return me ? me.team : '';
+}
+
+/* Manager code → their team name THIS season. `MANAGERS` is keyed the other
+   way (team name → manager) because team names change every year and the
+   twelve people do not, so this walks it rather than keeping a second map
+   that would drift the first time somebody renames. */
+function teamForMgr(code) {
+  const want = String(code || '').toLowerCase();
+  const hit = (S.season && S.season.teams || []).find((t) => mgrFor(t.team).toLowerCase() === want);
+  return hit ? hit.team : '';
 }
 
 function persist() {
@@ -1592,6 +1615,94 @@ function freshLine() {
 }
 
 /* ---- the editor ---------------------------------------------------------- */
+/* ══ 👥 HAND THE LAB TO SOMEBODY ELSE ══════════════════════════════════════
+   The owner can lend the tool for a week or a season — someone else builds the
+   week, writes the takes and sends it to the league.
+
+   🚨 `is()`, NEVER `mayLab()`. A guest holding a pass must not be able to mint
+   further passes: that is the difference between lending a key and lending the
+   ability to cut keys, and it is one boolean away from being wrong. The card
+   is not rendered at all on a guest's device — not hidden, absent — for the
+   same reason `index.html` does not carry the Lab link (v21): markup behind an
+   attribute is still in view-source.
+   ⚠️ What it hands over is a DOOR KEY, not a proof. See the honesty note in
+   `owner.js`: anybody who reads that file could craft one, exactly as anybody
+   could run a wordlist at the published passphrase hash. The pass expiring on
+   its own, and his phrase never leaving his head, are the real wins. */
+function inviteRoster() {
+  const meTeam = (S.season && S.season.teams || []).find((t) => t.isMe);
+  return (S.season && S.season.teams || [])
+    .map((t) => ({ code: mgrFor(t.team), team: t.team }))
+    .filter((r) => r.code && (!meTeam || r.team !== meTeam.team))
+    .sort((a, b) => a.code.localeCompare(b.code));
+}
+
+const addDays = (n) => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10);
+
+function inviteHTML() {
+  if (!(window.LeagueOwner && window.LeagueOwner.is())) return '';
+  const who = inviteRoster();
+  if (!who.length) return '';
+  return `<div class="pr-card pr-invite">
+    <details>
+      <summary>👥 Let someone else build a week</summary>
+      <div class="pr-inv-b">
+        <p class="pr-note">They get the whole tool — the model's order, the pre-written takes, and 📤 📋 🖼️ to send it to the league. 🚀 Publish hands them the file to pass back to you, because only you can put a week in the app.</p>
+        <label class="pr-inv-f"><span>Who</span>
+          <select id="pr-inv-who">${who.map((r) => `<option value="${esc(r.code)}">${esc(r.code)} — ${esc(r.team)}</option>`).join('')}</select>
+        </label>
+        <label class="pr-inv-f"><span>Until</span>
+          <select id="pr-inv-len">
+            <option value="7">This week (7 days)</option>
+            <option value="30">A month</option>
+            <option value="120">The rest of the season</option>
+            <option value="0">A date I pick…</option>
+          </select>
+        </label>
+        <label class="pr-inv-f" id="pr-inv-dw" hidden><span>Date</span>
+          <input id="pr-inv-date" type="date" min="${esc(addDays(1))}" value="${esc(addDays(7))}" />
+        </label>
+        <button type="button" class="pr-btn primary" id="pr-inv-go">Create the invite</button>
+        <div id="pr-inv-out"></div>
+        <p class="pr-note">⚠️ Be straight with yourself about what this is: it opens the Lab on their phone and stops on the date, but it is a key you are handing out, not a password only they know. It runs on <i>their</i> clock, so treat the date as a courtesy rather than a lock. Your passphrase is never in it.</p>
+      </div>
+    </details>
+  </div>`;
+}
+
+function wireInvite() {
+  const go = $('#pr-inv-go');
+  if (!go) return;
+  const len = $('#pr-inv-len'), dw = $('#pr-inv-dw');
+  /* ⚠️ Hidden by PROPERTY and by a `[hidden]` rule in power.css at the same
+     specificity, written in the same edit as this markup — the trap that has
+     bitten this app three times and is invisible to every assertion. */
+  len.onchange = () => { dw.hidden = len.value !== '0'; };
+  go.onclick = async () => {
+    const code = $('#pr-inv-who').value;
+    const days = Number(len.value);
+    const until = days ? addDays(days) : ($('#pr-inv-date').value || addDays(7));
+    if (until < addDays(0)) { toast('Pick a date in the future'); return; }
+    const url = location.href.split('#')[0] + '#invite=' + window.LeagueOwner.invite(code, until);
+    const out = $('#pr-inv-out');
+    out.innerHTML = `<div class="pr-share-out">
+      <div class="t">Send this to <b>${esc(code)}</b> — it opens the Lab on their phone until <b>${esc(niceDate(until))}</b>:</div>
+      <textarea readonly rows="3"></textarea>
+    </div>`;
+    const ta = out.querySelector('textarea');
+    ta.value = url; ta.focus(); ta.select();
+    /* The share sheet is the actual job — it lands in the message thread with
+       the person it is for. Clipboard, then a selected field, same ladder the
+       app's own "send it to someone" uses and for the same reason: a copy
+       button that fails silently leaves him holding nothing. */
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Power Rankings Lab', text: `You're on the rankings this week — ${url}` }); return; } catch (_) {}
+    }
+    if (await copyText(url)) toast(`Copied — send it to ${code}`);
+    else toast('Select the link and copy it');
+  };
+}
+
 function paintRank() {
   show('#pr-rank');
   const host = $('#pr-rank');
@@ -1714,7 +1825,7 @@ function paintRank() {
       </details>
     </div>`;
 
-  host.innerHTML = head + `<ol class="pr-list">${rows}</ol>` + foot;
+  host.innerHTML = head + `<ol class="pr-list">${rows}</ol>` + foot + inviteHTML();
 
   // Textareas get their value assigned, never interpolated into markup.
   $$('.pr-row', host).forEach((li) => {
@@ -1757,6 +1868,7 @@ function paintRank() {
   };
 
   paintPubState();
+  wireInvite();
 
   const pubBtn = $('#pr-publish');
   if (pubBtn) pubBtn.onclick = async () => {
@@ -1877,10 +1989,23 @@ function paintShared(p) {
    here, deliberately — that payload is self-contained, read-only, and is the
    thing he pastes into the group chat. Locking the page he sends people to
    would have locked the league out of the rankings themselves. */
-function paintGate(msg) {
+/* ⚠️ THREE WAYS AN INVITE FAILS AND THEY ARE NOT THE SAME SENTENCE — the rule
+   this app follows everywhere else (an empty archive, an unreachable one and a
+   missing one), applied to the one screen a guest can get stuck on. "That link
+   ran out" sends them back to the commissioner; "that link is damaged" sends
+   them back to the message it arrived in; and a revoked pass is neither, so it
+   says what actually happened rather than inventing a reason. */
+const INVITE_BAD = {
+  expired: 'That invite has run out. Ask the commissioner for a new one — they can send another in a few taps.',
+  bad: "That invite link didn't come through in one piece — messaging apps sometimes cut a long link in half. Ask for it again, and open it straight from the message.",
+  revoked: 'That invite is no longer valid — all outstanding invites were cancelled. Ask the commissioner for a fresh one.',
+};
+
+function paintGate(msg, note) {
   show('#pr-load');
   $('#pr-load').innerHTML = `<div class="pr-card pr-load pr-gate">
     <b>🔒 Commissioner's tool</b>
+    ${note ? `<p class="pr-gate-note">${esc(note)}</p>` : ''}
     <p>This is where the week gets built. The finished set goes to the league in the app — and thirteen seasons of history are in there too, open to everyone.</p>
     <form id="pr-gate-f" autocomplete="off">
       <input id="pr-gate-i" type="password" inputmode="text" autocapitalize="none" autocorrect="off"
@@ -1921,12 +2046,33 @@ function paintGate(msg) {
 function addLock() {
   const top = document.querySelector('.pr-top');
   if (!top || $('#pr-lock')) return;
-  const b = el('button', 'pr-lock', '🔒 Lock');
+  const g = window.LeagueOwner.guest && window.LeagueOwner.guest();
+  const b = el('button', 'pr-lock', g ? '🔒 Sign out' : '🔒 Lock');
   b.type = 'button';
   b.id = 'pr-lock';
-  b.title = 'Lock this device — you will need the passphrase again';
-  b.onclick = () => { window.LeagueOwner.lock(); location.reload(); };
+  /* ⚠️ A guest's way out is not the owner's. His restores the passphrase
+     prompt; theirs ends a pass they cannot re-enter — so the label and the
+     warning have to say which, or one of them taps expecting the other. */
+  b.title = g ? 'End your access on this device — you would need a new invite' : 'Lock this device — you will need the passphrase again';
+  b.onclick = () => {
+    if (g && !confirm('Sign out of the Lab?\n\nYou would need a new invite from the commissioner to get back in.')) return;
+    if (g) window.LeagueOwner.endGuest(); else window.LeagueOwner.lock();
+    location.reload();
+  };
   top.appendChild(b);
+}
+
+/* 👥 Who this device is building as, and until when. A guest who does not know
+   their pass is time-boxed reads its expiry as the app breaking. */
+function guestBanner() {
+  const g = window.LeagueOwner.guest && window.LeagueOwner.guest();
+  const main = document.querySelector('.pr-main');
+  if (!g || !main || $('#pr-guest')) return;
+  const d = el('div', 'pr-card pr-guestbar');
+  d.id = 'pr-guest';
+  d.innerHTML = `<b>👥 You're building this week's rankings.</b>
+    <p>The commissioner handed you the tool${g.until ? ` until <b>${esc(niceDate(g.until))}</b>` : ''}. Build the order, write the takes, then send it out — 📤 and 📋 go straight to the league chat, and 🚀 hands you the file for the commissioner to put in the app.</p>`;
+  main.insertBefore(d, main.firstChild);
 }
 
 /* ------------------------------------------------------------------ boot -- */
@@ -1945,6 +2091,29 @@ async function boot() {
      stops a recipient seeing a different ranking than the one that was sent. */
   const sh = sharedFromHash();
   if (sh) { S.shared = sh; paintShared(sh); return; }
+  /* 👥 AN INVITE IS REDEEMED BEFORE THE GATE, for the same structural reason
+     a shared link is read before it: it is the thing that gets somebody past
+     the gate, so a gate in front of it would be a key locked inside the door
+     it opens. That is the v23 fault (a door that only opened from the inside)
+     and it is worth naming here, because the shape is identical.
+     🚨 AND IT MUST READ THE HASH BEFORE ANYTHING CLEARS IT. The first cut sat
+     four lines below the "don't strand the reader on a blank page" branch,
+     which calls `replaceState` and empties `location.hash` — so by the time
+     this ran there was nothing left to redeem and every invite landed on the
+     passphrase gate with no message, looking exactly like a link that had
+     never worked. **A value consumed at init cannot answer a question asked
+     later**: the v1 lesson wearing yet another costume, and only rendering
+     the guest's own case caught it.
+     ⚠️ The hash is stripped either way — an invite left in the address bar is
+     one bookmark away from being re-redeemed after it was ended on purpose,
+     and it is the kind of link that gets forwarded on. */
+  const inv = /[#&]invite=([A-Za-z0-9\-_]+)/.exec(location.hash || '');
+  if (inv) {
+    const r = window.LeagueOwner ? window.LeagueOwner.accept(inv[1]) : 'bad';
+    history.replaceState(null, '', location.pathname + location.search);
+    if (r !== 'ok') { paintGate('', INVITE_BAD[r] || INVITE_BAD.bad); return; }
+  }
+
   if (location.hash) {
     // A hash that isn't a valid payload: don't strand the reader on a blank page.
     history.replaceState(null, '', location.pathname + location.search);
@@ -1953,9 +2122,13 @@ async function boot() {
   /* Everything past here is the authoring tool, so the gate goes here rather
      than at the top of the file: the shared view above must stay open, and
      nothing below should run — no backend call, no draft restored — until the
-     device has answered. */
-  if (!window.LeagueOwner || !window.LeagueOwner.is()) { paintGate(''); return; }
+     device has answered.
+     ⚠️ `mayLab()`, not `is()` — an invited manager gets the tool. It is still
+     `is()` that decides whose VOICE the app speaks in and who may hand out
+     further invites; those are different questions and stay different. */
+  if (!window.LeagueOwner || !window.LeagueOwner.mayLab()) { paintGate(''); return; }
   addLock();
+  guestBanner();
 
   /* 🚨 CACHE FIRST, THEN REVALIDATE (v25). The device has held the last good
      payload since v1 (`powerlab:season`) — but only as a FALLBACK for a failed

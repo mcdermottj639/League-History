@@ -256,8 +256,55 @@ console.log(`  ${bad ? '❌' : '✅'} storylines: ${window.LeagueHistory._storie
     if (got.length) { console.log(`  ❌ the passphrase is one of the obvious guesses: ${got.join(', ')}`); bad++; }
     else if (O.is()) { console.log('  ❌ a failed unlock still set the key'); bad++; }
     else console.log(`  ✅ the gate: hash only, ${GUESSES.length} obvious guesses refused`);
+    inviteLaws(O);
     done();
   });
+}
+
+/* ══ 👥 INVITE LAWS (v33) ══════════════════════════════════════════════════
+   None of this is visible in a render, which is exactly why it is asserted.
+   The one that matters most is the second: a guest pass must never make
+   `is()` true, because `is()` is what keeps the commissioner's name off the
+   name picker and what gates minting further invites. It is one boolean away
+   from being wrong and nothing on screen would show it. */
+function inviteLaws(O) {
+  const day = (n) => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10);
+  const fail = (m) => { console.log(`  ❌ ${m}`); bad++; };
+  O.lock(); O.endGuest();
+
+  if (O.accept(O.invite('Hyman', day(7))) !== 'ok') return fail('a fresh invite was refused');
+  const g = O.guest();
+  if (!g || g.who !== 'Hyman') return fail('an accepted invite did not record who it was for');
+  if (!O.mayLab()) return fail('a valid guest pass does not open the Lab');
+  /* 🚨 THE LOAD-BEARING ONE. */
+  if (O.is()) return fail('a guest pass made the device read as the OWNER — the picker would offer his name');
+
+  O.endGuest();
+  if (O.mayLab() || O.guest()) return fail('signing out left the pass in place');
+
+  if (O.accept(O.invite('Hyman', day(-1))) !== 'expired') return fail('an invite that ran out was accepted');
+  if (O.guest()) return fail('an expired invite still stored a pass');
+  if (O.accept('!!not-base64!!') !== 'bad') return fail('a damaged invite was not reported as damaged');
+  if (O.accept(O.invite('Hyman', 'whenever')) !== 'bad') return fail('an invite with a junk date was accepted');
+
+  /* An invite issued before the revoke line is dead however long it had left:
+     the owner's only real take-back, since a pass lives on another phone. */
+  const old = JSON.parse(Buffer.from(O.invite('Hyman', day(30)).replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString());
+  old.i = '2000-01-01';
+  const stale = Buffer.from(JSON.stringify(old)).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  if (O.accept(stale) !== 'revoked') return fail('an invite issued before INVITES_FROM was still accepted');
+
+  /* A pass that expires overnight must be dead on the next READ, not on a
+     timer — a page left open for three days must not still be inside. */
+  O.accept(O.invite('Hyman', day(1)));
+  try {
+    const raw = JSON.parse(global.localStorage.getItem('lh:guest'));
+    raw.u = day(-1);
+    global.localStorage.setItem('lh:guest', JSON.stringify(raw));
+  } catch (_) { return fail('could not reach the stored pass'); }
+  if (O.guest() || O.mayLab()) return fail('a pass that ran out was still open on the next read');
+
+  console.log('  ✅ invites: expire, revocable, damaged ones refused, and never grant owner');
 }
 
 function done() {

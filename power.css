@@ -184,6 +184,49 @@ body.pr-page {
 .pr-btn.ghost { background: transparent; color: var(--muted); font-weight: 700; }
 .pr-actions .pr-note + .pr-btn { margin-top: 14px; }
 
+/* ---- 👥 guest pass + invites --------------------------------------------
+   ⚠️ The `[hidden]` rule is not defensive padding. `.pr-inv-f` is
+   `display: flex` at (0,1,0) and the UA's `[hidden] { display: none }` is
+   also (0,1,0) — a tie that the LATER rule wins, and this stylesheet loads
+   after the UA sheet. So `el.hidden = true` on the date row would have been a
+   visual no-op. Written in the same edit as the markup that toggles it,
+   because no assertion can see this and only a render can. */
+.pr-guestbar { border-left: 3px solid var(--accent); }
+.pr-guestbar b { display: block; font-size: 14px; margin-bottom: 4px; }
+.pr-guestbar p { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+.pr-guestbar p b { display: inline; font-size: inherit; color: var(--text); }
+
+.pr-invite summary, .pr-how summary {
+  /* ⚠️ 38px FLOOR. Both of these were `padding: 2px 0` and measured 21px — a
+     little over half the floor this app holds everything else to, on the one
+     control that opens the card. Pre-existing on `.pr-how`; fixed with its
+     twin rather than only where the new code happened to be (v3). */
+  cursor: pointer; font-size: 14px; font-weight: 800;
+  min-height: 38px; display: flex; align-items: center; gap: 6px;
+}
+.pr-inv-b { padding-top: 6px; }
+.pr-inv-f { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
+.pr-inv-f[hidden] { display: none; }
+.pr-inv-f > span {
+  flex: 0 0 52px; font-size: 11px; font-weight: 800; letter-spacing: 1.2px;
+  text-transform: uppercase; color: var(--muted);
+}
+.pr-inv-f select, .pr-inv-f input {
+  flex: 1 1 auto; min-width: 0; min-height: 44px; padding: 8px 10px;
+  font: inherit; font-size: 16px;  /* 16px: iOS zooms a smaller field on focus */
+  color: var(--text); background: var(--card-2);
+  border: 1px solid var(--line); border-radius: 10px;
+}
+
+/* An invite that failed is not the same kind of line as the body copy around
+   it — and `.pr-load p` is (0,1,1), so an unscoped class would lose to it and
+   paint the same muted grey. The v21 lesson, in the same file. */
+.pr-gate .pr-gate-note {
+  color: var(--text); font-weight: 700; font-size: 13px;
+  background: var(--card-2); border: 1px solid var(--line);
+  border-radius: 10px; padding: 10px 12px; margin: 0 0 10px;
+}
+
 /* ---- ↩️ the published state --------------------------------------------
    Ruled off from the four action buttons because it is a different KIND of
    control: those do something to this week, this one reports what has already
@@ -193,7 +236,7 @@ body.pr-page {
 .pr-pubstate .pr-note { margin-top: 0; }
 .pr-pubstate .pr-note b { color: var(--text); }
 
-.pr-how summary { cursor: pointer; font-size: 14px; font-weight: 800; padding: 2px 0; }
+
 .pr-how-b { font-size: 13.5px; line-height: 1.6; color: var(--text); }
 .pr-how-b ul { margin: 8px 0; padding-left: 18px; }
 .pr-how-b li { margin-bottom: 7px; }
