@@ -410,9 +410,15 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     sheet padded non-square logos to 144px with arbitrary letterbox BANDS
     (Zach filled 54% of its tile, McD 97%), so at the size a rankings row uses
     they read as different KINDS of thing. The bands are trimmed and the image
-    centre-cropped square on the nine where nothing is lost — plus Hurd, a new
-    2026 diner photo the owner supplied, plus Riz (a crashed Prime Air jet, for
-    "Jefferson Airplane") and Gotch (Judge Judy, for "Thurgood Marshall"). The
+    centre-cropped square on the nine where nothing is lost. **Four crests are
+    2026 replacements the owner supplied, each matched to its team name** —
+    Hurd (Aaron Rodgers down, for "Aarogant Fraudgers"), Zach (Jared Goff, for
+    "Jared Goff Hits Women"), Riz (a crashed Prime Air jet, for "Jefferson
+    Airplane") and Gotch (Judge Judy, for "Thurgood Marshall"). ⚠️ Each was
+    framed by what survives at the **40px a rankings row uses**, not by what
+    looks best large — that is the only size most of the league ever sees one
+    at, and it is what ruled out the wider Judge Judy crop (its nameplate is
+    illegible there anyway) and the anonymous centre crop of the plane. The
     remaining wordmark crests (Woods "Morning Wood", Buley "Morning Dew") are
     LEFT WHOLE: a square crop cuts the words, and the words are the joke. ⚠️ **CC was a
     fourth, and only the owner looking at it caught that** — its art spans the
