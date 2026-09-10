@@ -77,9 +77,20 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 
 ## Files
 
-- `index.html` — the members' app. Header, name picker, two-level nav.
-- `league.js` — the shell: identity, router, jump nav, the rankings view.
+- `index.html` — the members' app. Header (brand · **?** · who-you-are chip),
+  name picker, two-level nav, and the empty `#lg-sheet` the ? fills.
+- `league.js` — the shell: identity, router, jump nav, the rankings view, and
+  the **? sheet** (`helpHTML` / `openHelp` / `closeHelp`).
   It is deliberately small; all the archive logic lives in `history.js`.
+  - ⚠️ **The ? sheet's tab list is BUILT FROM `L1` + `LH.SUBS`** — the app's own
+    source of truth for what the tabs are and what they are called. `HELP` adds
+    only the one sentence a tab cannot know about itself, keyed by the same
+    code, and a tab with no sentence still lists itself. A hand-typed list of
+    tabs would drift the first time one is renamed, the same way a hand-kept
+    jump-nav manifest would.
+  - ⚠️ **The badge key inside it comes from `LH.key()`, not from prose here.**
+    It quotes "119 bracket games from 7 of 13 seasons" — counts that must
+    re-derive, so they stay in `history.js` where the data is.
 - `league.css` — the `.lg-` layer. Loaded LAST, so it wins ties.
 - `history.js` — **the archive** (~1,130 lines): the curated 13-season data,
   a single-pass stats engine, and every view. Exposes ONE global,
@@ -101,9 +112,11 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     Records · Cum Bowl · Seasons (v6 — "You" was fifth and is second now; the
     owner's call). Reordering is that array alone; `VIEWS` is a map and
     `league.js` just walks `SUBS`.
-  - `view(key)` — `hon` · `you` · `rec` · `cb` · `sea`
+  - `view(key)` — `hon` · `you` · `rec` · `cb` · `sea`. **Storylines opens
+    `hon`** (v13), in the slot the badge key used to hold.
   - `profile(mgr)` — the drill-down every name opens
   - `setMe(mgr)` / `me()` / `name(mgr)` / `roster()` — identity
+  - `key()` — the three-badge provenance key, for the ? sheet in `league.js`
 - ⚠️ **Two render faults the v9 move exposed, both pre-existing and both
   invisible to every assertion — see the two 🚨 comments in `league.css`:**
   (a) `el.hidden = true` on `#lg-jump` was a **visual no-op**, because
@@ -311,7 +324,8 @@ untrustworthy. Every view carries a badge saying which it is.
 
 ## 📌 Storylines — detected, never written
 
-The cards on Records, on the You page and on every profile started life as
+The cards at the top of Honours, on the You page and on every profile (v13 —
+they opened Records until then) started life as
 paragraphs typed into a chat. **They are not typed in now, and that is the
 whole point:** a sentence like "Buley has finished 11th seven times" is wrong
 the moment a season lands. A detector looks for a SHAPE in the data and fills
@@ -500,6 +514,47 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
 
+- **v13 — Storylines opens the app; the key moves behind a ? (10 Sep 2026)** —
+  the owner: *"I want story lines moved to where how to read this is on honours
+  page. And how to read this goes up to a ? Button at the top that explains all
+  the functions of the app along with it."*
+  - **Storylines was the best thing the archive produces and it was filed
+    third-of-five, behind a tab called Records.** It now opens **Honours**,
+    which is the page the app lands on — so the first thing anyone sees is the
+    league arguing with itself rather than a table. Nothing else moved: it is
+    one term in the `hon` view and one term out of `rec`.
+  - **The badge key was a card at the top of Honours, and a reference on ONE
+    page is a reference nobody has when they need it** — a ⚑ badge on the Cum
+    Bowl table sat four taps from its own explanation. Behind the **?** in the
+    header it is reachable from every page, and it stops spending the best slot
+    in the app on a legend.
+  - **The sheet explains the whole app, not just the badges**: what the archive
+    is, what tapping your name does (with the picker one tap away), what each
+    tab holds, how the jump chips and name-taps work, the badge key, and the
+    small print about the two untracked managers.
+  - 🚨 **The tab list is BUILT FROM THE TABS** (`L1` + `LH.SUBS`), with `HELP`
+    supplying only the one line a tab cannot know about itself. A second
+    hand-kept list of tabs is the jump-nav fault in a different costume: it
+    drifts the first time a tab is renamed, and nothing fails when it does.
+  - 🚨 **`LH.key()` stays in `history.js`.** The key quotes "119 bracket games
+    from 7 of 13 seasons, plus 13 Cum Bowls" — three numbers that must
+    re-derive. Typing them into the sheet in `league.js` would have made the
+    help text the one place in the app that lies after a season lands.
+  - ⚠️ **The sheet hides by property AND by rule.** `:root[data-palette]
+    .lg-sheet { display: flex }` is (0,2,1) and the UA's `[hidden]` is (0,1,0),
+    so `box.hidden = true` alone would have left a full-screen overlay painted
+    over the app forever — the exact v9 jump-nav trap, which is why the rule
+    was written at the same time as the markup this time rather than found in
+    a render.
+  - Built on OPEN, never at load: it names the reader and quotes archive
+    counts, and both answer differently after `setMe` (the v1 lesson).
+  - Three ways out — ✕, the backdrop, Esc — and the sheet's own "pick your
+    name" button closes it first, or the picker would open underneath it.
+  - Verified at 390px and 900px: header fits the longest name beside the new
+    button, no tap target under 38px, no type under 9px, no overflow, all three
+    close paths, and the jump nav picked up Storylines on Honours and dropped
+    it from Records with no code change — because it reads the DOM.
+
 - **v12 — the styling was the ask; the words were not (10 Sep 2026)** — the
   owner, on v11's Storylines lead: *"U changed the story lines. Change them
   back."*
@@ -645,8 +700,9 @@ stale entry written in the present tense reads as current to anyone who greps.
     managers; the other two would have opened their own page and found nothing.
     `signature` closes that, and `checks.js` now fails if it ever reopens.
   - Placed in three spots rather than a sixth tab (five already crowd 390px):
-    the top of **Records**, **Your storylines** on the You page, and each
-    manager's own on their profile.
+    the top of **Records** (⚠️ **SUPERSEDED in v13 — they open Honours now**,
+    where the badge key used to sit), **Your storylines** on the You page, and
+    each manager's own on their profile.
   - `checks.js` moved into the repo from the scratch harness — it was testing
     a path in the other repo, which stopped existing when history.js moved.
 

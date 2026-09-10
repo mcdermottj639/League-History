@@ -219,3 +219,80 @@
    answered a question nobody asked. The panel and the measure below are the
    whole change now; every lead is the exact copy it has always been.
    Same family as v3: the display was the problem, so fix the display. */
+
+/* ── the ? button and its sheet ───────────────────────────────────────────
+   Always in the header, so the badge key it holds is reachable from the page
+   the badge is ON — it used to be a card at the top of Honours, four taps
+   from the ⚑ on the Cum Bowl table. */
+:root[data-palette] .lg-hd-r { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+:root[data-palette] .lg-help {
+  width: 40px; height: 40px; flex: 0 0 auto; padding: 0; border-radius: 999px;
+  border: 1px solid var(--tr2); background: var(--sf); box-shadow: var(--e1);
+  font: 900 17px/1 Archivo, system-ui, sans-serif; color: var(--ac7); cursor: pointer; }
+:root[data-palette] .lg-help:hover { background: var(--sf2); }
+
+/* A bottom sheet on a phone, a centred card once there is room for one. */
+:root[data-palette] .lg-sheet {
+  position: fixed; inset: 0; z-index: 60;
+  display: flex; align-items: flex-end; justify-content: center; }
+/* 🚨 Same specificity trap the jump nav hit: `[hidden] { display: none }` in
+   the UA sheet is (0,1,0) and the rule above is (0,2,1), so `hidden` alone is
+   a VISUAL NO-OP here and the sheet would paint over the app forever. */
+:root[data-palette] .lg-sheet[hidden] { display: none; }
+:root[data-palette] .lg-sheet-bg {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  border: 0; padding: 0; background: rgba(var(--base), .5); cursor: pointer; }
+:root[data-palette] .lg-sheet-in {
+  position: relative; display: flex; flex-direction: column;
+  width: 100%; max-width: 560px; max-height: 92vh;
+  background: var(--gr); border-radius: var(--r3) var(--r3) 0 0;
+  box-shadow: 0 -10px 44px rgba(0, 0, 0, .28); }
+@media (min-width: 700px) {
+  :root[data-palette] .lg-sheet { align-items: center; padding: 24px; }
+  :root[data-palette] .lg-sheet-in { border-radius: var(--r3); max-height: 88vh; }
+}
+:root[data-palette] .lg-sheet-h {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 14px 16px 11px; border-bottom: 1px solid var(--tr); }
+:root[data-palette] .lg-sheet-h h2 {
+  margin: 0; font: 900 16px/1.1 Archivo, system-ui, sans-serif;
+  letter-spacing: -.01em; color: var(--ink); }
+:root[data-palette] .lg-sheet-x {
+  width: 38px; height: 38px; flex: 0 0 auto; padding: 0; border-radius: 999px;
+  border: 1px solid var(--tr2); background: var(--sf); color: var(--gy);
+  font-size: 14px; line-height: 1; cursor: pointer; }
+:root[data-palette] .lg-sheet-b {
+  overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 15px 16px 26px; }
+
+:root[data-palette] .lg-sh { margin: 0 0 18px; }
+:root[data-palette] .lg-sh:last-child { margin-bottom: 0; }
+:root[data-palette] .lg-sh h3 {
+  margin: 0 0 7px; font: 800 10px/1 Archivo, system-ui, sans-serif;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--ac7); }
+:root[data-palette] .lg-sh p {
+  margin: 0 0 8px; font-size: 12.5px; line-height: 1.55; color: var(--gy); }
+:root[data-palette] .lg-sh p b { color: var(--ink); font-weight: 800; }
+:root[data-palette] .lg-sheet-go {
+  display: inline-flex; align-items: center; min-height: 40px; padding: 0 15px;
+  border: 0; border-radius: 999px; background: var(--grad); color: var(--on-ac);
+  font: 800 12px/1 Archivo, system-ui, sans-serif; cursor: pointer; }
+
+/* One card per tab, its sub-tabs nested inside the tab that owns them —
+   which is the shape of the nav itself, two levels deep. */
+:root[data-palette] .lg-sh-l { display: grid; gap: 9px; }
+:root[data-palette] .lg-sh-t {
+  padding: 11px 13px; background: var(--sf); border-radius: var(--r1);
+  box-shadow: var(--e1); }
+:root[data-palette] .lg-sh-t > b {
+  display: block; font: 800 12.5px/1.25 Archivo, system-ui, sans-serif; color: var(--ink); }
+:root[data-palette] .lg-sh-t i {
+  display: block; font-style: normal; font-size: 11.5px; line-height: 1.5;
+  color: var(--gy); margin-top: 3px; }
+:root[data-palette] .lg-sh-s {
+  display: grid; gap: 9px; margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid var(--tr); }
+:root[data-palette] .lg-sh-s b {
+  font: 800 11.5px/1.2 Archivo, system-ui, sans-serif; color: var(--ink); }
+:root[data-palette] .lg-sh-s i { font-size: 11px; }
+:root[data-palette] .lg-sh-key {
+  padding: 11px 13px; background: var(--sf); border-radius: var(--r1); box-shadow: var(--e1); }

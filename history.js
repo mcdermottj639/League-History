@@ -671,15 +671,19 @@
   const PO_YRS = new Set(PLAYOFF_GAMES.map((g) => g.yr)).size;
   const PO_NOTE = `⚠️ <b>Playoff games only.</b> The archive has final standings and playoff brackets — <b>no regular-season schedule</b> — so this covers the ${PLAYOFF_GAMES.length} bracket games across ${PO_YRS} seasons, plus the ${CUMBOWL.length} Cum Bowls. It is not a career record.`;
 
-  /* The tab's own key, painted once at the top so every badge below has a
-     meaning the reader has already been given. */
+  /* What the three badges mean. It was a card at the top of Honours; from v13
+     it lives in the ? sheet in the header, where it is reachable from EVERY
+     page instead of only the one the reader happened to open on — a badge on
+     the Cum Bowl table was four taps from its own key.
+
+     🚨 The counts stay HERE, derived, in the module that holds the data. The
+     sheet is assembled in `league.js`, and a hand-typed "119 bracket games"
+     over there would be wrong the first time a season lands — the same rule
+     the storylines follow. `league.js` asks for this; it never restates it. */
   function keyHTML() {
-    return `<div class="ffp-card fh-key">
-      <div class="fh-key-h">How to read this</div>
-      <div class="fh-key-r">${tag('fin')}<span>The <b>rank</b> in every table is where you finished after the playoffs.</span></div>
+    return `<div class="fh-key-r">${tag('fin')}<span>The <b>rank</b> in every table is where you finished after the playoffs.</span></div>
       <div class="fh-key-r">${tag('reg')}<span>Every <b>W-L and points total</b> is the regular season — that is what ESPN's standings hold.</span></div>
-      <div class="fh-key-r">${tag('po')}<span>Anything with this badge counts <b>playoff games only</b>: ${PLAYOFF_GAMES.length} bracket games from ${PO_YRS} of ${SEASON.length} seasons, plus ${CUMBOWL.length} Cum Bowls. Small samples, and no regular-season schedule exists to widen them.</span></div>
-    </div>`;
+      <div class="fh-key-r">${tag('po')}<span>Anything with this badge counts <b>playoff games only</b>: ${PLAYOFF_GAMES.length} bracket games from ${PO_YRS} of ${SEASON.length} seasons, plus ${CUMBOWL.length} Cum Bowls. Small samples, and no regular-season schedule exists to widen them.</span></div>`;
   }
 
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1534,7 +1538,12 @@
   const SUBS = [['hon', 'Honours'], ['you', 'You'], ['rec', 'Records'],
                 ['cb', 'Cum Bowl'], ['sea', 'Seasons']];
   const VIEWS = {
-    hon: () => heroHTML() + keyHTML() + champsHTML() + trophyHTML() + ringlessHTML(),
+    /* 🚨 Storylines opens Honours (v13, owner's call), in the slot the badge
+       key used to hold. It is the best thing the archive produces and it was
+       filed third-of-five behind a tab called Records, so most readers never
+       reached it; the key it replaced is a reference, and a reference belongs
+       behind the ? rather than above the champions. */
+    hon: () => heroHTML() + storiesHTML() + champsHTML() + trophyHTML() + ringlessHTML(),
     sea: () => seasonsHTML(),
     /* Playoff record + Finals reached sit HERE, not on Cum Bowl (v9, owner's
        call). They are career résumé — who gets in, who reaches the final —
@@ -1542,7 +1551,7 @@
        Filing them there put the league's best achievement behind the tab
        named for its worst. Ordered baseline-first: who makes the playoffs,
        then the two cards that comment on what happens once you are in. */
-    rec: () => storiesHTML() + recordHTML() + luckHTML() + rivalsHTML() + playoffHTML() + curseHTML() + seedHTML(),
+    rec: () => recordHTML() + luckHTML() + rivalsHTML() + playoffHTML() + curseHTML() + seedHTML(),
     cb: () => cumbowlHTML(),
     you: () => youHTML(),
   };
@@ -1558,6 +1567,9 @@
       .map((a) => ({ m: a.m, name: realNm(a.m), logo: a.logo, seasons: a.seasons, t1: a.t1 })),
     view: (k) => (VIEWS[k] || VIEWS.hon)(),
     profile: (m) => profileHTML(m),
+    /* The three-badge key, for the ? sheet `league.js` builds. Derived here so
+       the counts in it can never be a stale copy of the archive. */
+    key: () => keyHTML(),
     /* Exposed for the repo's own checks — nothing in the app reads these. */
     _stats: { SEASON, ALL, MEET, PAIRS, CUMBOWL, PLAYOFF_GAMES },
     _stories: () => stories(),

@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v12';
+  const APP_VERSION = 'v13';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -113,6 +113,116 @@
       : '<span>👤 Who are you?</span>';
     $('#lg-me').setAttribute('title', me ? `Reading as ${LH.name(me)} — tap to change` : 'Tap to pick your name');
   }
+
+  /* ══ ❓ HOW THIS APP WORKS ══════════════════════════════════════════════
+     One sheet behind the ? in the header, reachable from every page. It holds
+     what the app previously said in the wrong place or not at all: what each
+     tab is for, how to get around, and what the three provenance badges mean.
+
+     🚨 That badge key was a card at the top of Honours (v13 moved it), which
+     meant a ⚑ badge on the Cum Bowl table sat four taps from its own
+     explanation. A reference is needed wherever the thing it explains appears,
+     so it belongs behind a control that is always on screen — not above the
+     champions, where it also cost the best card in the app its slot.
+
+     🚨 THE TAB LIST IS BUILT FROM THE TABS. `L1` and `LH.SUBS` are the app's
+     own source of truth for what exists and what it is called; a second list
+     typed out here would drift the first time a tab is renamed or reordered —
+     the same reason the jump nav reads the rendered DOM instead of a manifest.
+     `HELP` adds ONLY the sentence a tab cannot know about itself, and a tab
+     with no sentence still lists itself rather than disappearing. */
+  const HELP = {
+    hist: 'Thirteen seasons, 2013–2025. Five pages:',
+    rank: "The commissioner's weekly power rankings — every team in order, with a take on each. Only during the season, and only once he publishes a set.",
+    hon: 'The champions, the trophy case, and who is still waiting. Opens with the storylines the archive throws up.',
+    you: 'Your thirteen seasons — medals, Cum Bowls, your best and worst years.',
+    rec: 'Every leaderboard: the record book, the luck index, rivalries, playoff record, the champion\'s curse.',
+    cb: "The other bracket. The two worst seeds play on the first weekend of the playoffs, and the loser is the league's worst.",
+    sea: 'All thirteen final standings, newest first.',
+  };
+
+  function helpTabHTML(label, desc, subs) {
+    return `<div class="lg-sh-t">
+      <b>${esc(label)}</b>${desc ? `<i>${esc(desc)}</i>` : ''}
+      ${subs ? `<div class="lg-sh-s">${subs.map(([k, l]) =>
+        `<div><b>${esc(l)}</b>${HELP[k] ? `<i>${esc(HELP[k])}</i>` : ''}</div>`).join('')}</div>` : ''}
+    </div>`;
+  }
+
+  function helpHTML() {
+    const me = LH.me();
+    return `<button type="button" class="lg-sheet-bg" data-close="1" aria-label="Close"></button>
+    <div class="lg-sheet-in" role="dialog" aria-modal="true" aria-labelledby="lg-sheet-t">
+      <div class="lg-sheet-h">
+        <h2 id="lg-sheet-t">How this app works</h2>
+        <button type="button" class="lg-sheet-x" data-close="1" aria-label="Close">✕</button>
+      </div>
+      <div class="lg-sheet-b">
+        <section class="lg-sh">
+          <p>Every final standing of the <b>Nectars Bolonga</b> from <b>2013 to 2025</b>, with all 156 team-seasons mapped to a person and cross-checked against ESPN's own owner column.</p>
+          <p><b>Nothing here is typed in.</b> Every record, rate and storyline is worked out from the archive when the page loads, so none of it can go stale when a season lands.</p>
+        </section>
+
+        <section class="lg-sh">
+          <h3>Tap your name</h3>
+          <p>The whole archive then talks to <b>you</b> — your row highlighted in every table, your seasons on the You page, the sentences written in second person. It is not a login: there is no account, nothing is sent anywhere, and the name lives on this phone only.</p>
+          <button type="button" class="lg-sheet-go" data-pickme="1">${me
+            ? `👤 Reading as ${esc(LH.name(me))} — change`
+            : '👤 Pick your name'}</button>
+        </section>
+
+        <section class="lg-sh">
+          <h3>The tabs</h3>
+          <div class="lg-sh-l">
+            ${L1.map(([k, l]) => helpTabHTML(l, HELP[k], k === 'hist' ? LH.SUBS : null)).join('')}
+          </div>
+        </section>
+
+        <section class="lg-sh">
+          <h3>Getting around</h3>
+          <p>The chips under the tabs <b>jump to a card</b> on the page you are on, and flag the one you are in.</p>
+          <p><b>Every name is a door.</b> Tap anyone, anywhere, for their whole career — then ‹ Back to the league.</p>
+        </section>
+
+        <section class="lg-sh">
+          <h3>How to read this</h3>
+          <p>The archive holds three different kinds of fact, and every number in it carries a badge saying which it is.</p>
+          <div class="lg-sh-key">${LH.key()}</div>
+        </section>
+
+        <section class="lg-sh">
+          <h3>Small print</h3>
+          <p>Two managers are deliberately untracked, so a podium place held by one of them reads <b>not tracked</b> rather than a team name — the standings still show all twelve teams, because a 12-team league that renders 10 rows is lying.</p>
+          <p>The app works with no connection at all once it has loaded. You are on <b>${esc(APP_VERSION)}</b>.</p>
+        </section>
+      </div>
+    </div>`;
+  }
+
+  function openHelp() {
+    const box = $('#lg-sheet');
+    /* Built on open, never at load: it quotes counts out of the archive and
+       names the reader, and both answer differently after `setMe`. The v1
+       fault — a value derived at init cannot answer a question asked later. */
+    box.innerHTML = helpHTML();
+    box.hidden = false;
+    document.body.style.overflow = 'hidden';
+    const x = box.querySelector('.lg-sheet-x');
+    if (x) x.focus();
+  }
+
+  function closeHelp() {
+    const box = $('#lg-sheet');
+    if (!box || box.hidden) return false;
+    box.hidden = true;
+    box.innerHTML = '';
+    document.body.style.overflow = '';
+    const b = $('#lg-help');
+    if (b) b.focus();
+    return true;
+  }
+
+  addEventListener('keydown', (e) => { if (e.key === 'Escape') closeHelp(); });
 
   /* ══ 🏆 RANKINGS ═══════════════════════════════════════════════════════
      Published by the commissioner, read by everyone. It is a FILE in this
@@ -295,6 +405,9 @@
   /* One delegated listener for the whole app — the views are re-rendered
      wholesale, so per-element handlers would be re-bound on every paint. */
   document.addEventListener('click', (e) => {
+    /* The sheet sits over everything, so it gets first refusal on a tap. */
+    if (e.target.closest('#lg-help')) { openHelp(); return; }
+    if (e.target.closest('[data-close]')) { closeHelp(); return; }
     const who = e.target.closest('[data-me]');
     if (who) { choose(who.dataset.me); return; }
     if (e.target.closest('[data-skip]')) {
@@ -302,7 +415,9 @@
       $('#lg-pick').hidden = true; $('#lg-app').hidden = false;
       paint(); return;
     }
-    if (e.target.closest('#lg-me') || e.target.closest('[data-pickme]')) { showPicker(!!LH.me() || skipped()); return; }
+    /* The sheet's own "pick your name" button lands here too, so it has to
+       close behind itself — otherwise the picker opens UNDER the sheet. */
+    if (e.target.closest('#lg-me') || e.target.closest('[data-pickme]')) { closeHelp(); showPicker(!!LH.me() || skipped()); return; }
     const jump = e.target.closest('[data-jump]');
     if (jump) {
       const t = document.getElementById(jump.dataset.jump);
