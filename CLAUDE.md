@@ -793,20 +793,22 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
 
-- **v28 — the link is in the app, and the live site was nine versions behind
+- **v28 — the link to send is in the app, and one ?v= per shared file
   (10 Sep 2026)** — the owner, before sending it out: *"somewhere in the app
   just put the link that I can always copy and paste to send"*, alongside a
   pre-send check of the whole thing.
-  - 🚨 **THE BIGGEST FINDING WAS NOT IN THE CODE, IT WAS IN `main`.** Pages
-    deploys from `main` and `main` was still on **v20** — so the site the link
-    would have gone to was the build from BEFORE the lock: `power.html` named
-    in the footer markup for all eleven to read, and **McD on the name
-    picker**. Every protection this file documents at length (v21's gate,
-    v23's `ownerHere`) existed only on a branch. **A feature that is written,
-    tested, documented and unmerged is a feature the league does not have** —
-    and nothing in the repo says so out loud, because the working tree looks
-    finished from the inside. Check what `main` is on before believing any of
-    this section.
+  - 🚨 **AND A FALSE ALARM WORTH RECORDING, BECAUSE THE NEXT SESSION WILL HIT
+    IT TOO.** This pass opened by reporting that `main` was on **v20** — that
+    the whole v21 lock was undeployed and the live site still had `power.html`
+    in the footer markup with McD on the picker. It was wrong. The container's
+    **local `main` ref was nine commits stale**, created from an old
+    `origin/main` at clone time and never updated, and `git log main` answers
+    from that ref without a word of complaint. `origin/main` was on v27 the
+    whole time. **`main` is a local bookmark, not the deployed state** — this
+    repo deploys from what is on GitHub, so `git fetch` first and read
+    `origin/main`, or a stale ref will have you reporting a security hole that
+    does not exist. Same family as the v1 harness lesson: a stale copy of the
+    truth answers confidently.
   - **The link itself is in the ? sheet**, which is the one control on every
     screen. `navigator.share` first (the iOS share sheet lands straight in the
     group chat, which is the actual job), then the clipboard, then select the
