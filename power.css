@@ -290,3 +290,7 @@ body.pr-page {
   white-space: nowrap;
 }
 .pr-lock:hover { background: var(--card-2); color: var(--text); }
+
+/* The index.json line is one short entry, not a document — a 10-row box
+   around it reads as "more work than it is". */
+.pr-share-out .pr-idx { min-height: 0; }

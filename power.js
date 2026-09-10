@@ -366,6 +366,16 @@ function publishFilename() {
   return `${p.d}-${slug || 'week'}.json`;
 }
 
+/* The line that goes at the top of `rankings/index.json`, newest first.
+   🚨 EVERY FIELD OF IT IS ALREADY IN THE PAYLOAD, so handing over the week
+   file and leaving somebody to work this out by hand was asking them to
+   re-derive data we are holding. `k` must be unique (it is the week key) and
+   an index entry that disagrees with its file is a week nobody can see. */
+function publishIndexEntry() {
+  const p = payload();
+  return JSON.stringify({ k: p.k, l: p.l, d: p.d, f: publishFilename() });
+}
+
 /* The owner's own output format: rank, team, owner, record, PPG, last week,
    then the entry on its own line. This is the copy that gets pasted into the
    league chat, so it matches the layout they already publish in. */
@@ -1552,7 +1562,13 @@ function paintRank() {
     /* 🚨 The filename is half the instruction. A session handed only a blob of
        JSON has to guess where it goes and what to call it, and a guess here
        silently produces a week nobody can see. */
-    if (out) out.innerHTML = `<div class="pr-share-out"><div class="t">Save as <b>rankings/${esc(file)}</b> and add it to <b>rankings/index.json</b>:</div><textarea readonly rows="10"></textarea></div>`;
+    if (out) out.innerHTML = `<div class="pr-share-out">
+      <div class="t">① Save as <b>rankings/${esc(file)}</b> — copied to your clipboard:</div>
+      <textarea readonly rows="10"></textarea>
+      <div class="t">② Add this to the top of the <b>weeks</b> list in <b>rankings/index.json</b>:</div>
+      <textarea class="pr-idx" readonly rows="2">${esc(publishIndexEntry())}</textarea>
+      <p class="pr-note">Or just paste the block above to a Claude session and say nothing else — it knows both steps.</p>
+    </div>`;
     const ta = out && out.querySelector('textarea');
     if (ta) { ta.value = json; ta.focus(); ta.select(); }
     if (await copyText(json)) toast(`Copied — save as rankings/${file}`);

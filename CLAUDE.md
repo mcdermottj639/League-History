@@ -341,6 +341,16 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   - **🚀 Publish to the app** is this repo's addition — see "How the power
     rankings work" below. The share link, the text copy and the one-pager are
     all unchanged from Sports-Hub.
+    - ⚠️ **It hands over BOTH halves of the commit (v24)**: the week file AND
+      the `rankings/index.json` line (`publishIndexEntry()`). Every field of
+      that line — `k`, `l`, `d`, `f` — is already in the payload, so leaving
+      it to be worked out by hand was asking somebody to re-derive data the
+      Lab is holding, once a week, forever.
+    - ⚠️ **All four action buttons call `publish()`**, not just the 🚀 one, so
+      the ▲▼ movement snapshot cannot be missed by using a different button.
+    - **The week is pre-written, order AND all twelve takes** (`restoreOrBuild`
+      → `writeWeek`). Editing is optional: open, tap 🚀, paste. That is the
+      difference between a weekly column that happens and one that doesn't.
 - `rankings/` — published weeks. `index.json` lists them; one JSON file each.
 - `logos/` — the league's own twelve crests, keyed by manager.
 - `sw.js` — network-first service worker. Bump `CACHE` on every release.
@@ -614,6 +624,24 @@ whole design:
    first). That is the whole publish step.
 4. Every member's app picks it up on the next load.
 
+> ### 📋 WHEN THE OWNER PASTES A RANKINGS BLOB, DO THIS — no questions needed
+> He does steps 1-2 on his phone and pastes the result here. A paste that is a
+> JSON object with `k`, `l`, `d` and an `o` array IS a week to publish; so is a
+> `power.html#r=<base64url>` share link, which decodes to the identical
+> payload (`shareURL()` and `publishJSON()` both serialise `payload()`).
+> Treat either as the instruction — he should not have to explain it weekly.
+> 1. Write the object verbatim to `rankings/<d>-<slug of l>.json` — the same
+>    name `publishFilename()` shows him. Never re-derive or reformat the rows.
+> 2. **Prepend** `{k, l, d, f}` to `weeks` in `rankings/index.json`. v24 hands
+>    him this line ready-made; older pastes need it built from the payload.
+>    ⚠️ `k` must be UNIQUE — if it is already there he is republishing the
+>    same week, so REPLACE that entry and overwrite the file rather than
+>    adding a second.
+> 3. Commit, push, and **merge to `main`** — Pages only deploys from `main`, so
+>    a week left on a branch is a week nobody can see. Confirm the deploy.
+> 4. Tell him it is live. No version bump is needed: `rankings/` is data, not
+>    code, and the app fetches `index.json` with `cache: 'no-store'`.
+
 Why not have the app compute it live: members have no ESPN cookies and no
 backend, and **a ranking is an opinion column that must not silently re-derive
 itself into a different answer a week after it was written**.
@@ -705,6 +733,45 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v24 — the publish step hands over the whole commit (10 Sep 2026)** — the
+  owner, on the weekly loop: *"I have to do all this. Can't u"*.
+  - **Most of "all this" turned out to be already done, and unadvertised.**
+    The Lab pre-writes the entire week — the order AND all twelve takes — so
+    the true minimum is open · 🚀 Publish · paste. Editing is an option, not a
+    step. That was in the code (`restoreOrBuild` → `writeWeek`) and in no
+    sentence anybody reads, which is its own kind of bug.
+  - ⚠️ **What CANNOT move is the part that needs him**, and it is worth being
+    plain about why rather than promising to automate it: the Lab reads his
+    Render backend, and **this sandbox cannot reach it** (verified — the egress
+    proxy denies the CONNECT). No session can pull the league's data, build the
+    week, or write to a phone's clipboard. And the takes are the product; a
+    ranking nobody argued with is just the standings.
+  - **So the mechanical half got smaller instead.** `publishIndexEntry()` — the
+    `rankings/index.json` line is now handed over beside the week file. Every
+    field of it (`k`, `l`, `d`, `f`) was already in the payload, so leaving it
+    to be worked out by hand was asking somebody to re-derive data the Lab was
+    holding, once a week, forever.
+  - 🚨 **And the bigger fix is in this file, not in the code: a WHEN-HE-PASTES
+    procedure** under "How the power rankings work", written so any session
+    acts on a pasted blob with no explanation from him — including that a
+    `#r=` share link decodes to the same payload, that a repeated `k` means
+    replace rather than append, and that **it must reach `main` or nobody sees
+    it**. The thing he actually has to do every week is not the tapping, it is
+    the explaining.
+  - ⚠️ **A fixture bug nearly got reported to him as a product bug.** The
+    publish test failed on "every row carries a manager code", and the first
+    read was that the Lab's name→manager map had gone stale — which is
+    plausible, because that map IS keyed on team names and this league renames
+    every year. It was the fixture: the backend field is `t.team` and the
+    fixture set `name`, so every row had a blank team name and nothing to map.
+    **A fixture that is wrong in the same direction as a real risk is the
+    easiest false positive to believe.** The test now also asserts the team
+    names render, which is what would have caught it in one step.
+  - Verified by driving the real Lab against a mocked season: unlock → twelve
+    ranked rows, twelve pre-written takes, twelve names rendered, 🚀 produces
+    valid JSON plus an index line whose `k`/`l`/`d`/`f` all agree with the
+    file, every row carrying its manager code, no overflow, no console errors.
 
 - **v23 — the owner could not reach his own Lab (10 Sep 2026)** — the owner,
   with a screenshot of the app on his phone: *"I don't see the lab or
