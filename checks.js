@@ -128,6 +128,39 @@ const onCard = new Set(card.map((x) => x.m));
 window.LeagueHistory.roster().forEach((r) => {
   if (!onCard.has(r.m)) { console.log(`  ❌ ${r.name} is not on the Storylines card`); bad++; }
 });
+/* 🚨 An `own` story is kept OFF the league card and must still be ON that
+   manager's own pages — both halves, because either one failing silently is
+   the whole point of the flag. Asserted against the RENDERED You page and the
+   RENDERED profile, not against the detector: a story being found and a
+   reader seeing it are different facts, and only the second one matters. */
+window.LeagueHistory.setMe(null);
+const owned = window.LeagueHistory._stories().filter((x) => x.own);
+owned.forEach((x) => {
+  if (window.LeagueHistory._cardStories().some((c) => c.id === x.id && c.m === x.m)) {
+    console.log(`  ❌ own-page story "${x.id}/${x.m}" is on the league card`); bad++;
+  }
+  if (!window.LeagueHistory.profile(x.m).includes(x.head)) {
+    console.log(`  ❌ own-page story "${x.id}/${x.m}" is missing from that profile`); bad++;
+  }
+  window.LeagueHistory.setMe(x.m);
+  /* the heading re-voices for the reader, so re-derive it in their voice */
+  const theirs = (window.LeagueHistory._stories().find((y) => y.id === x.id && y.m === x.m) || {}).head;
+  if (!theirs || !window.LeagueHistory.view('you').includes(theirs)) {
+    console.log(`  ❌ own-page story "${x.id}/${x.m}" is missing from that You page`); bad++;
+  }
+  window.LeagueHistory.setMe(null);
+});
+/* And the flag itself is a decision, not an accident: the owner read the 0-4
+   title-bracket card next to the win%-and-no-title card about the same person
+   and said the other one is better. Recorded by detector id — never by
+   manager — so it cannot be quietly undone, and so it goes quiet on its own
+   if the detector ever stops firing. */
+['wb0'].forEach((id) => {
+  const st = window.LeagueHistory._stories().find((x) => x.id === id);
+  if (st && !st.own) { console.log(`  ❌ story "${id}" is a league headline again; the owner made it own-page only (v15)`); bad++; }
+});
+console.log(`  ${bad ? '❌' : '✅'} own-page stories: ${owned.length} kept off the card, live on their own pages`);
+
 /* And it must still LEAD with the biggest story — coverage that reordered the
    card into a flat roll-call would have fixed one thing by breaking another. */
 if (card.length > 1 && card[0].w < card[card.length - 1].w) { console.log('  ❌ Storylines card is not ranked by weight'); bad++; }

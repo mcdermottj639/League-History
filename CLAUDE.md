@@ -444,6 +444,17 @@ something computed is wrong the first time somebody changes it.
   Fourteen of those is a page, not a column you can scan. **Keep a heading
   under ~45 characters** — one fact in the head, the evidence in the body —
   and remember `nm()` makes it longer or shorter depending on who is reading.
+- **`own: true` keeps a story on that manager's OWN pages only (v15).** Not
+  every finding deserves one of fourteen slots on the league's roll-call —
+  a second card that makes the same case about the same manager in a duller
+  way is one slot spent twice. The story is still detected, still on their You
+  page and profile, still in `_stories()`; `pickStories()` just skips it.
+  ⚠️ **Coverage still beats the flag**: a manager whose ONLY story is an
+  own-page one goes on the card anyway, because a name missing from the
+  roll-call is the worse failure and is the whole reason that selection
+  exists. `checks.js` asserts both halves against the RENDERED You page and
+  profile, and asserts the flag itself by detector id — never by manager — so
+  the decision cannot be quietly undone.
 - **The whole card is the tap target**, not a "X's career →" link under it:
   that link cost a 38px row on every card to repeat a name already in the
   heading. ⚠️ Nothing inside a card may be a `<button>` any more — the card
@@ -558,6 +569,29 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v15 — a card can be a career footnote (10 Sep 2026)** — the owner, with
+  Wolff's 0-4 card circled on the Honours page: *"Remove this one from main
+  storyline page… the other one is better. But still lives for Wolff's you
+  page or anywhere else it's used."*
+  - **Two cards were making the same case about the same person**, and one of
+    them was better: "the best win% in league history and no title" against
+    "0-4 in the title bracket". On a roll-call of twelve managers that is one
+    slot spent twice, and the duller card was the one holding it.
+  - **`own: true` is the mechanism**, and it is deliberately not "delete it":
+    the finding is still true and still worth having where a reader is looking
+    at that manager, so it stays on the You page and the profile and leaves
+    the league card. The freed slot went to a real league-wide find (the
+    biggest playoff RISE, the mirror of the collapse card).
+  - ⚠️ **Coverage still beats the flag** — a manager whose only story is an
+    own-page one is put on the card regardless. The v7 fault (four managers
+    absent from the one screen that is a roll-call of the league) is not
+    allowed back in through a new door.
+  - **Both halves are asserted, against the render.** The check fails if an
+    own-page story appears on the league card, and equally if it goes missing
+    from that manager's You page or profile — a story being found and a reader
+    seeing it are different facts. Verified by reverting the flag: the suite
+    reports the failure.
 
 - **v14 — one playoff record, and the storylines made scannable (10 Sep
   2026)** — the owner, in one message: *"Mine should be the goat discussion

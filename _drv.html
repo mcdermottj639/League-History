@@ -19,6 +19,16 @@
        Loaded BEFORE league.css, which stays the last layer. -->
   <link rel="stylesheet" href="power.css?v=2" />
   <link rel="stylesheet" href="league.css?v=15" />
+<script>
+  try { localStorage.clear(); localStorage.setItem('lh:me', "McD"); } catch (e) {}
+  addEventListener('load', function () {
+    setTimeout(function () {
+      var b = document.querySelector('[data-l2="hon"]');
+      if (b) b.click();
+      document.documentElement.setAttribute('data-drv', 'ready');
+    }, 60);
+  });
+</script>
 </head>
 <body class="lg-body">
   <header class="lg-top">

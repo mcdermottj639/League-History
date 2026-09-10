@@ -1207,7 +1207,11 @@
       const worst = es.slice().sort((a, b) => (a.bw / (a.bw + a.bl)) - (b.bw / (b.bw + b.bl)) || b.bl - a.bl)[0];
       if (worst.bw > 0) return [];
       const blind = worst.yrs.filter((r) => r.place && r.place <= 4 && !PO_YEARS.includes(r.yr)).map((r) => r.yr);
-      return [{ id: 'wb0', m: worst.m, w: 58, src: 'po',
+      /* `own`: this one lives on that manager's own pages only. The owner read
+         it beside the win%-and-no-title card about the same person and said
+         the other one is better — two cards making the same case about one
+         manager is one slot spent twice on the league's roll-call. */
+      return [{ id: 'wb0', m: worst.m, w: 58, src: 'po', own: true,
         head: `${nm(worst.m)} ${vb(worst.m, 'are', 'is')} ${worst.bw}-${worst.bl} in the title bracket.`,
         body: `The only manager without a win in it, across the ${PO_YRS} seasons with a bracket on file.`
           + (blind.length ? ` ${vb(worst.m, 'You reached', nm(worst.m) + ' reached')} the final four in ${blind.join(' and ')} too — those brackets are not on file, so they are not in this record either way.` : '') }];
@@ -1379,14 +1383,27 @@
      the cap is filled with the strongest remaining, and the whole selection is
      then sorted by weight for display. Everyone is in the card, and the card
      still opens on the biggest story in the league. */
+  /* 🚨 `own: true` = A CAREER FOOTNOTE, NOT A LEAGUE HEADLINE (v15, owner's
+     call on the 0-4 card: *"the other one is better"*). Some findings are
+     worth having on the person's own page and not worth one of fourteen slots
+     on the roll-call of the league — especially a second card that says the
+     same thing about the same manager in a duller way. The story is still
+     detected, still on that manager's You page and profile, and still in
+     `_stories()`; it is only kept off the league-wide card.
+     ⚠️ COVERAGE STILL BEATS THE FLAG. If a manager's ONLY story is an
+     own-page one they go on the card anyway — a name missing from the
+     roll-call is the worse failure, and it is the failure this whole
+     selection exists to prevent (v7). */
   const STORY_CAP = 14;
   function pickStories(cap = STORY_CAP) {
-    const all = stories();
-    const best = {}, rest = [];
-    all.forEach((x) => { if (!best[x.m]) best[x.m] = x; else rest.push(x); });
+    const all = stories();                 // already ranked by weight
+    const best = {};
+    all.forEach((x) => { if (!x.own && !best[x.m]) best[x.m] = x; });
+    all.forEach((x) => { if (!best[x.m]) best[x.m] = x; });
     const out = Object.values(best);
     /* The cap is a floor, not a ceiling, when the league outgrows it: a
        twelfth manager must never be dropped to respect a display limit. */
+    const rest = all.filter((x) => !x.own && out.indexOf(x) < 0);
     rest.slice(0, Math.max(0, cap - out.length)).forEach((x) => out.push(x));
     return out.sort((a, b) => b.w - a.w);
   }
