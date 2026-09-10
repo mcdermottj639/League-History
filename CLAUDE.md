@@ -580,6 +580,18 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
 
+- **v17 — two numerals must not touch (10 Sep 2026)** — the owner, on Buley's
+  card: *"Should say 11th seven times."*
+  - **"finished 11th 7 times"** makes a reader parse "11th 7" before the
+    sentence resolves, and at a glance the pair can read as one number. The
+    count is spelled out now (`plWord`), which is the ordinary typesetting rule
+    and reads the way the sentence was said out loud in the first place.
+  - **Small counts only.** "11th seventeen times" would be worse than the
+    problem; above twelve the digit stays and the sentence has to be built so
+    the pair cannot collide.
+  - `checks.js` fails any heading matching `\d(st|nd|rd|th)?\s+\d`. Verified by
+    reverting: the suite reports the exact heading.
+
 - **v16 — the roll-call is one card each (10 Sep 2026)** — the owner, with
   the playoff-rise card circled on their own You page: *"Change my honors page
   storyline to this actually."*

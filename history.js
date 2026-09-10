@@ -982,6 +982,15 @@
   const PO_YEARS = [...new Set(PLAYOFF_GAMES.map((g) => g.yr))].sort();
   const mgrAt = (yr, t) => { const s = SEASON.find((x) => x.yr === yr); const r = s && s.rows.find((x) => x.t === t); return r && r.mgr; };
   const pl = (n, one, many) => `${n} ${n === 1 ? one : (many || one + 's')}`;
+  /* 🚨 TWO NUMERALS MUST NOT TOUCH (v17, owner's call): "finished 11th 7
+     times" makes the reader parse "11th 7" before the sentence resolves, and
+     at a glance it can read as one number. Spell the second one out —
+     "11th seven times". Only the small counts, because "11th seventeen times"
+     is worse than the problem; above twelve the digit stays and the sentence
+     has to be built so the pair does not collide. */
+  const WORD = ['zero', 'one', 'two', 'three', 'four', 'five', 'six',
+    'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+  const plWord = (n, one, many) => `${WORD[n] || n} ${n === 1 ? one : (many || one + 's')}`;
   /* "a 11-1 record" is the kind of thing only a generator writes. */
   const an = (n) => (/^(8|11|18|8\d|11\d)/.test(String(n)) ? 'an' : 'a');
 
@@ -1060,7 +1069,7 @@
       if (!best.length) return [];
       const top = leaders(best, (x) => x.n);
       return top.map(({ a, place, n }) => ({ id: 'stuck', m: a.m, w: 40 + n * 8, src: 'fin',
-        head: `${nm(a.m)} ${vb(a.m, 'have', 'has')} finished ${ord(place)} ${pl(n, 'time')}.`,
+        head: `${nm(a.m)} ${vb(a.m, 'have', 'has')} finished ${ord(place)} ${plWord(n, 'time')}.`,
         body: `Out of ${a.seasons}. No one in the league repeats a finish more often${alsoTxt(tiedWith(top.map((x) => ({ m: x.a.m })), a.m))}.` }));
     },
 

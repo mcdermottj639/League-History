@@ -113,6 +113,12 @@ window.LeagueHistory._cardStories().forEach((x) => {
      lines at 390px once its badge is beside it, and the card becomes an
      article. The v8 rule put the claim in the heading and never bounded its
      length, so three-liners had quietly become normal. Longest today is 50. */
+  /* 🚨 Two numerals must not touch in a heading (v17, owner's call): "finished
+     11th 7 times" makes the reader parse "11th 7" before the sentence
+     resolves. `plWord` spells the second one out. */
+  if (/\d(?:st|nd|rd|th)?\s+\d/.test(x.head)) {
+    console.log(`  ❌ story "${x.id}/${x.m}" puts two numerals side by side: "${x.head}"`); bad++;
+  }
   if (x.head.length > 58) {
     console.log(`  ❌ story "${x.id}/${x.m}" heading is ${x.head.length} chars, too long to scan: "${x.head}"`); bad++;
   }
