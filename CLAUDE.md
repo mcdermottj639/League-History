@@ -84,8 +84,11 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 - `history.js` — **the archive** (~1,130 lines): the curated 13-season data,
   a single-pass stats engine, and every view. Exposes ONE global,
   `window.LeagueHistory`:
-  - `SUBS` — the five history sub-tabs
-  - `view(key)` — `hon` · `sea` · `rec` · `cb` · `you`
+  - `SUBS` — the five history sub-tabs, **in display order**: Honours · You ·
+    Records · Cum Bowl · Seasons (v6 — "You" was fifth and is second now; the
+    owner's call). Reordering is that array alone; `VIEWS` is a map and
+    `league.js` just walks `SUBS`.
+  - `view(key)` — `hon` · `you` · `rec` · `cb` · `sea`
   - `profile(mgr)` — the drill-down every name opens
   - `setMe(mgr)` / `me()` / `name(mgr)` / `roster()` — identity
 - `styles.css` — **a full copy of Sports-Hub's stylesheet**, brought over

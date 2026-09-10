@@ -1481,8 +1481,8 @@
     return out.sort((a, b) => b.n - a.n || (b.w - b.l) - (a.w - a.l));
   }
   /* ── The public surface. app.js knows these five keys and nothing else. ── */
-  const SUBS = [['hon', 'Honours'], ['sea', 'Seasons'], ['rec', 'Records'],
-                ['cb', 'Cum Bowl'], ['you', 'You']];
+  const SUBS = [['hon', 'Honours'], ['you', 'You'], ['rec', 'Records'],
+                ['cb', 'Cum Bowl'], ['sea', 'Seasons']];
   const VIEWS = {
     hon: () => heroHTML() + keyHTML() + champsHTML() + trophyHTML() + ringlessHTML(),
     sea: () => seasonsHTML(),
