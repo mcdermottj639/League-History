@@ -1671,6 +1671,11 @@ function paintGate(msg) {
   const f = $('#pr-gate-f'), i = $('#pr-gate-i');
   f.onsubmit = async (e) => {
     e.preventDefault();
+    /* owner.js missing means it failed to load, not that the phrase is wrong.
+       The page fails CLOSED either way, which is the right direction — but a
+       button that throws silently is a dead end for the one person who is
+       ever supposed to get past this. */
+    if (!window.LeagueOwner) { paintGate('owner.js didn\'t load — reload the page.'); return; }
     const r = await window.LeagueOwner.unlock(i.value);
     /* Three outcomes, three messages. "Wrong passphrase" when the truth is
        "this browser cannot check one" sends him hunting for a typo that is
