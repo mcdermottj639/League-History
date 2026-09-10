@@ -430,6 +430,30 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
 
+- **v3 — the luck index was comparing two different denominators (10 Sep
+  2026)** — the owner, on the luck rows: *"are these luck numbers correct?
+  deserved 97-46 got 93-81? shouldnt it be the same."*
+  - **The gap was right; the row was misleading.** All-play is **11 opponents
+    a season** (11 × 13 = 143 games); the real schedule is 13 or 14 games a
+    year (174). Two records, two denominators, printed side by side with
+    nothing saying so — so the natural reading is that they should add up, and
+    they never could. 97/143 = 67.8%, 93/174 = 53.4%, and −14.4 is exactly
+    that difference.
+  - **Rows show RATES now** (`67.8% by the scoring · 53.4% on the board`), and
+    the two numbers on screen subtract to the number beside them. A boxed note
+    under the lead says why the win totals were never going to match.
+  - ⚠️ **This is the same fault v2 fixed in the storyline cards and left in the
+    card those cards were derived from.** Fixing a symptom where you happen to
+    be looking, while the primary display keeps doing it, is worse than not
+    noticing — the reader hits the original either way.
+  - **⚠️ And it is this family's most dangerous bug shape: every number was
+    correct and the display still lied.** Sports-Hub's v202 and v203 are the
+    same fault. When a view puts two figures next to each other it is asserting
+    they are comparable; if they are not, either fix the presentation or do not
+    put them together.
+  - A gap that rounds to 0.0 no longer paints red — neither good nor bad is
+    neutral (the v189 semantic-colour rule).
+
 - **v2 — storylines (10 Sep 2026)** — the owner, with screenshots of writeups
   from a chat: *"u had these really interesting write ups and more in the chat.
   How can we add these to the app."*

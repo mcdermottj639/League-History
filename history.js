@@ -686,6 +686,10 @@
   const one = (n) => (Math.round(n * 10) / 10).toFixed(1);
   const ord = (n) => n + (n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th');
   const rec = (r) => `${r.w}-${r.l}`;
+  const pct1 = (x) => `${(x * 100).toFixed(1)}%`;
+  /* A gap that rounds to 0.0 is neither good nor bad, so it must not be
+     painted as a miss — the v189 semantic-colour rule. */
+  const lkCls = (n) => (Math.abs(n) < 0.05 ? 'hold' : n < 0 ? 'neg' : 'pos');
   /* A real minus sign, not a hyphen. These are numbers in prose — "a −15.2
      collapse" is typeset, "a -15.2 collapse" is typed. Nothing parses this
      back, it is display only. */
@@ -798,11 +802,12 @@
     const mx = Math.max(...rows.map((a) => Math.abs(a.luck)));
     return `<h2 class="section-title">🎲 The luck index ${tag('reg')}</h2>
     <div class="ffp-card">
-      <p class="fh-lead">Rank all twelve teams by <b>points</b> each season and play everyone: that is the record your scoring deserved. The gap to what you actually went is luck.</p>
+      <p class="fh-lead">Rank all twelve teams by <b>points</b> each season and play everyone: that is the win rate your scoring deserved. The gap to what you actually went is luck.</p>
+      <p class="fh-lx-key">⚠️ <b>Rates, not records — and that is not a detail.</b> All-play is <b>11 opponents every season</b>; the real schedule is 13 or 14 games. So the two are different numbers of games and their win totals were never going to match. Only the percentages compare.</p>
       ${rows.map((a) => `<div class="fh-lx${isMe(a.m) ? ' you' : ''}">
-        ${tap(a.m, `<div class="fh-lx-n"><b>${esc(a.name)}</b><i>${a.allW}-${a.allL} deserved · ${a.w}-${a.l} actual</i></div>`)}
-        <div class="fh-lx-bar"><span class="${a.luck < 0 ? 'neg' : 'pos'}" style="width:${(Math.abs(a.luck) / mx) * 50}%;${a.luck < 0 ? 'right' : 'left'}:50%"></span><em></em></div>
-        <div class="fh-lx-v ${a.luck < 0 ? 'neg' : 'pos'}">${sgn(a.luck)}</div>
+        ${tap(a.m, `<div class="fh-lx-n"><b>${esc(a.name)}</b><i>${pct1(a.allPct)} by the scoring · ${pct1(a.pct)} on the board</i></div>`)}
+        <div class="fh-lx-bar"><span class="${lkCls(a.luck)}" style="width:${(Math.abs(a.luck) / mx) * 50}%;${a.luck < 0 ? 'right' : 'left'}:50%"></span><em></em></div>
+        <div class="fh-lx-v ${lkCls(a.luck)}">${sgn(a.luck)}</div>
       </div>`).join('')}
       <p class="ffp-cap"><b>${esc(rows[0].name)}</b> ${vb(rows[0].m, 'have', 'has')} outscored the field by more than anyone and won ${one(Math.abs(rows[0].luck))} points of win% less than that deserved. <b>${esc(rows[rows.length - 1].name)}</b> ${vb(rows[rows.length - 1].m, 'are', 'is')} the opposite — and ${vb(rows[rows.length - 1].m, 'have', 'has')} ${rows[rows.length - 1].t1} title${rows[rows.length - 1].t1 === 1 ? '' : 's'}.<br><br>⚠️ This is <b>season-total</b> all-play: the archive has season points, not week-by-week scores, so it cannot be the true weekly version. It is the right shape, not the exact number.</p>
     </div>`;
@@ -1150,10 +1155,10 @@
          the real schedule is 13 or 14 games, so "should be 97-46, is 93-81"
          puts two different denominators side by side and reads as nonsense —
          the numbers are right and the comparison is not. */
-      const pc = (x) => `${(x * 100).toFixed(1)}%`;
+      const pc = pct1;
       if (un.luck < -3) out.push({ id: 'unlucky', m: un.m, w: 46, src: 'reg',
         head: `${nm(un.m)} ${vb(un.m, 'have', 'has')} been the unluckiest team in the league.`,
-        body: `Rank every team by points each season and play everyone, and the scoring says ${pc(un.allPct)}. The actual record is ${pc(un.pct)} — ${sgn(un.luck)} points of win% the schedule took.` });
+        body: `Rank every team by points each season and play everyone and the scoring says ${pc(un.allPct)}; the real schedule delivered ${pc(un.pct)} — ${sgn(un.luck)} points of win%. (Rates, not records: all-play is 11 opponents a season, the real slate is 13 or 14 games.)` });
       if (lu.luck > 3) out.push({ id: 'lucky', m: lu.m, w: 42, src: 'reg',
         head: `${nm(lu.m)} ${vb(lu.m, 'have', 'has')} been the luckiest team in the league.`,
         body: `The scoring says ${pc(lu.allPct)}; the board says ${pc(lu.pct)} — ${sgn(lu.luck)} points of win% the schedule gave back.` });
