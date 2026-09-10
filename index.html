@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en" data-palette="champagne" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f3f1ec" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Nectars Bolonga" />
+  <title>Nectars Bolonga — League History</title>
+  <meta name="description" content="Thirteen seasons of the Nectars Bolonga fantasy football league — champions, records, Cum Bowls, head-to-head, and the weekly power rankings." />
+  <link rel="icon" type="image/png" href="favicon.png?v=1" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=1" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=1" />
+  <!-- The rankings view reuses the Power Rankings Lab's own row styling, so
+       what a member reads is pixel-identical to what the commissioner built.
+       Loaded BEFORE league.css, which stays the last layer. -->
+  <link rel="stylesheet" href="power.css?v=1" />
+  <link rel="stylesheet" href="league.css?v=1" />
+</head>
+<body class="lg-body">
+  <header class="lg-top">
+    <div class="lg-brand">
+      <span class="lg-shield">🏈</span>
+      <h1>Nectars Bolonga<small>League history <span id="lg-ver"></span></small></h1>
+    </div>
+    <!-- Who is reading. Always present, always tappable — a phone gets handed
+         around and the first tap is often the wrong person. -->
+    <button type="button" id="lg-me" class="lg-me"></button>
+  </header>
+
+  <!-- The name picker. It is the front door on a first visit and a header
+       button forever after; it never gates content. -->
+  <section id="lg-pick" class="lg-pick" hidden></section>
+
+  <main id="lg-app" class="lg-main" hidden>
+    <div id="lg-sub" class="ai-sub" role="tablist" aria-label="View"></div>
+    <div id="lg-body"></div>
+    <footer class="lg-foot">
+      <p>Thirteen seasons, 2013–2025 · every finish mapped to a person and cross-checked against ESPN's own owner column.</p>
+      <p><a href="power.html">🏆 Power Rankings Lab</a> — the commissioner's tool for building the weekly set.</p>
+    </footer>
+  </main>
+
+  <script src="history.js?v=1" defer></script>
+  <script src="league.js?v=1" defer></script>
+</body>
+</html>

@@ -1,0 +1,105 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   .lg- — the league app's own shell. Loaded AFTER styles.css, so it is the
+   last layer and wins on ties, exactly the way Sports-Hub's layers 3-10 do.
+
+   ⚠️ Every colour is a token from styles.css's champagne block. A hex here
+   would be a colour nothing else in the app can reach — the one mistake this
+   stylesheet family has made repeatedly.
+   ══════════════════════════════════════════════════════════════════════ */
+:root[data-palette] .lg-body { background: var(--gr); margin: 0; }
+
+/* ── header ─────────────────────────────────────────────────────────────── */
+:root[data-palette] .lg-top {
+  display: flex; align-items: center; gap: 12px; justify-content: space-between;
+  padding: 10px 16px; background: rgba(var(--barRGB), 1);
+  border-bottom: 1px solid var(--tr); position: sticky; top: 0; z-index: 20; }
+:root[data-palette] .lg-brand { display: flex; align-items: center; gap: 9px; min-width: 0; overflow: hidden; }
+:root[data-palette] .lg-shield { font-size: 20px; flex: 0 0 auto; }
+:root[data-palette] .lg-brand h1 {
+  margin: 0; font: 900 17px/1.05 Archivo, system-ui, sans-serif; letter-spacing: -.02em;
+  color: var(--ink); white-space: nowrap; }
+:root[data-palette] .lg-brand small {
+  display: block; font: 700 9.5px/1.2 Archivo, system-ui, sans-serif;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--mu); margin-top: 2px; }
+:root[data-palette] .lg-me {
+  display: inline-flex; align-items: center; gap: 7px; flex: 0 0 auto;
+  min-height: 40px; padding: 0 12px 0 8px; border-radius: 999px;
+  border: 1px solid var(--tr2); background: var(--sf); box-shadow: var(--e1);
+  font: 800 12px/1 Archivo, system-ui, sans-serif; color: var(--ink); cursor: pointer; }
+:root[data-palette] .lg-me .fh-crest { width: 26px; height: 26px; }
+
+:root[data-palette] .lg-main { padding: 0 16px 28px; }
+:root[data-palette] .lg-main > .ai-sub { margin-top: 12px; }
+
+/* ── the name picker ────────────────────────────────────────────────────── */
+:root[data-palette] .lg-pick { padding: 22px 16px 40px; }
+:root[data-palette] .lg-pick-in { max-width: 560px; margin: 0 auto; }
+:root[data-palette] .lg-pick-k {
+  font: 800 10px/1 Archivo, system-ui, sans-serif; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--ac7); margin-bottom: 8px; }
+:root[data-palette] .lg-pick-h h2 {
+  margin: 0 0 8px; font: 900 30px/1.05 Archivo, system-ui, sans-serif;
+  letter-spacing: -.03em; color: var(--ink); }
+:root[data-palette] .lg-pick-h p {
+  margin: 0 0 18px; font: 500 13.5px/1.5 Archivo, system-ui, sans-serif; color: var(--mu); }
+:root[data-palette] .lg-pick-h i { font-style: italic; color: var(--ink); font-weight: 700; }
+/* 3 across at 390px is a 100px cell — enough for a 46px crest, a name and a
+   line of stats without any of them shrinking below the type floor. */
+:root[data-palette] .lg-grid {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+:root[data-palette] .lg-who {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 13px 5px 11px; min-height: 116px; border-radius: var(--r2);
+  border: 1px solid var(--tr); background: var(--sf); box-shadow: var(--e1);
+  cursor: pointer; text-align: center; min-width: 0; }
+:root[data-palette] .lg-who b {
+  font: 800 13px/1.1 Archivo, system-ui, sans-serif; color: var(--ink);
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+:root[data-palette] .lg-who i {
+  font: 600 9.5px/1.2 Archivo, system-ui, sans-serif; font-style: normal; color: var(--mu); }
+:root[data-palette] .lg-who.on { border-color: transparent; background: var(--grad); }
+:root[data-palette] .lg-who.on b, :root[data-palette] .lg-who.on i { color: var(--on-ac); }
+:root[data-palette] .lg-skip {
+  display: block; width: 100%; margin: 16px 0 0; min-height: 44px;
+  border: 1px solid var(--tr2); border-radius: 999px; background: transparent;
+  font: 800 12.5px/1 Archivo, system-ui, sans-serif; color: var(--mu); cursor: pointer; }
+:root[data-palette] .lg-pick-f {
+  margin: 14px 0 0; font: 500 11px/1.5 Archivo, system-ui, sans-serif; color: var(--mu2); }
+
+/* ── rankings ───────────────────────────────────────────────────────────── */
+:root[data-palette] .lg-rank-head { margin-top: 14px; }
+:root[data-palette] .lg-wk {
+  display: flex; align-items: center; gap: 9px; margin: 0 0 10px; padding: 0 2px; }
+:root[data-palette] .lg-wk label {
+  font: 800 10px/1 Archivo, system-ui, sans-serif; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--mu); }
+/* ⚠️ 16px minimum, or iOS Safari zooms the viewport on focus and never zooms
+   back out — the Workout Lab lesson, and it applies to every select too. */
+:root[data-palette] .lg-wk select {
+  flex: 1; min-height: 44px; font-size: 16px; font-family: Archivo, system-ui, sans-serif;
+  font-weight: 700; color: var(--ink); background: var(--sf); border: 1px solid var(--tr2);
+  border-radius: var(--r1); padding: 0 10px; }
+/* the reader's own row, in a list of twelve */
+:root[data-palette] .pr-row.lg-mine {
+  background: var(--ac6x, rgba(var(--acRGB), .09));
+  box-shadow: inset 3px 0 0 var(--ac); }
+:root[data-palette] .lg-you {
+  font: 900 9px/1 Archivo, system-ui, sans-serif; letter-spacing: .09em;
+  padding: 3px 5px; border-radius: 4px; background: var(--grad); color: var(--on-ac);
+  vertical-align: 1px; }
+
+/* ── footer ─────────────────────────────────────────────────────────────── */
+:root[data-palette] .lg-foot {
+  margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--tr); }
+:root[data-palette] .lg-foot p {
+  margin: 0 0 7px; font: 500 11px/1.5 Archivo, system-ui, sans-serif; color: var(--mu2); }
+/* ⚠️ A link is a tap target. Inline in a footer paragraph it measured 13px
+   tall — a third of the 38px floor — so it becomes its own row. */
+:root[data-palette] .lg-foot a {
+  display: inline-flex; align-items: center; min-height: 40px;
+  color: var(--ac7); font-weight: 800; }
+
+/* Two things the archive's own layer expects from its host page and that
+   Sports-Hub provided from elsewhere in its shell. */
+:root[data-palette] .lg-main .section-title:first-of-type { margin-top: 18px; }
+:root[data-palette] .lg-main .fh-back { margin-top: 14px; }

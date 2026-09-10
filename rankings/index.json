@@ -1,0 +1,4 @@
+{
+  "note": "Published power-ranking weeks, NEWEST FIRST. The app reads this file to build the week picker, then fetches the file named in `f`. Add a week by dropping its JSON in this folder and prepending an entry here. `k` is the week key (games played) and must be unique; `l` is the label the picker shows; `d` is the publish date.",
+  "weeks": []
+}
