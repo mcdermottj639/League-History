@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v30';
+  const APP_VERSION = 'v31';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -403,11 +403,19 @@
     }).join('');
   }
 
+  /* Pulled out of `rankHTML` (v31) so the "that week didn't load" card can
+     render it too. That card's own copy says "or pick another week", and it
+     was saying it over a screen with no picker on it — a control named in a
+     sentence and absent from the page is the v30 fault written out in prose.
+     Reachable now that RETRACTING a week is a supported move: a half-done
+     unpublish (file deleted, index line still there) lands exactly here. */
+  const wkPick = (weeks) => (weeks.length > 1
+    ? `<div class="lg-wk"><label for="lg-wksel">Week</label><select id="lg-wksel">${weeks.map((w) =>
+        `<option value="${esc(w.f)}"${w.f === S.week ? ' selected' : ''}>${esc(w.l)}</option>`).join('')}</select></div>`
+    : '');
+
   function rankHTML(p, weeks) {
-    const pick = weeks.length > 1
-      ? `<div class="lg-wk"><label for="lg-wksel">Week</label><select id="lg-wksel">${weeks.map((w) =>
-          `<option value="${esc(w.f)}"${w.f === S.week ? ' selected' : ''}>${esc(w.l)}</option>`).join('')}</select></div>`
-      : '';
+    const pick = wkPick(weeks);
     return `<div class="pr-card pr-head lg-rank-head">
         <div class="pr-week">${esc(p.l || '')}${p.d ? ` · ${esc(niceDate(p.d))}` : ''}</div>
         <h2>Power Rankings</h2>
@@ -446,9 +454,17 @@
     }
     if (!S.week || !weeks.some((w) => w.f === S.week)) S.week = weeks[0].f;
     let p;
-    try { p = await loadWeek(S.week); } catch (_) {
+    try { p = await loadWeek(S.week); } catch (e) {
+      /* ⚠️ The offer and the control have to agree. With other weeks on file
+         the picker is rendered right under the sentence that points at it;
+         with only one, the sentence does not make an offer it cannot keep. */
+      console.error('[rankings] that week is listed but did not load', S.week, e);
+      const more = weeks.length > 1;
       host.innerHTML = `<h2 class="section-title">🏆 Power Rankings</h2>
-      <div class="ffp-card"><div class="ffp-empty"><b>That week didn't load.</b>The file is listed but could not be read. Try again, or pick another week.</div></div>`;
+      <div class="ffp-card"><div class="ffp-empty"><b>That week didn't load.</b>The file is listed but could not be read.${more ? ' Try again, or pick another week below.' : ' Try again in a moment.'}</div></div>
+      ${more ? wkPick(weeks) : ''}`;
+      const s2 = $('#lg-wksel');
+      if (s2) s2.onchange = () => { S.week = s2.value; paint(); };
       return;
     }
     /* 🚨 A FILE THAT PARSES IS NOT THE SAME AS A WEEK THAT RENDERS (v29).

@@ -165,6 +165,15 @@ body.pr-page {
 .pr-btn.ghost { background: transparent; color: var(--muted); font-weight: 700; }
 .pr-actions .pr-note + .pr-btn { margin-top: 14px; }
 
+/* ---- ↩️ the published state --------------------------------------------
+   Ruled off from the four action buttons because it is a different KIND of
+   control: those do something to this week, this one reports what has already
+   been done to it and offers to take it back. Sitting flush under them, an
+   ↩️ Unpublish reads as a fifth way to send the thing. */
+.pr-pubstate { margin-top: 16px; padding-top: 13px; border-top: 1px solid var(--line); }
+.pr-pubstate .pr-note { margin-top: 0; }
+.pr-pubstate .pr-note b { color: var(--text); }
+
 .pr-how summary { cursor: pointer; font-size: 14px; font-weight: 800; padding: 2px 0; }
 .pr-how-b { font-size: 13.5px; line-height: 1.6; color: var(--text); }
 .pr-how-b ul { margin: 8px 0; padding-left: 18px; }

@@ -413,6 +413,19 @@ function publishIndexEntry() {
   return JSON.stringify({ k: p.k, l: p.l, d: p.d, f: publishFilename() });
 }
 
+/* The mirror of the two publish steps: the file to delete and the line to pull
+   out of the index. Written as a sentence rather than a blob because a
+   retraction has no payload to paste — it is an instruction, and the whole
+   point of handing it over is that nobody has to remember which two files a
+   published week touched. */
+function unpublishInstruction(rec, key) {
+  const label = (rec && rec.label) || keyLabel(key);
+  if (!rec || !rec.file) return '';
+  return `Unpublish ${label} from the league app: delete rankings/${rec.file}, `
+    + `and remove the entry with "k": ${key} from the weeks list in rankings/index.json. `
+    + `Then commit and push to main.`;
+}
+
 /* The owner's own output format: rank, team, owner, record, PPG, last week,
    then the entry on its own line. This is the copy that gets pasted into the
    league chat, so it matches the layout they already publish in. */
@@ -472,15 +485,118 @@ function shareFallback(label, txt) {
 
 /* Sharing IS publishing — it snapshots the week into the archive so next week's
    ▲▼ movement is measured against what the league actually saw. Stated on the
-   button's helper line, because a hidden side effect is a bad side effect. */
-function publish() {
+   button's helper line, because a hidden side effect is a bad side effect.
+
+   ⚠️ `file` is passed ONLY by 🚀 Publish, and the distinction is the whole of
+   what unpublishing can offer. A link, a text copy and a one-pager are all
+   messages: the league saw the table, so the week is marked, but there is
+   nothing in the repo to take back. Publishing writes a FILE, and a file can
+   be retracted — so only that path records which one, and `unpublish()` can
+   only name a file it was told about rather than re-deriving one. */
+function publish(file) {
   const pub = load(K_PUB, {});
-  pub[S.key] = { order: S.order.slice(), comments: Object.assign({}, S.comments), at: Date.now(), label: keyLabel(S.key) };
+  const was = pub[S.key] || {};
+  pub[S.key] = {
+    order: S.order.slice(),
+    comments: Object.assign({}, S.comments),
+    at: Date.now(),
+    label: keyLabel(S.key),
+    /* 🚨 A REPUBLISH ON A DIFFERENT DAY IS A DIFFERENT FILENAME. `publishFilename()`
+       is built from `payload().d`, which is TODAY — so publishing Week 3 on
+       Sunday and correcting it on Tuesday produces two names, and "overwrite
+       the file" quietly becomes "add a second and orphan the first". The
+       previous name is kept so the publish output can say to delete it. */
+    file: file || was.file || null,
+    prevFile: file && was.file && was.file !== file ? was.file : null,
+  };
   save(K_PUB, pub);
+}
+
+/* What this device thinks the league has seen for this week, or null. */
+const pubRec = () => (load(K_PUB, {}) || {})[S.key] || null;
+
+/* ↩️ UNPUBLISHING is the movement mark coming off, and nothing else — the
+   file itself lives in the repo and only a commit can take it out of there.
+   Those are two halves of one retraction and the button hands over both, the
+   same way 🚀 hands over the file AND its index line (v24).
+
+   🚨 The half that CANNOT be skipped is this one. A week the owner published
+   and then pulled is a table the league never saw, and `prevOrder()` walks
+   back from `S.key - 1` to find what next week's ▲▼ are measured against —
+   so leaving the mark in place would measure next week's movement against a
+   retracted ranking, silently, with every arrow on the page wrong and nothing
+   on screen admitting it. "Movement the league never saw is not movement" is
+   the rule publishing exists to keep; unpublishing is how it survives a
+   mistake. */
+function unpublish() {
+  const pub = load(K_PUB, {});
+  const was = pub[S.key] || null;
+  delete pub[S.key];
+  save(K_PUB, pub);
+  return was;
+}
+
+/* ── ↩️ THE PUBLISHED STATE, ON SCREEN ────────────────────────────────────
+   Publishing has always had a side effect the page never showed: the week gets
+   marked, and next week's ▲▼ are measured against the mark. So "have I already
+   sent this one?" was a question only localStorage could answer, and the answer
+   mattered most in exactly the situation where you are least sure — you have
+   just published something wrong.
+
+   ⚠️ Rendered as innerHTML rather than a `hidden` toggle, deliberately. A
+   `[hidden]` element under this repo's palette layer is (0,1,0) against
+   (0,2,1) and stays on screen — the trap that has bitten the app three times
+   (.lg-jump, .lg-sheet, .ai-sub). An empty container cannot have that bug. */
+function pubStateHTML() {
+  const rec = pubRec();
+  if (!rec) return '';
+  const when = rec.at ? new Date(rec.at).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }) : '';
+  const what = rec.file
+    ? `published to the app${when ? ` on ${esc(when)}` : ''} as <b>rankings/${esc(rec.file)}</b>`
+    : `sent as a link or a text copy${when ? ` on ${esc(when)}` : ''}, never published to the app`;
+  return `<div class="pr-pubstate">
+    <p class="pr-note">✅ <b>${esc(rec.label || keyLabel(S.key))}</b> is ${what}. Next week's ▲▼ movement is measured against this order.</p>
+    <button type="button" class="pr-btn ghost" id="pr-unpublish">↩️ Unpublish this week</button>
+    <p class="pr-note">Take it back if it went out wrong. That clears the mark here — so next week's arrows go back to measuring against the last week the league actually kept — and hands you the two lines to remove from the repo.</p>
+  </div>`;
+}
+
+function paintPubState() {
+  const host = $('#pr-pubstate');
+  if (!host) return;
+  host.innerHTML = pubStateHTML();
+  const btn = $('#pr-unpublish');
+  if (!btn) return;
+  btn.onclick = async () => {
+    const rec = pubRec();
+    const label = (rec && rec.label) || keyLabel(S.key);
+    if (!confirm(`Unpublish ${label}?\n\nThis un-marks it here, so next week's ▲▼ stop being measured against it. The file in the repo comes out with the two steps shown next.`)) return;
+    const was = unpublish();
+    paintPubState();
+    const out = $('#pr-share-out');
+    const instr = unpublishInstruction(was, S.key);
+    if (out) {
+      out.innerHTML = instr
+        ? `<div class="pr-share-out">
+            <div class="t">Unmarked here. Now take it out of the repo — ① delete <b>rankings/${esc(was.file)}</b>, ② remove the <b>"k": ${S.key}</b> entry from <b>rankings/index.json</b>:</div>
+            <textarea readonly rows="6"></textarea>
+            <p class="pr-note">Or just paste that line to a Claude session — it is the whole instruction. Until it reaches <b>main</b>, the league still sees the old week.</p>
+          </div>`
+        : `<div class="pr-share-out">
+            <div class="t">Unmarked here.</div>
+            <p class="pr-note">There is nothing to take out of the repo — ${esc(label)} was only ever sent as a link or a text copy, so it was never on anyone's app. Next week's ▲▼ now measure against the last week you actually published.</p>
+          </div>`;
+    }
+    const ta = out && out.querySelector('textarea');
+    if (ta) { ta.value = instr; ta.focus(); ta.select(); }
+    if (instr && await copyText(instr)) toast('Copied — paste it to a Claude session');
+    else toast(`${label} unpublished`);
+  };
 }
 
 async function doShare(kind) {
   publish();
+  paintPubState();
   const url = shareURL();
   const txt = kind === 'text' ? shareText() : url;
   if (url.length > 8000) toast('Heads up — long takes make a long link. The text copy always works.');
@@ -1566,6 +1682,12 @@ function paintRank() {
       <p class="pr-note"><b>Publishing</b> is the one that puts this week on everyone's app — it hands you the file to commit. The other three are messages: the <b>link</b> is the thing you send, the <b>text</b> is what pastes into the group chat, and the <b>one-pager</b> is a single image — save it to Photos and post it.</p>
       <p class="pr-note">Sharing also locks this week in, so next week's ▲▼ movement is measured against what the league actually saw.</p>
       <div id="pr-share-out"></div>
+      <!-- ⚠️ BELOW the output, not above it. Publishing produces two lines he
+           has to act on immediately; an offer to undo, wedged between the
+           button he just pressed and the JSON it made, pushes the thing he
+           needs off the screen to make room for the thing he probably does
+           not. State and its undo read last. -->
+      <div id="pr-pubstate"></div>
       <button type="button" class="pr-btn ghost" id="pr-rewrite">✍️ Rewrite all the takes</button>
       <label class="pr-spice"><input type="checkbox" id="pr-spicy" /> <span>Let the takes get profane (a few a week)</span></label>
       <button type="button" class="pr-btn ghost" id="pr-rebuild">🔄 Rebuild from the model</button>
@@ -1634,10 +1756,16 @@ function paintRank() {
     window.scrollTo({ top: 0 });
   };
 
+  paintPubState();
+
   const pubBtn = $('#pr-publish');
   if (pubBtn) pubBtn.onclick = async () => {
-    publish();
+    /* Filename FIRST, then publish — the mark records which file went out, so
+       unpublishing can name it and a republish can spot a stale one. */
     const json = publishJSON(), file = publishFilename();
+    const stale = (pubRec() || {}).file;
+    publish(file);
+    paintPubState();
     const out = $('#pr-share-out');
     /* 🚨 The filename is half the instruction. A session handed only a blob of
        JSON has to guess where it goes and what to call it, and a guess here
@@ -1647,6 +1775,7 @@ function paintRank() {
       <textarea readonly rows="10"></textarea>
       <div class="t">② Add this to the top of the <b>weeks</b> list in <b>rankings/index.json</b>:</div>
       <textarea class="pr-idx" readonly rows="2">${esc(publishIndexEntry())}</textarea>
+      ${stale && stale !== file ? `<div class="t">③ You are republishing ${esc(keyLabel(S.key))}, and it went out under a different name last time — delete the old <b>rankings/${esc(stale)}</b>, and REPLACE the "k": ${S.key} line rather than adding a second.</div>` : ''}
       <p class="pr-note">Or just paste the block above to a Claude session and say nothing else — it knows both steps.</p>
     </div>`;
     const ta = out && out.querySelector('textarea');
@@ -1657,7 +1786,7 @@ function paintRank() {
 
   $('#pr-share').onclick = () => doShare('link');
   $('#pr-copy').onclick = () => doShare('text');
-  $('#pr-image').onclick = () => { publish(); saveOnePager(payload()); };
+  $('#pr-image').onclick = () => { publish(); paintPubState(); saveOnePager(payload()); };
   const rw = $('#pr-rewrite');
   if (rw) rw.onclick = () => {
     if (!confirm('Rewrite all 12 takes? Anything you have written for this week will be replaced.')) return;

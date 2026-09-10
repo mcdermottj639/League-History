@@ -410,6 +410,29 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     - **The week is pre-written, order AND all twelve takes** (`restoreOrBuild`
       → `writeWeek`). Editing is optional: open, tap 🚀, paste. That is the
       difference between a weekly column that happens and one that doesn't.
+  - **↩️ Unpublish this week** (v31, `pubStateHTML`/`paintPubState`/`unpublish`)
+    — the mirror of 🚀, and the reason publishing is safe to get wrong.
+    - 🚨 **A RETRACTION HAS TWO HALVES AND ONLY ONE OF THEM IS A COMMIT.** The
+      file comes out of the repo; the **movement mark** comes out of
+      `powerlab:pub` on his phone. Skip the second and next week's ▲▼ are
+      measured against a ranking the league never saw — every arrow on the page
+      wrong, silently, with nothing on screen admitting it. "Movement the league
+      never saw is not movement" is the rule publishing exists to keep; this is
+      how it survives a mistake. The button does its half and hands over the
+      other as a pasteable sentence (`unpublishInstruction`).
+    - ⚠️ **It also puts the published state ON SCREEN for the first time.**
+      Publishing has always had that side effect and the page never showed it,
+      so "have I already sent this one?" was a question only localStorage could
+      answer — and it matters most exactly when you are least sure, having just
+      published something wrong.
+    - ⚠️ **Rendered as innerHTML into an empty `#pr-pubstate`, never a `hidden`
+      toggle.** `[hidden]` is (0,1,0) against the palette layer's (0,2,1) and
+      stays on screen — the trap that has bitten this app three times. An empty
+      container cannot have that bug.
+    - ⚠️ **It sits BELOW the publish output, not above it.** 🚀 produces two
+      lines he has to act on immediately; an offer to undo, wedged between the
+      button he pressed and the JSON it made, pushes the thing he needs off
+      screen to make room for the thing he probably does not.
 - `rankings/` — published weeks. `index.json` lists them; one JSON file each.
 - `logos/` — the league's own twelve crests, keyed by manager.
 - `sw.js` — network-first service worker. Bump `CACHE` on every release.
@@ -448,9 +471,21 @@ Lab, which only he opens.
   played, so it is restored only for the week it belongs to — a new week's
   results pre-build a fresh ranking instead.
 - `powerlab:pub` — published weeks keyed by that same key
-  (`{order, comments, at, label}`). Written when the owner SHARES, and it is
-  what ▲▼ movement is measured against — movement the league never saw is not
-  movement.
+  (`{order, comments, at, label, file, prevFile}`). Written when the owner
+  SHARES, and it is what ▲▼ movement is measured against — movement the league
+  never saw is not movement.
+  - ⚠️ **`file` is set only by 🚀 Publish** (v31), never by a link, a text copy
+    or a one-pager. Those are messages: the league saw the table, so the week
+    is marked, but there is nothing in the repo to take back. Publishing writes
+    a FILE, and only a file can be retracted — which is the difference the
+    ↩️ Unpublish card states rather than papering over.
+  - ⚠️ **`prevFile` remembers a rename.** `publishFilename()` is built from
+    TODAY, so correcting Week 3 two days later produces a second name; without
+    this, "overwrite the file" quietly becomes "add a second and orphan the
+    first". The publish output turns it into a ③ delete-the-old step.
+  - ↩️ **Unpublishing deletes the whole entry**, so `prevOrder()` walks past it
+    to the last week the league actually kept. That is the half of a retraction
+    that no commit can do.
 - `powerlab:season` — last good `/api/fantasy/football/season` payload, so the
   lab still ranks when the free-tier backend is asleep (with a stale banner).
 - `powerlab:spice` — `'0'` when the owner has turned off the rationed
@@ -701,6 +736,30 @@ whole design:
 > 4. Tell him it is live. No version bump is needed: `rankings/` is data, not
 >    code, and the app fetches `index.json` with `cache: 'no-store'`.
 
+> ### ↩️ WHEN HE SAYS UNPUBLISH — the same procedure, run backwards
+> **He can take a week back, and it is a supported move rather than a rescue**
+> (v31). Publishing is two lines in this repo; unpublishing is those two lines
+> coming out, and republishing is publishing again. The Lab hands over the
+> retraction sentence ready to paste — *"Unpublish After Week 3 from the league
+> app: delete rankings/&lt;file&gt;, and remove the entry with `"k": 3` …"* — so a
+> paste of that IS the instruction and needs no explanation from him.
+> 1. **Delete `rankings/<the file>`** and **remove that `k` from `weeks` in
+>    `rankings/index.json`.** Both halves. Leaving the index line behind points
+>    the app at a file that 404s — the app says so honestly and offers the
+>    other weeks, but it is still a broken week on everyone's screen.
+> 2. Commit, push, **merge to `main`**. Until it lands there the league still
+>    sees the old week; Pages is the only thing that decides what is published.
+> 3. ⚠️ **If he has NOT already tapped ↩️ Unpublish in the Lab, tell him to.**
+>    That is the half no session can do: the movement mark lives in
+>    `powerlab:pub` on his phone, and while it is set, next week's ▲▼ are
+>    measured against a table the league never saw — silently, with every arrow
+>    wrong and nothing on screen admitting it.
+> 4. **Republishing is just publishing.** Same `k` → replace the index entry
+>    and overwrite the file, never add a second. ⚠️ If the file NAME differs
+>    (`publishFilename()` is built from today's date, so a Sunday publish
+>    corrected on Tuesday gets a new name), **delete the old file** — the Lab's
+>    publish output says so as a ③ step when it spots one.
+
 Why not have the app compute it live: members have no ESPN cookies and no
 backend, and **a ranking is an opinion column that must not silently re-derive
 itself into a different answer a week after it was written**.
@@ -726,6 +785,16 @@ itself into a different answer a week after it was written**.
   an empty `weeks` array, so an empty SEASON still answers 200. A 404 means a
   broken deploy, and folding it into the friendly copy would hide a failed
   publish behind the one sentence that says everything is fine.
+- **A week that is listed and 404s offers the other weeks** (v31). The card
+  said "or pick another week" over a screen with no picker on it — a control
+  named in a sentence and absent from the page, which is the v30 fault written
+  out in prose rather than drawn. `wkPick()` came out of `rankHTML` so both
+  cards render the same control, and with only one week on file the sentence
+  stops making an offer it cannot keep. ⚠️ It became REACHABLE the moment
+  retracting a week became a supported move: a half-done unpublish — file
+  deleted, index line still there — lands exactly here. And it logs which file
+  failed, because "the file is listed but could not be read" is a sentence
+  somebody will have to debug from a phone.
 - **A file that parses is not a week that renders** (v29). `paintRankings`
   checks `p.o` is a non-empty array and wraps the render in a `try`, because
   the two failures either side of that are both silent: `p.o` as a STRING
@@ -806,6 +875,65 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v31 — a week can be taken back (10 Sep 2026)** — the owner, before the
+  first real publish: *"Am I able to publish and then unpublish and publish the
+  rankings just in case I screw something up[?]"*
+  - **The repo half already worked, and was verified rather than assumed.**
+    Publishing is a file plus a line in `rankings/index.json`; both are fetched
+    `no-store` behind a network-first worker, so removing them takes the week
+    off everyone's app on the next load. Driven end to end against the real
+    files: nothing published → published → retracted → republished with a
+    corrected take → two weeks → the newest retracted. Each says something
+    different and true, and the reader's own row stays badged throughout.
+  - 🚨 **THE HALF THAT DID NOT WORK IS THE ONE NO COMMIT CAN REACH.** Tapping
+    🚀 writes the week into `powerlab:pub` on his phone, and `prevOrder()` walks
+    back from there to decide what next week's ▲▼ are measured against. Pull
+    the week out of the repo and that mark stays — so next week's arrows are
+    measured against **a table the league never saw**, silently, every arrow on
+    the page wrong and nothing admitting it. *"Movement the league never saw is
+    not movement"* is the rule publishing exists to keep, and until now there
+    was no way to unkeep it. ↩️ **Unpublish this week** is that way, and it
+    hands over the repo half as a pasteable sentence — the v24 shape: the
+    mechanical part gets smaller, the part that needs him is named honestly.
+  - **It also puts the published state on screen for the first time.** That
+    side effect has shipped since v1 and the page never showed it, so *"have I
+    already sent this one?"* was answerable only from localStorage — and it
+    matters most in exactly the situation this feature is for, where you have
+    just published something wrong and are least sure what you did.
+  - 🚨 **A REPUBLISH ON A DIFFERENT DAY IS A DIFFERENT FILENAME, and "overwrite
+    the file" quietly becomes "orphan the first one".** `publishFilename()` is
+    built from `payload().d`, which is TODAY — so Week 3 published on Sunday and
+    corrected on Tuesday gets two names, and this repo's own paste procedure
+    says to overwrite. The mark records which file went out, so the publish
+    output can name the stale one as a ③ delete step. Found by asking what
+    "republish" means when you do it slowly.
+  - ⚠️ **`file` is recorded ONLY by 🚀, and that distinction is the whole of
+    what unpublishing can offer.** A link, a text copy and a one-pager all mark
+    the week — the league saw the table — but there is nothing in the repo to
+    take back, so the card says that instead of offering a retraction it cannot
+    perform. Verified: 📋 Copy as text then ↩️ Unpublish renders no textarea
+    and no instruction, correctly.
+  - ⚠️ **Two render decisions, both from this file's own scar tissue.** The
+    block is innerHTML into an empty container rather than a `hidden` toggle —
+    `[hidden]` is (0,1,0) against the palette layer's (0,2,1) and would have
+    stayed on screen, the trap that has bitten this app three times. And it
+    sits BELOW the publish output: the first cut put an offer to undo between
+    the button he pressed and the JSON it produced, pushing the two lines he
+    actually needs off the screen.
+  - 🚨 **AND THE HALF-DONE RETRACTION FOUND A PRE-EXISTING LIE.** Index line
+    left behind, file deleted — the most likely way to fumble an unpublish, and
+    the app answered *"Try again, or **pick another week**"* on a screen with no
+    picker on it. **A control named in a sentence and absent from the page is
+    the v30 fault written out in prose**, and it was unreachable until
+    retracting became a thing anyone would do. The picker renders on that card
+    now, and with only one week on file the sentence stops making the offer.
+  - Verified in headless Chromium at 390px: the Lab across never-published,
+    published, retracted and republished; the stale-filename ③ step; the
+    link-only path; week 4's arrows falling back from a retracted week 3 to
+    week 2 (▲11 / LW 12 where a marked week 3 read — / LW 1); and the members'
+    app across all six repo states. No overflow, no sub-9px type, 46px on the
+    new button, no page errors.
 
 - **v30 — a lit tab that does nothing reads as a broken app (10 Sep 2026)** —
   found in the pre-send render sweep, by tapping the obvious thing.
@@ -1619,8 +1747,11 @@ stale entry written in the present tense reads as current to anyone who greps.
 ## Open / next
 
 - **The members' app has no rankings yet** — `rankings/index.json` ships empty
-  and the app says so honestly. The first real publish is the first test of
-  that path end to end.
+  and the app says so honestly. The publish path has been driven end to end
+  against the real files with fixture weeks (v31: publish · unpublish ·
+  republish · two weeks · a half-done retraction), so what is still untested is
+  only the part this sandbox cannot reach — the Lab pulling live data off his
+  Render backend and producing the blob.
 - **`MGR_NAME.McD` is `'McD'`** (v5) — the owner needed a label that isn't
   "You" now that "You" is a role, and **the label the other eleven see is his
   call, not a guess**: it was `'Jack'` for one version and he asked for the
