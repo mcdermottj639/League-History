@@ -40,6 +40,28 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 > parent paths carry a betting model and a fantasy team. This is a link handed
 > to eleven other people. Same reasoning as Family Survivor before it.
 
+> ## ⚠️ Standing rule: keep this file current
+> Whenever you change the architecture, the data, the deploy path, or add or
+> remove a feature, **update the relevant section in the SAME commit.** Future
+> sessions rely on this being accurate — don't wait to be asked.
+>
+> **Two kinds of section, maintained differently:**
+> - **Current-state sections** (What this is · Hard constraints · Files ·
+>   localStorage keys · the three-kinds-of-fact table · How the rankings work ·
+>   The stylesheet) describe the app as it is TODAY. **Rewrite them in place.**
+>   They must never describe a past build.
+> - **The Changelog** is a record of decisions and the reasoning behind them,
+>   so entries are NOT rewritten — but they are written in the present tense,
+>   which means a stale one reads as current to anyone who greps. When a change
+>   invalidates an older entry, **add an inline `⚠️ SUPERSEDED in vN` marker**
+>   naming what replaced it. Both halves are required.
+>
+> ⚠️ This rule is inherited from Sports-Hub, where it was learned the hard way:
+> a version shipped there with four changelog entries still describing a UI
+> that had been gone for three releases. **A moved document goes stale fastest
+> of all** — the Power Rankings Lab section below arrived from that repo and
+> already had two lines in it that stopped being true before the move.
+
 ## Hard constraints (do not break these)
 
 - **No backend, no API keys, no build step.** The members' app must work with
@@ -56,10 +78,10 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 ## Files
 
 - `index.html` — the members' app. Header, name picker, two-level nav.
-- `league.js` — the shell: identity, router, the rankings view. ~270 lines.
+- `league.js` — the shell: identity, router, the rankings view. ~275 lines.
   It is deliberately small; all the archive logic lives in `history.js`.
 - `league.css` — the `.lg-` layer. Loaded LAST, so it wins ties.
-- `history.js` — **the archive** (~1,070 lines): the curated 13-season data,
+- `history.js` — **the archive** (~1,130 lines): the curated 13-season data,
   a single-pass stats engine, and every view. Exposes ONE global,
   `window.LeagueHistory`:
   - `SUBS` — the five history sub-tabs
@@ -69,10 +91,144 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 - `styles.css` — **a full copy of Sports-Hub's stylesheet**, brought over
   whole. See "The stylesheet" below before touching it.
 - `power.html` / `power.css` / `power.js` — the **commissioner's** authoring
-  tool. Members never need it. It talks to the owner's Render backend.
+  tool. Members never need it; it is not part of `index.html` and shares only
+  the stylesheet and the crests. It talks to the owner's Render backend
+  (`sports-hub-fantasy-api.onrender.com`, overridable via localStorage
+  `sportshub:api`), which is on Render's **free tier** and cold-starts ~30-60s
+  after 15 minutes idle — hence the 45s timeout in `API_TIMEOUT`.
+  **The documentation below moved here from Sports-Hub's `CLAUDE.md` when the
+  lab did, and this is where it is maintained now.**
+  The owner's **weekly fantasy power rankings** for their ESPN league: the
+  model pre-builds a ranking each week, the owner reorders anyone and writes
+  a take on anyone, and the result ships to the league. **The model is the
+  starting point, never the answer** — a row the owner moved says where the
+  model had it, which is the point of the whole thing.
+  - **Data: ONE call**, `/api/fantasy/football/season` (v195), which already
+    carries per-team `scores`/`outcomes`/W-L/`pointsFor` plus the derived
+    **all-play** record off the backend's cached League snapshot. No new
+    endpoint, no extra ESPN request. Last good payload cached on device
+    (`powerlab:season`).
+  - **The model** (`buildModel`): all-play win% **40%** · points per game
+    **25%** · last `RECENT_N` (3) weeks **25%** · actual record **10%**, the
+    three continuous inputs z-normalised across the league first so they are
+    commensurable. All-play is heaviest because it is the only input immune to
+    schedule luck — it is what separates a power ranking from the standings.
+    ⚠️ **The weights are a judgment call, NOT fitted** — a power ranking has no
+    graded outcome, so nothing here can be measured the way `app.js`'s betting
+    model is. Never present it as validated; never "tune" it as if a sample
+    existed. Said in the app too, in the "How the model ranks" card.
+  - **Preseason (zero weeks played) invents nothing** — no order, and **no
+    records or ppg on the rows**, because a fabricated 0-0 beside a name is a
+    lie. It hands over the twelve teams and says why.
+  - **A week is keyed by WEEKS PLAYED**, not `league.current_week` — label
+    `Preseason` / `After Week N`. The draft (`powerlab:draft`) restores only
+    for the same key, so a new week's results pre-build a fresh ranking and
+    can never eat edits belonging to a week already published.
+  - **Reordering:** ▲▼ for nudges plus an invisible `<select>` over each rank
+    number, so tapping the number opens the native iOS picker and 12th → 1st
+    is one gesture. Deliberately not HTML5 drag (dead under iOS touch).
+  - **Sharing** — `power.html#r=<base64url>`, a **self-contained** payload
+    (names, records, ppg, takes, the model's rank, movement), so a recipient
+    makes **no backend call**: it survives a sleeping backend, and a link that
+    re-derived from the live feed would show a different ranking a week later
+    than the one that was sent. `btoa` is Latin-1 only, so the payload is
+    UTF-8-encoded and chunked before encoding — takes are full of emoji. Plus
+    a plain-text copy, which is what actually gets pasted into the league chat.
+  - **🚨 Sharing PUBLISHES the week** (`powerlab:pub`), and the button says so:
+    ▲▼ movement is measured against the last set the owner actually shared,
+    never against the model's own previous guess. No published prior week → no
+    arrows and a line saying why.
+  - **The shared view carries a BYLINE** (`S.byline`, defaulting to the owner's
+    own team name, editable in the header, `b` in the payload). *"Someone
+    shared their power rankings"* is useless in a twelve-person league — the
+    first thing a recipient needs is whose take it is.
+  - **Movement follows the owner's OWN published table**: a team that held its
+    spot reads **`—`**, and every mark carries a **`LW N`** last-week rank
+    beside it. `moveStr`/`moveCls`/`lastWk`, gated on `hasMove` = *a week has
+    been published at all* (`null`), never on *the team moved* (`0`).
+    ⚠️ v208 shipped the dash's ABSENCE, on the v196 stray-dash reasoning; that
+    reasoning is about a dash ALONE, and the last-week line is the context that
+    makes it read as "held". Dates are formatted (`niceDate`) — a raw
+    `2026-09-07` reads like a database field. A manager label that just repeats
+    the team name is suppressed ("CC CC").
+  - **⛑️ Crests: the league's OWN logos, with the generated helmet as the
+    fallback** (`logos/`, `CREST_SRC`, `crestSrc`/`crestURL`/`drawCrest`,
+    `preloadSrcs`/`CREST_READY`). **All twelve** teams carry their real logo,
+    lifted from the owner's own 2023 rankings sheet, as a 144px same-origin
+    PNG (~420 KB for the set).
+    - ⚠️ **Keyed by MANAGER, never by team name** — the names change every year
+      (the 2023 sheet says "Death Dont Hurts Very Long" where the league now
+      says "Current Champ") while the twelve people do not. And it keys off
+      **`mgrFor`, NOT `mgrLabel`**: `mgrLabel` deliberately returns `''` when
+      the label would just repeat the team name (the "CC CC" rule), so keying
+      off it would have silently denied CC — and only CC — its own logo.
+    - ⚠️ **It is an OVERRIDE, not a replacement.** A manager with no file falls
+      back to the generated helmet, and that is what keeps the export
+      unbreakable: a generated crest needs no network, cannot 404 and cannot
+      taint the canvas. Same-origin PNGs don't taint it either, but they *can*
+      fail to load, and `drawCrest` treats a failure as "use the helmet". A
+      suite check points a row at a dead file and asserts the save still works.
+    - ⚠️ **The helmet is a FALLBACK, not a filter, and the distinction cost a
+      round trip.** The first cut shipped nine, holding back three of the
+      owner's own logos on the writing carve-out. That carve-out governs what
+      the **template engine generates**; it was never about the league's own
+      historical artefacts, which the owner made and all twelve managers have
+      had since 2023. The owner said so — *"U don't get to leave stuff out.
+      Add it all"* — and they were right. The helmet path stays live for a
+      manager the map doesn't know and for a file that fails to load; a suite
+      check drives both, since no team in this league exercises it any more.
+    - `onePager` draws synchronously, so the files must already be decoded:
+      `preloadSrcs` runs at boot and `saveOnePager` awaits it. `drawCrest` also
+      falls back to the module-level `CREST_READY` map, because the first cut
+      required the caller to hand one in and any caller that forgot silently
+      got helmets with no error.
+  - ⚠️ **Two lines in the paragraph above are Sports-Hub history and are no
+    longer true here**, and they are left as a warning about how a moved
+    document goes stale: the palette is pinned in the markup (`data-palette` +
+    `data-theme` on `<html>`), there is no `PALETTE_MIGRATE` in this repo and
+    no "third copy" to keep in sync — that machinery was deleted before the
+    move. What IS still true: **every colour is a token**, ▲/▼ are
+    `--pos`/`--neg` and never the accent, and an accent fill takes `--on-ac`,
+    never `#fff` (white on gold measures ~1.9:1).
+  - **Its `?v=` numbers restarted at 1 with the move.** `power.css`/`power.js`
+    are `?v=1` in `power.html`, as is its `styles.css?v=`. Bump them when you
+    change those files; the Lab is standalone and does not ride `league.js`'s
+    `APP_VERSION`.
+  - **🚀 Publish to the app** is this repo's addition — see "How the power
+    rankings work" below. The share link, the text copy and the one-pager are
+    all unchanged from Sports-Hub.
 - `rankings/` — published weeks. `index.json` lists them; one JSON file each.
 - `logos/` — the league's own twelve crests, keyed by manager.
 - `sw.js` — network-first service worker. Bump `CACHE` on every release.
+
+## localStorage keys
+
+The members' app writes **two keys and no more**. Everything else here belongs
+to the Lab, which only the commissioner opens.
+
+- `lh:me` — the manager code the reader picked. There is no account and there
+  must never be one: twelve relatives are not going to sign in to read a
+  fantasy archive.
+- `lh:skipped` — set when someone taps "I'm just looking". ⚠️ It exists so the
+  picker **never asks twice**. A prompt that returns every visit is a nag, and
+  this app's whole posture is that picking is an invitation, not a gate.
+- `powerlab:draft` — the Power Rankings Lab's week in progress
+  (`{key, order, comments, at}`, autosaved on every edit). `key` = weeks
+  played, so it is restored only for the week it belongs to — a new week's
+  results pre-build a fresh ranking instead.
+- `powerlab:pub` — published weeks keyed by that same key
+  (`{order, comments, at, label}`). Written when the owner SHARES, and it is
+  what ▲▼ movement is measured against — movement the league never saw is not
+  movement.
+- `powerlab:season` — last good `/api/fantasy/football/season` payload, so the
+  lab still ranks when the free-tier backend is asleep (with a stale banner).
+- `powerlab:spice` — `'0'` when the owner has turned off the rationed
+  profanity in the pre-written takes. Absent/`'1'` = on, which is the default
+  and matches the style spec's ~2-3 lines a week.
+- ⚠️ **These four came over from Sports-Hub with the Lab**, so a device the
+  owner used while it lived there already carries them and will restore that
+  week's draft — which is correct, and worth knowing before wondering where a
+  half-written week came from.
 
 ## 🚨 The data was VERIFIED, not transcribed
 
@@ -215,6 +371,65 @@ Claude-Session: https://claude.ai/code/session_01To1PtAzu7JTpCEQj8EiV9D
   nothing").
 - Ship small, verifiable increments; bump the version so the owner can confirm
   what they're running. They verify on iPhone (Safari + home-screen PWA).
+
+## Changelog
+
+Same convention as Sports-Hub's, and for the same reason: entries record the
+REASONING, not just the change, so the next session does not repeat a mistake.
+**Write them in the present tense, never rewrite one, and when a later change
+invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
+stale entry written in the present tense reads as current to anyone who greps.
+
+- **v1 — the league's own app (10 Sep 2026)** — the owner: *"I started a repo
+  called league history and it's gonna be so that I can send it out to all the
+  members of the league… they're gonna click their name and then the app speaks
+  to them like you have spoken to me."*
+  - **Identity is one call.** `history.js` gained `ME`, `setMe`, `isMe`,
+    `realNm` and `vb`; `nm()` is the single place second person is decided, so
+    pointing it at a different manager re-voices every table, rivalry line and
+    caption in the archive with no other edit.
+  - ⚠️ **`vb(m, 'have', 'has')` exists because second person changes the
+    verb.** "You have outscored" but "Buley has outscored" — a sentence that
+    agrees with the wrong person is the first thing a reader notices. Any new
+    generated sentence about a manager goes through it.
+  - **🚨 A value derived at init cannot answer a question asked later.** The
+    manager `name` field was a plain string copied from `nm()` at module load
+    — which is BEFORE anyone has picked — so every view reading `a.name` (the
+    trophy case, the luck index, the playoff table, the Cum Bowl record, a
+    profile header) went on printing the manager's own name after `setMe` had
+    made them the reader. Only the few places that happened to call `nm()`
+    live said "You", so **the app was second-person in patches**. It is a live
+    getter now (`Object.defineProperty`). Watch for this shape anywhere else.
+  - **The picker is the front door once, then a header button forever.** It
+    never returns uninvited — `lh:skipped` is what makes "I'm just looking" a
+    real answer rather than a delay.
+  - **Picking lands you on the You page**, not back where you were. It is a
+    question about yourself; the answer should be the page about you, or the
+    tap looks like it did nothing.
+  - **🚀 Publish added to the Lab**, and the payload gained the manager code at
+    index 7 — index 6 (`mgrLabel`) is deliberately blank when the label would
+    repeat the team name, so keying off it would deny **CC**, and only CC,
+    their own highlighted row. Same trap the crests hit in Sports-Hub's v208.
+  - **The rankings view loads `power.css`**, so what a member reads is
+    pixel-identical to what the commissioner built. Load order is
+    `styles.css` → `power.css` → `league.css`.
+  - **Two faults only the render caught:** the header's "who are you" chip
+    painted as an **empty white pill** on the picker screen — the one screen
+    everybody sees first — because `paintHead` lived inside `paint()`, which
+    does not run while the picker is up; and the footer's Lab link was a
+    **13px tap target**, a third of the 38px floor, because an inline link in
+    a paragraph has no height of its own.
+  - ⚠️ **A stale harness will lie to you.** The driver page is a copy of
+    `index.html` with a script injected; after editing `index.html` it must be
+    rebuilt, or you are testing the previous version. It cost a round trip
+    here — the rankings view rendered completely unstyled and the CSS was
+    fine.
+  - Verified in headless Chromium at 390px against the real `index.html`
+    served over HTTP: the picker, all five history views, a manager profile,
+    the rankings view with a fixture week and with an empty archive, and the
+    "just looking" path. No clipping, nothing under the 9px type floor, no tap
+    target under 38px, no horizontal overflow, every crest loading, no console
+    errors.
 
 ## Open / next
 
