@@ -103,3 +103,26 @@
    Sports-Hub provided from elsewhere in its shell. */
 :root[data-palette] .lg-main .section-title:first-of-type { margin-top: 18px; }
 :root[data-palette] .lg-main .fh-back { margin-top: 14px; }
+
+/* ── 📌 storylines ───────────────────────────────────────────────────────
+   A card is a crest, a claim and its evidence. The claim is the headline and
+   carries its own provenance badge, because a storyline built from playoff
+   games only is exactly the kind of thing that reads as a career fact. */
+:root[data-palette] .fh-stories { padding: 4px 0 8px; }
+:root[data-palette] .fh-story {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px;
+  align-items: start; padding: 14px 14px; border-top: 1px solid var(--tr); }
+:root[data-palette] .fh-story:first-child { border-top: 0; }
+:root[data-palette] .fh-story-c { padding-top: 2px; }
+:root[data-palette] .fh-story-b { min-width: 0; }
+:root[data-palette] .fh-story-b h4 {
+  margin: 0 0 5px; font: 800 14.5px/1.35 Archivo, system-ui, sans-serif;
+  color: var(--ink); letter-spacing: -.01em; }
+:root[data-palette] .fh-story-b p {
+  margin: 0; font: 500 12.5px/1.55 Archivo, system-ui, sans-serif; color: var(--mu); }
+/* the badge sits inline after a headline that may wrap, so it must not stretch it */
+:root[data-palette] .fh-story-b h4 .fh-src { vertical-align: 1px; }
+:root[data-palette] .fh-story-l {
+  display: inline-flex; align-items: center; min-height: 38px; margin-top: 2px;
+  padding: 0; background: none; border: 0; cursor: pointer;
+  font: 800 11.5px/1 Archivo, system-ui, sans-serif; color: var(--ac7); }

@@ -200,6 +200,10 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 - `rankings/` — published weeks. `index.json` lists them; one JSON file each.
 - `logos/` — the league's own twelve crests, keyed by manager.
 - `sw.js` — network-first service worker. Bump `CACHE` on every release.
+- `checks.js` — **run `node checks.js` after ANY data or detector change.** It
+  runs the conservation laws below plus the storyline laws: every manager has
+  one, none has a template hole, each reader's own storyline is in second
+  person, and no superlative fires for two people at once.
 
 ## localStorage keys
 
@@ -274,6 +278,52 @@ untrustworthy. Every view carries a badge saying which it is.
   brackets), and **the rank is the playoff finish while the record beside it is
   the regular season** — they disagree constantly, and that gap is the history
   worth showing.
+
+## 📌 Storylines — detected, never written
+
+The cards on Records, on the You page and on every profile started life as
+paragraphs typed into a chat. **They are not typed in now, and that is the
+whole point:** a sentence like "Buley has finished 11th seven times" is wrong
+the moment a season lands. A detector looks for a SHAPE in the data and fills
+its own numbers in, so the sentence is fixed and the facts re-derive on load.
+Same rule as the Sports-Hub model card — a hand-written description of
+something computed is wrong the first time somebody changes it.
+
+- **Each detector is about a shape, not a person.** `worstToFirst` fires for
+  anyone who wins a title off a bottom-four finish; it happens to be Woods
+  twice today. **Nothing in `DETECT` names a manager**, which is what stops
+  the feature quietly turning back into a hand-written page.
+- **Every sentence must read in second person too**, because any of them can be
+  about whoever is holding the phone. Use `nm()` and **`vb(m, 'have', 'has')`**;
+  never write "has", "his" or "he" into a template. There are no pronouns in
+  these strings at all — the name always works and never misgenders anyone.
+- **`signature` is the last detector and it exists for coverage.** The others
+  look for extremes, so a manager who has never been extreme gets nothing — and
+  three people opening a blank You page is the one outcome this feature exists
+  to avoid. It finds the stat they sit furthest from the middle on and states
+  it, low-weighted so it never displaces a real find. `checks.js` asserts all
+  twelve are covered.
+- **🚨 Built per READER, not once at load** — and this fault was written into
+  this file twice. The first cut ran the detectors at module init, which is
+  before `setMe`, so every headline froze with the manager's own name in it and
+  the storylines were the one part of the app that never said "you". **A value
+  derived at init cannot answer a question asked later.** Memoised on `ME`.
+- **⚠️ Era-safe comparisons only.** Scoring has climbed across thirteen years,
+  so a raw career ppg ranks managers by *which seasons they played* — a
+  nine-season career starting late tops the all-time list without ever
+  outscoring anyone. `relPpg` measures against the league in the seasons that
+  manager actually played. Same family of fault as printing an all-play record
+  (11 opponents) beside a real one (13-14 games) as if they compared: the
+  numbers are each right and the comparison is not. **Percentages, or a common
+  baseline — never two different denominators side by side.**
+- **A superlative that fires twice is just wrong.** `stuckAt` originally
+  returned every manager with a 4+ repeated finish, so two of them claimed the
+  record on one screen. Use `leaders()` and `alsoTxt()`, which say "tied with"
+  rather than pretending.
+- **Facts are deduped across cards** — the zero-podium card folds in whatever
+  records that manager holds, which had the Cum Bowl record printed twice on
+  one screen as two separate findings.
+- Every card carries a provenance badge, same three kinds as everything else.
 
 ## 🏆 How the power rankings work
 
@@ -379,6 +429,31 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v2 — storylines (10 Sep 2026)** — the owner, with screenshots of writeups
+  from a chat: *"u had these really interesting write ups and more in the chat.
+  How can we add these to the app."*
+  - **Not by pasting them.** Every number in those paragraphs was already
+    derivable, and a pasted paragraph is wrong the next time a season lands.
+    They are detectors now — see the section above.
+  - All six writeups reproduce from the archive exactly, which was checked
+    before a line of the engine was written: Woods' two worst-to-first titles,
+    Buley's 11th × 7 and 6/4 Cum Bowl records, Christel's zero podiums beside
+    the 183.3 and 153.6 records, Zach's clean floor, Hurd's 109.4 → 94.2 and
+    5-14, Wolff's 56.9% and 0-4. **The data was the check on the prose, not the
+    other way round.**
+  - **Five faults in the generated prose, all found by reading the output** —
+    two managers both claiming the same record; "Tied for the most with tied
+    with Hurd"; two different denominators printed side by side; a gendered
+    pronoun in a template; and one fact rendered as two separate cards.
+  - **Coverage was the real design problem.** The detectors found ten of twelve
+    managers; the other two would have opened their own page and found nothing.
+    `signature` closes that, and `checks.js` now fails if it ever reopens.
+  - Placed in three spots rather than a sixth tab (five already crowd 390px):
+    the top of **Records**, **Your storylines** on the You page, and each
+    manager's own on their profile.
+  - `checks.js` moved into the repo from the scratch harness — it was testing
+    a path in the other repo, which stopped existing when history.js moved.
 
 - **v1 — the league's own app (10 Sep 2026)** — the owner: *"I started a repo
   called league history and it's gonna be so that I can send it out to all the

@@ -686,7 +686,10 @@
   const one = (n) => (Math.round(n * 10) / 10).toFixed(1);
   const ord = (n) => n + (n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th');
   const rec = (r) => `${r.w}-${r.l}`;
-  const sgn = (n, d = 1) => { const r = +n.toFixed(d); return (r > 0 ? '+' : '') + r.toFixed(d); };
+  /* A real minus sign, not a hyphen. These are numbers in prose — "a −15.2
+     collapse" is typeset, "a -15.2 collapse" is typed. Nothing parses this
+     back, it is display only. */
+  const sgn = (n, d = 1) => { const r = +n.toFixed(d); return r > 0 ? '+' + r.toFixed(d) : r.toFixed(d).replace('-', '\u2212'); };
 
   /* Person first, franchise underneath — the whole point of the name map. */
   const crest = (m, size) => (MGR_LOGO[m]
@@ -914,6 +917,371 @@
     </div>`;
   }
 
+
+  /* ══ 📌 STORYLINES ═══════════════════════════════════════════════════════
+     The things a reader would actually tell somebody at a bar: worst-to-first,
+     the best win% with no ring, the man who scores more than anyone and
+     collapses in January.
+
+     🚨 THEY ARE DETECTED, NOT WRITTEN. Every one of these started life as a
+     paragraph typed into a chat — and a typed paragraph is wrong the moment a
+     season lands ("Buley has finished 11th seven times" becomes eight). So a
+     detector looks for a SHAPE in the data and fills the numbers in itself:
+     the sentence is fixed, the facts are re-derived on every load. Same rule
+     the Sports-Hub model card follows — a hand-written description of
+     something computed is wrong the first time somebody changes it.
+
+     🚨 AND EACH ONE IS ABOUT A SHAPE, NOT A PERSON. `worstToFirst` fires for
+     anybody who wins a title off a bottom-four finish; it happens to be Woods
+     twice today. Nothing here names a manager in its code, which is what stops
+     the feature quietly becoming a hand-written page again.
+
+     ⚠️ Every sentence has to read in SECOND PERSON too, because every one of
+     these can be about the person holding the phone. Use nm() and vb(); never
+     write "has" or "his".
+
+     A detector returns `{ id, m, w, head, body, src }` or nothing:
+       w    — how remarkable, 0-100, used only to rank
+       src  — 'reg' | 'po' | 'fin' | 'mix', the provenance badge (see SRC)  */
+
+  const PO_YEARS = [...new Set(PLAYOFF_GAMES.map((g) => g.yr))].sort();
+  const mgrAt = (yr, t) => { const s = SEASON.find((x) => x.yr === yr); const r = s && s.rows.find((x) => x.t === t); return r && r.mgr; };
+  const pl = (n, one, many) => `${n} ${n === 1 ? one : (many || one + 's')}`;
+  /* "a 11-1 record" is the kind of thing only a generator writes. */
+  const an = (n) => (/^(8|11|18|8\d|11\d)/.test(String(n)) ? 'an' : 'a');
+
+  /* one pass for the things several detectors need */
+  const ST = (() => {
+    const places = {}, scoring = {}, poScore = {}, wbRec = {}, cbScore = [], poScores = [];
+    ALL.forEach((a) => { places[a.m] = {}; a.yrs.forEach((r) => { if (r.place) places[a.m][r.place] = (places[a.m][r.place] || 0) + 1; }); });
+    SEASON.forEach((s) => { const top = [...s.rows].sort((x, y) => y.ppg - x.ppg)[0]; if (top.mgr) scoring[top.mgr] = (scoring[top.mgr] || 0) + 1; });
+    PLAYOFF_GAMES.forEach((g) => {
+      [[g.a, g.as], [g.b, g.bs]].forEach(([t, v]) => {
+        const m = mgrAt(g.yr, t); if (!m) return;
+        (poScore[m] = poScore[m] || { n: 0, s: 0 }).n++; poScore[m].s += v;
+        poScores.push({ yr: g.yr, m, v, br: g.br, rd: g.rd });
+      });
+      if (g.br !== 'W') return;
+      const [wt, lt] = g.as > g.bs ? [g.a, g.b] : [g.b, g.a];
+      const wm = mgrAt(g.yr, wt), lm = mgrAt(g.yr, lt);
+      if (wm) (wbRec[wm] = wbRec[wm] || { w: 0, l: 0 }).w++;
+      if (lm) (wbRec[lm] = wbRec[lm] || { w: 0, l: 0 }).l++;
+    });
+    CUMBOWL.forEach((c) => [[c.s11, c.p11], [c.s12, c.p12]].forEach(([t, v]) => {
+      const m = mgrAt(c.yr, t); if (m) cbScore.push({ yr: c.yr, m, v }); }));
+    /* Regular-season scoring in the SAME seasons the playoff sample covers —
+       comparing a 13-year regular-season average against a 7-year playoff one
+       would measure the eras, not the manager. */
+    const era = {};
+    ALL.forEach((a) => {
+      const rs = a.yrs.filter((r) => PO_YEARS.includes(r.yr));
+      if (!rs.length || !poScore[a.m]) return;
+      const reg = rs.reduce((x, r) => x + r.pf, 0) / rs.reduce((x, r) => x + r.w + r.l, 0);
+      era[a.m] = { reg, po: poScore[a.m].s / poScore[a.m].n, n: poScore[a.m].n, d: poScore[a.m].s / poScore[a.m].n - reg };
+    });
+    poScores.sort((x, y) => y.v - x.v); cbScore.sort((x, y) => y.v - x.v);
+    return { places, scoring, wbRec, era, poScores, cbScore };
+  })();
+
+  /* Scoring relative to the league IN THAT SEASON, averaged over a career.
+     The only era-safe way to compare a 2013 team with a 2025 one. */
+  const relPpg = (a) => {
+    const ys = a.yrs.map((r) => { const s2 = SEASON.find((x) => x.yr === r.yr); return s2 ? r.ppg - s2.lgPpg : 0; });
+    return ys.length ? ys.reduce((x, y) => x + y, 0) / ys.length : 0;
+  };
+
+  /* Rank within a set, and say honestly when it is a tie rather than a win. */
+  const leaders = (arr, val) => { const mx = Math.max(...arr.map(val)); return arr.filter((x) => val(x) === mx); };
+  const tiedWith = (list, m) => list.filter((x) => x.m !== m).map((x) => nm(x.m));
+  const alsoTxt = (others) => (others.length ? ` — tied with ${others.join(' and ')}` : '');
+
+  const DETECT = [
+    /* ── worst to first ─────────────────────────────────────────────────── */
+    function worstToFirst() {
+      const asc = [...SEASON].sort((a, b) => a.yr - b.yr), by = {};
+      asc.forEach((s, i) => {
+        const n = asc[i + 1]; if (!n || !n.champ || !n.champ.mgr) return;
+        const prev = s.rows.find((r) => r.mgr === n.champ.mgr);
+        const cut = Math.ceil(s.rows.length * 0.7);      // bottom third-ish, not a magic 9
+        if (prev && prev.place && prev.place >= cut) (by[n.champ.mgr] = by[n.champ.mgr] || []).push({ from: prev.place, a: s.yr, b: n.yr });
+      });
+      return Object.entries(by).map(([m, runs]) => ({
+        id: 'w2f', m, w: 70 + runs.length * 12, src: 'fin',
+        head: `${nm(m)} ${vb(m, 'do', 'does')} worst-to-first as a party trick.`,
+        body: runs.map((r) => `${ord(r.from)} → champion (${r.a}→${String(r.b).slice(2)}).`).join(' ') +
+          ` ${runs.length} of the ${pl(MGRS[m].t1, 'title')} came straight off a bottom-four finish.`,
+      }));
+    },
+
+    /* ── the same finish, over and over ─────────────────────────────────── */
+    function stuckAt() {
+      /* 🚨 Only the actual maximum gets "nobody does it more often". The first
+         cut returned every manager with a 4+ repeat, so Buley (11th x7) and
+         the champion (1st x4) BOTH claimed the record on the same page. A
+         superlative that fires more than once is just wrong. */
+      const best = ALL.map((a) => {
+        const e = Object.entries(ST.places[a.m] || {}).sort((x, y) => y[1] - x[1])[0];
+        return e && e[1] >= 4 ? { a, place: +e[0], n: e[1] } : null;
+      }).filter(Boolean);
+      if (!best.length) return [];
+      const top = leaders(best, (x) => x.n);
+      return top.map(({ a, place, n }) => ({ id: 'stuck', m: a.m, w: 40 + n * 8, src: 'fin',
+        head: `${nm(a.m)} ${vb(a.m, 'have', 'has')} finished ${ord(place)} ${pl(n, 'time')}.`,
+        body: `Out of ${a.seasons}. No one in the league repeats a finish more often${alsoTxt(tiedWith(top.map((x) => ({ m: x.a.m })), a.m))}.` }));
+    },
+
+    /* ── the Cum Bowl record ────────────────────────────────────────────── */
+    function cumbowl() {
+      const app = leaders(ALL.filter((a) => a.cbA), (a) => a.cbA);
+      const lost = leaders(ALL.filter((a) => a.cb), (a) => a.cb);
+      const out = [];
+      app.forEach((a) => out.push({ id: 'cbking', m: a.m, w: 60 + a.cbA * 5, src: 'po',
+        head: `${nm(a.m)} ${vb(a.m, 'have', 'has')} played ${pl(a.cbA, 'Cum Bowl')} — more than anyone${alsoTxt(tiedWith(app, a.m))}.`,
+        body: `${lost.some((x) => x.m === a.m) ? `${vb(a.m, 'You have', 'And ' + nm(a.m) + ' has')} lost ${a.cb} of them — also the record. ` : ''}${a.t1 ? `There is a championship in there too.` : `${vb(a.m, 'You have', 'That is')} no title to set against it.`}` }));
+      return out;
+    },
+
+    /* ── a whole career with nothing on the podium ──────────────────────── */
+    function noPodium() {
+      return ALL.filter((a) => a.seasons >= 8 && !a.yrs.some((r) => r.place && r.place <= 3)).map((a) => {
+        /* The absence is only half the story — what makes it one is a career
+           that plainly had the scoring to do better. Pull in any single-game
+           record this manager happens to hold rather than stating it twice on
+           two separate cards. */
+        const bits = [];
+        const pi = ST.poScores.findIndex((x) => x.m === a.m);
+        if (pi >= 0 && pi < 3) bits.push(`the ${ord(pi + 1)}-best playoff score ever (${one(ST.poScores[pi].v)})`);
+        if (ST.cbScore[0] && ST.cbScore[0].m === a.m) bits.push(`the highest Cum Bowl score ever (${one(ST.cbScore[0].v)})`);
+        return { id: 'nopod', m: a.m, w: 75, src: 'fin',
+          head: `${nm(a.m)}: ${a.seasons} seasons, zero podiums.`,
+          body: `The only manager in the league with none.${bits.length ? ` ${vb(a.m, 'You also hold', nm(a.m) + ' also holds')} ${bits.join(' and ')}.` : ''}` };
+      });
+    },
+
+    /* ── never last, never a play-in ────────────────────────────────────── */
+    function cleanFloor() {
+      const n = SEASON[0].rows.length;
+      return ALL.filter((a) => a.seasons >= 8 && !a.cbA && !a.yrs.some((r) => r.place === n)).map((a) => ({
+        id: 'floor', m: a.m, w: 62, src: 'mix',
+        head: `${nm(a.m)} ${vb(a.m, 'have', 'has')} never finished last and never played a Cum Bowl.`,
+        body: `The only manager with both, across ${a.seasons} seasons — with ${pl(a.fin, 'final')} and ${a.t1 ? pl(a.t1, 'title') : 'no title'}.` }));
+    },
+
+    /* ── the January collapse, and its opposite ─────────────────────────── */
+    function januaryGap() {
+      const es = Object.entries(ST.era); if (es.length < 6) return [];
+      const worst = es.sort((a, b) => a[1].d - b[1].d)[0], best = es[es.length - 1];
+      const nextWorst = es[1];
+      const topReg = es.slice().sort((a, b) => b[1].reg - a[1].reg)[0];
+      const out = [];
+      if (worst[1].d < -5) {
+        const m = worst[0], e = worst[1];
+        out.push({ id: 'collapse', m, w: 95, src: 'po',
+          head: `${nm(m)} ${vb(m, 'are', 'is')} the biggest story in the archive.`,
+          body: `${topReg[0] === m ? `Highest scorer in the league over ${PO_YEARS[0]}-${String(PO_YEARS[PO_YEARS.length - 1]).slice(2)} at ${one(e.reg)} ppg — and ` : `${one(e.reg)} ppg in the regular season, `}${one(e.po)} in the playoffs. A ${sgn(e.d)} collapse; nobody else drops more than ${one(Math.abs(nextWorst[1].d))}. ` +
+            `${vb(m, 'You are', nm(m) + ' is')} ${MGRS[m].bw + MGRS[m].cw}-${MGRS[m].bl + MGRS[m].cl} in playoff games, ` +
+            `with ${pl(ST.scoring[m] || 0, 'scoring title')} and ${MGRS[m].t1 ? pl(MGRS[m].t1, 'ring') : 'zero rings'}.` });
+      }
+      if (best[1].d > 4) {
+        const m = best[0], e = best[1];
+        out.push({ id: 'rises', m, w: 55, src: 'po',
+          head: `${nm(m)} ${vb(m, 'score', 'scores')} more when it counts.`,
+          body: `${one(e.reg)} ppg in the regular season, ${one(e.po)} in the playoffs — ${sgn(e.d)}, the biggest rise in the league.` });
+      }
+      return out;
+    },
+
+    /* ── the best record nobody rewarded ────────────────────────────────── */
+    function ringless() {
+      const none = ALL.filter((a) => !a.t1 && a.seasons >= 8); if (!none.length) return [];
+      const top = leaders(none, (a) => a.pct);
+      return top.map((a) => ({ id: 'ringless', m: a.m, w: 88, src: 'mix',
+        head: `${nm(a.m)} ${vb(a.m, 'have', 'has')} the best win% in league history (${(a.pct * 100).toFixed(1)}%), zero titles, and ${vb(a.m, 'have', 'has')} ${a.fin ? `only reached ${pl(a.fin, 'final')}` : 'never played in a final'}.`,
+        body: (() => {
+          const bs = [].concat(...SEASON.map((s) => s.rows)).filter((r) => r.mgr).sort((x, y) => y.pct - x.pct || y.pf - x.pf)[0];
+          const wb = ST.wbRec[a.m];
+          return `${bs.mgr === a.m ? `${vb(a.m, 'You own', nm(a.m) + ' owns')} the best season ever recorded — ${bs.w}-${bs.l} in ${bs.yr} — and finished ${ord(bs.place)}. ` : ''}` +
+            `${wb ? `${wb.w}-${wb.l} in winner's-bracket games.` : ''}`;
+        })() }));
+    },
+
+    /* ── most titles ────────────────────────────────────────────────────── */
+    function dynasty() {
+      const top = leaders(ALL.filter((a) => a.t1), (a) => a.t1); if (!top.length || top[0].t1 < 2) return [];
+      return top.map((a) => ({ id: 'dynasty', m: a.m, w: 80, src: 'fin',
+        head: `${nm(a.m)} ${vb(a.m, 'have', 'has')} ${pl(a.t1, 'title')}${alsoTxt(tiedWith(top, a.m))}.`,
+        body: `${pl(a.fin, 'final')} in ${a.seasons} seasons, and ${a.po} playoff appearances.` }));
+    },
+
+    /* ── record single-game scores ──────────────────────────────────────── */
+    function bigScores() {
+      const out = [];
+      const p = ST.poScores[0];
+      if (p && p.m) out.push({ id: 'poscore', m: p.m, w: 50, src: 'po',
+        head: `${nm(p.m)} ${vb(p.m, 'hold', 'holds')} the highest playoff score ever recorded: ${one(p.v)}.`,
+        body: `${p.yr}. The next best is ${one(ST.poScores[1].v)}.` });
+      const c = ST.cbScore[0];
+      if (c && c.m) out.push({ id: 'cbscore', m: c.m, w: 44, src: 'po',
+        head: `${nm(c.m)} ${vb(c.m, 'put', 'put')} up the highest Cum Bowl score ever: ${one(c.v)}.`,
+        body: `${c.yr} — in a game between the two worst seeds in the league.` });
+      /* Someone holding a record AND a wooden spoon is the better story. */
+      const both = out.filter((x) => ST.poScores.slice(0, 2).some((y) => y.m === x.m));
+      both.forEach((x) => { x.w += 15; });
+      return out;
+    },
+
+    /* ── the winner's bracket, at both ends ─────────────────────────────── */
+    function bracket() {
+      const es = Object.entries(ST.wbRec).filter(([, r]) => r.w + r.l >= 4);
+      if (es.length < 4) return [];
+      const worst = es.slice().sort((a, b) => (a[1].w / (a[1].w + a[1].l)) - (b[1].w / (b[1].w + b[1].l)) || b[1].l - a[1].l)[0];
+      if (worst[1].w > 0) return [];
+      return [{ id: 'wb0', m: worst[0], w: 58, src: 'po',
+        head: `${nm(worst[0])} ${vb(worst[0], 'have', 'has')} never won a winner's-bracket game.`,
+        body: `${worst[1].w}-${worst[1].l} in the games that decide the title.` }];
+    },
+
+    /* ── luck, at both ends ─────────────────────────────────────────────── */
+    function luck() {
+      const s = [...ALL].sort((a, b) => a.luck - b.luck);
+      const un = s[0], lu = s[s.length - 1];
+      const out = [];
+      /* 🚨 In PERCENT, not in raw records. All-play is 11 opponents a season and
+         the real schedule is 13 or 14 games, so "should be 97-46, is 93-81"
+         puts two different denominators side by side and reads as nonsense —
+         the numbers are right and the comparison is not. */
+      const pc = (x) => `${(x * 100).toFixed(1)}%`;
+      if (un.luck < -3) out.push({ id: 'unlucky', m: un.m, w: 46, src: 'reg',
+        head: `${nm(un.m)} ${vb(un.m, 'have', 'has')} been the unluckiest team in the league.`,
+        body: `Rank every team by points each season and play everyone, and the scoring says ${pc(un.allPct)}. The actual record is ${pc(un.pct)} — ${sgn(un.luck)} points of win% the schedule took.` });
+      if (lu.luck > 3) out.push({ id: 'lucky', m: lu.m, w: 42, src: 'reg',
+        head: `${nm(lu.m)} ${vb(lu.m, 'have', 'has')} been the luckiest team in the league.`,
+        body: `The scoring says ${pc(lu.allPct)}; the board says ${pc(lu.pct)} — ${sgn(lu.luck)} points of win% the schedule gave back.` });
+      return out;
+    },
+
+    /* ── scoring titles with nothing to show for them ───────────────────── */
+    function scorer() {
+      const es = Object.entries(ST.scoring); if (!es.length) return [];
+      const mx = Math.max(...es.map((e) => e[1]));
+      return es.filter((e) => e[1] === mx && !MGRS[e[0]].t1).map(([m, n]) => ({
+        id: 'scorer', m, w: 52, src: 'reg',
+        head: `${nm(m)} ${vb(m, 'have', 'has')} led the league in scoring ${pl(n, 'time')} and won nothing.`,
+        body: (() => { const others = tiedWith(es.filter((e) => e[1] === mx).map(([mm]) => ({ m: mm })), m);
+          return others.length ? `Tied for the most with ${others.join(' and ')}.` : 'The most of anyone.'; })() }));
+    },
+
+    /* ── nobody gets an empty page ───────────────────────────────────────
+       🚨 The detectors above look for extremes, so a manager who has never
+       been extreme at anything gets NOTHING — and on this app that means
+       three people open their own You page and find a blank space where
+       everyone else has a story. That is the one outcome the whole feature
+       exists to avoid.
+
+       So: for anyone still empty, find the stat they ARE most notable at —
+       best or worst, whichever is further from the middle — and state it.
+       Last, not first, and low-weighted, so it never displaces a real find. */
+    function signature() {
+      const covered = new Set();
+      DETECT.slice(0, -1).forEach((fn) => { try { (fn() || []).forEach((x) => x && covered.add(x.m)); } catch (_) {} });
+      const pool = ALL.filter((a) => !covered.has(a.m) && a.seasons >= 4);
+      if (!pool.length) return [];
+      const N = ALL.length;
+      const STATS = [
+        { k: 'pct', get: (a) => a.pct, hi: (a) => `${nm(a.m)} ${vb(a.m, 'have', 'has')} the ${sup} win% in the league at ${(a.pct * 100).toFixed(1)}%.` },
+      ];
+      /* Ranked on each stat; the manager's best claim is wherever they sit
+         furthest from the middle of the twelve. */
+      const rankOf = (val, hiGood) => { const s2 = [...ALL].sort((x, y) => (hiGood ? val(y) - val(x) : val(x) - val(y)));
+        return (m) => s2.findIndex((x) => x.m === m) + 1; };
+      const CLAIMS = [
+        { val: (a) => a.pct, hi: true, say: (a, r) => `the ${r === 1 ? 'best' : r === N ? 'worst' : ord(r) + '-best'} win% in the league, ${(a.pct * 100).toFixed(1)}%` },
+        /* 🚨 vs the league IN THE SEASONS THEY PLAYED, never a raw career ppg.
+           Scoring has climbed over thirteen years, so a raw average ranks a
+           manager by which era they were in — a nine-season career that
+           started late tops the all-time list without ever outscoring a
+           single opponent. Same fault as comparing two different denominators
+           in the luck card. */
+        { val: (a) => relPpg(a), hi: true, say: (a, r) => `${sgn(relPpg(a))} points a game against the league in the seasons ${vb(a.m, 'you', nm(a.m))} played — ${r === 1 ? 'the best mark of anyone' : r === N ? 'the worst of anyone' : ord(r) + ' of ' + N}` },
+        { val: (a) => a.poRate, hi: true, say: (a, r) => `${a.po} playoff appearances in ${a.seasons} seasons — ${r === 1 ? 'the most reliable in the league' : ord(r) + ' of ' + N}` },
+        { val: (a) => a.avgPlace, hi: false, say: (a, r) => `an average finish of ${one(a.avgPlace)}, ${r === 1 ? 'the best in the league' : ord(r) + ' of ' + N}` },
+        { val: (a) => a.cw - a.cl, hi: true, say: (a, r) => `${an(a.cw)} ${a.cw}-${a.cl} record in the consolation bracket${r === 1 ? ', the best of anyone' : r === N ? ', the worst of anyone' : ''}` },
+        { val: (a) => a.bw - a.bl, hi: true, say: (a, r) => `${an(a.bw)} ${a.bw}-${a.bl} record in the winner's bracket${r === 1 ? ', the best of anyone' : r === N ? ', the worst of anyone' : ''}` },
+      ];
+      return pool.map((a) => {
+        let best = null;
+        CLAIMS.forEach((c) => {
+          const r = rankOf(c.val, c.hi)(a.m);
+          const edge = Math.max(N + 1 - r, r);          // distance from the middle
+          if (!best || edge > best.edge) best = { c, r, edge };
+        });
+        if (!best) return null;
+        const extra = [];
+        if (a.t1) extra.push(pl(a.t1, 'title'));
+        else if (a.fin) extra.push(`${pl(a.fin, 'final')} but no title`);
+        if (a.cb) extra.push(`${pl(a.cb, 'Cum Bowl')} lost`);
+        return { id: 'sig', m: a.m, w: 20 + best.edge, src: 'mix',
+          head: `${nm(a.m)}, in one line.`,
+          body: `${a.seasons} seasons, ${a.w}-${a.l}, ${best.c.say(a, best.r)}${extra.length ? ` — with ${extra.join(' and ')}` : ''}.` };
+      }).filter(Boolean);
+    },
+  ];
+
+  /* 🚨 Built PER READER, not once at load — and this is the second time this
+     exact fault has been written into this file. The first cut ran the
+     detectors at module init, which is before `setMe` has been called, so
+     every headline froze with the manager's own name in it and the storylines
+     were the one part of the app that never said "you".
+
+     **A value derived at init cannot answer a question asked later.** The
+     detectors themselves are pure over the archive; it is only the SENTENCES
+     that depend on who is reading, so the whole set is rebuilt when the reader
+     changes and memoised until they do. Cheap: eighteen strings. */
+  let _stCache = null, _stFor = '\u0000';
+  function stories() {
+    if (_stCache && _stFor === ME) return _stCache;
+    const out = [];
+    DETECT.forEach((fn) => { try { (fn() || []).forEach((x) => { if (x && x.m && MGRS[x.m]) out.push(x); }); } catch (_) {} });
+    out.sort((a, b) => b.w - a.w);
+    /* Drop a card whose headline number is ALREADY in a better card about the
+       same person. The zero-podium card folds in whatever records that manager
+       holds, which left the Cum Bowl record printed twice on one screen — two
+       cards, one fact, and the reader counting it as two. */
+    const seen = {};
+    _stFor = ME;
+    _stCache = out.filter((x) => {
+      const num = (x.head + ' ' + x.body).match(/\d+\.\d/g) || [];
+      if (!num.length) return true;
+      const dup = num.some((n) => (seen[x.m] || []).includes(n));
+      seen[x.m] = (seen[x.m] || []).concat(num);
+      return !dup;
+    });
+    return _stCache;
+  }
+  const storiesFor = (m) => stories().filter((x) => x.m === m);
+
+  function storyCardHTML(s) {
+    return `<div class="fh-story">
+      <div class="fh-story-c">${crest(s.m, 34)}</div>
+      <div class="fh-story-b">
+        <h4>${esc(s.head)}${tag(s.src)}</h4>
+        ${s.body ? `<p>${esc(s.body)}</p>` : ''}
+        ${isMe(s.m) ? '' : `<button type="button" class="fh-tap fh-story-l" data-mgr="${esc(s.m)}">${esc(nm(s.m))}'s career →</button>`}
+      </div>
+    </div>`;
+  }
+
+  /* ⚠️ These re-derive on every load, so the numbers in them are never stale —
+     but that also means a detector that stops finding its shape simply stops
+     printing. That is correct, and it is why nothing here is a fixed list. */
+  function storiesHTML() {
+    return `<h2 class="section-title">📌 Storylines</h2>
+    <div class="ffp-card fh-stories">
+      <p class="fh-lead">Thirteen seasons, read for the things worth arguing about. <b>Every number here is worked out from the archive on the spot</b> — nothing is typed in, so none of it goes stale when a season lands.</p>
+      ${stories().slice(0, 10).map(storyCardHTML).join('')}
+    </div>`;
+  }
+
   /* ══ 📖 SEASON BY SEASON — all 13, newest first ═══════════════════════ */
   function seasonsHTML() {
     return `<h2 class="section-title">📖 Season by season ${tag('fin')}</h2>
@@ -983,8 +1351,11 @@
       calling you <i>you</i> at the same time.</div>
       <button type="button" class="fan-btn" data-pickme="1">👤 Choose my name</button></div>`;
     }
+    const mine = storiesFor(ME);
     return `<h2 class="section-title">🦅 Your career ${tag('mix')}</h2>
     ${careerCard(a, true)}
+    ${mine.length ? `<h2 class="section-title">📌 Your storylines</h2>
+    <div class="ffp-card fh-stories">${mine.map(storyCardHTML).join('')}</div>` : ''}
     ${h2hFor(ME).length ? `<h2 class="section-title">Your playoff head-to-head ${tag('po')}</h2>
     <div class="ffp-card">
       ${h2hFor(ME).map((v) => `<div class="fh-h2h">${tap(v.opp, `<b>${esc(nm(v.opp))}</b>`)}<i>${one(v.pf)}–${one(v.pa)}</i><span class="${v.w > v.l ? 'pos' : v.l > v.w ? 'neg' : ''}">${v.w}-${v.l}</span></div>`).join('')}
@@ -1030,7 +1401,9 @@
       </div>
       <div class="fh-prof-m"><span>${a.t1} 🥇 · ${a.t2} 🥈 · ${a.t3} 🥉 · ${a.cb} 🚽 · ${a.po} playoffs · ${sgn(a.luck)} luck</span></div>
       ${careerCard(a, true)}
-      ${pairs.length ? `<h2 class="section-title">Playoff head-to-head ${tag('po')}</h2>
+      ${storiesFor(m).length ? `<h2 class="section-title">📌 Storylines</h2>
+    <div class="ffp-card fh-stories">${storiesFor(m).map(storyCardHTML).join('')}</div>` : ''}
+    ${pairs.length ? `<h2 class="section-title">Playoff head-to-head ${tag('po')}</h2>
       <div class="ffp-card">
         ${pairs.map((v) => `<div class="fh-h2h">${tap(v.opp, `<b>${esc(nm(v.opp))}</b>`)}<i>${one(v.pf)}–${one(v.pa)}</i><span class="${v.w > v.l ? 'pos' : v.l > v.w ? 'neg' : ''}">${v.w}-${v.l}</span></div>`).join('')}
         <p class="ffp-cap">⚠️ <b>Playoff meetings only.</b> The archive has no regular-season schedule, so these are the ${pairs.reduce((n, v) => n + v.n, 0)} bracket and Cum Bowl games on file — not a career head-to-head. Points shown are per-game averages.</p>
@@ -1108,7 +1481,7 @@
   const VIEWS = {
     hon: () => heroHTML() + keyHTML() + champsHTML() + trophyHTML() + ringlessHTML(),
     sea: () => seasonsHTML(),
-    rec: () => recordHTML() + luckHTML() + rivalsHTML() + curseHTML() + seedHTML(),
+    rec: () => storiesHTML() + recordHTML() + luckHTML() + rivalsHTML() + curseHTML() + seedHTML(),
     cb: () => cumbowlHTML() + playoffHTML(),
     you: () => youHTML(),
   };
@@ -1126,5 +1499,6 @@
     profile: (m) => profileHTML(m),
     /* Exposed for the repo's own checks — nothing in the app reads these. */
     _stats: { SEASON, ALL, MEET, PAIRS, CUMBOWL, PLAYOFF_GAMES },
+    _stories: () => stories(),
   };
 })();
