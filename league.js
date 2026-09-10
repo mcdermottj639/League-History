@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v3';
+  const APP_VERSION = 'v4';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -37,7 +37,9 @@
   const markSkipped = () => { try { localStorage.setItem(SKIP_KEY, '1'); } catch (_) {} };
 
   const LH = window.LeagueHistory;
-  const S = { view: 'rank', sub: 'hon', prof: null, weeks: null, week: null, wkErr: null };
+  /* Opens on the archive, not the rankings — the history is the thing that is
+     always there, and a week is only published during the season. */
+  const S = { view: 'hist', sub: 'hon', prof: null, weeks: null, week: null, wkErr: null };
 
   /* ── crests ────────────────────────────────────────────────────────────
      Real logos, keyed by MANAGER — the same rule the archive follows, and for
@@ -213,8 +215,59 @@
     if (sel) sel.onchange = () => { S.week = sel.value; paint(); };
   }
 
+  /* ══ JUMP NAV ══════════════════════════════════════════════════════════
+     One chip per card on the page, tapping straight to it.
+
+     🚨 Built from the RENDERED DOM, never from a list of what each view is
+     supposed to contain. A hand-kept list is a second description of the same
+     thing and drifts the first time a section is added — this cannot list a
+     card that is not there or miss one that is.
+
+     Two kinds of landmark, because the views are two shapes: most pages are a
+     run of `.section-title` headings, but Seasons is thirteen `<details>` under
+     ONE heading, and there the useful chip is the year. */
+  const JUMP_PAD = 68;   // the sticky header, so a target does not land under it
+
+  function buildJump() {
+    const nav = $('#lg-jump'), body = $('#lg-body');
+    if (!nav || !body) return;
+    let items = [...body.querySelectorAll('.section-title')].map((h) => ({ el: h, label: labelOf(h) }));
+    if (items.length < 2) {
+      items = [...body.querySelectorAll('details.fh-det > summary')].map((sm) => ({
+        el: sm.parentElement, label: (sm.querySelector('b') || sm).textContent.trim() }));
+    }
+    items = items.filter((x) => x.label);
+    /* One chip is a button that goes where you already are. */
+    if (items.length < 2) { nav.hidden = true; nav.innerHTML = ''; return; }
+    items.forEach((x, i) => { if (!x.el.id) x.el.id = 'lg-sec-' + i; });
+    nav.hidden = false;
+    nav.innerHTML = items.map((x) => `<button type="button" class="chip" data-jump="${esc(x.el.id)}">${esc(x.label)}</button>`).join('');
+    spy();
+  }
+
+  /* The badge and any control inside a heading are real content there and
+     noise in a one-word chip — the same strip Sports-Hub's rail needs. */
+  function labelOf(h) {
+    const c = h.cloneNode(true);
+    c.querySelectorAll('.fh-src, button, .chips').forEach((n) => n.remove());
+    return c.textContent.trim().replace(/\s+/g, ' ');
+  }
+
+  /* Flag the card you are actually in, not just the ones you can reach. */
+  function spy() {
+    const nav = $('#lg-jump');
+    if (!nav || nav.hidden) return;
+    const chips = [...nav.querySelectorAll('[data-jump]')];
+    let here = null;
+    chips.forEach((c) => { const t = document.getElementById(c.dataset.jump);
+      if (t && t.getBoundingClientRect().top - JUMP_PAD <= 1) here = c; });
+    chips.forEach((c) => c.classList.toggle('here', c === here));
+  }
+  addEventListener('scroll', spy, { passive: true });
+  addEventListener('resize', spy, { passive: true });
+
   /* ══ ROUTER ════════════════════════════════════════════════════════════ */
-  const L1 = [['rank', '🏆 Rankings'], ['hist', '📜 League History']];
+  const L1 = [['hist', '📜 League History'], ['rank', '🏆 Rankings']];
 
   function paint() {
     paintHead();
@@ -222,14 +275,21 @@
     bar.innerHTML = L1.map(([k, l]) =>
       `<button type="button" role="tab" class="${k === S.view ? 'on' : ''}" aria-selected="${k === S.view}" data-l1="${k}">${l}</button>`).join('');
     const host = $('#lg-body');
-    if (S.view === 'rank') { S.prof = null; paintRankings(host); return; }
+    $('#lg-sub2').hidden = true;
+    if (S.view === 'rank') { S.prof = null; paintRankings(host).then(buildJump, buildJump); return; }
+    /* A profile is a drill-down out of the sub-tabs, not one of them — showing
+       the bar there would highlight a page you are no longer on. */
     if (S.prof) {
       host.innerHTML = '<button type="button" class="fh-back" data-back="1">‹ Back to the league</button>' + LH.profile(S.prof);
+      buildJump();
       return;
     }
-    host.innerHTML = `<div class="ai-sub fh-sub2" role="tablist">${LH.SUBS.map(([k, l]) =>
-      `<button type="button" role="tab" class="${k === S.sub ? 'on' : ''}" aria-selected="${k === S.sub}" data-l2="${k}">${l}</button>`).join('')}</div>`
-      + LH.view(S.sub);
+    const s2 = $('#lg-sub2');
+    s2.hidden = false;
+    s2.innerHTML = LH.SUBS.map(([k, l]) =>
+      `<button type="button" role="tab" class="${k === S.sub ? 'on' : ''}" aria-selected="${k === S.sub}" data-l2="${k}">${l}</button>`).join('');
+    host.innerHTML = LH.view(S.sub);
+    buildJump();
   }
 
   /* One delegated listener for the whole app — the views are re-rendered
@@ -243,6 +303,15 @@
       paint(); return;
     }
     if (e.target.closest('#lg-me') || e.target.closest('[data-pickme]')) { showPicker(!!LH.me() || skipped()); return; }
+    const jump = e.target.closest('[data-jump]');
+    if (jump) {
+      const t = document.getElementById(jump.dataset.jump);
+      /* Open a collapsed card before jumping to it, or the tap scrolls to a
+         closed summary and looks like it did nothing. */
+      if (t && t.tagName === 'DETAILS') t.open = true;
+      if (t) window.scrollTo({ top: t.getBoundingClientRect().top + window.scrollY - JUMP_PAD, behavior: 'smooth' });
+      return;
+    }
     const l1 = e.target.closest('[data-l1]');
     if (l1) { if (l1.dataset.l1 !== S.view) { S.view = l1.dataset.l1; S.prof = null; paint(); window.scrollTo({ top: 0 }); } return; }
     const l2 = e.target.closest('[data-l2]');

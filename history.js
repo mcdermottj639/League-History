@@ -802,10 +802,10 @@
     const mx = Math.max(...rows.map((a) => Math.abs(a.luck)));
     return `<h2 class="section-title">🎲 The luck index ${tag('reg')}</h2>
     <div class="ffp-card">
-      <p class="fh-lead">Rank all twelve teams by <b>points</b> each season and play everyone: that is the win rate your scoring deserved. The gap to what you actually went is luck.</p>
-      <p class="fh-lx-key">⚠️ <b>Rates, not records — and that is not a detail.</b> All-play is <b>11 opponents every season</b>; the real schedule is 13 or 14 games. So the two are different numbers of games and their win totals were never going to match. Only the percentages compare.</p>
+      <p class="fh-lead">Rank all twelve teams by <b>points</b> each season and play everyone: that is the record your scoring deserved. The gap to what you actually went is luck.<br><br>
+      <b>The two records are different lengths, and that is not a mistake.</b> All-play is <b>11 opponents every season</b>; your real schedule is 13 or 14 games. So the win totals were never going to match — the number on the right is the gap between the two <b>rates</b>. ${(() => { const a = rows[0]; return `${esc(a.name)}, ${a.allW}-${a.allL} is ${pct1(a.allPct)} and ${a.w}-${a.l} is ${pct1(a.pct)}, which is the ${sgn(a.luck)}.`; })()}</p>
       ${rows.map((a) => `<div class="fh-lx${isMe(a.m) ? ' you' : ''}">
-        ${tap(a.m, `<div class="fh-lx-n"><b>${esc(a.name)}</b><i>${pct1(a.allPct)} by the scoring · ${pct1(a.pct)} on the board</i></div>`)}
+        ${tap(a.m, `<div class="fh-lx-n"><b>${esc(a.name)}</b><i>${a.allW}-${a.allL} deserved · ${a.w}-${a.l} actual</i></div>`)}
         <div class="fh-lx-bar"><span class="${lkCls(a.luck)}" style="width:${(Math.abs(a.luck) / mx) * 50}%;${a.luck < 0 ? 'right' : 'left'}:50%"></span><em></em></div>
         <div class="fh-lx-v ${lkCls(a.luck)}">${sgn(a.luck)}</div>
       </div>`).join('')}

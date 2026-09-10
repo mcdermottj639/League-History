@@ -8,8 +8,8 @@
   <meta name="apple-mobile-web-app-title" content="Nectars Bolonga" />
   <title>Nectars Bolonga — League History</title>
   <meta name="description" content="Thirteen seasons of the Nectars Bolonga fantasy football league — champions, records, Cum Bowls, head-to-head, and the weekly power rankings." />
-  <link rel="icon" type="image/png" href="favicon.png?v=1" />
-  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=1" />
+  <link rel="icon" type="image/png" href="favicon.png?v=3" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -18,7 +18,7 @@
        what a member reads is pixel-identical to what the commissioner built.
        Loaded BEFORE league.css, which stays the last layer. -->
   <link rel="stylesheet" href="power.css?v=2" />
-  <link rel="stylesheet" href="league.css?v=3" />
+  <link rel="stylesheet" href="league.css?v=4" />
 </head>
 <body class="lg-body">
   <header class="lg-top">
@@ -37,6 +37,13 @@
 
   <main id="lg-app" class="lg-main" hidden>
     <div id="lg-sub" class="ai-sub" role="tablist" aria-label="View"></div>
+    <!-- Level 2 lives OUT here rather than inside the body, so the jump nav can
+         sit under it: the sub-tabs choose the page, the jump nav moves within
+         it, and a nav above the thing it navigates reads backwards. -->
+    <div id="lg-sub2" class="ai-sub fh-sub2" role="tablist" aria-label="History view" hidden></div>
+    <!-- Jump nav. Built from whatever the current view actually rendered, so
+         it can never list a card that is not there or miss one that is. -->
+    <nav id="lg-jump" class="lg-jump" aria-label="Jump to a section" hidden></nav>
     <div id="lg-body"></div>
     <footer class="lg-foot">
       <p>Thirteen seasons, 2013–2025 · every finish mapped to a person and cross-checked against ESPN's own owner column.</p>
@@ -44,7 +51,7 @@
     </footer>
   </main>
 
-  <script src="history.js?v=3" defer></script>
-  <script src="league.js?v=3" defer></script>
+  <script src="history.js?v=4" defer></script>
+  <script src="league.js?v=4" defer></script>
 </body>
 </html>

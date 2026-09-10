@@ -127,14 +127,27 @@
   padding: 0; background: none; border: 0; cursor: pointer;
   font: 800 11.5px/1 Archivo, system-ui, sans-serif; color: var(--ac7); }
 
-/* the luck index's denominator warning — the row shows rates now, and this is
-   why. It sits under the lead, not in the footer caption, because it explains
-   something the reader is looking at right now. */
-:root[data-palette] .fh-lx-key {
-  margin: 0 0 12px; padding: 9px 11px; border-radius: var(--r1);
-  background: color-mix(in srgb, var(--wm) 10%, transparent);
-  font: 500 11.5px/1.5 Archivo, system-ui, sans-serif; color: var(--mu); }
-:root[data-palette] .fh-lx-key b { color: var(--ink); font-weight: 800; }
+/* ⚠️ The luck rows show the two RECORDS, and the explanation of why they are
+   different lengths lives in the description above them — the owner compared
+   both and the records read better. Do not "fix" this back to percentages;
+   the confusion was never the numbers, it was that nothing said why 143
+   all-play games and 174 real ones would not add up. */
 /* a luck gap of zero is neutral, not a miss */
 :root[data-palette] .fh-lx-v.hold { color: var(--mu2); }
 :root[data-palette] .fh-lx-bar span.hold { background: var(--mu2); }
+
+/* ── jump nav ────────────────────────────────────────────────────────────
+   One chip per card. It WRAPS rather than scrolling sideways: a horizontal
+   scroller hides its own tail with no visual hint, which is exactly how
+   Sports-Hub lost three tabs off the right edge for twenty versions. */
+:root[data-palette] .lg-jump {
+  display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 0 2px;
+  border-bottom: 1px solid var(--tr); margin-bottom: 4px; }
+:root[data-palette] .lg-jump .chip {
+  min-height: 38px; padding: 0 11px; border-radius: 999px;
+  border: 1px solid var(--tr2); background: var(--sf); color: var(--mu);
+  font: 800 11px/1 Archivo, system-ui, sans-serif; letter-spacing: .01em;
+  text-transform: none; cursor: pointer; white-space: nowrap; }
+/* the card you are actually in, not just one you can reach */
+:root[data-palette] .lg-jump .chip.here {
+  background: var(--grad); border-color: transparent; color: var(--on-ac); }
