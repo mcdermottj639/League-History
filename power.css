@@ -29,19 +29,38 @@ body.pr-page {
 .pr-page label, .pr-page summary, .pr-page a { touch-action: manipulation; }
 
 /* ------------------------------------------------------------------ chrome */
+/* 🚨 THE HEADER WRAPS TO A SECOND ROW; IT NEVER BREAKS A WORD (v32).
+   v25 added `min-width: 0` + `overflow-wrap: anywhere` here to stop the brand
+   riding over its own buttons once 🔒 Lock became a third child. It stopped
+   the overlap and bought a worse fault: `min-width: 0` lets a flex item shrink
+   BELOW its longest word, and `anywhere` then breaks inside that word rather
+   than overflow. Measured against the real files — 390px: **POWER / RANKI /
+   NGS**, a 113px header; 360px: five lines; **320px: one letter per line and a
+   438px-tall sticky header.** The owner sent a screenshot of the 390px case.
+   ⚠️ **`overflow-wrap: break-word` alone does NOT fix it** — it was measured
+   and it is byte-identical to `anywhere` here, because while the item may
+   shrink to nothing the word cannot fit on a line of its own either way. The
+   squeeze is the bug; the wrap mode only decides how it is spelled.
+   So the item keeps its min-content floor (the width of "Rankings") and
+   `flex-wrap` absorbs what no longer fits by dropping the buttons to their own
+   row — which is the v25 protection by a mechanism that cannot shatter a word.
+   `break-word` stays as the last resort for a word wider than the screen.
+   Verified at 320 / 360 / 390 / 430px: the brand reads "Power Rankings" on one
+   line at every width, with no horizontal overflow. */
 .pr-top {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  flex-wrap: wrap;
   padding: 14px 16px;
   background: var(--card);
   border-bottom: 1px solid var(--line);
   position: sticky; top: 0; z-index: 5;
 }
-.pr-brand { display: flex; align-items: center; gap: 10px; min-width: 0; margin-right: auto; }
+.pr-brand { display: flex; align-items: center; gap: 10px; margin-right: auto; }
 .pr-shield { font-size: 26px; }
 .pr-top h1 {
   margin: 0; font-size: 19px; letter-spacing: 1.2px; text-transform: uppercase;
   font-weight: 900; line-height: 1.05; color: var(--text);
-  min-width: 0; overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 .pr-top h1 small {
   display: block; font-size: 10px; letter-spacing: 3px; margin-top: 3px;

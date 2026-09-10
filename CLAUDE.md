@@ -385,6 +385,17 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       falls back to the module-level `CREST_READY` map, because the first cut
       required the caller to hand one in and any caller that forgot silently
       got helmets with no error.
+  - 🚨 **The header WRAPS; it never breaks a word (v32).** `.pr-top` is
+    `flex-wrap: wrap` and the brand keeps its min-content floor. v25 had given
+    it `min-width: 0` + `overflow-wrap: anywhere` to stop the brand riding over
+    its buttons, and that lets a flex item shrink below its longest word —
+    measured, the brand read **POWER / RANKI / NGS** at 390px and **one letter
+    per line at 320px**. ⚠️ `break-word` instead of `anywhere` is NOT the fix
+    and was measured to be identical: the squeeze is the bug, the wrap mode
+    only decides how it is spelled. The members' app is immune by a different
+    route — `.lg-brand h1` is `white-space: nowrap` inside an `overflow:
+    hidden` brand, so it clips rather than shatters; **checked rather than
+    assumed, and deliberately left alone.**
   - ⚠️ **Two lines in the paragraph above are Sports-Hub history and are no
     longer true here**, and they are left as a warning about how a moved
     document goes stale: the palette is pinned in the markup (`data-palette` +
@@ -875,6 +886,49 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v32 — the brand stopped shattering (10 Sep 2026)** — the owner, with a
+  screenshot of the Lab on his phone: *"Look fine?"*
+  - **It did not.** The header read **POWER / RANKI / NGS** — a word broken
+    across two lines mid-syllable, on the masthead of the page. Reproduced
+    byte-for-byte in headless Chromium at 390px, which is what made it
+    fixable rather than arguable.
+  - 🚨 **AND 390px WAS THE MILD CASE.** The same rule gives five lines at
+    360px and, at 320px, **one letter per line and a 438px-tall sticky
+    header** — over half the screen, on the page's own chrome. Nobody had
+    looked below 390px because nobody owns a phone that narrow any more, and
+    an accessibility text size does exactly the same thing to a wider one.
+  - **It was v25's fix, working as designed.** Adding 🔒 Lock made the header
+    three children, the brand rode over its buttons, and `min-width: 0` +
+    `overflow-wrap: anywhere` stopped that. Both halves are needed for the
+    overlap and together they let a flex item shrink **below its longest
+    word** — at which point `anywhere` breaks inside the word rather than
+    overflow. **A fix that removes a symptom by removing a constraint will
+    find the next thing that constraint was holding up.**
+  - ⚠️ **`overflow-wrap: break-word` is NOT the fix, and it measures
+    identical.** The obvious one-word patch — break only a word that cannot
+    fit on a line of its own — changes nothing here, because the item may
+    still shrink to nothing and the word still cannot fit. Verified as its own
+    variant before it was discarded: same 113px, same `POWER / RANKI / NGS`.
+    **The squeeze is the bug; the wrap mode only decides how it is spelled.**
+  - **So the constraint goes back and the overflow gets somewhere to go.** The
+    brand keeps its min-content floor and `.pr-top` is `flex-wrap: wrap`, so
+    what no longer fits drops the buttons to their own row — the v25
+    protection by a mechanism that cannot shatter a word. `break-word` stays
+    as the last resort for a word wider than the screen.
+  - ⚠️ **Five variants were measured, not reasoned about**, and three of them
+    were wrong in ways that read fine on paper: `break-word` alone (identical),
+    min-content without a wrap (clean brand, horizontal overflow — the v25
+    fault back), and a smaller type size (still one letter per line at 320px).
+    A layout argument settled by measuring beats a layout argument.
+  - ⚠️ **The members' app was checked and deliberately not touched.**
+    `.lg-brand h1` is `white-space: nowrap` in an `overflow: hidden` brand, so
+    it clips instead of shattering — a different answer to the same problem,
+    already correct. Fixing the page someone pointed at while the same fault
+    sits elsewhere is the v3 lesson; so is "fixing" a page that was fine.
+  - Verified at 320 / 360 / 390 / 430px: brand reads **"Power Rankings"** on
+    one line at every width, 112px header (against 113px broken), no
+    horizontal overflow, both chrome buttons still 38px, no page errors.
 
 - **v31 — a week can be taken back (10 Sep 2026)** — the owner, before the
   first real publish: *"Am I able to publish and then unpublish and publish the
