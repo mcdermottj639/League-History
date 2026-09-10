@@ -413,9 +413,15 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     centre-cropped square on the nine where nothing is lost — plus Hurd, a new
     2026 diner photo the owner supplied. The three wordmark crests (Woods
     "Morning Wood", Buley "Morning Dew", Riz "Moma Dance") are LEFT WHOLE: a
-    square crop cuts the words, and the words are the joke. A crest is the
-    league's own artwork, so a swap or re-crop is a DATA change — no version
-    bump, same as publishing a week.
+    square crop cuts the words, and the words are the joke. ⚠️ **CC was a
+    fourth, and only the owner looking at it caught that** — its art spans the
+    full width of its frame, so the square crop lopped both sides off the
+    circle. It is PADDED-TO-FIT instead: bands trimmed, a dark scan artifact
+    down the left edge removed, the whole logo centred on white (its own
+    ground, so the pad is invisible). **A centre-crop is safe only when the
+    subject is centred; when the art fills the frame, pad rather than crop.**
+    A crest is the league's own artwork, so a swap or re-crop is a DATA
+    change — no version bump, same as publishing a week.
     - ⚠️ **Keyed by MANAGER, never by team name** — the names change every year
       while the twelve people do not. 🚨 **But the manager itself is resolved
       FROM the team name** (`MANAGERS`, team-name → code), so that map goes
