@@ -391,7 +391,10 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     fallback** (`logos/`, `CREST_SRC`, `crestSrc`/`crestURL`/`drawCrest`,
     `preloadSrcs`/`CREST_READY`). **All twelve** teams carry their real logo,
     lifted from the owner's own 2023 rankings sheet, as a 144px same-origin
-    PNG (~420 KB for the set).
+    PNG (~420 KB for the set). ⚠️ **Hurd's is a 2026 replacement** (a diner
+    photo the owner supplied), cropped square to 144px like the rest — a crest
+    is the league's own artwork and swapping one is a DATA change, no version
+    bump, same as publishing a week.
     - ⚠️ **Keyed by MANAGER, never by team name** — the names change every year
       (the 2023 sheet says "Death Dont Hurts Very Long" where the league now
       says "Current Champ") while the twelve people do not. And it keys off
