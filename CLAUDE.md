@@ -769,6 +769,30 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
 
+- **v26 — the luck blurb says one thing (10 Sep 2026)** — the owner: *"Make
+  the luck index blurb simpler. Just explain what the percentage means"*.
+  - **476 characters down to 229**, and the question it answers is now the one
+    that was asked: the number on the right is the gap **in win rate**, worked
+    through with the reader's own numbers ("You scored like a 67.8% team and
+    actually went 53.4% — that is −14.4").
+  - **A second sentence went in the same pass, unprompted and correctly.** "The
+    gap to what you actually went is luck" said the same thing the bold line
+    says precisely. Two sentences for one idea is not simpler, it is just
+    shorter twice.
+  - 🚨 **BUT THE DENOMINATOR SENTENCE MOVED RATHER THAN WENT.** The rows print
+    "97-46 deserved · 93-81 actual" side by side, and **v3 exists because the
+    owner read exactly that and asked "shouldn't it be the same?"** Deleting
+    the sentence that answers it would have reopened the bug it was filed for.
+    It is in the caption now: available where the rows are, out of the way of
+    a lead that is meant to be read first.
+  - ⚠️ **And the check I wrote to police the length failed the result at 273
+    chars against a limit of 260 I had invented that minute.** The right
+    response was to read the paragraph, not to trim to the number — which is
+    where the redundant sentence was actually spotted. **A number in a test is
+    a tripwire for drift; the render is the test** (v18, again).
+  - Verified at 390px as a stranger and as the manager the example is about —
+    second person intact, both captions present, no overflow, no errors.
+
 - **v25 — the Lab opens from memory, and the rows say enough to argue with
   (10 Sep 2026)** — the owner, watching the loading card: *"Don't make me wait
   every time. Once it loads once make sure there's a memory and content
@@ -1354,7 +1378,10 @@ stale entry written in the present tense reads as current to anyone who greps.
     swapping them removed what people actually wanted to see in order to fix a
     problem that was only ever a missing sentence. **The rows show records
     again and the description explains the denominators, worked through with
-    the reader's own numbers.** The instinct to fix a confusing display by
+    the reader's own numbers.** ⚠️ **SUPERSEDED in v26 in one respect: that
+    explanation moved out of the lead and into the CAPTION**, where the owner
+    asked for a simpler blurb. It is moved, never deleted — it is the sentence
+    that answers the exact question this entry exists for. The instinct to fix a confusing display by
     changing the data shown is usually wrong; the display was not lying, it
     was silent.
   - ⚠️ **This is the same fault v2 fixed in the storyline cards and left in the

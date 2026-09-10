@@ -836,19 +836,27 @@
   const fin = SEASON.filter((s) => s.fin);
 
   /* ══ 🎲 THE LUCK INDEX ════════════════════════════════════════════════ */
+  /* 🚨 THE DENOMINATOR NOTE LIVES IN THE CAPTION, NOT THE LEAD (v26, owner:
+     *"Make the luck index blurb simpler. Just explain what the percentage
+     means"*). The lead is two sentences now and answers exactly that question.
+     ⚠️ But the note itself is MOVED, never deleted, and that is deliberate:
+     the rows print "97-46 deserved · 93-81 actual" side by side, and v3 exists
+     because the owner read exactly that and asked *"shouldn't it be the
+     same?"*. Simplifying the lead is the ask; deleting the sentence that
+     answers the obvious question would re-open the bug v3 was filed for. */
   function luckHTML() {
     const rows = [...ALL].sort((a, b) => a.luck - b.luck);
     const mx = Math.max(...rows.map((a) => Math.abs(a.luck)));
     return `<h2 class="section-title">🎲 The luck index ${tag('reg')}</h2>
     <div class="ffp-card">
-      <p class="fh-lead">Rank all twelve teams by <b>points</b> each season and play everyone: that is the record your scoring deserved. The gap to what you actually went is luck.<br><br>
-      <b>The two records are different lengths, and that is not a mistake.</b> All-play is <b>11 opponents every season</b>; your real schedule is 13 or 14 games. So the win totals were never going to match — the number on the right is the gap between the two <b>rates</b>. ${(() => { const a = rows[0]; return `${esc(a.name)}, ${a.allW}-${a.allL} is ${pct1(a.allPct)} and ${a.w}-${a.l} is ${pct1(a.pct)}, which is the ${sgn(a.luck)}.`; })()}</p>
+      <p class="fh-lead">Rank all twelve teams by <b>points</b> each season and play everyone: that is the record your scoring deserved.<br><br>
+      <b>The number on the right is the gap, in win rate.</b> ${(() => { const a = rows[0]; return `${esc(a.name)} scored like a ${pct1(a.allPct)} team and actually went ${pct1(a.pct)} — that is ${sgn(a.luck)}.`; })()}</p>
       ${rows.map((a) => `<div class="fh-lx${isMe(a.m) ? ' you' : ''}">
         ${tap(a.m, `<div class="fh-lx-n"><b>${esc(a.name)}</b><i>${a.allW}-${a.allL} deserved · ${a.w}-${a.l} actual</i></div>`)}
         <div class="fh-lx-bar"><span class="${lkCls(a.luck)}" style="width:${(Math.abs(a.luck) / mx) * 50}%;${a.luck < 0 ? 'right' : 'left'}:50%"></span><em></em></div>
         <div class="fh-lx-v ${lkCls(a.luck)}">${sgn(a.luck)}</div>
       </div>`).join('')}
-      <p class="ffp-cap"><b>${esc(rows[0].name)}</b> ${vb(rows[0].m, 'have', 'has')} outscored the field by more than anyone and won ${one(Math.abs(rows[0].luck))} points of win% less than that deserved. <b>${esc(rows[rows.length - 1].name)}</b> ${vb(rows[rows.length - 1].m, 'are', 'is')} the opposite — and ${vb(rows[rows.length - 1].m, 'have', 'has')} ${rows[rows.length - 1].t1} title${rows[rows.length - 1].t1 === 1 ? '' : 's'}.<br><br>⚠️ This is <b>season-total</b> all-play: the archive has season points, not week-by-week scores, so it cannot be the true weekly version. It is the right shape, not the exact number.</p>
+      <p class="ffp-cap"><b>${esc(rows[0].name)}</b> ${vb(rows[0].m, 'have', 'has')} outscored the field by more than anyone and won ${one(Math.abs(rows[0].luck))} points of win% less than that deserved. <b>${esc(rows[rows.length - 1].name)}</b> ${vb(rows[rows.length - 1].m, 'are', 'is')} the opposite — and ${vb(rows[rows.length - 1].m, 'have', 'has')} ${rows[rows.length - 1].t1} title${rows[rows.length - 1].t1 === 1 ? '' : 's'}.<br><br>⚠️ The two records cover different numbers of games — all-play is <b>11 opponents a season</b>, a real schedule is 13 or 14 — so the win totals were never going to match. The gap is between the <b>rates</b>, not the totals.<br><br>⚠️ This is <b>season-total</b> all-play: the archive has season points, not week-by-week scores, so it cannot be the true weekly version. It is the right shape, not the exact number.</p>
     </div>`;
   }
 
