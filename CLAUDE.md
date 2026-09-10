@@ -5,8 +5,8 @@ Guidance for Claude (and humans) working on this repo. Read this first.
 ## What this is
 
 The **Nectars Bolonga** fantasy football league's own app: thirteen seasons of
-history (2013–2025) plus the **weekly power rankings** the commissioner
-publishes. It is a **pure static browser app** — HTML/CSS/vanilla JS, no build
+history (2013–2025), the **season being played right now** (v39), and the
+**weekly power rankings** the commissioner publishes. It is a **pure static browser app** — HTML/CSS/vanilla JS, no build
 step, no framework, no backend, no API keys — served from GitHub Pages.
 
 Live URL: **https://mcdermottj639.github.io/League-History/**
@@ -132,6 +132,17 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       them to two different places.
 - `league.js` — the shell: identity, router, jump nav, the rankings view, and
   the **? sheet** (`helpHTML` / `openHelp` / `closeHelp`).
+  - 🚨 **`L1` IS THREE TABS NOW (v39) AND THAT ROW CLIPS SILENTLY.**
+    `📜 History` · `📊 Season` · `🏆 Rankings`. `.ai-sub button` is
+    `flex: 1; white-space: nowrap; overflow: hidden`, so a label wider than
+    its third is simply cut off with nothing on screen saying so. Two tabs
+    never came close; three at 320px leave 93px each, and **"📊 This Season"
+    measured over it** — found by comparing each button's `scrollWidth` to its
+    `clientWidth`, which is the only thing that can see this. "League History"
+    became "History" and "This Season" became "Season", AND the type tightens
+    under 360px — the label alone only holds until the next word is added.
+    ⚠️ The ? sheet builds its tab list FROM `L1`, so a rename needs no second
+    edit; `HELP` supplies only the sentence a tab cannot know about itself.
   It is deliberately small; all the archive logic lives in `history.js`.
   - 🚨 **`pickList()` keeps the commissioner off the picker (v21).** Anyone in
     the league can be anyone else in the league — that is the whole point of
@@ -258,6 +269,48 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   - `profile(mgr)` — the drill-down every name opens
   - `setMe(mgr)` / `me()` / `name(mgr)` / `roster()` — identity
   - `key()` — the three-badge provenance key, for the ? sheet in `league.js`
+- `season.js` — **the season still being played** (v39). One global,
+  `window.LeagueSeason`, one entry point `paint(host, crest)`.
+  - 🚨 **IT READS A FILE, `season/current.json`, NEVER A BACKEND.** The Lab
+    writes it on 🚀 Publish; every member reads it as a static file. Four
+    reasons, in order of weight: a fantasy standings table changes **once a
+    week**, so a weekly snapshot is not a stale copy of the live table, it IS
+    the live table; the backend is free-tier and asleep, so live would make
+    whichever of the twelve opens the app first each day wait 30-60s on a cold
+    start; a file works when the backend does not; and —
+  - 🚨 **`isMe` IS A TRAP AND IS NEVER READ HERE.** The season payload flags
+    the team of the account the BACKEND authenticates as — the commissioner's,
+    on every device that ever asks. A members' app reading it would badge HIS
+    team as THEIRS on eleven phones. That is the v33 byline bug exactly. The
+    snapshot carries manager CODES from `mgrFor` instead, the same mechanism
+    index 7 of the rankings payload already ships for the same reason.
+  - ⚠️ **Every comparison with the archive is ERA-RELATIVE.** `LH.career()`
+    hands over `rel` — points a game against the league *that same year* — and
+    this file compares `rel` to `rel`. A raw 2026 ppg against raw 2013-25 ppgs
+    ranks seasons by WHEN they happened, because scoring has climbed; that is
+    the `relPpg` rule the storyline detectors already follow.
+  - ⚠️ **Season-level facts only.** The archive holds season totals, not
+    week-by-week scores, so nothing here can say "your best START" or "you
+    have never lost three in a row" — those are facts about a shape the data
+    does not have.
+  - ⚠️ **Preseason invents nothing** — the Lab's rule since v1 ("a fabricated
+    0-0 beside a name is a lie"), applied to the members' app. Zero games means
+    no ppg, no `rel`, no luck and no standings table, because twelve identical
+    rows of zeros is not a standings table. What IS real before week 1 is the
+    odds, the schedule and who you play, so the page opens on those.
+  - ⚠️ **The week is DERIVED from the scores, not read off `wk`.** ESPN's
+    pointer advances on its own clock and a snapshot can be taken either side
+    of it; how many weeks carry a score never is ambiguous, so "next week" is
+    one past that and it agrees with the standings on the same page by
+    construction.
+  - **Four states, four sentences** (`EMPTY`): nothing published · the file
+    404s · offline · the file is there and unreadable. `season/current.json`
+    SHIPS with an empty `t` so an unpublished season answers 200 — which is
+    what makes a 404 reportable as a broken deploy rather than as business as
+    usual. `checks.js` asserts the file ships.
+- `season/current.json` — the published snapshot. **One file, overwritten** —
+  no index, no history: a season in progress has exactly one current state and
+  the finished ones are the archive's job.
 - 🚨 **THE `hidden` SPECIFICITY TRAP HAS NOW BITTEN THIS APP THREE TIMES.**
   `:root[data-palette] .X { display: … }` is (0,2,1); the UA's
   `[hidden] { display: none }` is (0,1,0); the palette layer wins and
@@ -314,6 +367,26 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     carries per-team `scores`/`outcomes`/W-L/`pointsFor` plus the derived
     **all-play** record off the backend's cached League snapshot. No new
     endpoint, no extra ESPN request.
+    - 🚨 **THE PAYLOAD CARRIES MORE THAN THE LAB READS, AND v39 FOUND IT BY
+      LOOKING.** The full field list, confirmed against a live capture:
+      per-team `teamId`, `team`, `abbrev`, `isMe`, `wins`/`losses`/`ties`,
+      `pointsFor`, **`pointsAgainst`**, **`playoffPct`**, `scores[]`,
+      `outcomes[]`, **`schedule[]`** (14 opponent teamIds), plus top-level
+      `week`, **`regularSeasonWeeks`**, **`playoffTeams`** and `allPlay`.
+      `power.js` reads about half of that, so a session inferring the payload
+      from what the Lab consumes will conclude the schedule and the odds do
+      not exist — and both do, and the season tab is built on them.
+      ⚠️ **The schedule is real and symmetric** (verified: every pairing agrees
+      in both directions, no self-plays, weeks 1-11 a full round robin and
+      12-14 a repeat of 1-3), and **`playoffPct` sums to exactly 600** — six
+      spots × 100%, the signature of an actual simulation. It is **ESPN's own
+      number**, passed through untouched, and the app says so on the card
+      rather than implying it computed it.
+      ⚠️ **`teamId`s are NOT contiguous** — this league runs
+      `1,2,3,4,5,6,7,10,11,12,13,14`. Never index by position or assume 1..12.
+      ⚠️ **One 2026 team name ships with a TRAILING SPACE** ("Jefferson
+      Airplane "). `nrm` trims when resolving a manager; a heading does not,
+      so the snapshot writer trims on the way out.
     - 🚨 **CACHE FIRST, THEN REVALIDATE (v25).** `powerlab:season` held the
       last good payload from v1, but only as a FALLBACK for a failed fetch —
       so every visit still sat through a 30-60s cold start with the answer
@@ -483,10 +556,12 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     move. What IS still true: **every colour is a token**, ▲/▼ are
     `--pos`/`--neg` and never the accent, and an accent fill takes `--on-ac`,
     never `#fff` (white on gold measures ~1.9:1).
-  - **Its `?v=` numbers restarted at 1 with the move.** `power.css`/`power.js`
-    are `?v=1` in `power.html`, as is its `styles.css?v=`. Bump them when you
-    change those files; the Lab is standalone and does not ride `league.js`'s
-    `APP_VERSION`.
+  - **`power.js` has its own `?v=`** (Lab-only, so it does not ride
+    `league.js`'s `APP_VERSION`) — but `styles.css` and `power.css` are loaded
+    by BOTH pages and therefore ride `index.html`'s number. ⚠️ They had two
+    independent counters until v28 and `styles.css` sat at `?v=1` here long
+    enough to pin any device that had opened the Lab to a pre-v20 stylesheet.
+    `checks.js` asserts the two pages agree on both (v39).
   - **🚀 Publish to the app** is this repo's addition — see "How the power
     rankings work" below. The share link, the text copy and the one-pager are
     all unchanged from Sports-Hub.
@@ -880,6 +955,12 @@ whole design:
 >    ⚠️ `k` must be UNIQUE — if it is already there he is republishing the
 >    same week, so REPLACE that entry and overwrite the file rather than
 >    adding a second.
+> 2b. **Overwrite `season/current.json`** with the third block the Lab hands
+>    over (v39) — the standings, ESPN's playoff odds and the schedule that the
+>    **📊 Season** tab reads. ⚠️ It is OVERWRITTEN, never appended to and never
+>    indexed: one file, one current state. A paste that carries only the
+>    rankings blob is an older Lab or a hand-copied one, and the season tab
+>    simply keeps showing the previous week — say so rather than inventing it.
 > 3. Commit, push, and **merge to `main`** — Pages only deploys from `main`, so
 >    a week left on a branch is a week nobody can see. Confirm the deploy.
 > 4. Tell him it is live. No version bump is needed: `rankings/` is data, not
@@ -977,7 +1058,8 @@ guaranteed to break rendering in ways no assertion catches.
 
 1. Bump `APP_VERSION` in `league.js`.
 2. Bump the matching `?v=N` on every asset in `index.html` (and `power.html`
-   if you touched its files). ⚠️ **`owner.js` is in BOTH pages on one shared
+   if you touched its files). ⚠️ `styles.css` and `power.css` are in BOTH
+   pages on ONE number each — `checks.js` fails if the two pages disagree. ⚠️ **`owner.js` is in BOTH pages on one shared
    `?v=` — bump it in both or one of them serves a stale gate.**
 3. Bump `CACHE` in `sw.js`.
 4. `node --check` every JS file, then `node checks.js` — there is no test
@@ -1024,6 +1106,123 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v39 — the season being played, as a third tab (10 Sep 2026)** — the owner:
+  *"Could we add a third tab in between league history and rankings that's the
+  current season… pulls through standings playoff percentages and then maybe
+  another one could be that weeks matchups it gives projected winners… maybe a
+  piece of it could be tied to their team."*
+  - 🚨 **I TOLD HIM TWO OF THE THREE WERE IMPOSSIBLE, AND I WAS WRONG.** The
+    season payload's field list, read off what `power.js` consumes, has no
+    schedule in it — so matchups had nothing to pair and playoff odds had
+    nothing to simulate over. Both were reported as blocked. Then he pasted a
+    live capture and it carries **`schedule[]`** (14 opponent ids, verified
+    symmetric in both directions with no self-plays) and **`playoffPct`**
+    (which sums to exactly 600 — six spots × 100%, the signature of a real
+    simulation). **The Lab reads about half the payload, so inferring the
+    payload from the Lab under-reports it.** The field list is written down
+    now, under the Lab's data bullet, so the next session does not have to
+    ask. ⚠️ The general lesson is narrower than "look harder": a consumer is
+    evidence of what a producer sends *at least*, never of what it sends *at
+    most*, and the sandbox cannot reach the producer to check.
+  - **It reads a FILE, and the strongest argument for that is not consistency.**
+    Standings in fantasy change **once a week**, so a weekly snapshot is not a
+    stale copy of the live table — it IS the live table, except during Sunday
+    games. Against that: a free-tier cold start would make whichever of the
+    twelve opens the app first each day wait 30-60s, and —
+  - 🚨 **`isMe` WOULD HAVE BADGED HIS TEAM AS THEIRS ON ELEVEN PHONES.** The
+    payload flags the team of the account the BACKEND authenticates as, which
+    is his, on every device that ever asks. A live members' app reading it
+    gets that wrong for everybody except him — the v33 byline bug, one field
+    over. The snapshot carries manager CODES from `mgrFor` instead. This is
+    the third time that flag has nearly leaked his identity into somebody
+    else's screen; it is now written down as a trap rather than as a field.
+  - 🚨 **AND THE TIMING REWROTE THE SCOPE.** He signed off on standings, a
+    your-team panel and career context. Then the capture showed `week: 1` with
+    every score `0.0` — **preseason** — so the tab as approved would have
+    launched as twelve identical rows of zeros, and stayed thin until week 3.
+    The two features I had called impossible were the two with real data in
+    them *today*. The page opens on odds, the week's matchups and the
+    schedule, and the standings/luck/pace sections fill in from week 1. **The
+    Lab's rule since v1 — "a fabricated 0-0 beside a name is a lie" — now
+    applies to the members' app too**, and a section with nothing to say says
+    that rather than rendering an empty shape.
+  - ⚠️ **THE CAREER COMPARISON HAD TO BE ERA-RELATIVE OR IT WOULD FLATTER
+    EVERY CURRENT SEASON.** "Your 118.4 ppg is the best of your career" ranks
+    seasons by WHEN they happened, because scoring has climbed for thirteen
+    years — the exact fault `relPpg` exists for. `LH.career()` hands over
+    `rel` (points a game against the league *that year*) and the tab compares
+    `rel` to `rel`. ⚠️ It also killed a feature I wanted: "your best start
+    since 2019" is not knowable, because the archive holds season totals and
+    no week-by-week scores. A fact about a shape the data does not have.
+  - 🚨 **FOUR FAULTS IN THE GENERATED PROSE, ALL FOUND BY READING THE OUTPUT,
+    NONE VISIBLE TO ANY ASSERTION** — the v2 lesson, fifth outing:
+    - **"a best finish of st."** `ord()` is the SUFFIX only, and reading it as
+      a whole ordinal dropped the number on every card that had one. There is
+      an `ordN()` now, and `ord()` is only ever concatenated.
+    - 🚨 **"your 14th-best win rate in thirteen seasons."** The rank places
+      this season among the finished ones PLUS itself, so it runs 1..n+1, and
+      it was printed against the finished count. **The rank and the
+      denominator have to count the same thing** — the v3 family again. It is
+      stated as how many finished seasons this one beats, which is true at
+      both ends.
+    - **"…the best shot in the league. six of twelve teams make it"** — a
+      spelled-out number opening a sentence, lowercase, twice.
+    - **"with four titles and a best finish of 1st"** — a clause re-arguing
+      the one beside it (v22). The best finish is only worth saying for
+      somebody who has never won.
+  - 🚨 **TWO LAYOUT DECISIONS REVERSED BY MEASURING THEM.** Both looked fine
+    in a screenshot and neither survived a ruler:
+    - The playoff-odds rows had a 64px bar. Measured, **the whole league
+      spanned 22px of it and the top four teams differed by ONE pixel** —
+      while five of twelve team names were being truncated for want of the
+      same space. A bar that cannot show a difference is decoration bought
+      with the column carrying the information. Deleted; names clipped went
+      5 → 1. (Scaling the bars to the leader would have made them legible by
+      making their lengths mean nothing.)
+    - The standings row was rank · crest · name · W-L · PF · all-play — six
+      columns on a phone. The name column came out at **128px with 6 of 12
+      truncated at 390px, and 71px with ALL TWELVE truncated at 320px**;
+      tightening the numeric columns made it *worse*, because the crest and
+      the numbers have floors and the name is the only thing left to squeeze.
+      The stats moved to a second line (the `.pr-row` shape the rankings view
+      already uses): **262px, zero truncation, and the row is no taller** —
+      the 32px crest was already setting the height, so the second line was
+      free. ⚠️ And the fix made the lead paragraph wrong: it called all-play
+      "the one **column**" when there were no longer columns. A sentence
+      naming something that is not on the page, one more time.
+  - 🚨 **THE TAB BAR CLIPS SILENTLY, AND A THIRD TAB BROUGHT IT INTO RANGE.**
+    `.ai-sub button` is `flex: 1; white-space: nowrap; overflow: hidden`.
+    Three tabs at 320px leave 93px each and **"📊 This Season" measured over
+    it** — cut off with nothing on screen admitting it. Caught by comparing
+    each button's `scrollWidth` to its `clientWidth`, which is the only thing
+    that can. Labels shortened to "History" and "Season" AND the type tightens
+    under 360px, because a shorter label only holds until the next word is
+    added (the v32 rule: fix the squeeze, not its spelling).
+  - 🚨 **TWO OF MY OWN CHECKS WERE BROKEN, AND BOTH WENT GREEN.** Worth more
+    than the features:
+    - `seasonLaws()` used a `fail` defined inside a *different* function, so
+      every failure path would have thrown ReferenceError instead of
+      reporting — and the success path never calls `fail`, so the suite passed
+      over a check that could not fail out loud. **A check whose failure path
+      has never run is not a check.**
+    - The assertion written to catch the rank-outruns-denominator fault used
+      `\b\d+\b`, which **never matches "14th"** — there is no word boundary
+      between the digits and the suffix. So the exact fault it was written for
+      walked straight past it. It tests for any numeral at all now, since
+      every count in that phrase is spelled.
+    Both found by **reinstating each fault and confirming the suite says so**,
+    which is now how every law in this entry was verified.
+  - Verified in headless Chromium at 320/390px across: nothing published, a
+    preseason snapshot, a week-5 snapshot, each as the reader, as another
+    manager, and as a stranger who has tapped no name. No horizontal overflow,
+    no type under 9px, no tap target under 38px, no page errors, every tab
+    label unclipped, the history sub-tabs correctly gone on the new tab (the
+    `[hidden]` trap, not bitten a fifth time), the v30 lit-tab back-out still
+    working, and the ? sheet listing the new tab with no edit because it is
+    built from `L1`. ⚠️ **Both fixtures were written by the REAL Lab** driven
+    against the live capture, not hand-built — a fixture wrong in the same
+    direction as a real risk is the easiest false positive to believe (v24).
 
 - **v37 — crests are rename-proof (10 Sep 2026)** — the owner, after v36:
   *"Make it name change proof."*
@@ -2138,6 +2337,11 @@ stale entry written in the present tense reads as current to anyone who greps.
 
 ## Open / next
 
+- **The season tab needs its first publish** — `season/current.json` ships with
+  an empty `t` and the app says so honestly. It has been driven end to end
+  against snapshots the REAL Lab wrote from a live payload capture (preseason
+  and a synthetic week 5), so what is untested is only the part this sandbox
+  cannot reach: the Lab pulling live data off the Render backend.
 - **The members' app has no rankings yet** — `rankings/index.json` ships empty
   and the app says so honestly. The publish path has been driven end to end
   against the real files with fixture weeks (v31: publish · unpublish ·

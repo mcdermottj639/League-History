@@ -322,6 +322,140 @@ function inviteLaws(O) {
   console.log('  ✅ invites: expire, revocable (open-ended too), damaged refused, never grant owner');
 }
 
+/* ══ 📊 THIS SEASON (v39) ══════════════════════════════════════════════════
+   The current-season tab reads a published file and derives everything else.
+   None of what follows is visible in a render, which is why it is asserted. */
+function seasonLaws() {
+  /* ⚠️ Its OWN `fail`. The invites block defines one inside itself, so every
+     failure path here would have thrown ReferenceError instead of reporting —
+     and the success path never calls it, so the suite went green over a check
+     that could not fail out loud. A check whose failure path has never run is
+     not a check. Verified by breaking each law in turn. */
+  const fail = (m) => { console.log(`  ❌ ${m}`); bad++; };
+  const fs = require('fs');
+  require('./season.js');
+  const LS = window.LeagueSeason;
+
+  /* 🚨 `season/current.json` MUST SHIP, and it must parse with an array `t`.
+     That is the whole reason a 404 on it can be reported as a broken deploy
+     rather than as "nothing published yet": an unpublished season still
+     answers 200 with an empty `t`. If this file ever stops shipping, the app
+     starts telling the league a fault is business as usual — the exact lie
+     the three-state error map exists to prevent. */
+  let snap;
+  try { snap = JSON.parse(fs.readFileSync('./season/current.json', 'utf8')); }
+  catch (e) { return fail('season/current.json is missing or unparseable: ' + e.message); }
+  if (!Array.isArray(snap.t)) return fail('season/current.json has no `t` array — an empty season must still parse');
+
+  /* The app must actually load it, and on the same ?v= as the rest. */
+  const html = fs.readFileSync('./index.html', 'utf8');
+  const lj = fs.readFileSync('./league.js', 'utf8');
+  const ver = (lj.match(/APP_VERSION = 'v(\d+)'/) || [])[1];
+  if (!ver) return fail('could not read APP_VERSION from league.js');
+  if (!html.includes(`season.js?v=${ver}`)) return fail(`index.html does not load season.js?v=${ver}`);
+  ['history.js', 'league.js'].forEach((f) => {
+    if (!html.includes(`${f}?v=${ver}`)) fail(`${f} is not on ?v=${ver} in index.html`);
+  });
+  /* 🚨 THE SHARED FILES MUST RIDE ONE NUMBER (v28). `styles.css` and
+     `power.css` are loaded by BOTH pages, so each had two independent
+     counters — and `styles.css` sat at ?v=1 on the Lab side for so long that
+     any device which had opened the Lab was pinned to a pre-v20 stylesheet
+     there for good. A second counter for one file's freshness is a second
+     source of truth, and the stale one wins on whichever page forgot. */
+  const ph = fs.readFileSync('./power.html', 'utf8');
+  ['styles.css', 'power.css'].forEach((f) => {
+    const a = (html.match(new RegExp(f.replace('.', '\\.') + '\\?v=(\\d+)')) || [])[1];
+    const b = (ph.match(new RegExp(f.replace('.', '\\.') + '\\?v=(\\d+)')) || [])[1];
+    if (!a || !b) return fail(`${f} has no ?v= in one of the two pages`);
+    if (a !== b) fail(`${f} is ?v=${a} in index.html but ?v=${b} in power.html — one page serves a stale copy`);
+  });
+
+  /* A tab with no entry in HELP still lists itself in the ? sheet, but the one
+     sentence a tab cannot know about itself would be missing. */
+  if (!/\['season',/.test(lj)) return fail('league.js has no season tab in L1');
+  if (!/\n    season: /.test(lj)) fail('the ? sheet has no HELP entry for the season tab');
+
+  /* ── the derivations, on a fixture whose answers are known by construction ─
+     Twelve teams, a fixed pairing every week, three weeks played. */
+  const N = 12, WKS = 3, RW = 14;
+  const t = [];
+  for (let i = 0; i < N; i++) {
+    const opp = String(i % 2 === 0 ? i + 2 : i);   // 1-2, 3-4, ... as 1-based ids
+    t.push({ id: String(i + 1), n: 'Team ' + (i + 1), m: '', w: i % 2 === 0 ? WKS : 0,
+      l: i % 2 === 0 ? 0 : WKS, ti: 0, pf: 300 + i * 10, pa: 300, apw: N - 1 - i, apl: i,
+      pct: 100 - i * 8, s: [100 + i, 101 + i, 102 + i], sch: Array(RW).fill(opp) });
+  }
+  const d = LS._derive({ k: WKS, l: 'After Week 3', rw: RW, pt: 6, t });
+
+  if (d.wp !== WKS) fail(`weeks played derived as ${d.wp}, expected ${WKS}`);
+  if (d.pre) fail('three weeks of scores read as preseason');
+  if (d.nextWk !== WKS + 1) fail(`next week derived as ${d.nextWk}, expected ${WKS + 1}`);
+
+  /* Seeds must be a permutation of 1..N — a duplicate or a gap means the sort
+     leaked, and a standings table with two 4th places is not a table. */
+  const seeds = d.table.map((x) => x.seed).sort((a, b) => a - b);
+  if (seeds.join(',') !== Array.from({ length: N }, (_, i) => i + 1).join(',')) fail('seeds are not 1..' + N);
+  for (let i = 1; i < d.table.length; i++) {
+    const a = d.table[i - 1], b = d.table[i];
+    const aw = a.w + a.ti / 2, bw = b.w + b.ti / 2;
+    if (aw < bw || (aw === bw && a.pf < b.pf)) fail('standings are not sorted by wins then points');
+  }
+
+  /* 🚨 EVERY TEAM PLAYS EXACTLY ONCE, AND NOBODY PLAYS THEMSELVES. A pairing
+     bug here does not throw and does not look wrong — it silently drops a
+     game or shows a team twice, and only counting catches it. */
+  if (d.games.length !== N / 2) fail(`week has ${d.games.length} games, expected ${N / 2}`);
+  const seen = {};
+  d.games.forEach(([a, b]) => {
+    if (a.id === b.id) fail('a team is scheduled against itself');
+    [a, b].forEach((x) => { if (seen[x.id]) fail('team ' + x.id + ' appears in two games'); seen[x.id] = 1; });
+  });
+  if (Object.keys(seen).length !== N) fail('not every team is in a matchup');
+
+  /* Preseason invents nothing: no ppg, no rel, no luck off zero games. */
+  const pre = LS._derive({ rw: RW, pt: 6, t: t.map((x) => ({ ...x, w: 0, l: 0, ti: 0, pf: 0, s: [] })) });
+  if (!pre.pre) fail('a season with no scores did not read as preseason');
+  if (pre.teams.some((x) => x.ppg !== null || x.rel !== null || x.luck !== null)) {
+    fail('preseason invented a ppg, a relative score or a luck figure from zero games');
+  }
+  if (pre.nextWk !== 1) fail('preseason next week is not week 1');
+
+  /* A finished regular season has no next week — never a week 15. */
+  const over = LS._derive({ rw: 2, pt: 6, t: t.map((x) => ({ ...x, s: [100, 101] })) });
+  if (over.nextWk !== null) fail('past the last week the app still offered a next one');
+
+  /* 🚨 THE RANK MUST NEVER OUTRUN ITS DENOMINATOR. `placeTxt` is handed a
+     rank running 1..seasons+1 and a count of finished seasons, and printing
+     one against the other produced "your 14th-best win rate in thirteen
+     seasons". Walk every rank and assert no phrase quotes a number larger
+     than the seasons it counts against. */
+  const SEAS = 13;
+  for (let r = 1; r <= SEAS + 1; r++) {
+    const txt = LS._placeTxt(r, SEAS, 'seasons', 'your');
+    /* ⚠️ ANY numeral at all is the failure, and the first version of this
+       check missed it: `\b\d+\b` never matches "14th", because there is no
+       word boundary between the digits and the suffix — so the exact fault
+       that shipped walked straight past the assertion written to catch it.
+       Every count in this phrase is spelled, so a digit means a rank leaked
+       into the prose. Verified by reinstating the fault. */
+    if (/\d/.test(txt)) fail(`placeTxt(${r}) prints a numeral: "${txt}"`);
+    if (/\b(fourteen|fifteen|sixteen)\b/.test(txt)) fail(`placeTxt(${r}) quotes a count past ${SEAS}: "${txt}"`);
+    if (!/thirteen/.test(txt)) fail(`placeTxt(${r}) lost its denominator: "${txt}"`);
+  }
+
+  /* The favourite must name its basis, and must not pick one in preseason
+     from scoring that does not exist. */
+  const A = { n: 'A', ppg: 120, l3: 110, pct: 60 }, B = { n: 'B', ppg: 100, l3: 130, pct: 40 };
+  const inSeason = LS._favourite(A, B, false);
+  if (!inSeason || !/Favoured on scoring/.test(inSeason.why)) fail('in-season favourite does not state its basis');
+  if (!/Recent form disagrees/.test(inSeason.why)) fail('form disagreeing with scoring went unsaid');
+  const preF = LS._favourite(A, B, true);
+  if (!preF || !/ESPN/.test(preF.why)) fail('preseason favourite is not attributed to ESPN');
+
+  if (!bad) console.log('  ✅ this season: file ships, derivations hold, no rank outruns its denominator');
+}
+seasonLaws();
+
 function done() {
   console.log(bad ? `\n${bad} FAILURES` : '\n✅ all conservation laws hold');
   process.exit(bad ? 1 : 0);

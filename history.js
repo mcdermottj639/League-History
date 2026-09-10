@@ -1805,6 +1805,46 @@
     /* The three-badge key, for the ? sheet `league.js` builds. Derived here so
        the counts in it can never be a stale copy of the archive. */
     key: () => keyHTML(),
+    /* ── 📊 what the CURRENT season needs from the archive (v39) ────────────
+       `season.js` puts this year against the reader's other thirteen, and it
+       must not reach into `_stats` to do it — that is the checks' handle, not
+       an API. So the two things it actually needs are exposed deliberately:
+       a career, and the voice.
+
+       🚨 EVERY SCORING FIGURE HERE IS RELATIVE TO THAT SEASON'S LEAGUE, never
+       raw. Scoring has climbed across thirteen years, so "your 118.4 ppg is
+       the best of your career" is a sentence that would be true for almost
+       any current season regardless of how the reader is playing — it ranks
+       seasons by WHEN they happened. `rel` is the same era-safe measure the
+       storyline detectors use (`relPpg`): points a game against the league
+       that same year. Compare `rel` to `rel` and the eras cancel.
+
+       ⚠️ Season-level only, because that is all the archive holds. There are
+       no week-by-week scores before this year, so nothing built on this can
+       say "your best START" or "you have never lost three in a row" — those
+       are facts about a shape the data does not have. */
+    career: (m) => {
+      const a = MGRS[m];
+      if (!a) return null;
+      return {
+        m: a.m, name: nm(a.m), real: realNm(a.m),
+        seasons: a.seasons, w: a.w, l: a.l, pct: a.pct, luck: a.luck,
+        t1: a.t1, t2: a.t2, po: a.po, f4: a.f4, avgPlace: a.avgPlace,
+        best: a.best ? { yr: a.best.yr, place: a.best.place } : null,
+        worst: a.worst ? { yr: a.worst.yr, place: a.worst.place } : null,
+        yrs: a.yrs.map((r) => {
+          const s = SEASON.find((x) => x.yr === r.yr);
+          return { yr: r.yr, w: r.w, l: r.l, place: r.place,
+            games: r.w + r.l, rel: s ? r.ppg - s.lgPpg : 0 };
+        }).sort((x, y) => x.yr - y.yr),
+      };
+    },
+    /* 🚨 The voice, so a generated sentence about the current season agrees
+       with the person reading it. `vb` exists because second person changes
+       the verb — "you have outscored" but "Buley has outscored" — and a
+       sentence that agrees with the wrong person is the first thing a reader
+       notices. Any new sentence about a manager goes through it. */
+    voice: { nm: (m) => nm(m), vb: (m, second, third) => vb(m, second, third) },
     /* Exposed for the repo's own checks — nothing in the app reads these. */
     _stats: { SEASON, ALL, MEET, PAIRS, CUMBOWL, PLAYOFF_GAMES },
     _stories: () => stories(),

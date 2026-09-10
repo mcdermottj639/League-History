@@ -517,6 +517,69 @@ function publishIndexEntry() {
   return JSON.stringify({ k: p.k, l: p.l, d: p.d, f: publishFilename() });
 }
 
+/* ── 📊 THE SEASON SNAPSHOT, FOR THE MEMBERS' APP ─────────────────────────
+   The league app's "This Season" tab reads `season/current.json`, and this is
+   what writes it. It rides the same 🚀 tap as the week file, because the two
+   facts belong to the same moment: the standings the rankings were built on
+   are the standings the league should be reading beside them.
+
+   🚨 IT CARRIES MANAGER CODES, NOT `isMe`. The season payload flags the team
+   belonging to the account the BACKEND authenticates as — the owner's, on
+   every device that ever asks. A members' app reading that flag would badge
+   his team as theirs on eleven phones. `mgrFor` is the rename-proof answer
+   (v37, teamId-learned) and it is the same field index 7 of the rankings
+   payload already ships for the same reason.
+
+   ⚠️ ONE FILE, OVERWRITTEN — no index, no history. A season in progress has
+   exactly one current state, and the finished ones are the archive's job.
+   That is the whole reason this needs no `k`-must-be-unique rule.
+
+   ⚠️ Objects, not the rankings payload's positional arrays. That one is
+   compressed because it rides inside a URL; this one is a file nobody has to
+   fit in a hash, so a field somebody can read beats four bytes saved. */
+function seasonSnapshot() {
+  const d = S.season || {};
+  const teams = Array.isArray(d.teams) ? d.teams : [];
+  const ap = d.allPlay || {};
+  const played = (sc) => (sc || []).filter((x) => Number(x) > 0);
+  return {
+    v: 1,
+    k: S.key,
+    l: keyLabel(S.key),
+    d: new Date().toISOString().slice(0, 10),
+    y: new Date().getFullYear(),
+    rw: Number(d.regularSeasonWeeks) || 14,
+    pt: Number(d.playoffTeams) || 6,
+    t: teams.map((t) => {
+      const a = ap[String(t.teamId)] || {};
+      return {
+        id: String(t.teamId == null ? '' : t.teamId),
+        /* ⚠️ Trimmed. One of the real 2026 team names ships with a trailing
+           space; `nrm` copes when resolving a manager, a heading does not. */
+        n: String(t.team == null ? '' : t.team).trim(),
+        m: mgrFor(t.team) || '',
+        w: Number(t.wins) || 0,
+        l: Number(t.losses) || 0,
+        ti: Number(t.ties) || 0,
+        pf: Math.round((Number(t.pointsFor) || 0) * 10) / 10,
+        pa: Math.round((Number(t.pointsAgainst) || 0) * 10) / 10,
+        apw: Number(a.w) || 0,
+        apl: Number(a.l) || 0,
+        /* ESPN's own playoff percentage, passed through untouched. The app
+           says so on the card: it is not a number anything here computes. */
+        pct: t.playoffPct == null ? null : Math.round(Number(t.playoffPct) * 10) / 10,
+        /* Only the weeks actually played — ESPN pads the rest with 0, and a
+           padded zero read as a score is the `outcomes` trap in another hat. */
+        s: played(t.scores).map((x) => Math.round(Number(x) * 10) / 10),
+        sch: Array.isArray(t.schedule) ? t.schedule.map(String) : [],
+      };
+    }),
+  };
+}
+function seasonSnapshotJSON() {
+  return JSON.stringify(seasonSnapshot(), null, 2);
+}
+
 /* The mirror of the two publish steps: the file to delete and the line to pull
    out of the index. Written as a sentence rather than a blob because a
    retraction has no payload to paste — it is an instruction, and the whole
@@ -1986,8 +2049,10 @@ function paintRank() {
       <textarea readonly rows="10"></textarea>
       <div class="t">② Add this to the top of the <b>weeks</b> list in <b>rankings/index.json</b>:</div>
       <textarea class="pr-idx" readonly rows="2">${esc(publishIndexEntry())}</textarea>
-      ${stale && stale !== file ? `<div class="t">③ You are republishing ${esc(keyLabel(S.key))}, and it went out under a different name last time — delete the old <b>rankings/${esc(stale)}</b>, and REPLACE the "k": ${S.key} line rather than adding a second.</div>` : ''}
-      <p class="pr-note">Or just paste the block above to a Claude session and say nothing else — it knows both steps.</p>
+      <div class="t">③ Overwrite <b>season/current.json</b> with this — it is what the league app's <b>This Season</b> tab reads:</div>
+      <textarea class="pr-idx pr-seas" readonly rows="4">${esc(seasonSnapshotJSON())}</textarea>
+      ${stale && stale !== file ? `<div class="t">④ You are republishing ${esc(keyLabel(S.key))}, and it went out under a different name last time — delete the old <b>rankings/${esc(stale)}</b>, and REPLACE the "k": ${S.key} line rather than adding a second.</div>` : ''}
+      <p class="pr-note">Or just paste the whole lot to a Claude session and say nothing else — it knows every step.</p>
     </div>`;
     const ta = out && out.querySelector('textarea');
     if (ta) { ta.value = json; ta.focus(); ta.select(); }

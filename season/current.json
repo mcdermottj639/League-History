@@ -1,0 +1,11 @@
+{
+  "note": "The current season, as published by the Power Rankings Lab (🚀 Publish, step ③). The members' app reads this file for the 'This Season' tab. ONE file, overwritten each week — a season in progress has exactly one current state, and finished seasons belong to the archive in history.js. An empty `t` means nothing has been published yet, and the app says so; this file SHIPS so that an unpublished season still answers 200 and a 404 can only ever mean a broken deploy.",
+  "v": 1,
+  "k": null,
+  "l": "",
+  "d": "",
+  "y": null,
+  "rw": 14,
+  "pt": 6,
+  "t": []
+}

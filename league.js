@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v38';
+  const APP_VERSION = 'v39';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -249,6 +249,7 @@
      with no sentence still lists itself rather than disappearing. */
   const HELP = {
     hist: 'Thirteen seasons, 2013–2025. Five pages:',
+    season: 'This year as it stands — the standings, ESPN\'s playoff odds, who you play next, and your season measured against your other thirteen.',
     rank: "The commissioner's weekly power rankings — every team in order, with a take on each. Only during the season, and only once he publishes a set.",
     hon: 'The champions, the trophy case, and who is still waiting. Opens with the storylines the archive throws up.',
     you: 'Your thirteen seasons — medals, Cum Bowls, your best and worst years.',
@@ -552,7 +553,17 @@
   addEventListener('resize', spy, { passive: true });
 
   /* ══ ROUTER ════════════════════════════════════════════════════════════ */
-  const L1 = [['hist', '📜 League History'], ['rank', '🏆 Rankings']];
+  /* ⚠️ THREE TABS SHARE ONE ROW, AND THAT ROW CLIPS SILENTLY. `.ai-sub button`
+     is `flex: 1; white-space: nowrap; overflow: hidden`, so a label too wide
+     for its third is simply cut off with nothing to show it happened — the
+     fault styles.css already records once. "📜 League History" measured too
+     wide at 390px once the season tab took a third of the bar, so the archive
+     is "History" here — and "This Season" was MEASURED clipping at 320px and
+     is "Season". Both were found by rendering and comparing each button's
+     scrollWidth to its clientWidth, which is the only thing that can see this.
+     The ? sheet builds its tab list FROM this array, so it follows a rename
+     with no second edit. */
+  const L1 = [['hist', '📜 History'], ['season', '📊 Season'], ['rank', '🏆 Rankings']];
 
   function paint() {
     paintHead();
@@ -567,6 +578,17 @@
     if (S.view === 'rank') {
       S.prof = null;
       paintRankings(host).then(buildJump, (e) => { console.error('[rankings] paint failed', e); buildJump(); });
+      return;
+    }
+    /* ⚠️ `crest` is handed IN rather than duplicated in `season.js`: the logo
+       map is one fact and a second copy of it would be a second source of
+       truth for which manager owns which file. Same rejection handler as the
+       rankings — passing one function to both arguments of `.then` is what
+       made the v29 hang invisible. */
+    if (S.view === 'season') {
+      S.prof = null;
+      window.LeagueSeason.paint(host, crest)
+        .then(buildJump, (e) => { console.error('[season] paint failed', e); buildJump(); });
       return;
     }
     /* A profile is a drill-down out of the sub-tabs, not one of them — showing
