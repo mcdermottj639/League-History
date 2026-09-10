@@ -807,6 +807,22 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
 
+- **v30 — a lit tab that does nothing reads as a broken app (10 Sep 2026)** —
+  found in the pre-send render sweep, by tapping the obvious thing.
+  - **A profile is rendered UNDER its section's tab**, so from Christel's
+    career page the "📜 League History" pill is the lit one. Tapping a lit tab
+    to back out of a drill-down is the first thing anybody tries — and the
+    guard only reset `S.prof` when the tab CHANGED, so that tap did nothing
+    at all: no repaint, no scroll, no error.
+  - ⚠️ **The way out existed** — "‹ Back to the league" — which is exactly why
+    this is worth a fix rather than a shrug. **A control that is on screen,
+    highlighted, and silent when tapped reads as a broken app**, not as the
+    wrong control, and the reader who taps it has no way to tell which it was.
+    A no-op is the one response a UI can give that carries no information.
+  - The condition is now "different tab **or** we are in a profile". Verified:
+    from a profile the lit tab lands back on Honours with the sub-tabs
+    restored (`display` none → flex), and switching between tabs is unchanged.
+
 - **v29 — the rankings view stops failing quietly (10 Sep 2026)** — found by
   driving the publish path with deliberately broken week files, as part of a
   pre-send check of the whole app.

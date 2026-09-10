@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v29';
+  const APP_VERSION = 'v30';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -588,7 +588,21 @@
       return;
     }
     const l1 = e.target.closest('[data-l1]');
-    if (l1) { if (l1.dataset.l1 !== S.view) { S.view = l1.dataset.l1; S.prof = null; paint(); window.scrollTo({ top: 0 }); } return; }
+    if (l1) {
+      /* ⚠️ TAPPING THE TAB YOU ARE ALREADY ON IS NOT ALWAYS A NO-OP (v30).
+         A profile is rendered UNDER its section's tab, so from Christel's
+         career page the "League History" pill is the lit one — and tapping a
+         lit tab to get back out of a drill-down is the first thing anybody
+         tries. The guard only reset `S.prof` when the tab CHANGED, so that
+         tap did nothing at all: no repaint, no error, no movement. The way
+         out was there ("‹ Back to the league") but a control that is on
+         screen, highlighted, and silent when tapped reads as a broken app
+         rather than as the wrong control. */
+      if (l1.dataset.l1 !== S.view || S.prof) {
+        S.view = l1.dataset.l1; S.prof = null; paint(); window.scrollTo({ top: 0 });
+      }
+      return;
+    }
     const l2 = e.target.closest('[data-l2]');
     if (l2) { if (l2.dataset.l2 !== S.sub) { S.sub = l2.dataset.l2; paint(); window.scrollTo({ top: 0 }); } return; }
     const mgr = e.target.closest('button[data-mgr]');
