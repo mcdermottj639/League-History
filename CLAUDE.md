@@ -607,6 +607,14 @@ Lab, which only he opens.
     that no commit can do.
 - `powerlab:season` — last good `/api/fantasy/football/season` payload, so the
   lab still ranks when the free-tier backend is asleep (with a stale banner).
+- `powerlab:teams` — **learned `teamId` → manager code** (v37), the rename-proof
+  crest key. ESPN's `teamId` is the franchise id and does NOT change when a
+  manager renames their team, so `mgrFor` resolves by it: any team whose
+  current name resolves through `MANAGERS` records its id here, and thereafter
+  the id answers even when the NAME no longer does. Bootstraps from the name
+  map (so a fresh device still needs `MANAGERS` current for its first open),
+  then self-heals across renames. Per-device; written only on the owner's (or a
+  guest's) device as seasons load.
 - `powerlab:spice` — `'0'` when the owner has turned off the rationed
   profanity in the pre-written takes. Absent/`'1'` = on, which is the default
   and matches the style spec's ~2-3 lines a week.
@@ -995,6 +1003,38 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
 
+- **v37 — crests are rename-proof (10 Sep 2026)** — the owner, after v36:
+  *"Make it name change proof."*
+  - **The stable key is ESPN's `teamId`, which does not change on a rename** —
+    but nothing in the repo knows which id is whose, and the sandbox cannot
+    reach the backend to ask. So instead of a one-time capture (what v36
+    assumed), the Lab LEARNS it: every team whose current name resolves through
+    `MANAGERS` records `teamId → code` into `powerlab:teams`. Today all twelve
+    resolve (v36), so one Lab open binds all twelve; next season the names
+    change, the ids do not, and the learned map answers. **Proven** by driving
+    the Lab through two seasons: twelve current names (all resolve, map
+    persists), then twelve renames to strings the map has NEVER held (all still
+    resolve to the right logos and the reader's own row keeps YOU).
+  - 🚨 **Two bugs found before shipping, both invisible to `node --check`.**
+    (a) `let LEARNED = load(K_TEAMS)` at module scope was a **temporal-dead-zone
+    throw** — `load` is a `const` defined further down, so power.js threw at
+    load, which is a BLANK LAB. Caught by actually requiring the module in
+    node, not by a syntax check; fixed by reading the map lazily on first use.
+    (b) The first cut cached a name→id index at adoption, but **`revalidate`
+    swaps `S.season` in place without `restoreOrBuild`** (the v25 same-week
+    path), so the index went stale and every renamed team helmeted anyway. A
+    rename-proof reader that reads a stale snapshot is not rename-proof — it
+    resolves the id LIVE from `S.season` now.
+  - **Names stay authoritative when known**, and refresh the learned binding on
+    every adoption — so a franchise changing HANDS (a new person on an old id)
+    self-corrects the moment their new name is added to `MANAGERS`. The learned
+    id is the carry-forward, never an override of a known name.
+  - ⚠️ **`MANAGERS` is not retired.** It bootstraps a fresh device (a guest,
+    a new phone, cleared data) that has never learned the ids — see Open / next.
+  - The published payload's manager code is written by `mgrFor` on the owner's
+    device, which holds the learned map, so published weeks carry correct codes
+    through renames with no change to the members' app.
+
 - **v36 — the crests came back: the name map was a year stale (10 Sep
   2026)** — the owner, on his live phone: *"Pics still not loading here and
   this is v35."*
@@ -1028,6 +1068,10 @@ stale entry written in the present tense reads as current to anyone who greps.
   - **No data to backfill**: `rankings/index.json` is still empty, so no
     already-published week carries the stale codes — the first real publish
     from the fixed Lab ships correct ones.
+  - ⚠️ **SUPERSEDED in v37**: the durable teamId fix shipped, and it needed NO
+    owner capture — the Lab learns the `teamId` → manager bindings at runtime
+    from the name map while names still resolve, so a one-time device export
+    turned out to be unnecessary.
 
 - **v35 — the lock moves to the bottom (10 Sep 2026)** — the owner: *"Move
   that lock button way down to the bottom. It'll only cause problems."*
@@ -2096,16 +2140,20 @@ stale entry written in the present tense reads as current to anyone who greps.
   `rankings/index.json` actually published, which is the real source of truth
   for "the last set the league saw". Deliberately not folded into v33: it needs
   a manager-code → `teamId` remap that survives a team being renamed mid-season.
-- **`MANAGERS` goes stale every season, by design of ESPN not this app**
-  (v36). It resolves manager from team NAME, and names change yearly, so a
-  rename drops that team's crest and YOU highlight until the map is updated
-  from the new season — a human step, because the only safe source is ESPN's
-  owner column (never name similarity). The durable fix is to key off a stable
-  identifier the payload already carries — ESPN's `teamId` is the franchise id
-  and does NOT change on a rename — but that needs a one-time `teamId` →
-  manager capture from the owner's device (the sandbox cannot reach the
-  backend), and the team-name map is the honest interim. Offered; the owner
-  chose the name update for now.
+- **Crests are rename-proof now, but `MANAGERS` is still the bootstrap** (v37).
+  `mgrFor` resolves by ESPN's stable `teamId` (learned into `powerlab:teams`),
+  so a device that has opened the Lab once while names resolved keeps every
+  crest through any future rename with no maintenance. **The name map is not
+  retired, though**: it is how a FRESH device (a guest, or the owner after
+  clearing data or on a new phone) learns the bindings the first time, so if
+  names have changed AND the map is stale AND the device is fresh, that device
+  helmets until the map is updated. So updating `MANAGERS` from the new
+  season's ESPN owner column each year is still worth doing as a
+  belt-and-suspenders — it just no longer breaks the owner's returning device
+  when skipped. ⚠️ A residual real risk the id key introduces: if a franchise
+  changes HANDS (a new person on an old `teamId`), the learned binding is wrong
+  until that person's new name is added to `MANAGERS`, which overrides it — so
+  the name map is still authoritative when a name is known.
 - **Not built:** any way for a member to write anything back (a reaction, a
   pick, a comment). That needs a backend and is a real product decision, not a
   missing feature.

@@ -42,6 +42,7 @@ const API_TIMEOUT = 45000;
 const K_DRAFT = 'powerlab:draft';   // the week being edited (autosaved)
 const K_PUB = 'powerlab:pub';       // published weeks, keyed by rank key — drives ▲▼ movement
 const K_SEASON = 'powerlab:season'; // last good /season payload, so the page paints offline
+const K_TEAMS = 'powerlab:teams';   // stable ESPN teamId -> manager code, LEARNED (rename-proof)
 
 const MAX_COMMENT = 420;  // 45 words ≈ 260 chars; 240 truncated the spec's own default entry
 const RECENT_N = 3;                 // weeks in the "recent form" window
@@ -81,7 +82,67 @@ const MANAGERS = {
   'goff hits women': 'Zach', cc: 'CC', 'current champ': 'McD', gmdd: 'Buley',
   'future champ': 'Wolff',
 };
-const mgrFor = (name) => MANAGERS[String(name || '').toLowerCase().trim()] || '';
+/* 🚨 RENAME-PROOF (v37). `MANAGERS` keys on the TEAM NAME, which ESPN lets a
+   manager change every season — so a name-only map goes stale yearly and a
+   renamed team silently loses its crest and its published YOU row (v36 was
+   that failure). ESPN's `teamId` is the FRANCHISE id and does NOT change on a
+   rename, so the durable key is the id.
+
+   The catch: nothing in the repo knows which id is whose — that fact lives on
+   ESPN, which this sandbox cannot reach. So the Lab LEARNS it: every time a
+   team's current name resolves through `MANAGERS`, it records
+   `teamId -> code` to `powerlab:teams`. Today all twelve names resolve (v36),
+   so one Lab open binds all twelve ids; next season, when the NAMES change,
+   the ids have not, and the learned map still answers.
+
+   Resolution order, and the order matters:
+     1. the NAME map — authoritative when the name is known, and it also
+        REFRESHES the learned binding, so an ownership change (a new person on
+        an old franchise id) corrects itself the moment their new name is
+        added to `MANAGERS`;
+     2. the learned id map — the rename-proof carry-forward;
+     3. nothing — a genuinely unknown team still degrades to the helmet.
+
+   `mgrFor(name)` keeps its signature so no caller changes: it finds the id for
+   that name in the loaded season (`NAME2ID`, rebuilt per season) and falls
+   through to what was learned for it. */
+const nrm = (x) => String(x == null ? '' : x).toLowerCase().trim();
+/* ⚠️ LAZY, NOT EAGER. `load` is a `const` defined further down the file, so
+   reading `load(K_TEAMS)` at module-eval time is a temporal-dead-zone throw —
+   and power.js throwing at load is a BLANK LAB, invisible to `node --check`
+   and caught only by actually loading the module. So the persisted map is
+   read on first use, which is always well after the whole file has evaluated. */
+let LEARNED = null;                        // teamId -> manager code, persisted
+const learnedMap = () => (LEARNED || (LEARNED = load(K_TEAMS, {}) || {}));
+
+/* Persist a teamId -> code binding for every team whose CURRENT name still
+   resolves through `MANAGERS`. Run wherever a season is adopted, so bindings
+   are captured (and refreshed, handling an ownership change) while the name is
+   known. It only WRITES; `mgrFor` only READS — a resolver that writes during a
+   render is a resolver that fights repaints. */
+function learnTeams(season) {
+  const L = learnedMap();
+  let changed = false;
+  ((season && season.teams) || []).forEach((t) => {
+    const code = MANAGERS[nrm(t.team)];
+    if (code && L[String(t.teamId)] !== code) { L[String(t.teamId)] = code; changed = true; }
+  });
+  if (changed) save(K_TEAMS, L);
+}
+
+/* 🚨 The teamId is looked up LIVE from `S.season`, never from a cached index.
+   `revalidate` swaps `S.season` in place without going through
+   `restoreOrBuild`, so any name->id snapshot taken at adoption goes stale the
+   moment a corrected roster lands — a rename-proof reader that reads a stale
+   index is not rename-proof. The current season is the only truth for which id
+   a name has right now. */
+const mgrFor = (name) => {
+  const k = nrm(name);
+  const byName = MANAGERS[k];
+  if (byName) return byName;
+  const t = ((S.season && S.season.teams) || []).find((x) => nrm(x.team) === k);
+  return (t && learnedMap()[String(t.teamId)]) || '';
+};
 /* A manager label that just repeats the team name is noise ("CC CC"). */
 const mgrLabel = (name) => {
   const m = mgrFor(name);
@@ -275,6 +336,7 @@ const lastWk = (m, i) => (m == null ? '' : `LW ${i + 1 + m}`);
 
 /* ---------------------------------------------------------------- state --- */
 function restoreOrBuild() {
+  learnTeams(S.season);   // rename-proof crest bindings — see mgrFor (v37)
   const built = buildModel(S.season);
   S.key = built.weeks;
   S.ready = built.ready;
@@ -2248,6 +2310,7 @@ async function revalidate() {
     return;
   }
   S.season = d;
+  learnTeams(d);   // capture/refresh crest bindings from the revalidated roster (v37)
   S.stale = false;
   S.fresh = 'live';
   S.model = built.model; S.scores = built.scores; S.rows = built.rows; S.ready = built.ready;
