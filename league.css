@@ -380,9 +380,37 @@
    ruled at the playoff cut; that ordering IS the visual, and the percentage
    beside it is exact. (Scaling the bars to the leader instead would have
    made them legible by making their lengths mean nothing.) */
+/* ⚠️ Sized against the widest value each column can hold ("100%"), not padded
+   by habit — a fifth column put three of the twelve team names back into
+   truncation, and the numbers are the only place there was slack to give. */
 :root[data-palette] .ls-odd {
-  display: grid; grid-template-columns: 20px auto 1fr 52px;
-  align-items: center; gap: 8px; padding: 7px 0; font-size: 12.5px; }
+  display: grid; grid-template-columns: 18px auto 1fr 40px 36px;
+  align-items: center; gap: 6px; padding: 7px 0; font-size: 12.5px; }
+/* Ours and ESPN's, side by side — the SAME quantity from two forecasters, so
+   this is a fair comparison rather than two denominators (the v3 rule is
+   about numbers that are not comparable; these are). The disagreement is the
+   interesting part, so it is marked rather than smoothed over. */
+:root[data-palette] .ls-oh {
+  font: 800 9.5px/1 Archivo, system-ui, sans-serif; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--mu); border-bottom: 1px solid var(--tr); }
+:root[data-palette] .ls-oh span { text-align: right; white-space: nowrap; }
+:root[data-palette] .ls-oh span:nth-child(3) { text-align: left; }
+:root[data-palette] .ls-odd-e { text-align: right; font-size: 11.5px; color: var(--mu); }
+:root[data-palette] .ls-odd-e.ls-gap { color: var(--ac7); font-weight: 800; }
+
+/* ── what your odds hinge on ───────────────────────────────────────────── */
+:root[data-palette] .ls-hinge-h {
+  margin: 0 0 10px; padding-bottom: 10px; border-bottom: 1px solid var(--tr);
+  font-size: 13px; line-height: 1.5; color: var(--gy); }
+:root[data-palette] .ls-hinge-h b { color: var(--ink); }
+:root[data-palette] .ls-sw {
+  display: grid; grid-template-columns: 42px 1fr 48px 48px;
+  align-items: center; gap: 7px; padding: 6px 0; font-size: 12.5px; }
+:root[data-palette] .ls-sw + .ls-sw { border-top: 1px solid var(--tr); }
+:root[data-palette] .ls-sw-w { font: 800 10px/1 Archivo, system-ui, sans-serif; color: var(--mu); }
+:root[data-palette] .ls-sw-n {
+  color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+:root[data-palette] .ls-sw-v { text-align: right; font-size: 11.5px; font-weight: 700; }
 :root[data-palette] .ls-odd + .ls-odd { border-top: 1px solid var(--tr); }
 :root[data-palette] .ls-odd-n { font: 800 11px/1 Archivo, system-ui, sans-serif; color: var(--mu); text-align: center; }
 :root[data-palette] .ls-odd-t {
@@ -447,7 +475,8 @@
   background: rgba(var(--acRGB), .09); margin: 0 -14px; padding-left: 14px; padding-right: 14px; }
 
 @media (max-width: 380px) {
-  :root[data-palette] .ls-odd { grid-template-columns: 18px auto 1fr 48px; gap: 6px; }
+  :root[data-palette] .ls-odd { grid-template-columns: 16px auto 1fr 38px 34px; gap: 4px; font-size: 12px; }
+  :root[data-palette] .ls-sw { grid-template-columns: 38px 1fr 44px 44px; gap: 5px; }
 }
 
 /* 🚨 THE LEVEL-1 BAR CLIPS SILENTLY, AND THREE TABS BROUGHT IT INTO RANGE.

@@ -456,6 +456,133 @@ function seasonLaws() {
 }
 seasonLaws();
 
+/* ══ 🎯 PLAYOFF ODDS (v40) ═════════════════════════════════════════════════
+   The one model in the app that can be graded, so it gets asserted like one.
+   None of this is visible in a render: a Monte Carlo that is subtly wrong
+   still prints twelve confident percentages. */
+function oddsLaws() {
+  const fail = (m) => { console.log(`  ❌ ${m}`); bad++; };
+  const fs = require('fs');
+  require('./odds.js');
+  const LO = window.LeagueOdds;
+
+  const html = fs.readFileSync('./index.html', 'utf8');
+  const ver = (fs.readFileSync('./league.js', 'utf8').match(/APP_VERSION = 'v(\d+)'/) || [])[1];
+  if (!html.includes(`odds.js?v=${ver}`)) fail(`index.html does not load odds.js?v=${ver}`);
+
+  /* Twelve teams, a fixed round-robin-ish pairing, some weeks played. */
+  const N = 12, RW = 14, PT = 6;
+  const mk = (weeks) => {
+    const teams = [];
+    for (let i = 0; i < N; i++) {
+      const opp = String(i % 2 === 0 ? i + 2 : i);
+      const scores = [];
+      for (let w = 0; w < weeks; w++) scores.push(100 + i + (w % 3) * 4);
+      teams.push({ id: String(i + 1), scores, sch: Array(RW).fill(opp) });
+    }
+    return { teams, rw: RW, pt: PT, priors: {}, seed: 1234, sims: 2000 };
+  };
+
+  const r = LO.build(mk(5));
+
+  /* 🚨 THE CONSERVATION LAW OF A PLAYOFF FIELD. Exactly `pt` teams make it in
+     every simulated season, so the twelve probabilities must total pt x 100.
+     A double-counted team, a team ranked twice, an off-by-one in the cut —
+     all of them break this and none of them looks wrong on screen. (It is
+     also the invariant ESPN's own numbers satisfy, which is how we know
+     theirs is a real simulation.) */
+  const sum = Object.keys(r.odds).reduce((a, k) => a + r.odds[k], 0);
+  if (Math.abs(sum - PT * 100) > 1e-6) fail(`odds sum to ${sum.toFixed(3)}, must be ${PT * 100}`);
+  Object.keys(r.odds).forEach((k) => {
+    if (!(r.odds[k] >= 0 && r.odds[k] <= 100)) fail(`team ${k} has an impossible probability: ${r.odds[k]}`);
+  });
+
+  /* 🚨 SAME SEED, SAME NUMBER — twelve people compare phones. An unseeded
+     Monte Carlo fails this silently and reads as the app contradicting
+     itself, which is the kind of bug nobody can debug from a group chat. */
+  const again = LO.build(mk(5));
+  if (Object.keys(r.odds).some((k) => r.odds[k] !== again.odds[k])) {
+    fail('the simulation is not deterministic — two runs of the same week disagree');
+  }
+  const other = LO.build(Object.assign(mk(5), { seed: 99 }));
+  if (Object.keys(r.odds).every((k) => r.odds[k] === other.odds[k])) {
+    fail('changing the seed changed nothing — the RNG is not being used');
+  }
+
+  /* Preseason invents no confidence: with nothing played, the weight on
+     observed scoring must be exactly zero and everything is the prior. */
+  const pre = LO.build(mk(0));
+  if (pre.est.lambda !== 0) fail(`with no games played the model still trusts scoring (lambda ${pre.est.lambda})`);
+  const preSum = Object.keys(pre.odds).reduce((a, k) => a + pre.odds[k], 0);
+  if (Math.abs(preSum - PT * 100) > 1e-6) fail('preseason odds do not sum to the field');
+
+  /* 🚨 TRUST IN THE DATA MUST GROW WITH THE DATA. If this ever inverts, the
+     model is reading late-season evidence as less informative than early
+     noise — the exact thing shrinkage exists to prevent, upside down. */
+  let last = -1;
+  [0, 3, 6, 10, 13].forEach((w) => {
+    const l = LO.build(mk(w)).est.lambda;
+    if (l < last - 1e-9) fail(`shrinkage weight fell from ${last.toFixed(3)} to ${l.toFixed(3)} as weeks were added`);
+    last = l;
+  });
+
+  /* 🚨 WINNING MUST NEVER HURT. The what-ifs are conditionals off one set of
+     simulated seasons; if any game reads better to lose than to win, either
+     the conditioning or the ranking is wrong, and the page would be telling
+     somebody to root against their own team. */
+  const withMe = LO.build(Object.assign(mk(5), { me: '7' }));
+  if (!withMe.swings.length) fail('the reader has no remaining games in a 5-of-14 season');
+  withMe.swings.forEach((g) => {
+    if (g.ifWin == null || g.ifLose == null) return;
+    if (g.ifWin < g.ifLose - 1e-9) fail(`week ${g.week}: losing (${g.ifLose.toFixed(1)}%) beats winning (${g.ifWin.toFixed(1)}%)`);
+  });
+
+  /* 🚨 PARAMETER UNCERTAINTY MUST BE IN THERE, and it breaks no conservation
+     law — a model that treats a three-week estimate as a known fact still
+     prints twelve percentages that add to 600. What it does instead is get
+     CONFIDENT too early: measured against a known truth, the first cut said
+     95% for teams that made it 83% of the time. So the observable
+     consequence is asserted: the error bar on a team's strength must exist
+     while the season is young and must shrink as the season fills in. */
+  const u3 = LO.build(mk(3)).est, u11 = LO.build(mk(11)).est;
+  if (!(u3.muSd > 0)) fail('the model treats a three-week estimate as exact — no error bar on team strength');
+  if (!(u11.muSd < u3.muSd)) fail(`the error bar on team strength did not shrink with the season (${u3.muSd.toFixed(2)} -> ${u11.muSd.toFixed(2)})`);
+
+  /* And its consequence on the output: with more of the season known, the
+     field must spread OUT. If early odds are as extreme as late ones, the
+     model is not learning, it is just guessing confidently from the start. */
+  const spread = (o) => { const v = Object.keys(o.odds).map((k) => o.odds[k]); return Math.max.apply(null, v) - Math.min.apply(null, v); };
+  const s3 = spread(LO.build(mk(3))), s11 = spread(LO.build(mk(11)));
+  if (s11 <= s3) fail(`the odds did not sharpen as the season went on (week 3 spread ${s3.toFixed(0)}, week 11 ${s11.toFixed(0)})`);
+
+  /* 🚨 THE HEAD-TO-HEAD TIEBREAK MUST ACTUALLY BREAK A TIE — the league's
+     rule is head-to-head, then points.
+     ⚠️ The first version of this check could not have caught anything: it
+     used two teams who only ever played each other, so their head-to-head
+     record IS their overall record and a tie on wins is a tie on everything.
+     Removing the tiebreak left it green. It needs four teams, so that two of
+     them can be level on wins, level nowhere else, and split by the game
+     between them: `a` and `b` both finish 1-1, `b` has MORE points, and `a`
+     beat `b` in week 1. Head-to-head puts `a` second; points-only puts `b`
+     there. */
+  const h2h = {
+    rw: 2, pt: 2, priors: {}, seed: 5, sims: 1,
+    teams: [
+      { id: 'a', scores: [120, 100], sch: ['b', 'c'] },
+      { id: 'b', scores: [110, 120], sch: ['a', 'd'] },
+      { id: 'c', scores: [130, 115], sch: ['d', 'a'] },
+      { id: 'd', scores: [100, 110], sch: ['c', 'b'] },
+    ],
+  };
+  const hr = LO.build(h2h);
+  if (Math.abs(hr.odds.a + hr.odds.b + hr.odds.c + hr.odds.d - 200) > 1e-6) fail('the four-team tiebreak season does not conserve its field');
+  if (hr.odds.c !== 100) fail('the 2-0 team did not take a guaranteed spot');
+  if (hr.odds.a !== 100) fail('head-to-head did not break the tie — `a` beat `b` and still lost the spot on points');
+
+  if (!bad) console.log('  ✅ playoff odds: field conserved, deterministic, winning never hurts, shrinkage grows');
+}
+oddsLaws();
+
 function done() {
   console.log(bad ? `\n${bad} FAILURES` : '\n✅ all conservation laws hold');
   process.exit(bad ? 1 : 0);

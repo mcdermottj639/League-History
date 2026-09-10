@@ -308,6 +308,57 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     SHIPS with an empty `t` so an unpublished season answers 200 — which is
     what makes a 404 reportable as a broken deploy rather than as business as
     usual. `checks.js` asserts the file ships.
+- `odds.js` — **the app's own playoff odds** (v40), `window.LeagueOdds`.
+  - 🚨 **THE ONE MODEL HERE THAT CAN BE GRADED.** A power ranking has no
+    outcome to score against, which is why that card says its weights are a
+    judgment call and must never be presented as validated. A team either
+    makes the bracket or does not, so this can be scored with a Brier score
+    and two forecasters can be compared. **So nothing claims to beat ESPN —
+    both numbers are on the page and the season decides.**
+  - **Measured on the archive, and the third one is the point:**
+    last season's scoring → this season's `r = +0.14`; career average
+    (excluding that year) → that year's `r = +0.17`; **win rate above .500 →
+    next season's `r = −0.02`**. A manager's RECORD carries no predictive
+    signal at all. Every input here is points; the app says so on the card.
+  - **Variance decomposition** (13 seasons): season-to-season swing within one
+    manager **7.74 ppg**, true between-manager skill **2.16 ppg**, reliability
+    of a single season **0.07**. Thirteen seasons of history earns 50% weight;
+    one earns 7%. Hurd's +4.65 career is worth **+2.34 ppg** as a forecast.
+  - 🚨 **SHRINKAGE IS THE EDGE, AND IT IS MEASURED, NOT ASSERTED.** Weekly
+    scores swing far wider than teams truly differ, so early scoring is mostly
+    noise: weight on observed scoring is `n / (n + σ²week / σ²between)`, both
+    measured live. Against a known truth it beats raw points-per-game by
+    **11% (Brier) at week 3, 2.4% at week 6, and nothing by week 10** — the
+    edge is real and it is concentrated early, which is exactly the theory.
+  - ⚠️ **`SEASON_K` (12.8), `SKILL_SD` (2.16) and `SEASON_SD` (7.74) are the
+    only numbers carried in from the archive analysis.** Everything else
+    self-calibrates from the season in progress.
+  - 🚨 **SEEDED, BECAUSE TWELVE PEOPLE COMPARE PHONES.** An unseeded Monte
+    Carlo gives each reader a slightly different percentage for the same
+    published week, and two people holding screens side by side would watch
+    the app disagree with itself. Seed is the week. Rounded to a WHOLE
+    percent, which is about the resolution a simulation of this size has —
+    ESPN publishes 61.425%, which is three digits of false precision.
+  - **The what-ifs are conditionals off ONE set of simulated seasons**, never
+    re-run per game, so they cannot disagree with each other or with the
+    headline number. That is the section ESPN does not do: a percentage alone
+    cannot be argued with and does not tell you what to want on Sunday.
+  - ⚠️ **Honest expectation: ESPN should win early.** They can see twelve
+    rosters preseason; we can see thirteen years worth ±2.3 ppg. The edge
+    arrives with real scoring. Said on the page, not just here.
+- `calibrate.js` — **`node calibrate.js`, ~90 seconds, run it whenever you
+  touch `odds.js`.** Grades the model against a known truth over 300 synthetic
+  seasons.
+  - 🚨 **DELIBERATELY NOT IN `checks.js`, AND IT FOUND BOTH REAL MODELLING
+    BUGS.** The suite holds laws — things true of every run, cheap, and false
+    the moment somebody breaks them. "When it says 70%, does it happen 70% of
+    the time" is a question about a distribution, needs hundreds of seasons,
+    and returns a judgment rather than a pass. Both faults it caught were
+    invisible to every assertion: drawing weekly scores around the ESTIMATED
+    team mean as if it were exact (week 3 said 95% for teams that made it 83%
+    of the time), and clipping the between-team spread at zero before use,
+    which biases a noisy subtraction upward and roughly doubled how far the
+    model trusted three weeks of scoring.
 - `season/current.json` — the published snapshot. **One file, overwritten** —
   no index, no history: a season in progress has exactly one current state and
   the finished ones are the archive's job.
@@ -1064,7 +1115,9 @@ guaranteed to break rendering in ways no assertion catches.
 3. Bump `CACHE` in `sw.js`.
 4. `node --check` every JS file, then `node checks.js` — there is no test
    suite; syntax check, the conservation and gate laws, plus a headless
-   render are the gate.
+   render are the gate. ⚠️ **If you touched `odds.js`, also run
+   `node calibrate.js`** (~90s): the suite cannot see a miscalibrated model,
+   and that harness is what caught both of the ones that shipped in a draft.
 5. Update this file in the SAME commit if you changed architecture, data or a
    feature.
 
@@ -1106,6 +1159,100 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v40 — our own playoff odds, and a way to find out if they are any good
+  (10 Sep 2026)** — the owner: *"How can we make our playoff prediction
+  different and more accurate than espn"*.
+  - 🚨 **THE ANSWER STARTS WITH WHAT MAKES THIS DIFFERENT FROM EVERY OTHER
+    MODEL IN THE APP: IT CAN BE GRADED.** The power rankings have no outcome
+    to score against — that is why their card refuses to call the weights
+    validated. A team either makes the bracket or does not, so "more accurate"
+    is a measurable claim rather than an assertable one. **So the app claims
+    nothing.** Both numbers sit side by side and the season decides.
+  - **Three tests on the archive before a line of the model was written**, and
+    the third is the one that mattered: last season's scoring predicts this
+    season's at `r = +0.14`, career average at `r = +0.17`, and **win rate
+    above .500 predicts next season's at `r = −0.02` — zero.** A manager's
+    RECORD is pure luck. That is the app's oldest instinct (all-play over
+    standings, the luck index) with a number under it at last, and it is why
+    every input here is points.
+  - **Then the variance decomposition, which sized the whole thing:** within
+    one manager, season-to-season swing is **7.74 ppg**; true between-manager
+    skill is **2.16 ppg**, 3.6× smaller. One season is 7% signal. Thirteen
+    seasons of history earns 50% weight — Hurd's +4.65 career average is worth
+    **+2.34 ppg** as a forecast, Slemp's −4.49 is worth −2.26. Real, unique to
+    us (ESPN sees rosters, not thirteen years), and small.
+  - 🚨 **SO THE EDGE IS NOT THE HISTORY, IT IS THE SHRINKAGE.** Weekly scores
+    swing ~17-22 points; teams truly differ by ~5. A model that reads a 3-0
+    team scoring 130 a week as a 130-a-week team is fitting noise. Graded
+    against a known truth over 300 synthetic seasons, shrinking beats raw
+    points-per-game by **11% of Brier at week 3, 2.4% at week 6, and −1.3% by
+    week 10.** The edge is real and it is concentrated early — which is the
+    theory, confirmed rather than assumed.
+  - 🚨 **AND THE GRADING FOUND TWO REAL BUGS THAT NO ASSERTION COULD SEE.**
+    Both printed twelve confident percentages summing to exactly 600:
+    - **The simulation treated the estimated team mean as a known fact.** It
+      is a guess with an error bar, and leaving that out makes the spread of
+      simulated seasons too narrow. Measured: at week 3 it said **95% for
+      teams that made it 83% of the time**, and 4% for teams that made it 15%.
+      Both tails overconfident, which is the signature. Drawing each simulated
+      season's true strengths from the posterior fixed it.
+    - **The between-team spread was clipped at zero before use.** With twelve
+      teams and three weeks that subtraction often goes negative, and clipping
+      one tail of a noisy estimate biases it upward — against a truth of 5.5
+      it recovered **6.68 at week 2**, which roughly doubled how far the model
+      trusted three weeks of scoring. It is blended with an archive-grounded
+      prior now, and lambda tracks its ideal from week 3 on.
+    After both, the middle of the curve is honest (said 57% → happened 57%,
+    said 76% → 75%, said 94% → 95% at week 6). ⚠️ **The far tail at week 3 is
+    still a little overconfident** on ~5% of forecasts. Stated, not hidden.
+  - 🚨 **`calibrate.js` IS IN THE REPO AND IS DELIBERATELY NOT IN
+    `checks.js`.** The suite holds laws: true of every run, cheap, false the
+    moment somebody breaks them. "When it says 70%, does it happen 70% of the
+    time" is a question about a distribution, takes 300 seasons and 90
+    seconds, and returns a judgment rather than a pass. Both bugs above lived
+    happily under a green suite. **A conservation law cannot see a
+    miscalibrated model.**
+  - **What makes it DIFFERENT is the part that needed no accuracy at all:**
+    what your number hinges on. How many of your last N you need, how hard
+    your remaining schedule is, and what each individual week is worth —
+    *"your biggest week is CC in week 6: 94% if you win it, 79% if you don't."*
+    A percentage on its own cannot be argued with and does not tell you what
+    to want on Sunday. ⚠️ **The what-ifs are conditionals off ONE set of
+    simulated seasons**, never re-run per game, so they cannot disagree with
+    each other or with the headline.
+  - 🚨 **SEEDED, BECAUSE TWELVE PEOPLE COMPARE PHONES.** An unseeded Monte
+    Carlo hands every reader a slightly different percentage for the same
+    published week — two people holding screens side by side would watch the
+    app contradict itself, which reads as broken and cannot be debugged from a
+    group chat. And rounded to a WHOLE percent: ESPN publishes 61.425%, which
+    is three digits of false precision on a number that is itself a
+    simulation.
+  - ⚠️ **The honest expectation, said on the page and not only here: ESPN
+    should win early.** Preseason they see twelve rosters and we see thirteen
+    years worth ±2.3 ppg. Our edge arrives with real scoring — even by week 4,
+    ahead by week 7, if at all. Nobody has kept score yet; see Open / next.
+  - 🚨 **TWO OF THE NEW CHECKS WERE GREEN OVER BROKEN CODE, AGAIN.** v39 had
+    the same lesson and it still happened twice more:
+    - **The head-to-head tiebreak test used two teams who only play each
+      other** — so their head-to-head record IS their overall record, a tie on
+      wins is a tie on everything, and removing the tiebreak entirely left it
+      green. It takes four teams for the rule to have anything to do.
+    - **The parameter-uncertainty check asserted the error bar was COMPUTED,
+      not that it was USED.** Deleting its one use in the simulation passed.
+      It is asserted by consequence now (the bar must shrink as the season
+      fills in, and the odds must sharpen), and the real proof is
+      `calibrate.js`.
+    **Every law in this entry was verified by reinstating its fault.**
+  - ⚠️ **Two layout faults, both from adding one column** — the fifth column
+    put three of twelve team names back into truncation (fixed by sizing the
+    numeric columns to their widest value; two of the longest names still
+    ellipsis, which the crest covers), and the disagreement sentence would
+    have named **ten teams in a row**; it counts them past three.
+  - Verified at 320/390px as the reader, another manager and a stranger: the
+    tab paints including a 10,000-season simulation in **340ms**, no overflow,
+    no page errors, the hinge section correctly absent for a stranger, and
+    checks.js plus calibrate.js both green.
 
 - **v39 — the season being played, as a third tab (10 Sep 2026)** — the owner:
   *"Could we add a third tab in between league history and rankings that's the
@@ -2337,6 +2484,12 @@ stale entry written in the present tense reads as current to anyone who greps.
 
 ## Open / next
 
+- **Nobody has kept score against ESPN yet** (v40). Both forecasts are on the
+  page and neither is proven better — that needs a Brier scoreboard logged
+  weekly and read over seasons, not one screen. The honest build is to record
+  both numbers per team per week when a snapshot is published, then grade them
+  once the season ends. ⚠️ Twelve teams in one season is a tiny, correlated
+  sample; three seasons might settle it. Until then the page says so.
 - **The season tab needs its first publish** — `season/current.json` ships with
   an empty `t` and the app says so honestly. It has been driven end to end
   against snapshots the REAL Lab wrote from a live payload capture (preseason

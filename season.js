@@ -274,6 +274,38 @@
     return out;
   }
 
+  /* ══ OUR OWN ODDS ══════════════════════════════════════════════════════
+     `odds.js` does the work; this hands it the archive's priors and keeps the
+     answer, because the simulation is deterministic for a published week and
+     re-running it on every tab switch would be ten thousand seasons of work
+     for a number that cannot have changed. */
+  let OURS = null, OURS_KEY = null;
+  function ourOdds(d) {
+    const key = `${d.p.d}|${d.wp}`;
+    if (OURS_KEY === key) return OURS;
+    if (!window.LeagueOdds) return null;
+    const priors = {};
+    d.teams.forEach((t) => {
+      const c = t.m ? LH.career(t.m) : null;
+      if (!c || !c.yrs.length) { priors[t.id] = 0; return; }
+      const rel = c.yrs.reduce((a, y) => a + y.rel, 0) / c.yrs.length;
+      priors[t.id] = window.LeagueOdds.priorFor(rel, c.seasons);
+    });
+    try {
+      OURS = window.LeagueOdds.build({
+        teams: d.teams.map((t) => ({ id: t.id, scores: t.scores, sch: t.sch })),
+        rw: d.rw, pt: d.pt, priors,
+        me: (d.teams.find((t) => t.m === LH.me()) || {}).id,
+        /* 🚨 Seeded on the WEEK, so every one of the twelve sees the same
+           number. Two people holding phones side by side is the test this
+           has to pass, and an unseeded Monte Carlo fails it silently. */
+        seed: (d.wp + 1) * 7919,
+      });
+    } catch (e) { console.error('[odds] simulation failed', e); OURS = null; }
+    OURS_KEY = key;
+    return OURS;
+  }
+
   /* ══ RENDER ════════════════════════════════════════════════════════════ */
   function crestOf(cr, t, size) {
     return t.m ? cr(t.m, size) : `<span class="fh-crest fh-crest-x" style="width:${size}px;height:${size}px;font-size:${Math.round(size * 0.42)}px">${esc((t.n || '?').slice(0, 1))}</span>`;
@@ -339,18 +371,80 @@
 
   function oddsHTML(d, cr, me) {
     if (!d.teams.some((t) => t.pct != null)) return '';
-    const top = d.odds[0];
+    const o = ourOdds(d);
+    const ours = o ? o.odds : null;
+    const rows = [...d.teams].sort((a, b) =>
+      (ours ? ours[b.id] - ours[a.id] : 0) || (b.pct || 0) - (a.pct || 0) || b.pf - a.pf);
+    const top = rows[0];
+    const pct0 = (v) => (v == null ? '—' : Math.round(v) + '%');
+    /* A gap worth pointing at. Below this the two are agreeing within the
+       noise of two different simulations and a marker would be reading
+       tea leaves. */
+    const BIG = 12;
+    const gaps = ours ? rows.filter((t) => Math.abs(ours[t.id] - t.pct) >= BIG) : [];
+
     return `<h2 class="section-title">🎯 Playoff odds</h2>
-      <p class="fh-lead"><b>${esc(top.n)} ${pc(top.pct)}</b> — the best shot in the league. ${Cap(spell(d.pt))} of ${spell(d.teams.length)} teams make it, so the twelve add up to ${d.pt * 100}%.</p>
+      <p class="fh-lead">${ours
+        ? `<b>${esc(top.n)} ${pct0(ours[top.id])}</b> — the best shot in the league by our numbers. ${Cap(spell(d.pt))} of ${spell(d.teams.length)} make it, so the twelve add up to ${d.pt * 100}%.${d.pre
+          ? ' <b>Before a ball is thrown, ESPN should be better than us</b> — they can see twelve rosters and all we have is thirteen years of history. Our edge, if we have one, arrives with real scoring.'
+          : ''}`
+        : `<b>${esc(top.n)} ${pct0(top.pct)}</b> — the best shot in the league. ${Cap(spell(d.pt))} of ${spell(d.teams.length)} make it.`}</p>
       <div class="ffp-card">
-        ${d.odds.map((t, i) => `<div class="ls-odd${mineCls(t, me)}${i === d.pt - 1 ? ' ls-cut' : ''}">
-          <span class="ls-odd-n">${i + 1}</span>
-          ${crestOf(cr, t, 32)}
-          <span class="ls-odd-t">${esc(t.n)}${youTag(t, me)}</span>
-          <span class="ls-odd-v mono">${pc(t.pct)}</span>
-        </div>`).join('')}
+        <div class="ls-odd ls-oh"><span></span><span></span><span>Team</span><span>Ours</span><span>ESPN</span></div>
+        ${rows.map((t, i) => {
+          const mine = ours ? ours[t.id] : null;
+          const gap = mine == null || t.pct == null ? 0 : mine - t.pct;
+          return `<div class="ls-odd${mineCls(t, me)}${i === d.pt - 1 ? ' ls-cut' : ''}">
+            <span class="ls-odd-n">${i + 1}</span>
+            ${crestOf(cr, t, 28)}
+            <span class="ls-odd-t">${esc(t.n)}${youTag(t, me)}</span>
+            <span class="ls-odd-v mono">${pct0(mine == null ? t.pct : mine)}</span>
+            <span class="ls-odd-e mono${Math.abs(gap) >= BIG ? ' ls-gap' : ''}">${pct0(t.pct)}</span>
+          </div>`;
+        }).join('')}
       </div>
-      <p class="ffp-cap">⚑ <b>These are ESPN's numbers, not this app's.</b> They come through with the league data and are the same percentages the ESPN app shows — a simulation of the rest of the schedule, not a calculation anything here performs. The line falls after ${ordN(d.pt)}, which is the playoff cut.</p>`;
+      ${ours ? `<p class="ffp-cap"><b>Ours</b> plays the rest of the schedule out ${o.sims.toLocaleString()} times. It uses points and never records — measured across the thirteen seasons, a manager's win rate carries <b>no</b> predictive signal at all (r = −0.02) while their scoring carries a little (r = +0.17), so a record is the one number here that is pure luck. ${o.est.lambda > 0
+        ? `After ${spell(d.wp)} week${d.wp === 1 ? '' : 's'} it trusts what teams have actually scored <b>${Math.round(o.est.lambda * 100)}%</b> and their thirteen-year history the rest — weekly scores swing ${one(o.est.sigma)} points, which is far wider than the teams truly are, so early scoring is mostly noise.`
+        : 'With no games played it is thirteen years of scoring history and nothing else.'}<br><br>⚠️ <b>These are two different forecasts of the same thing, and one of them is wrong.</b> ESPN\'s comes with the league data and is the number their app shows. Neither has been proven better here — that takes seasons of keeping score, not one page.${gaps.length
+        ? (gaps.length > 3
+          ? ` Right now they are more than ${BIG} points apart on <b>${spell(gaps.length)} of the ${spell(d.teams.length)}</b>.`
+          : ` Right now they are more than ${BIG} points apart on <b>${gaps.map((t) => esc(t.n)).join(', ')}</b>.`)
+        : ''}</p>`
+        : `<p class="ffp-cap">⚑ <b>ESPN\'s numbers, not this app\'s.</b> They come through with the league data and are the same percentages the ESPN app shows.</p>`}
+      ${hingeHTML(d, o, me)}`;
+  }
+
+  /* ══ WHAT THE READER'S OWN NUMBER RESTS ON ═════════════════════════════
+     🚨 THE PART ESPN DOES NOT DO. A percentage on its own is unarguable and
+     therefore uninteresting: it cannot be checked, and it does not tell you
+     what to want on Sunday. The same ten thousand seasons already know which
+     of the reader's remaining games move it and by how much, so saying so
+     costs nothing and is the whole reason to have built our own. */
+  function hingeHTML(d, o, me) {
+    if (!o || o.meIdx < 0 || !o.myGames.length) return '';
+    const mine = d.teams.find((t) => t.m === me);
+    if (!mine) return '';
+    const pct0 = (v) => (v == null ? '—' : Math.round(v) + '%');
+    const sw = o.swings.slice().sort((a, b) =>
+      ((b.ifWin || 0) - (b.ifLose || 0)) - ((a.ifWin || 0) - (a.ifLose || 0)));
+    const biggest = sw[0];
+    const oppName = (id) => { const t = d.teams.find((x) => x.id === id); return t ? t.n : '?'; };
+    return `<h2 class="section-title">🔑 What yours hinges on</h2>
+      <p class="fh-lead">${o.need != null
+        ? `<b>Win ${spell(o.need)} of your last ${spell(o.myGames.length)}</b> and you are better than even money to make it.`
+        : `<b>Nothing left to play for on paper</b> — the remaining games barely move your number either way.`} ${o.sos != null
+        ? `Your remaining opponents are <b>${sgn(o.sos)} points a game</b> against the league — ${o.sos > 1 ? 'a hard run' : o.sos < -1 ? 'a kind one' : 'about average'}.`
+        : ''}</p>
+      <div class="ffp-card">
+        ${biggest && biggest.ifWin != null ? `<p class="ls-hinge-h">Your biggest week is <b>${esc(oppName(biggest.opp))}</b> in week ${biggest.week} — <b>${pct0(biggest.ifWin)}</b> if you win it, <b>${pct0(biggest.ifLose)}</b> if you don't.</p>` : ''}
+        ${o.swings.map((g) => `<div class="ls-sw">
+          <span class="ls-sw-w">wk ${g.week}</span>
+          <span class="ls-sw-n">${esc(oppName(g.opp))}</span>
+          <span class="ls-sw-v mono pos">${pct0(g.ifWin)}</span>
+          <span class="ls-sw-v mono neg">${pct0(g.ifLose)}</span>
+        </div>`).join('')}
+        <p class="ffp-cap">Each row is the same ${o.sims.toLocaleString()} simulated seasons split by whether you won that week — win on the left, lose on the right. They are read off one set of seasons rather than re-run per game, so they cannot disagree with each other or with the number above.</p>
+      </div>`;
   }
 
   function tableHTML(d, cr, me) {
