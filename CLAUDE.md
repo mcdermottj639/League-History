@@ -449,12 +449,33 @@ something computed is wrong the first time somebody changes it.
   about whoever is holding the phone. Use `nm()` and **`vb(m, 'have', 'has')`**;
   never write "has", "his" or "he" into a template. There are no pronouns in
   these strings at all — the name always works and never misgenders anyone.
-- **`signature` is the last detector and it exists for coverage.** The others
-  look for extremes, so a manager who has never been extreme gets nothing — and
-  three people opening a blank You page is the one outcome this feature exists
-  to avoid. It finds the stat they sit furthest from the middle on and states
-  it, low-weighted so it never displaces a real find. `checks.js` asserts all
-  twelve are covered.
+- **`signature` is the coverage backstop and it tops every manager up to TWO
+  (v22).** The others look for extremes, so a manager who has never been
+  extreme gets nothing. It finds the stats they sit furthest from the middle on
+  and states them, low-weighted (max 32 against a real detector's 40+) so it
+  never displaces a real find or changes the roll-call.
+  - ⚠️ **It is NOT in the `DETECT` array any more.** It runs as a second phase
+    inside `stories()`, because it has to count what a reader will SEE — the
+    list *after* the decimal dedupe, not what the detectors emitted. Christel
+    proved why: `cbscore` fired for him so he counted as covered, then the
+    dedupe dropped it (its 153.6 was already quoted inside his zero-podium
+    card) and left him on one card with the backstop none the wiser.
+    **Assert what renders — and derive from what renders too.**
+  - ⚠️ **This also retired `DETECT.slice(0, -1)`**, which meant "every detector
+    except the backstop" only while the backstop stayed last in the array.
+    Appending one below it would have silently broken coverage.
+  - 🚨 **A top-up must not re-argue the card above it.** Every detector
+    declares a `t` topic beside its `src`, and a claim is skipped when that
+    manager already holds a story on the same topic — so "never on the podium"
+    does not get "worst average finish" as its second card. A detector with no
+    `t` suppresses nothing, which fails safe.
+  - The career line under a claim is carried by the FIRST top-up only, and it
+    **drops any clause already on the page** (`held[m].txt`): the floor card
+    said "with 2 finals and no title" and this one said "with 2 finals but no
+    title" directly beneath it. The `stories()` dedupe fingerprints DECIMALS
+    and cannot see a whole number.
+  - `checks.js` asserts **two on the rendered You page AND the rendered
+    profile**, per manager.
 - **🚨 COVERAGE IS SELECTED FOR, NOT HOPED FOR (v7).** `signature` guaranteed
   every manager *had* a storyline; the card then printed `stories().slice(0, 10)`
   and showed **eight of twelve**. CC, Gotch, Hyman and Slemp were absent from
@@ -531,6 +552,11 @@ something computed is wrong the first time somebody changes it.
   `text-wrap: balance` on `.fh-story-h` is what keeps a long one from leaving
   a single word and a badge stranded on the last line.
 - **🚨 ONE CARD PER MANAGER on the league roll-call (v16), no display cap.**
+  ⚠️ **Still one, after v22 doubled what each manager HAS.** "At least two
+  storylines" is about the pages that are about a person — their You page and
+  their profile. The roll-call is a roll-call: twelve people, twelve findings.
+  The v22 roll-call is byte-identical to v21's, which was checked rather than
+  assumed.
   The old cap filled its spare slots with the strongest leftovers, which twice
   handed one manager a second card while everyone else had one — and both times
   the second card made the SAME case ("best win%, no title" beside "0-4 in the
@@ -664,6 +690,70 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v22 — two storylines each, and the floor is measured on the render (10 Sep
+  2026)** — the owner, before sending the link: *"Make sure everyone has at
+  least 2 storylines"*.
+  - **Eight of the twelve had exactly one**, so eight people's own page was a
+    single line — and, as always with this feature, the eight were the ones the
+    extreme-hunting detectors had least to say about. One card is the floor
+    that stops a page being blank; it is not the floor that makes a page worth
+    opening.
+  - ⚠️ **The old backstop could not have been asked for two.** It tested
+    `covered.has(m)` — a boolean, which answers "any?" and cannot answer "how
+    many?". `WANT = 2` and a count is the whole idea; everything else here is
+    consequences of it.
+  - 🚨 **AND THE COUNT WAS BEING TAKEN OFF THE WRONG LIST.** Christel came out
+    at one card even after the change. `cbscore` fired for him, so he counted
+    as covered — and then the dedupe in `stories()` dropped it, because its
+    153.6 was already quoted inside his zero-podium card, and the backstop
+    never knew. So `signature` left the `DETECT` array and became a **second
+    phase inside `stories()`**, reading the list that survives the dedupe.
+    **This is the v7 lesson from the other end: it is not enough to assert
+    what renders, the code has to DERIVE from what renders too.**
+  - ⚠️ **That also retired `DETECT.slice(0, -1)`**, a live landmine: it meant
+    "every detector except the backstop" only for as long as the backstop
+    stayed last in the array, and appending one below it would have broken
+    coverage silently.
+  - 🚨 **A second card must not re-argue the first.** Every detector now
+    declares a `t` topic beside its `src`, and a claim whose topic that manager
+    already holds is skipped — so "never finished in the top three" does not
+    get "worst average finish" underneath it. That is the v2/v15/v16 fault, and
+    the shape it keeps returning in is always a second card making the same
+    case in a duller way. A detector with no `t` suppresses nothing, which
+    fails safe.
+  - **Three faults found by reading the generated prose, which is the only way
+    any of them was ever going to be found:**
+    - 🚨 **"Zach's best season was 7-7" was FALSE.** The win% claim's note used
+      `a.best` — which is the best **finish**, not the best record. Zach's best
+      finish is 2nd in 2024 at 7-7; his best record is 9-4 in 2019, three
+      places lower. **The two disagree constantly in this league, and that gap
+      is the whole premise of the archive** (the rank is the playoff finish,
+      the record beside it is the regular season) — so a card has to say which
+      one it means. It sorts `a.yrs` by record now.
+    - **Three of the new cards rendered with no body at all.** The career line
+      is deliberately carried by the first top-up only, which left the second
+      one as a bare heading. Every claim writes its own `note` now, so each
+      card stands up alone — and the new ones state a fact the card above does
+      not (best and worst finish, best season by record, playoff appearances).
+    - **The career line was restating clauses already on the page.** "with 2
+      finals but no title" sat directly under a card ending "with 2 finals and
+      no title"; "with 3 titles" sat under "2 of the 3 titles". Both invisible
+      to the `stories()` dedupe, which fingerprints **decimals** and cannot see
+      a whole number. Each clause is tested against that manager's kept cards
+      now, which is why `held` carries `txt` and not just a count.
+  - ⚠️ **The Honours roll-call is unchanged, deliberately — and verified, not
+    assumed.** "At least two storylines" is about the pages that are about a
+    person. The roll-call stays one card each (v16), and the v22 card is
+    byte-identical to v21's, every owner-picked slot included (Wolff's
+    `ringless`, McD's `rises`, Hurd's `scorer`).
+  - `checks.js` asserts two on the **rendered** You page and the **rendered**
+    profile, per manager. Verified by reverting `WANT` to 1: the suite names
+    all six managers who fall below, on both pages each.
+  - 26 storylines now, from 18. Verified in headless Chromium at 390px: no
+    empty body, no clipped card, no overflow, roll-call still twelve, second
+    person intact ("You have the 9th-best win%…"), longest heading 60 chars
+    against the 62 limit, no two numerals touching.
 
 - **v21 — the Lab gets a lock, and the commissioner leaves the picker (10 Sep
   2026)** — the owner, getting ready to send the link: *"the power ranking lab

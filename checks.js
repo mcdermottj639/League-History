@@ -168,6 +168,35 @@ owned.forEach((x) => {
 });
 console.log(`  ${bad ? '❌' : '✅'} own-page stories: ${owned.length} kept off the card, live on their own pages`);
 
+/* 🚨 EVERYONE HAS AT LEAST TWO STORYLINES (v22, owner's call: "Make sure
+   everyone has at least 2 storylines"). Counted on the RENDER — the You page
+   and the profile — and not on `_stories()`, because those are different
+   facts and only the second one matters (the v7 lesson, and the reason the
+   backstop itself now counts survivors rather than emissions: Christel's
+   second card fired, counted, and was then dropped by the dedupe).
+   ⚠️ The heading re-voices for whoever is reading, so it is re-derived in
+   their voice before being looked for on their own page. */
+{
+  const WANT2 = 2;
+  window.LeagueHistory.roster().forEach((r) => {
+    window.LeagueHistory.setMe(null);
+    const prof = window.LeagueHistory.profile(r.m);
+    const asThem = window.LeagueHistory._stories().filter((x) => x.m === r.m);
+    const onProf = asThem.filter((x) => prof.includes(x.head)).length;
+    if (onProf < WANT2) { console.log(`  ❌ ${r.name}'s profile renders ${onProf} storyline(s), want ${WANT2}`); bad++; }
+
+    window.LeagueHistory.setMe(r.m);
+    const you = window.LeagueHistory.view('you');
+    const mine = window.LeagueHistory._stories().filter((x) => x.m === r.m);
+    const onYou = mine.filter((x) => you.includes(x.head)).length;
+    if (onYou < WANT2) { console.log(`  ❌ ${r.name}'s You page renders ${onYou} storyline(s), want ${WANT2}`); bad++; }
+    window.LeagueHistory.setMe(null);
+  });
+  const counts = window.LeagueHistory.roster()
+    .map((r) => window.LeagueHistory._stories().filter((x) => x.m === r.m).length);
+  console.log(`  ${bad ? '❌' : '✅'} every manager has ${Math.min(...counts)}+ storylines on their own pages (most: ${Math.max(...counts)})`);
+}
+
 /* 🚨 ONE CARD PER MANAGER on the league roll-call (v16). Twice a spare slot
    went to a second card about someone who already had one, and both times it
    made the same case in a duller way — fixing the instance just moved it. */
