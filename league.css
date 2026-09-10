@@ -109,23 +109,35 @@
    carries its own provenance badge, because a storyline built from playoff
    games only is exactly the kind of thing that reads as a career fact. */
 :root[data-palette] .fh-stories { padding: 4px 0 8px; }
+/* 🚨 FOURTEEN CARDS ARE A COLUMN TO SCAN, NOT FOURTEEN ARTICLES TO READ
+   (v14). Each card used to run 14px padding, a 34px crest, a 14.5px heading
+   and its own 38px "X's career →" button — about 150px each, so the reader
+   met four claims a screen and the card became a page. The whole card is the
+   link now, the crest is 28px, and the type steps down one notch: same
+   claims, same evidence, roughly half the height. The heading is the thing
+   being scanned, so it is the only part that did not shrink much. */
 :root[data-palette] .fh-story {
-  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px;
-  align-items: start; padding: 14px 14px; border-top: 1px solid var(--tr); }
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px;
+  align-items: start; padding: 10px 12px; border-top: 1px solid var(--tr);
+  width: 100%; text-align: left; background: none; border-left: 0;
+  border-right: 0; border-bottom: 0; font: inherit; color: inherit; }
+:root[data-palette] .fh-story-go { cursor: pointer; -webkit-appearance: none; appearance: none; }
+:root[data-palette] .fh-story-go { grid-template-columns: auto minmax(0, 1fr) auto; }
+:root[data-palette] .fh-story-go:hover { background: var(--l07); }
 :root[data-palette] .fh-story:first-child { border-top: 0; }
-:root[data-palette] .fh-story-c { padding-top: 2px; }
-:root[data-palette] .fh-story-b { min-width: 0; }
-:root[data-palette] .fh-story-b h4 {
-  margin: 0 0 5px; font: 800 14.5px/1.35 Archivo, system-ui, sans-serif;
+:root[data-palette] .fh-story-c { padding-top: 1px; }
+:root[data-palette] .fh-story-b { min-width: 0; display: block; }
+:root[data-palette] .fh-story-h {
+  display: block; margin: 0 0 2px; font: 800 13.5px/1.3 Archivo, system-ui, sans-serif;
   color: var(--ink); letter-spacing: -.01em; }
-:root[data-palette] .fh-story-b p {
-  margin: 0; font: 500 12.5px/1.55 Archivo, system-ui, sans-serif; color: var(--mu); }
+:root[data-palette] .fh-story-p {
+  display: block; font: 500 11.5px/1.45 Archivo, system-ui, sans-serif; color: var(--mu); }
 /* the badge sits inline after a headline that may wrap, so it must not stretch it */
-:root[data-palette] .fh-story-b h4 .fh-src { vertical-align: 1px; }
-:root[data-palette] .fh-story-l {
-  display: inline-flex; align-items: center; min-height: 38px; margin-top: 2px;
-  padding: 0; background: none; border: 0; cursor: pointer;
-  font: 800 11.5px/1 Archivo, system-ui, sans-serif; color: var(--ac7); }
+:root[data-palette] .fh-story-h .fh-src { vertical-align: 1px; }
+/* the affordance the removed link used to be: it says "there is a page behind
+   this" without costing a row of its own */
+:root[data-palette] .fh-story-x {
+  align-self: center; font: 700 17px/1 Archivo, system-ui, sans-serif; color: var(--tr2); }
 
 /* ⚠️ The luck rows show the two RECORDS, and the explanation of why they are
    different lengths lives in the description above them — the owner compared

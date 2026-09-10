@@ -99,9 +99,36 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     career résumé — who gets in, who reaches the final — and the Cum Bowl is
     the opposite bracket, for the teams that missed. Filing them there put the
     league's best achievement behind the tab named for its worst.
-  - ⚠️ **The career tiles are `Playoff apps` (10/13) and `Playoff record ⚑`
-    (11-4), renamed in v10** — "Playoffs" and "Bracket" did not say which was
-    which. Two knock-ons, both found by rendering: the caption under the strip
+  - 🚨 **THREE BRACKETS RUN EVERY DECEMBER AND ONLY ONE COUNTS (v14).** The
+    data files them as `br`: **W** the title bracket (six teams — round 1, the
+    final four, the final), **WC** the placement ladder below it for teams
+    knocked out of W, **C** the consolation ladder for the six that missed
+    (GmC1-9, of which GmC3 is the Cum Bowl).
+    - **`bw`/`bl` is W ONLY.** It used to be W *and* WC, which is how the app
+      came to print three different playoff records for the same person: the
+      career tile said 11-4 (W+WC), the storyline beside it said 10-3 (W), and
+      the head-to-head said 22 meetings (every bracket plus Cum Bowls). All
+      three were computed correctly and the page still lied, because nothing
+      said which population each counted. **The owner spotted it, not a test.**
+    - **No consolation record is kept anywhere** (owner's call): a 9-1 run
+      through GmC1-9 is nine games between eliminated teams, and putting it in
+      a heading beside four titles asks the reader to weigh them. The one
+      consolation result that means anything is the Cum Bowl, which has its
+      own field and its own tab. Those games still count as MEETINGS in
+      rivalries and head-to-heads — labelled, never totalled into a record.
+    - **`f4` = final fours = places 1-4**, and that is structural, not a
+      guess: the two semi-final losers play for 3rd, so the four survivors of
+      round 1 are exactly the top four finishers. Verified against the R2
+      pairings of all 7 brackets on file, which is what makes final fours
+      knowable for all 13 seasons — the same shape as "a top-6 seed always
+      finishes top 6".
+    - ⚠️ **The title bracket is NOT the final four**, however often it gets
+      called that: it is six teams, and the final four is the round after
+      round 1. Say "final four" only about places 1-4.
+  - ⚠️ **The career tiles are `Playoff apps` (10/13) and `Title bracket ⚑`
+    (10-3) — renamed in v10, then corrected in v14** when "Playoff record"
+    turned out to be counting placement games too. Two knock-ons, both found
+    by rendering: the caption under the strip
     names that tile in bold, so it had to be renamed in the same edit or it
     pointed at a label no longer on screen; and the longer label wraps at
     390px, so `.fh-you-t i` reserves two lines on EVERY tile (else row 2 came
@@ -293,8 +320,11 @@ correction, zero unresolved conflicts**.
   they never enter a table, a rate, a tally or a podium line — a podium place
   held by one of them reads **"not tracked"**, never their team name.
 - **Conservation laws** are the guard against double-counting: 150 season
-  finishes · 24 Cum Bowl appearances · 11 losses · 238 bracket game-slots ·
-  13 titles · 76 playoff berths · h2h games == meetings. Re-run them after ANY
+  finishes · 24 Cum Bowl appearances · 11 losses · 70 title-bracket slots ·
+  50 final fours · 13 titles · 76 playoff berths · h2h games == meetings.
+  ⚠️ The bracket law counted **every** playoff game until v14 and was green
+  the whole time `bw` meant two different things in two different views — a
+  law over a total cannot see a definition drift underneath it. Re-run them after ANY
   data edit; the harness that once read "Slemp: 36 Cum Bowls" out of 13 that
   exist is why they exist.
 
@@ -407,6 +437,21 @@ something computed is wrong the first time somebody changes it.
 - **Facts are deduped across cards** — the zero-podium card folds in whatever
   records that manager holds, which had the Cum Bowl record printed twice on
   one screen as two separate findings.
+- **🚨 A HEADING THAT DOES NOT FIT IS A HEADING NOBODY READS (v14).** The v8
+  rule made every heading carry its claim; it did not bound how long the claim
+  could be, and "Wolff has the best win% in league history, zero titles, and
+  has never played in a final" runs to three lines at 390px with the badge.
+  Fourteen of those is a page, not a column you can scan. **Keep a heading
+  under ~45 characters** — one fact in the head, the evidence in the body —
+  and remember `nm()` makes it longer or shorter depending on who is reading.
+- **The whole card is the tap target**, not a "X's career →" link under it:
+  that link cost a 38px row on every card to repeat a name already in the
+  heading. ⚠️ Nothing inside a card may be a `<button>` any more — the card
+  IS one, and a nested button is invalid and steals the tap.
+- ⚠️ **No lead paragraph above the cards** (v14). It explained that the cards
+  are derived rather than typed — true, and now in the ? sheet, which is where
+  a standing explanation belongs rather than between the reader and the first
+  story.
 - Every card carries a provenance badge, same three kinds as everything else.
 
 ## 🏆 How the power rankings work
@@ -514,6 +559,61 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
 
+- **v14 — one playoff record, and the storylines made scannable (10 Sep
+  2026)** — the owner, in one message: *"Mine should be the goat discussion
+  something and hurds doesn't sound good. And consolation is meaningless
+  besides cum bowl… U say wolffs never won in the playoff bracket is that
+  accurate… His playoff head to head and playoff record and bracket record are
+  all diffferent."*
+  - **🚨 "WOLFF HAS NEVER WON A WINNER'S-BRACKET GAME" WAS FALSE, AND THE
+    OWNER CAUGHT IT BY READING IT.** Brackets exist for 7 of 13 seasons, and
+    Wolff finished **4th in 2017** — in a six-team bracket that means he was
+    still alive in the final four, so he won or was gifted a round-1 game the
+    archive cannot see. The card counted the six missing seasons as if they
+    were losses. **A superlative is only ever as wide as its sample**, and
+    "never" is the widest word there is. It is a scoped claim now — "0-4
+    across the seasons with a bracket on file" — and the detector names any
+    final four it cannot see rather than swallowing it.
+  - **🚨 THREE PLAYOFF RECORDS FOR ONE PERSON ON ONE PAGE.** `bw`/`bl` counted
+    the title bracket AND the placement ladder (McD 11-4), the storyline
+    beside it counted the title bracket alone (10-3), and the head-to-head
+    counted every meeting including consolation and Cum Bowls (22). Each was
+    right; the page still lied, because nothing said which population each one
+    counted. **This is the v3 fault, and it survived v3 because v3 fixed the
+    display where it was looking.** One definition now: `bw`/`bl` is the title
+    bracket, everywhere, and every head-to-head caption says in as many words
+    that it counts something else and why it will not match.
+  - **No consolation record anywhere** (owner: *"consolation is meaningless
+    besides cum bowl"*). A 9-1 run through GmC1-9 is nine games between teams
+    already eliminated, and "11-1 in the consolation bracket, the best in the
+    league" as a heading asks the reader to weigh it against four titles.
+    `cw`/`cl` are deleted rather than hidden — a value computed and never read
+    is invisible to every test (the v8 `STATS` lesson).
+  - **Final fours replace it, and they cover all 13 seasons.** The two
+    semi-final losers play for 3rd, so places 1-4 ARE the final four —
+    verified against the R2 pairings of every bracket on file. ⚠️ And the
+    answer to *"if winners bracket is final 4 call it final 4"* is that it
+    **isn't**: the title bracket is six teams and the final four is the round
+    after round 1. Both are named for what they are now.
+  - **The headings the owner named.** Most titles is the **GOAT argument**
+    (it fires for whoever leads titles — a shape, never a person). The
+    collapse card was *"is the biggest story in the archive"*, which is
+    billing rather than a finding; it says what it found now — outscores
+    everyone, then disappears.
+  - **The card is ~40% shorter: 2,346px → 1,425px for fourteen stories**,
+    average card 159px → 101px. Measured, not estimated. Three changes: the
+    whole card is the tap target (the per-card "X's career →" link cost a 38px
+    row to repeat the name in the heading), the type steps down a notch, and
+    **every heading was rewritten to fit under ~45 characters** — the v8 rule
+    put the claim in the heading and never bounded its length, so three-line
+    headings had quietly become normal.
+  - The lead paragraph above the cards is gone, per the owner. What it said
+    lives in the ? sheet.
+  - Two new conservation laws, because the old one could not have caught any
+    of this: **70 title-bracket slots** (35 W games × 2) and **50 final
+    fours** (13 seasons × 4, less the two untracked). The old law totalled
+    every playoff game and stayed green while `bw` meant two things.
+
 - **v13 — Storylines opens the app; the key moves behind a ? (10 Sep 2026)** —
   the owner: *"I want story lines moved to where how to read this is on honours
   page. And how to read this goes up to a ? Button at the top that explains all
@@ -557,7 +657,8 @@ stale entry written in the present tense reads as current to anyone who greps.
 
 - **v12 — the styling was the ask; the words were not (10 Sep 2026)** — the
   owner, on v11's Storylines lead: *"U changed the story lines. Change them
-  back."*
+  back."* ⚠️ **SUPERSEDED in v14: that paragraph is deleted** — the owner asked
+  for it gone. The panel styling below still governs the other five leads.
   - **v11 restyled the lead AND re-cut the sentence.** The ask was to make that
     paragraph look nicer; splitting it into a claim line plus a ⚡ note under
     it answered a question nobody asked, and it did it to the one paragraph in

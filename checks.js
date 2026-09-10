@@ -11,12 +11,21 @@ const exRows = rows.filter((r) => !r.mgr);          // the two untracked manager
 const exYrs = new Set(exRows.map((r) => r.yr + '\0' + r.t));
 const exCB = CUMBOWL.filter((c) => [c.s11, c.s12].some((t) => exYrs.has(c.yr + '\0' + t))).length;
 const exCBloss = CUMBOWL.filter((c) => exYrs.has(c.yr + '\0' + (c.p12 > c.p11 ? c.s11 : c.s12))).length;
-const exPG = PLAYOFF_GAMES.reduce((a, g) => a + (exYrs.has(g.yr + '\0' + g.a) ? 1 : 0) + (exYrs.has(g.yr + '\0' + g.b) ? 1 : 0), 0);
+/* Only the TITLE bracket is kept as a record (v14): the placement ladder
+   below it and the consolation ladder for the teams that missed are real
+   meetings but decide nothing, so no manager carries a W-L for them. The
+   law therefore counts W games only — it used to count every game, which
+   is what let `bw` quietly mean two different things. */
+const WG = PLAYOFF_GAMES.filter((g) => g.br === 'W');
+const exPG = WG.reduce((a, g) => a + (exYrs.has(g.yr + '\0' + g.a) ? 1 : 0) + (exYrs.has(g.yr + '\0' + g.b) ? 1 : 0), 0);
 const T = [
   ['seasons counted', ALL.reduce((a, x) => a + x.seasons, 0), rows.length - exRows.length],
   ['cum bowls played', ALL.reduce((a, x) => a + x.cbA, 0), CUMBOWL.length * 2 - exCB],
   ['cum bowls lost', ALL.reduce((a, x) => a + x.cb, 0), CUMBOWL.length - exCBloss],
-  ['bracket game slots', ALL.reduce((a, x) => a + x.bw + x.bl + x.cw + x.cl, 0), PLAYOFF_GAMES.length * 2 - exPG],
+  ['title bracket slots', ALL.reduce((a, x) => a + x.bw + x.bl, 0), WG.length * 2 - exPG],
+  /* Places 1-4 ARE the final four in this format (the semi-final losers play
+     for 3rd), so every season with placements contributes exactly four. */
+  ['final fours', ALL.reduce((a, x) => a + x.f4, 0), SEASON.filter((s) => s.fin).length * 4 - exRows.filter((r) => r.place && r.place <= 4).length],
   ['titles', ALL.reduce((a, x) => a + x.t1, 0), SEASON.filter((s) => s.champ && s.champ.mgr).length],
   ['playoff berths', ALL.reduce((a, x) => a + x.po, 0), SEASON.filter((s) => s.fin).length * 6 - exRows.filter((r) => r.place && r.place <= 6).length],
   ['h2h games == meetings', S.PAIRS.reduce((a, p) => a + p.n, 0), S.MEET.filter((g) => {
@@ -98,6 +107,14 @@ window.LeagueHistory._cardStories().forEach((x) => {
   /* A heading that is only a name and a label tells the reader nothing. */
   if (/^[^.!?]{0,14}, in one line\.$/.test(x.head) || x.head.split(/\s+/).length < 4) {
     console.log(`  ❌ story "${x.id}/${x.m}" heading carries no claim: "${x.head}"`); bad++;
+  }
+  /* 🚨 …and a heading that does not FIT is one nobody reads (v14). Fourteen
+     cards are a column to scan; past ~50 characters a heading wraps to three
+     lines at 390px once its badge is beside it, and the card becomes an
+     article. The v8 rule put the claim in the heading and never bounded its
+     length, so three-liners had quietly become normal. Longest today is 50. */
+  if (x.head.length > 58) {
+    console.log(`  ❌ story "${x.id}/${x.m}" heading is ${x.head.length} chars, too long to scan: "${x.head}"`); bad++;
   }
 });
 
