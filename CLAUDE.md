@@ -411,9 +411,10 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     (Zach filled 54% of its tile, McD 97%), so at the size a rankings row uses
     they read as different KINDS of thing. The bands are trimmed and the image
     centre-cropped square on the nine where nothing is lost — plus Hurd, a new
-    2026 diner photo the owner supplied. The three wordmark crests (Woods
-    "Morning Wood", Buley "Morning Dew", Riz "Moma Dance") are LEFT WHOLE: a
-    square crop cuts the words, and the words are the joke. ⚠️ **CC was a
+    2026 diner photo the owner supplied, plus Riz (a crashed Prime Air jet, for
+    "Jefferson Airplane") and Gotch (Judge Judy, for "Thurgood Marshall"). The
+    remaining wordmark crests (Woods "Morning Wood", Buley "Morning Dew") are
+    LEFT WHOLE: a square crop cuts the words, and the words are the joke. ⚠️ **CC was a
     fourth, and only the owner looking at it caught that** — its art spans the
     full width of its frame, so the square crop lopped both sides off the
     circle. It is PADDED-TO-FIT instead: bands trimmed, a dark scan artifact
