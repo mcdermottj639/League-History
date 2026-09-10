@@ -1192,26 +1192,51 @@
       const pool = ALL.filter((a) => !covered.has(a.m) && a.seasons >= 4);
       if (!pool.length) return [];
       const N = ALL.length;
-      const STATS = [
-        { k: 'pct', get: (a) => a.pct, hi: (a) => `${nm(a.m)} ${vb(a.m, 'have', 'has')} the ${sup} win% in the league at ${(a.pct * 100).toFixed(1)}%.` },
-      ];
       /* Ranked on each stat; the manager's best claim is wherever they sit
          furthest from the middle of the twelve. */
       const rankOf = (val, hiGood) => { const s2 = [...ALL].sort((x, y) => (hiGood ? val(y) - val(x) : val(x) - val(y)));
         return (m) => s2.findIndex((x) => x.m === m) + 1; };
+      /* 🚨 THE HEADLINE IS THE CLAIM. v7 shipped these as
+         "Gotch, in one line." — a label, not a sentence — while the actual
+         finding (11-1 in the consolation bracket, the best in the league) sat
+         buried mid-body behind a comma. Every other card on the screen states
+         its fact in the heading, so these four read as filler beside them:
+         the reader scanning headings learned nothing about four of the twelve.
+         **A card whose heading does not carry its finding is a card the reader
+         skips.** So each claim writes its own heading, and the body is career
+         context only — never a second copy of the number above it. */
+      const rk = (r) => (r === 1 ? 'the best in the league' : r === N ? 'the worst in the league' : `${ord(r)} of ${N}`);
+      const bestish = (r) => (r === 1 ? 'best' : r === N ? 'worst' : `${ord(r)}-best`);
       const CLAIMS = [
-        { val: (a) => a.pct, hi: true, say: (a, r) => `the ${r === 1 ? 'best' : r === N ? 'worst' : ord(r) + '-best'} win% in the league, ${(a.pct * 100).toFixed(1)}%` },
+        { val: (a) => a.pct, hi: true,
+          head: (a, r) => `${nm(a.m)} ${vb(a.m, 'have', 'has')} the ${bestish(r)} win% in the league, ${(a.pct * 100).toFixed(1)}%.` },
         /* 🚨 vs the league IN THE SEASONS THEY PLAYED, never a raw career ppg.
            Scoring has climbed over thirteen years, so a raw average ranks a
            manager by which era they were in — a nine-season career that
            started late tops the all-time list without ever outscoring a
            single opponent. Same fault as comparing two different denominators
-           in the luck card. */
-        { val: (a) => relPpg(a), hi: true, say: (a, r) => `${sgn(relPpg(a))} points a game against the league in the seasons ${vb(a.m, 'you', nm(a.m))} played — ${r === 1 ? 'the best mark of anyone' : r === N ? 'the worst of anyone' : ord(r) + ' of ' + N}` },
-        { val: (a) => a.poRate, hi: true, say: (a, r) => `${a.po} playoff appearances in ${a.seasons} seasons — ${r === 1 ? 'the most reliable in the league' : ord(r) + ' of ' + N}` },
-        { val: (a) => a.avgPlace, hi: false, say: (a, r) => `an average finish of ${one(a.avgPlace)}, ${r === 1 ? 'the best in the league' : ord(r) + ' of ' + N}` },
-        { val: (a) => a.cw - a.cl, hi: true, say: (a, r) => `${an(a.cw)} ${a.cw}-${a.cl} record in the consolation bracket${r === 1 ? ', the best of anyone' : r === N ? ', the worst of anyone' : ''}` },
-        { val: (a) => a.bw - a.bl, hi: true, say: (a, r) => `${an(a.bw)} ${a.bw}-${a.bl} record in the winner's bracket${r === 1 ? ', the best of anyone' : r === N ? ', the worst of anyone' : ''}` },
+           in the luck card. That qualifier will not fit in a heading, so the
+           heading states the margin and the body says what it is measured
+           against — the caveat is never dropped, only moved. */
+        { val: (a) => relPpg(a), hi: true,
+          head: (a) => `${nm(a.m)} ${vb(a.m, 'have', 'has')} ${relPpg(a) >= 0 ? 'outscored' : 'trailed'} the league by ${one(Math.abs(relPpg(a)))} points a game.`,
+          note: (a, r) => `Measured against the league in the seasons ${vb(a.m, 'you', nm(a.m))} played, which is ${rk(r)}.` },
+        /* `seasons: true` = the heading already stated the season count, so the
+           body must not state it again. "…in 6 of 9 seasons" over "9 seasons,
+           63-59" is one fact printed twice on one card, which is the fault the
+           dedupe filter below catches for decimals and cannot see for whole
+           numbers. */
+        { val: (a) => a.poRate, hi: true, seasons: true,
+          head: (a) => `${nm(a.m)} ${vb(a.m, 'have', 'has')} made the playoffs in ${a.po} of ${a.seasons} seasons.`,
+          note: (a, r) => (r === 1 ? 'The most reliable rate in the archive.'
+            : r === N ? 'The least reliable rate in the archive.'
+            : `The ${ord(r)}-best rate of the ${N}.`) },
+        { val: (a) => a.avgPlace, hi: false,
+          head: (a, r) => `${nm(a.m)} ${vb(a.m, 'have', 'has')} the ${bestish(r)} average finish in the league, ${one(a.avgPlace)}.` },
+        { val: (a) => a.cw - a.cl, hi: true,
+          head: (a, r) => `${nm(a.m)} ${vb(a.m, 'are', 'is')} ${a.cw}-${a.cl} in the consolation bracket, ${rk(r)}.` },
+        { val: (a) => a.bw - a.bl, hi: true,
+          head: (a, r) => `${nm(a.m)} ${vb(a.m, 'are', 'is')} ${a.bw}-${a.bl} in the winner's bracket, ${rk(r)}.` },
       ];
       return pool.map((a) => {
         let best = null;
@@ -1225,9 +1250,10 @@
         if (a.t1) extra.push(pl(a.t1, 'title'));
         else if (a.fin) extra.push(`${pl(a.fin, 'final')} but no title`);
         if (a.cb) extra.push(`${pl(a.cb, 'Cum Bowl')} lost`);
+        const note = best.c.note ? best.c.note(a, best.r) : '';
         return { id: 'sig', m: a.m, w: 20 + best.edge, src: 'mix',
-          head: `${nm(a.m)}, in one line.`,
-          body: `${a.seasons} seasons, ${a.w}-${a.l}, ${best.c.say(a, best.r)}${extra.length ? ` — with ${extra.join(' and ')}` : ''}.` };
+          head: best.c.head(a, best.r),
+          body: `${note ? note + ' ' : ''}${best.c.seasons ? `${a.w}-${a.l} all told` : `${pl(a.seasons, 'season')}, ${a.w}-${a.l}`}${extra.length ? `, with ${extra.join(' and ')}` : ''}.` };
       }).filter(Boolean);
     },
   ];

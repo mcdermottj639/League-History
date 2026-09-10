@@ -320,6 +320,27 @@ something computed is wrong the first time somebody changes it.
   sorts the whole selection by weight — so everyone is on the card and it still
   opens on the biggest story in the league. The cap is a floor, not a ceiling:
   a thirteenth manager is never dropped to respect a display limit.
+- **🚨 THE HEADING IS THE CLAIM (v8).** v7's coverage fix put four cards on the
+  screen headed **"Gotch, in one line."** — a label, not a finding — while the
+  actual claim (11-1 in the consolation bracket, the best in the league) sat
+  buried mid-body behind a comma. Every other card states its fact in the
+  heading, so these four read as filler beside them and a reader scanning
+  headings learned nothing about four of the twelve. **Getting them onto the
+  card was only half the job; a heading that carries no finding is a card the
+  reader skips.** Each `CLAIMS` entry now writes its own heading and the body is
+  career context only. `checks.js` fails on a heading under four words or of the
+  form "X, in one line."
+  - ⚠️ **And the fix exposed the mirror fault:** a heading saying "6 of 9
+    seasons" over a body saying "9 seasons, 63-59" is one fact printed twice on
+    one card. `stories()` dedupes DECIMALS across cards and could not see a
+    whole number repeated within one, so a claim that states the season count
+    sets `seasons: true` and the body drops it. Checked at 3+ only — 1 and 2
+    collide constantly and harmlessly ("11-1" over "1 title"), and a check that
+    cries wolf gets ignored.
+  - ⚠️ **`STATS` was dead code that would have thrown.** An unused array left
+    beside `CLAIMS`, interpolating a `sup` that is defined nowhere in the file.
+    It never ran, so nothing ever errored. Deleted. (Sports-Hub v206, same
+    shape: a value that is computed and never read is invisible to every test.)
 - **⚠️ And the CHECK was reading the wrong thing, which is why this shipped.**
   It asserted `_stories()` — "18 across 12 of 12" — while the card rendered ten.
   A detector finding a story and a reader seeing it are two different facts and

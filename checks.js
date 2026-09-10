@@ -80,6 +80,27 @@ Object.entries(byId).forEach(([id, ms]) => {
   const uniq = [...new Set(ms)];
   if (uniq.length > 1 && !/scorer|cbking|stuck/.test(id)) { console.log(`  ❌ superlative "${id}" fires for ${uniq.length} managers`); bad++; }
 });
+/* 🚨 A HEADING MUST CARRY THE FINDING, and the body must not repeat it.
+   v7 shipped four cards headed "Gotch, in one line." — a label, not a claim —
+   with the actual finding buried mid-body. And the fix exposed the mirror
+   fault: a heading saying "6 of 9 seasons" over a body saying "9 seasons" is
+   one fact printed twice on one card. `stories()` already dedupes DECIMALS
+   across cards; whole numbers within a card were invisible to it.
+   Threshold 3+ deliberately: 1 and 2 collide constantly and harmlessly
+   ("11-1" in the head, "1 title" in the body), so flagging them would be noise
+   and noise gets ignored. */
+window.LeagueHistory.setMe(null);
+window.LeagueHistory._cardStories().forEach((x) => {
+  const big = (t) => new Set((String(t).match(/\d+/g) || []).map(Number).filter((n) => n >= 3));
+  const inHead = big(x.head);
+  const dup = [...big(x.body)].filter((n) => inHead.has(n));
+  if (dup.length) { console.log(`  ❌ story "${x.id}/${x.m}" prints ${dup.join(', ')} in both its heading and its body`); bad++; }
+  /* A heading that is only a name and a label tells the reader nothing. */
+  if (/^[^.!?]{0,14}, in one line\.$/.test(x.head) || x.head.split(/\s+/).length < 4) {
+    console.log(`  ❌ story "${x.id}/${x.m}" heading carries no claim: "${x.head}"`); bad++;
+  }
+});
+
 /* 🚨 ASSERT THE CARD, NOT THE ENGINE. This check used to read `_stories()` and
    report "18 across 12 of 12" — while the Storylines card printed `slice(0, 10)`
    and showed EIGHT. Every assertion was green over a screen that left four
