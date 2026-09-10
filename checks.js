@@ -155,11 +155,20 @@ owned.forEach((x) => {
    and said the other one is better. Recorded by detector id — never by
    manager — so it cannot be quietly undone, and so it goes quiet on its own
    if the detector ever stops firing. */
-['wb0'].forEach((id) => {
+['wb0', 'dynasty'].forEach((id) => {
   const st = window.LeagueHistory._stories().find((x) => x.id === id);
   if (st && !st.own) { console.log(`  ❌ story "${id}" is a league headline again; the owner made it own-page only (v15)`); bad++; }
 });
 console.log(`  ${bad ? '❌' : '✅'} own-page stories: ${owned.length} kept off the card, live on their own pages`);
+
+/* 🚨 ONE CARD PER MANAGER on the league roll-call (v16). Twice a spare slot
+   went to a second card about someone who already had one, and both times it
+   made the same case in a duller way — fixing the instance just moved it. */
+{
+  const seen = new Set(), dup = [];
+  card.forEach((x) => { if (seen.has(x.m)) dup.push(`${x.id}/${x.m}`); seen.add(x.m); });
+  if (dup.length) { console.log(`  ❌ the Storylines card gives someone two slots: ${dup.join(', ')}`); bad++; }
+}
 
 /* And it must still LEAD with the biggest story — coverage that reordered the
    card into a flat roll-call would have fixed one thing by breaking another. */

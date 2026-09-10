@@ -385,10 +385,13 @@ something computed is wrong the first time somebody changes it.
   EXTREMES, so the manager whose story is "solid for thirteen years" is exactly
   the one who ranks last and gets cut. **The fault landed hardest on the people
   it was least fair to.** `pickStories()` now takes every manager's best card
-  first, fills the rest of `STORY_CAP` (14) with the strongest remaining, then
-  sorts the whole selection by weight — so everyone is on the card and it still
-  opens on the biggest story in the league. The cap is a floor, not a ceiling:
-  a thirteenth manager is never dropped to respect a display limit.
+  first and sorts the selection by weight — so everyone is on the card and it
+  still opens on the biggest story in the league. ⚠️ **SUPERSEDED in v16 in one
+  respect: there is no `STORY_CAP` any more.** It was 14 with the last two
+  slots filled by the strongest leftovers, and both spare slots kept landing on
+  someone who already had a card — a second finding making the same case about
+  the same person. It is exactly one card per manager now, so the count IS the
+  league and a thirteenth manager brings a thirteenth card.
 - **🚨 THE HEADING IS THE CLAIM (v8).** v7's coverage fix put four cards on the
   screen headed **"Gotch, in one line."** — a label, not a finding — while the
   actual claim (11-1 in the consolation bracket, the best in the league) sat
@@ -444,6 +447,13 @@ something computed is wrong the first time somebody changes it.
   Fourteen of those is a page, not a column you can scan. **Keep a heading
   under ~45 characters** — one fact in the head, the evidence in the body —
   and remember `nm()` makes it longer or shorter depending on who is reading.
+- **🚨 ONE CARD PER MANAGER on the league roll-call (v16), no display cap.**
+  The old cap filled its spare slots with the strongest leftovers, which twice
+  handed one manager a second card while everyone else had one — and both times
+  the second card made the SAME case ("best win%, no title" beside "0-4 in the
+  title bracket", then "3 scoring titles and no ring"). **The owner caught the
+  first; fixing that instance produced the second.** Fix the rule, not the
+  instance. `checks.js` fails if any manager holds two slots.
 - **`own: true` keeps a story on that manager's OWN pages only (v15).** Not
   every finding deserves one of fourteen slots on the league's roll-call —
   a second card that makes the same case about the same manager in a duller
@@ -569,6 +579,31 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v16 — the roll-call is one card each (10 Sep 2026)** — the owner, with
+  the playoff-rise card circled on their own You page: *"Change my honors page
+  storyline to this actually."*
+  - **The titles card was redundant with the page it sat on.** Storylines opens
+    Honours, and the next two cards down are the Champions crown and the trophy
+    case — which ARE the title count, ranked. So "4 titles" as a storyline told
+    a reader something the rest of that page tells them better, while spending
+    the title-holder's one slot. It is `own`-flagged now: still on that
+    manager's You page and profile, where the surrounding page is about them
+    rather than about the trophies. The Honours slot goes to the playoff rise,
+    which is a thing that page does NOT already say.
+  - **🚨 AND THE FIX HANDED WOLFF THE FAULT IT HAD JUST REMOVED FROM HIM.** The
+    freed slot went to the strongest leftover, which was "Wolff has 3 scoring
+    titles and no ring" — a second card, about the manager who already had one,
+    making the same case as his first ("best win%, no title"). v15 had removed
+    exactly that shape from exactly that manager. **Fixing the instance moved
+    the fault instead of ending it**, and it took one render to show it.
+  - **So the rule changed, not the instance: one card per manager, no display
+    cap.** The count IS the league. A thirteenth manager brings a thirteenth
+    card, which is what "the cap is a floor, not a ceiling" was always trying
+    to say. `checks.js` fails if any manager holds two slots. The card is 12
+    cards and 1,192px now — against 14 cards and 2,346px two versions ago.
+  - The findings that lose a slot are not lost: Buley's six Cum Bowls and
+    Wolff's scoring titles are still on their own pages.
 
 - **v15 — a card can be a career footnote (10 Sep 2026)** — the owner, with
   Wolff's 0-4 card circled on the Honours page: *"Remove this one from main

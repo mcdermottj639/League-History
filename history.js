@@ -1160,9 +1160,17 @@
          this feature turning back into a hand-written page. A tie has to read
          differently: "is the GOAT discussion" is a claim about one person, so
          when it is shared the sentence says shared. */
+      /* `own` (v16, owner's call): this one is a career card, not a Honours
+         card — and the reason is the page it was sitting on. The Storylines
+         strip opens Honours, and directly below it are the Champions card and
+         the trophy case, which ARE the title count, ranked. So "4 titles" as a
+         storyline told a reader something the next two screens tell them
+         better, and it spent the title-holder's one slot doing it. It stays on
+         that manager's own pages, where the surrounding page is about them
+         rather than about the trophies. */
       return top.map((a) => {
         const tied = tiedWith(top, a.m);
-        return { id: 'dynasty', m: a.m, w: 80, src: 'fin',
+        return { id: 'dynasty', m: a.m, w: 80, src: 'fin', own: true,
           head: tied.length
             ? `${nm(a.m)} ${vb(a.m, 'are', 'is')} in the GOAT argument with ${pl(a.t1, 'title')}${alsoTxt(tied)}.`
             : `${nm(a.m)} ${vb(a.m, 'win', 'wins')} the GOAT argument with ${pl(a.t1, 'title')}.`,
@@ -1394,18 +1402,28 @@
      own-page one they go on the card anyway — a name missing from the
      roll-call is the worse failure, and it is the failure this whole
      selection exists to prevent (v7). */
-  const STORY_CAP = 14;
-  function pickStories(cap = STORY_CAP) {
+  /* 🚨 ONE CARD PER MANAGER, and the count is the league (v16). There used to
+     be a cap of 14 with the last two slots filled by the strongest leftovers —
+     which twice handed one person a second card while everyone else had one,
+     and both times it was a second card making the SAME case: Wolff's "best
+     win%, no title" beside his "0-4 in the title bracket", then his "3 scoring
+     titles and no ring". The owner caught the first one and the fix handed him
+     the second. **Fixing the instance rather than the rule just moves it.**
+     A roll-call reads as a roll-call: twelve people, twelve findings, ranked
+     by weight so the biggest story still opens it. There is no display cap at
+     all now — a thirteenth manager brings a thirteenth card, which was the
+     point of the old cap being "a floor, not a ceiling". The findings that
+     lose their slot are not lost: they are still on that manager's own pages.
+     ⚠️ COVERAGE FIRST, ALWAYS. A manager whose only story is an own-page one
+     goes on the card regardless — a name missing from the league's roll-call
+     is the worse failure, and it is the failure this selection exists to
+     prevent (v7). */
+  function pickStories() {
     const all = stories();                 // already ranked by weight
     const best = {};
     all.forEach((x) => { if (!x.own && !best[x.m]) best[x.m] = x; });
     all.forEach((x) => { if (!best[x.m]) best[x.m] = x; });
-    const out = Object.values(best);
-    /* The cap is a floor, not a ceiling, when the league outgrows it: a
-       twelfth manager must never be dropped to respect a display limit. */
-    const rest = all.filter((x) => !x.own && out.indexOf(x) < 0);
-    rest.slice(0, Math.max(0, cap - out.length)).forEach((x) => out.push(x));
-    return out.sort((a, b) => b.w - a.w);
+    return Object.values(best).sort((a, b) => b.w - a.w);
   }
 
   /* 🚨 THE WHOLE CARD IS THE TAP TARGET (v14). Each one used to end in its own
