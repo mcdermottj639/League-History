@@ -391,9 +391,15 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     fallback** (`logos/`, `CREST_SRC`, `crestSrc`/`crestURL`/`drawCrest`,
     `preloadSrcs`/`CREST_READY`). **All twelve** teams carry their real logo,
     lifted from the owner's own 2023 rankings sheet, as a 144px same-origin
-    PNG (~420 KB for the set). ⚠️ **Hurd's is a 2026 replacement** (a diner
-    photo the owner supplied), cropped square to 144px like the rest — a crest
-    is the league's own artwork and swapping one is a DATA change, no version
+    PNG (~420 KB for the set). ⚠️ **Several were re-cropped in 2026**: the 2023
+    sheet padded non-square logos to 144px with arbitrary letterbox BANDS
+    (Zach filled 54% of its tile, McD 97%), so at the 34px a rankings row uses
+    they read as different KINDS of thing. The bands are trimmed and the image
+    centre-cropped square on the nine where nothing is lost — plus Hurd, a new
+    2026 diner photo the owner supplied. The three wordmark crests (Woods
+    "Morning Wood", Buley "Morning Dew", Riz "Moma Dance") are LEFT WHOLE: a
+    square crop cuts the words, and the words are the joke. A crest is the
+    league's own artwork, so a swap or re-crop is a DATA change — no version
     bump, same as publishing a week.
     - ⚠️ **Keyed by MANAGER, never by team name** — the names change every year
       (the 2023 sheet says "Death Dont Hurts Very Long" where the league now
