@@ -718,9 +718,23 @@ itself into a different answer a week after it was written**.
   no graded outcome, so nothing here can be validated the way a betting model
   is. Never present it as measured; never "tune" it as if a sample existed. The
   app says so on the page.
-- An **empty archive and an unreachable one are opposite facts** and the
-  rankings view says which. "Nothing published yet" when the truth is "you are
-  offline" is a lie the app must not tell.
+- **An empty archive, an unreachable one and a MISSING one are three opposite
+  facts, and the rankings view says which** (`WK_EMPTY`, keyed by `S.wkErr`).
+  "Nothing published yet" when the truth is "you are offline" is a lie the app
+  must not tell — and so is saying it when the truth is "`index.json` 404s".
+  ⚠️ **`missing` can only ever be a fault**: that file ships in the repo with
+  an empty `weeks` array, so an empty SEASON still answers 200. A 404 means a
+  broken deploy, and folding it into the friendly copy would hide a failed
+  publish behind the one sentence that says everything is fine.
+- **A file that parses is not a week that renders** (v29). `paintRankings`
+  checks `p.o` is a non-empty array and wraps the render in a `try`, because
+  the two failures either side of that are both silent: `p.o` as a STRING
+  threw out of an async function whose only rejection handler was `buildJump`,
+  so the tab sat on "Loading this week…" for ever with an empty console; and
+  `(p.o || [])` catches a MISSING array, so that variant rendered a confident,
+  complete, empty ranking with nobody in it. Same fault, one honest sentence.
+  ⚠️ And the rejection handler now LOGS — passing `buildJump` as both
+  arguments of `.then` is what made the hang invisible in the first place.
 
 ## The stylesheet
 
@@ -792,6 +806,39 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v29 — the rankings view stops failing quietly (10 Sep 2026)** — found by
+  driving the publish path with deliberately broken week files, as part of a
+  pre-send check of the whole app.
+  - 🚨 **A WEEK WHOSE `o` WAS A STRING HUNG THE TAB FOR EVER, IN SILENCE.**
+    `rankHTML` walks `p.o`; a string threw; `paintRankings` is async and its
+    only rejection handler was `paint()`'s `.then(buildJump, buildJump)` — so
+    the throw was swallowed whole. No console error, no page error, no
+    `pageerror` event: the Rankings tab simply stayed on **"Loading this
+    week…"** while every other tab worked perfectly. **Passing the same
+    function as both arguments of `.then` turns a crash into a hang**, and a
+    hang with an empty console is the hardest thing in this app to diagnose
+    from a phone in a group chat.
+  - 🚨 **AND THE NEAR MISS WAS WORSE THAN THE CRASH.** `(p.o || [])` catches a
+    MISSING array — so a week file with no rows in it rendered the header, the
+    byline, the date and the model caveat around an **empty list**: a
+    confident, complete-looking ranking with nobody in it. The variant that
+    threw at least stopped. **The defensive `|| []` was what turned a loud
+    failure into a quiet lie**, which is the whole argument against writing
+    them without a matching check.
+  - Both are the same fact — the file is readable and its contents are not a
+    week — so both get one honest sentence, and the rejection handler logs.
+  - ⚠️ **A 404 on `index.json` was reading as "No rankings published yet."**
+    The classifier had two states and the view rendered two sentences, but
+    they were not the same two: anything with an HTTP status became `missing`
+    and `missing` fell through to the friendly copy. **That file ships with an
+    empty `weeks` array, so an empty season answers 200 — a 404 there is
+    always a broken deploy**, and it was being reported to the league as
+    business as usual. Three states, three sentences, in a map keyed by the
+    state so a fourth cannot be added without writing its sentence.
+  - Verified by driving all five paths against the real files: empty, 404,
+    offline, a good week (rows, the reader's own row badged YOU), `o` as a
+    string, and `o` absent. Each says something different and true.
 
 - **v28 — the link to send is in the app, and one ?v= per shared file
   (10 Sep 2026)** — the owner, before sending it out: *"somewhere in the app

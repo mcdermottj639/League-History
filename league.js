@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v28';
+  const APP_VERSION = 'v29';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -357,9 +357,16 @@
       const j = await r.json();
       S.weeks = Array.isArray(j.weeks) ? j.weeks : [];
     } catch (e) {
-      /* ⚠️ An empty archive and an unreachable one are OPPOSITE facts and the
-         page says which. "Nothing published yet" when the truth is "you are
-         offline" is the v220 lie in miniature. */
+      /* ⚠️ THREE OPPOSITE FACTS, THREE SENTENCES (v29). An empty archive, an
+         unreachable one and a MISSING one are not the same thing, and the
+         page has to say which — "nothing published yet" when the truth is
+         "you are offline" is the v220 lie in miniature, and it is the same
+         lie when the truth is "the index file 404s".
+         🚨 `missing` can only ever be a fault: `rankings/index.json` ships in
+         the repo with an empty `weeks` array, so an EMPTY season still
+         answers 200. A 404 here means the deploy is broken — and folding that
+         into the friendly copy would hide a broken publish behind the exact
+         sentence that says everything is fine. */
       S.weeks = [];
       S.wkErr = e && /http/.test(String(e.message)) ? 'missing' : 'offline';
     }
@@ -418,14 +425,23 @@
     return isNaN(t) ? d : t.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
+  /* Keyed by `S.wkErr`, so adding a state without writing its sentence is a
+     visible hole rather than a silent fall-through to the friendly one. */
+  const WK_EMPTY = {
+    offline: "<b>Can't reach the rankings right now.</b>You are offline, or the page didn't load properly. The league's history below works with no connection at all, so it is still all there.",
+    missing: "<b>The rankings list didn't load.</b>The file that lists the published weeks is not there — which is a fault at our end, not yours. The league's thirteen seasons below are unaffected.",
+    none: "<b>No rankings published yet.</b>The commissioner publishes a set each week during the season. When one lands it shows up here — every team, in order, with a take on each.",
+  };
+
+  const wkBad = () => `<h2 class="section-title">🏆 Power Rankings</h2>
+      <div class="ffp-card"><div class="ffp-empty"><b>That week's data doesn't look right.</b>The file is there but the rankings inside it could not be read, so nothing is shown rather than a half of one. The league's history below is unaffected.</div></div>`;
+
   async function paintRankings(host) {
     host.innerHTML = '<div class="ffp-card"><div class="ffp-empty">Loading this week…</div></div>';
     const weeks = await loadWeeks();
     if (!weeks.length) {
       host.innerHTML = `<h2 class="section-title">🏆 Power Rankings</h2>
-      <div class="ffp-card"><div class="ffp-empty">${S.wkErr === 'offline'
-        ? "<b>Can't reach the rankings right now.</b>You are offline, or the page didn't load properly. The league's history below works with no connection at all, so it is still all there."
-        : "<b>No rankings published yet.</b>The commissioner publishes a set each week during the season. When one lands it shows up here — every team, in order, with a take on each."}</div></div>`;
+      <div class="ffp-card"><div class="ffp-empty">${WK_EMPTY[S.wkErr] || WK_EMPTY.none}</div></div>`;
       return;
     }
     if (!S.week || !weeks.some((w) => w.f === S.week)) S.week = weeks[0].f;
@@ -435,7 +451,24 @@
       <div class="ffp-card"><div class="ffp-empty"><b>That week didn't load.</b>The file is listed but could not be read. Try again, or pick another week.</div></div>`;
       return;
     }
-    host.innerHTML = rankHTML(p, weeks);
+    /* 🚨 A FILE THAT PARSES IS NOT THE SAME AS A WEEK THAT RENDERS (v29).
+       `rankHTML` walks `p.o`, and a payload where that is a string — a paste
+       that went wrong, a hand-edited file — threw straight out of an async
+       function whose only rejection handler was `buildJump`. The throw was
+       SWALLOWED: no console error, no page error, the tab simply sat on
+       "Loading this week…" for ever. And the near miss is worse than the
+       throw: `(p.o || [])` catches a MISSING array, so that variant rendered
+       a confident, complete, empty ranking with nobody in it.
+       Both are the same fault — the file is readable and its contents are not
+       a week — so both get the same honest sentence. */
+    if (!p || !Array.isArray(p.o) || !p.o.length) { host.innerHTML = wkBad(); return; }
+    try {
+      host.innerHTML = rankHTML(p, weeks);
+    } catch (e) {
+      console.error('[rankings] that week would not render', e);
+      host.innerHTML = wkBad();
+      return;
+    }
     const sel = $('#lg-wksel');
     if (sel) sel.onchange = () => { S.week = sel.value; paint(); };
   }
@@ -501,7 +534,14 @@
       `<button type="button" role="tab" class="${k === S.view ? 'on' : ''}" aria-selected="${k === S.view}" data-l1="${k}">${l}</button>`).join('');
     const host = $('#lg-body');
     $('#lg-sub2').hidden = true;
-    if (S.view === 'rank') { S.prof = null; paintRankings(host).then(buildJump, buildJump); return; }
+    /* ⚠️ The second argument is the REJECTION handler, and passing `buildJump`
+       to both is what made the v29 hang invisible — the view failed and the
+       console stayed empty. Anything that gets this far is a bug; say so. */
+    if (S.view === 'rank') {
+      S.prof = null;
+      paintRankings(host).then(buildJump, (e) => { console.error('[rankings] paint failed', e); buildJump(); });
+      return;
+    }
     /* A profile is a drill-down out of the sub-tabs, not one of them — showing
        the bar there would highlight a page you are no longer on. */
     if (S.prof) {
