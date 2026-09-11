@@ -2167,6 +2167,78 @@ const INVITE_BAD = {
   revoked: 'That invite is no longer valid — all outstanding invites were cancelled. Ask the commissioner for a fresh one.',
 };
 
+/* ── 🔑 SET A NEW PASSPHRASE ───────────────────────────────────────────────
+   Hashes on the device and hands back the one line that changes. The phrase
+   itself never leaves the phone — not into a repo, not into a chat, not into
+   this page's history — which is the property the whole gate design rests on.
+
+   ⚠️ The hash comes from `LeagueOwner.hash()`, which is the SAME function the
+   gate checks with. Computing it any other way here could produce a value
+   that never unlocks, and the owner would only find out after committing it.
+
+   ⚠️ `crypto.subtle` is https-only, so an http origin cannot hash at all. That
+   is a different problem from a weak phrase and gets its own sentence — the
+   same reason `unlock` returns 'insecure' rather than just failing. */
+function paintNewPass() {
+  show('#pr-load');
+  $('#pr-load').innerHTML = `<div class="pr-card pr-load pr-gate pr-np">
+    <b>🔑 Set a new passphrase</b>
+    <p>Type the new one below. This page works it out on your phone and gives you a line to hand to a Claude session — <b>the phrase itself never leaves this device.</b></p>
+    <form id="pr-np-f" autocomplete="off">
+      <input id="pr-np-i" type="text" inputmode="text" autocapitalize="none" autocorrect="off"
+             spellcheck="false" placeholder="New passphrase" aria-label="New passphrase" />
+    </form>
+    <p class="pr-np-len" id="pr-np-len"></p>
+    <div id="pr-np-out" class="pr-np-out" hidden>
+      <div class="t">Send this line to a Claude session:</div>
+      <input id="pr-np-h" class="pr-np-h" readonly aria-label="The line to send" />
+      <button type="button" id="pr-np-c" class="pr-btn">Copy it</button>
+      <p class="pr-np-n" id="pr-np-msg"></p>
+    </div>
+    <p class="pr-gate-note">⚠️ <b>Nothing has changed yet.</b> The new phrase only works once that line is committed and deployed. Until then the old one still opens the Lab — so do not clear this page until it is live.</p>
+    <p class="pr-gate-note">This repo is public, so what ships is the hash and never the phrase. Anyone can run a wordlist against a published hash, and a static site has no server to slow them down — <b>length is the only real defence.</b> A short phrase is a weak one however odd it looks.</p>
+    <p class="pr-gate-note">Already-unlocked devices stay unlocked: the flag on a phone holds no phrase. This also does not cancel guest passes — that is a separate line.</p>
+    <a class="pr-back" href="power.html">‹ Back to the Lab</a>
+  </div>`;
+
+  const i = $('#pr-np-i'), out = $('#pr-np-out'), h = $('#pr-np-h'), len = $('#pr-np-len');
+  $('#pr-np-f').onsubmit = (e) => e.preventDefault();
+  let seq = 0;
+  i.oninput = async () => {
+    const v = i.value;
+    const mine = ++seq;
+    if (!v.trim()) { out.hidden = true; len.textContent = ''; return; }
+    /* ⚠️ Measured on the NORMALISED phrase, because that is what gets hashed —
+       counting the raw input would credit trailing spaces and capitals that
+       are about to be thrown away. */
+    const n = v.trim().replace(/\s+/g, ' ').toLowerCase().length;
+    len.textContent = n < 12
+      ? `${n} characters — short. A published hash is worth guessing at; make it longer.`
+      : `${n} characters.`;
+    len.className = 'pr-np-len' + (n < 12 ? ' warn' : '');
+    let hash;
+    try { hash = await window.LeagueOwner.hash(v); } catch (_) {
+      /* Not a wrong answer — an origin that cannot do the arithmetic at all. */
+      out.hidden = true;
+      len.textContent = 'This browser cannot hash on an insecure connection. Open the https:// address.';
+      len.className = 'pr-np-len warn';
+      return;
+    }
+    /* An await means answers can land out of order; only the newest wins, or a
+       slow keystroke could overwrite the hash of what is actually typed. */
+    if (mine !== seq) return;
+    h.value = `Set the Lab passphrase hash to ${hash}`;
+    out.hidden = false;
+  };
+  $('#pr-np-c').onclick = async () => {
+    const msg = $('#pr-np-msg');
+    if (await copyText(h.value)) { msg.textContent = 'Copied.'; return; }
+    h.focus(); h.select();
+    msg.textContent = 'Select the line above and copy it.';
+  };
+  i.focus();
+}
+
 function paintGate(msg, note) {
   show('#pr-load');
   $('#pr-load').innerHTML = `<div class="pr-card pr-load pr-gate">
@@ -2303,6 +2375,19 @@ async function boot() {
     history.replaceState(null, '', location.pathname + location.search);
     if (r !== 'ok') { paintGate('', INVITE_BAD[r] || INVITE_BAD.bad); return; }
   }
+
+  /* 🔑 THE PASSPHRASE RESET TOOL, AND IT IS UNGATED ON PURPOSE.
+     You reach for it precisely when you cannot get through the gate, so
+     putting it behind the gate would be the v23 fault again — a door that
+     only opens from the inside. It grants nothing: it turns a phrase you type
+     into the SHA-256 that would replace `HASH`, which is arithmetic anybody
+     can do with any tool, and it says nothing about the phrase currently in
+     there. Nothing changes until that line is committed and deployed.
+     🚨 AND IT SITS ABOVE THE BRANCH BELOW, like `#r=` and `#invite=`, because
+     that branch `replaceState`s the hash away — a reader placed under it
+     finds an empty hash every time. Third feature to need this ordering; the
+     first two shipped broken. */
+  if (/[#&]newpass\b/.test(location.hash || '')) { paintNewPass(); return; }
 
   if (location.hash) {
     // A hash that isn't a valid payload: don't strand the reader on a blank page.

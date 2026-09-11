@@ -382,3 +382,34 @@ body.pr-page {
 /* "Checking for newer" is a status, not a warning — it must not wear the
    same colour as "the backend didn't answer". */
 .pr-chk { color: var(--muted); font-weight: 700; }
+
+/* ── 🔑 SET A NEW PASSPHRASE (v41) ───────────────────────────────────────── */
+.pr-np p { margin: 0 0 10px; }
+.pr-np form { margin-top: 14px; }
+/* 16px is not a style choice: iOS Safari zooms the page in when a text input
+   under 16px takes focus, and does not zoom back out. Both fields, because a
+   64-character hash is exactly the thing somebody taps to select. */
+.pr-np input {
+  width: 100%; font-size: 16px; padding: 11px 12px; border-radius: 10px;
+  background: var(--card-2); border: 1px solid var(--line); color: var(--text);
+  font-family: inherit; }
+.pr-np input:focus { outline: none; border-color: var(--accent); }
+.pr-np-len { font-size: 12.5px; color: var(--muted); margin: 8px 0 0; min-height: 1em; }
+.pr-np-len.warn { color: var(--neg); font-weight: 700; }
+/* 🚨 THE `[hidden]` RULE IS WRITTEN IN THE SAME EDIT AS THE MARKUP THAT
+   TOGGLES IT — fifth outing for this trap (.lg-jump v9, .lg-sheet v13,
+   .ai-sub v21, .pr-inv-f v33). `.pr-np-out` is `display: block` at (0,1,0)
+   and the UA's `[hidden] { display: none }` is also (0,1,0); a tie goes to
+   the later sheet, which is this one. Without the line below, `el.hidden`
+   would be a visual no-op and the hash of an empty box would sit on screen. */
+.pr-np-out { display: block; margin-top: 14px; }
+.pr-np-out[hidden] { display: none; }
+.pr-np-out .t {
+  font: 800 10px/1 Archivo, system-ui, sans-serif; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+/* A long hash SCROLLS rather than wrapping — a value broken across two lines
+   is the classic way a pasted string arrives mangled. */
+.pr-np-h { white-space: nowrap; overflow-x: auto; }
+.pr-np .pr-btn { width: 100%; margin-top: 10px; }
+.pr-np-n { font-size: 12px; color: var(--accent); font-weight: 700; margin: 8px 0 0; }
+.pr-np-n:empty { display: none; }

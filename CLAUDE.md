@@ -102,6 +102,18 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     — the whole threat. It does not stop someone who reads `owner.js` and runs
     a wordlist at that hash: a static site has no server to rate-limit anyone.
     `checks.js` refuses the obvious guesses; length is the only real defence.
+  - 🔑 **`hash(phrase)` is the SAME normalise-and-hash `unlock` checks with**
+    (v41), exposed for `power.html#newpass`. 🚨 **There is exactly ONE
+    normalise-and-hash in the file and both callers go through it.** A second
+    path would let the reset tool hand over a value the gate can never match —
+    the owner commits it, deploys it, and is locked out of his own tool
+    permanently, with nothing on screen able to explain why. `checks.js`
+    asserts the single call site, that the value equals an independent SHA-256
+    of the normalised phrase, and — the only assertion that answers the
+    question he is trusting it with — that **a hash straight from the tool,
+    substituted into `HASH`, actually opens the gate.**
+    ⚠️ It reveals nothing: anyone can SHA-256 anything, and it says nothing
+    about the phrase currently in `HASH`.
   - `crypto.subtle` is https-only, so `unlock` returns `'ok' | 'no' |
     'insecure'` — "wrong passphrase" and "this browser can't check one" are
     opposite problems and the message shown has to say which.
@@ -613,6 +625,26 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     independent counters until v28 and `styles.css` sat at `?v=1` here long
     enough to pin any device that had opened the Lab to a pre-v20 stylesheet.
     `checks.js` asserts the two pages agree on both (v39).
+  - **🔑 `power.html#newpass` — set a new passphrase** (v41), and it is
+    **ungated on purpose**: you reach for it precisely when you cannot get
+    through the gate, so putting it behind the gate is the v23 fault again — a
+    door that only opens from the inside. It hashes on the device and hands
+    back the one line that replaces `HASH`; **the phrase never leaves the
+    phone** — not into the repo, not into a chat.
+    - 🚨 **It is read BEFORE the branch that clears the hash**, like `#r=` and
+      `#invite=`. Third feature to need that ordering and the first two
+      shipped broken (v23, v33). `checks.js` now asserts the source order.
+    - ⚠️ **It grants nothing and changes nothing.** The new phrase works only
+      once the line is committed and deployed; until then the old one still
+      opens the Lab, and the card says so rather than letting him clear the
+      page and lose both.
+    - ⚠️ A reset does **not** lock out already-unlocked devices (`lh:owner`
+      holds no phrase) and does **not** cancel guest passes (that is
+      `INVITES_FROM`). Both stated on the card.
+    - The card warns under 12 characters, measured on the NORMALISED phrase —
+      counting the raw input would credit trailing spaces and capitals that
+      are about to be thrown away. **Length is the only real defence** against
+      a published hash.
   - **🚀 Publish to the app** is this repo's addition — see "How the power
     rankings work" below. The share link, the text copy and the one-pager are
     all unchanged from Sports-Hub.
@@ -1159,6 +1191,58 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v41 — the passphrase can be reset without ever saying it (11 Sep 2026)** —
+  the owner: *"Reset my passphrase"*.
+  - **The obvious build is to ask him for the new phrase and hash it here.**
+    That works, and it quietly spends the one property the whole gate design
+    rests on: v21 exists so the phrase lives in his head and nowhere else, and
+    a phrase typed into a chat is a phrase that has left it. So the tool hashes
+    on his phone and he sends back only the 64 hex characters.
+  - 🚨 **THE FAILURE THIS IS BUILT AGAINST IS PERMANENT AND SILENT.** If the
+    tool computes its hash by any path other than the one `unlock` checks with
+    — a second `norm`, a stray trim, a different digest — it hands over a value
+    the gate can never match. He commits it, deploys it, and is locked out of
+    his own tool with **nothing on screen able to say why**, and no way back
+    except guessing which of two implementations was wrong. So `owner.js` now
+    has exactly ONE normalise-and-hash and both callers go through it.
+  - **The assertion that matters is the end-to-end one.** "The tool agrees with
+    itself" is not the property; "the tool agrees with the gate" is. `checks.js`
+    takes the hash the tool produces, substitutes it into `HASH` exactly as a
+    commit would, runs that gate in a fresh context, and asserts the phrase
+    **opens it**. Verified by reversion: dropping the lowercase from the tool's
+    path reports *"a hash straight from the reset tool did NOT unlock the gate
+    — committing it would lock the owner out"*, which is the sentence that
+    would otherwise have been a weekend.
+  - 🚨 **UNGATED, AND READ BEFORE THE HASH IS CLEARED.** You reach for it
+    exactly when you cannot pass the gate, so gating it is the v23 fault — a
+    door that only opens from the inside. And `boot()` `replaceState`s any
+    unrecognised hash away, so a reader placed below that branch finds an empty
+    hash every time: **third feature to need this ordering, and the first two
+    shipped broken** (v23's invite, v33's redemption). The source order is
+    asserted now rather than remembered.
+  - ⚠️ **Fifth outing for the `[hidden]` specificity trap, pre-empted.**
+    `.pr-np-out` is `display: block` at (0,1,0) against the UA's `[hidden]` at
+    (0,1,0) — a tie the later sheet wins — so the rule was written in the same
+    edit as the markup, and the render confirms `display: none` rather than
+    trusting it.
+  - ⚠️ **A false alarm worth recording, because it was the right thing to
+    check.** `sha256` reads `window.crypto.subtle`, not the global — so a test
+    harness without it makes every hash throw, every `unlock` answer
+    `'insecure'`, and the sixteen-guesses law pass without testing anything.
+    The existing gate law sets it (line 244) and is fine; my new one did not,
+    and would have been green over a broken tool. **Checked rather than
+    assumed, and the check found the fault in my code rather than the old.**
+  - ⚠️ **And a real one: two promise chains both ending in `done()`**, which
+    calls `process.exit` — whichever resolved first would have killed the other
+    mid-check, silently, looking exactly like a pass. Chained now.
+  - The card states what a reset does NOT do: unlocked devices stay unlocked
+    (the flag holds no phrase) and guest passes survive (that is
+    `INVITES_FROM`). Both are things he would otherwise assume either way.
+  - Verified at 390/320px: ungated, no backend call, the hash matches an
+    independent SHA-256 of the normalised phrase, padding and capitals and
+    double spaces all collapse to the same value, 16px inputs, 38px targets,
+    no overflow, no page errors, and the members' app and Lab unchanged.
 
 - **v40 — our own playoff odds, and a way to find out if they are any good
   (10 Sep 2026)** — the owner: *"How can we make our playoff prediction
@@ -2508,9 +2592,13 @@ stale entry written in the present tense reads as current to anyone who greps.
   reads as "You" on his own device — `nm()` checks `isMe` first — so this
   string is only ever seen by somebody else.
 - **The Lab passphrase is not in this repo and not in this file** (v21) — only
-  its SHA-256, in `owner.js`. Changing it is one line: hash the new phrase
-  (normalised: trimmed, spaces collapsed, lowercased) and replace `HASH`.
-  Nobody can recover the old one from here, which is the point.
+  its SHA-256, in `owner.js`. Nobody can recover the old one from here, which
+  is the point. 🔑 **To change it (v41): the owner opens
+  `power.html#newpass`, types the new phrase, and sends the line it produces —
+  then replace `HASH` and bump `owner.js?v=` in BOTH pages.** Never ask him to
+  type the phrase into a chat; the tool exists so it stays on his device.
+  ⚠️ A reset does not lock out unlocked devices and does not cancel guest
+  passes — those are `lh:owner` and `INVITES_FROM` respectively.
 - **Movement is per-device, and a guest's week does not reach his phone**
   (v33). `powerlab:pub` is the ▲▼ baseline and it lives in localStorage, so a
   week built by an invited manager — or by him on a second device, or after

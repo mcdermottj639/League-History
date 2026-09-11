@@ -257,7 +257,10 @@ console.log(`  ${bad ? '❌' : '✅'} storylines: ${window.LeagueHistory._storie
     else if (O.is()) { console.log('  ❌ a failed unlock still set the key'); bad++; }
     else console.log(`  ✅ the gate: hash only, ${GUESSES.length} obvious guesses refused`);
     inviteLaws(O);
-    done();
+    /* ⚠️ CHAINED, NOT RACED. `done()` calls `process.exit`, so two independent
+       promises both ending in it means whichever resolves first kills the
+       other mid-check — silently, and looking exactly like a pass. */
+    resetToolLaws().then(done);
   });
 }
 
@@ -582,6 +585,89 @@ function oddsLaws() {
   if (!bad) console.log('  ✅ playoff odds: field conserved, deterministic, winning never hurts, shrinkage grows');
 }
 oddsLaws();
+
+/* ══ 🔑 THE PASSPHRASE RESET TOOL (v41) ═══════════════════════════════════
+   `power.html#newpass` hands the owner the hash that replaces `HASH`. If that
+   hash is computed by ANY path other than the one the gate checks with, he
+   commits it, deploys it, and is locked out of his own tool permanently —
+   with nothing on screen able to say why. None of that is visible in a
+   render: the tool would look like it worked. */
+async function resetToolLaws() {
+  const fail = (m) => { console.log(`  ❌ ${m}`); bad++; };
+  const fs = require('fs');
+  const own = fs.readFileSync('./owner.js', 'utf8');
+
+  /* 🚨 ONE NORMALISE-AND-HASH IN THE FILE. Two would let the gate and the
+     tool drift, which is the whole failure this guards. */
+  const sites = (own.match(/sha256\(norm\(/g) || []).length;
+  if (sites !== 1) fail(`owner.js has ${sites} normalise-and-hash call sites — there must be exactly 1, or the gate and the reset tool can drift`);
+
+  /* ⚠️ `sha256` reads `window.crypto.subtle`, not the global — a sandbox
+     without it makes every hash throw, `unlock` answer 'insecure', and every
+     assertion below pass without ever testing anything. */
+  const { webcrypto } = require('crypto');
+  delete require.cache[require.resolve('./owner.js')];
+  global.window = { crypto: webcrypto };
+  require('./owner.js');
+  const O = global.window.LeagueOwner;
+  if (typeof O.hash !== 'function') return fail('owner.js exposes no hash() — the reset tool has nothing to call');
+
+  const h = await O.hash('Correct Horse Battery Staple');
+  if (!/^[0-9a-f]{64}$/.test(h)) fail(`hash() did not return 64 hex characters: ${h}`);
+
+  /* Normalisation must be applied, or a phrase typed with iOS's automatic
+     capital would hash to something the gate never matches — the exact
+     lock-out the `norm` comment in owner.js exists to prevent. */
+  const variants = await Promise.all([
+    O.hash('correct horse battery staple'),
+    O.hash('  Correct   Horse Battery   Staple  '),
+    O.hash('CORRECT HORSE BATTERY STAPLE'),
+  ]);
+  if (variants.some((v) => v !== h)) fail('hash() does not normalise — capitals or spacing change the result');
+
+  /* 🚨 THE VALUE MUST BE THE CANONICAL ONE, not merely self-consistent.
+     "The tool agrees with itself" is not the property that matters. */
+  const want = require('crypto').createHash('sha256').update('correct horse battery staple').digest('hex');
+  if (h !== want) fail(`hash() is not a SHA-256 of the normalised phrase (${h} vs ${want})`);
+
+  /* 🚨 AND THE END-TO-END PROOF, which is the only one that actually answers
+     the question he is trusting this with: take the hash the tool produces,
+     put it in `HASH` exactly as a commit would, and check the gate OPENS for
+     that phrase. Everything above could pass while this failed. */
+  const patched = own.replace(/const HASH = '[0-9a-f]{64}'/, `const HASH = '${h}'`);
+  if (patched === own) return fail('could not substitute HASH to prove the round trip');
+  const sandbox = { window: { crypto: webcrypto }, TextEncoder, localStorage: undefined };
+  require('vm').createContext(sandbox);
+  require('vm').runInContext(patched, sandbox);
+  const P = sandbox.window.LeagueOwner;
+  const opened = await P.unlock('Correct Horse Battery Staple');
+  if (opened !== 'ok') fail(`a hash straight from the reset tool did NOT unlock the gate (${opened}) — committing it would lock the owner out`);
+  const refused = await P.unlock('something else entirely');
+  if (refused !== 'no') fail(`the patched gate accepted a wrong phrase (${refused})`);
+
+  /* 🚨 THE TOOL IS READ BEFORE THE HASH IS CLEARED. `boot()` replaceStates any
+     unrecognised hash away; a reader placed below that finds nothing, every
+     time. Two features have already shipped broken this way (v23, v33) and
+     both looked fine until the exact case was rendered. */
+  const pj = fs.readFileSync('./power.js', 'utf8');
+  const at = pj.indexOf('newpass');
+  const clears = pj.indexOf("// A hash that isn't a valid payload");
+  if (at < 0) fail('power.js has no #newpass branch');
+  else if (clears < 0) fail('could not find the hash-clearing branch in power.js');
+  else if (at > clears) fail('#newpass is read AFTER the branch that clears the hash — it would never see its own link');
+
+  /* The tool must be reachable while locked out; that is the entire point. */
+  if (/mayLab\(\)[\s\S]{0,200}newpass/.test(pj)) fail('#newpass sits behind the gate — it is needed precisely when the gate cannot be passed');
+
+  /* owner.js is in BOTH pages on ONE shared ?v= — bump it in one and the other
+     serves a stale gate, which after a reset means a device that cannot open. */
+  const a = (fs.readFileSync('./index.html', 'utf8').match(/owner\.js\?v=(\d+)/) || [])[1];
+  const b = (fs.readFileSync('./power.html', 'utf8').match(/owner\.js\?v=(\d+)/) || [])[1];
+  if (!a || !b) fail('owner.js has no ?v= in one of the two pages');
+  else if (a !== b) fail(`owner.js is ?v=${a} in index.html but ?v=${b} in power.html — one page serves a stale gate`);
+
+  if (!bad) console.log('  ✅ reset tool: one hash path, normalised, canonical, and its output opens the gate');
+}
 
 function done() {
   console.log(bad ? `\n${bad} FAILURES` : '\n✅ all conservation laws hold');

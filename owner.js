@@ -49,6 +49,11 @@
      keyboard does to you, none of them are things you meant to type. */
   const norm = (s) => String(s == null ? '' : s).trim().replace(/\s+/g, ' ').toLowerCase();
 
+  /* 🚨 THE ONE PLACE A PHRASE BECOMES A HASH. Both the gate and the reset tool
+     call this; a second implementation of "normalise then SHA-256" is a second
+     source of truth for the only fact that decides whether a device opens. */
+  const digest = (phrase) => sha256(norm(phrase));
+
   const read = () => { try { return localStorage.getItem(KEY) === '1'; } catch (_) { return false; } };
   const write = (on) => { try { on ? localStorage.setItem(KEY, '1') : localStorage.removeItem(KEY); } catch (_) {} };
 
@@ -92,11 +97,30 @@
        message shown has to say which. */
     async unlock(phrase) {
       let h;
-      try { h = await sha256(norm(phrase)); } catch (_) { return 'insecure'; }
+      try { h = await digest(phrase); } catch (_) { return 'insecure'; }
       if (h !== HASH) return 'no';
       write(true);
       return 'ok';
     },
+
+    /* 🚨 THE SAME NORMALISE-AND-HASH `unlock` USES, AND THAT IS THE WHOLE
+       POINT OF EXPOSING IT. `power.html#newpass` turns a new phrase into the
+       line that replaces `HASH`, and if it computed that hash by any other
+       path — a second `norm`, a different digest, a stray trim — it would
+       hand over a value the gate can never match. The owner would commit it,
+       deploy it, and be locked out of his own tool permanently, with nothing
+       on screen able to explain why and no way back except guessing what the
+       two implementations disagreed about.
+
+       So there is exactly ONE normalise-and-hash in this file and both
+       callers go through it. `checks.js` asserts there is exactly one such
+       call site, and asserts the value matches an independent SHA-256 of the
+       normalised phrase — because "the tool agrees with itself" is not the
+       property that matters; "the tool agrees with the gate" is.
+
+       ⚠️ It reveals nothing. Anybody can compute a SHA-256 of anything, and
+       this says nothing about the phrase currently in `HASH`. */
+    hash(phrase) { return digest(phrase); },
 
     lock() { write(false); },
 
