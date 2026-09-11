@@ -27,7 +27,7 @@
 
   /* SHA-256 of the normalised passphrase. Changing the phrase means replacing
      this line — there is no build step and nothing else to regenerate. */
-  const HASH = '789fbe4522786dab52bedfae46a19cf36453fbd8645435b236e8a0752b12d93e';
+  const HASH = 'f608da994a1f1cfb69b2c177d31480afc2dbac3643e01023da8aa9bf488539f7';
   const KEY = 'lh:owner';
   const GUEST = 'lh:guest';
 
