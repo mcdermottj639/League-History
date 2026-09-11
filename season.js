@@ -99,7 +99,40 @@
 
      🚨 `isMe` is never read — see `espn.js`. */
   const CACHE_KEY = 'lh:season';
-  const THROTTLE = 10 * 60 * 1000;
+  /* 🚨 THE NFL PLAYS ON THREE DAYS, SO ASKING ON A WEDNESDAY IS BURNING THE
+     FREE TIER FOR AN ANSWER THAT CANNOT HAVE MOVED (the owner's point).
+     A flat throttle stops twelve phones stampeding, but it does not stop them
+     WAKING a sleeping service all week — and Render's free tier is metered in
+     instance-hours, not requests, so keeping it awake is the actual cost.
+
+     During a game window the numbers really are moving, so 10 minutes. Every
+     other hour of the week nothing can change until the next kickoff, so
+     twelve hours — about one call a day per device, which is what the data
+     deserves.
+
+     ⚠️ It reads the DEVICE's clock, so a phone in the wrong timezone (or a
+     reader abroad) shifts the window by those hours. The only consequence is
+     slightly more or slightly fewer refreshes, never wrong data — the
+     freshness line always says which copy is on screen. Not worth a timezone
+     library to fix.
+     ⚠️ Deliberately not derived from the scores instead: before week 1 every
+     score is 0, which is indistinguishable from "games are pending", so the
+     data alone would keep the short throttle running for days in preseason —
+     exactly the case this is meant to quieten. */
+  const LIVE_MS = 10 * 60 * 1000;
+  const QUIET_MS = 12 * 60 * 60 * 1000;
+  function throttleMs(now) {
+    const d = now || new Date();
+    const day = d.getDay();          // 0 Sun … 6 Sat
+    const h = d.getHours();
+    const playing =
+      (day === 0 && h >= 9) ||               // Sunday, from the early window on
+      (day === 1 && (h < 2 || h >= 17)) ||   // the Sunday-night tail, then MNF
+      (day === 2 && h < 2) ||                // the MNF tail
+      (day === 4 && h >= 17) ||              // Thursday night
+      (day === 5 && h < 2);                  // its tail
+    return playing ? LIVE_MS : QUIET_MS;
+  }
   const readCache = () => { try { return JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch (_) { return null; } };
   const writeCache = (snap) => { try { localStorage.setItem(CACHE_KEY, JSON.stringify({ at: Date.now(), snap })); } catch (_) {} };
 
@@ -577,7 +610,7 @@
   async function revalidate() {
     if (S.checking) return;
     const c = readCache();
-    if (c && c.at && Date.now() - c.at < THROTTLE && S.snap) return;
+    if (c && c.at && Date.now() - c.at < throttleMs() && S.snap) return;
     S.checking = true;
     S.failed = false;
     if (S.snap) render();
@@ -618,6 +651,7 @@
     paint,
     /* For the repo's own checks — nothing in the app reads these. */
     _derive: derive,
+    _throttleMs: throttleMs,
     _favourite: favourite,
     _placeTxt: placeTxt,
   };

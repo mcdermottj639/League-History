@@ -400,7 +400,20 @@ function seasonLaws() {
   /* The live fetch must be throttled and must never be awaited before paint:
      twelve people share one free-tier backend, and a cold start in front of
      the render is a 30-60s spinner for whoever opens the app first. */
-  if (!/THROTTLE/.test(sj0)) fail('season.js has no throttle on the live fetch');
+  if (!/throttleMs/.test(sj0)) fail('season.js has no throttle on the live fetch');
+
+  /* 🚨 THE NFL PLAYS ON THREE DAYS. Asking a sleeping free-tier service on a
+     Wednesday burns instance-hours for an answer that cannot have moved, so
+     the quiet-day throttle must be far longer than the game-window one. If
+     these ever invert, twelve phones would hammer the backend all week and
+     go quiet exactly when the scores are actually moving. */
+  const ts = window.LeagueSeason._throttleMs;
+  const at = (day, h) => { const d = new Date(2026, 8, 6 + day); d.setHours(h, 0, 0, 0); return d; };
+  const live = ts(at(0, 13)), quiet = ts(at(3, 15));
+  if (!(live < quiet)) fail(`the throttle is not schedule-aware (Sunday 1pm ${live}ms vs Wednesday 3pm ${quiet}ms)`);
+  if (quiet < 6 * 3600e3) fail(`the quiet-day throttle is only ${Math.round(quiet / 60000)} min — it should be hours, not minutes`);
+  [[0, 13], [1, 20], [4, 20]].forEach(([d, h]) => { if (ts(at(d, h)) !== live) fail(`a game window (day ${d}, ${h}:00) is not on the short throttle`); });
+  [[2, 11], [3, 15], [6, 14]].forEach(([d, h]) => { if (ts(at(d, h)) !== quiet) fail(`a quiet day (day ${d}, ${h}:00) is not on the long throttle`); });
   if (/await revalidate\(\)/.test(sj0)) fail('season.js awaits the live fetch — that puts a cold start in front of the reader');
 
   /* A tab with no entry in HELP still lists itself in the ? sheet, but the one

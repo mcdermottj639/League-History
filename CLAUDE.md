@@ -299,9 +299,20 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       instant) → the published snapshot in the repo → the network, behind the
       reader. Never awaited before paint: measured, **first paint 297-357ms
       against a deliberately 2-second backend**, so nobody ever sees a spinner.
-    - ⚠️ **THROTTLED at 10 minutes**, because twelve people share one free-tier
-      backend. Opening the app four times in an hour costs one request.
-      Verified: a cache one minute old makes **zero** backend calls.
+    - 🚨 **THROTTLED ON THE NFL SCHEDULE** (v43, the owner's point): **10
+      minutes inside a game window, 12 hours every other hour of the week.**
+      A flat throttle stops twelve phones stampeding but does not stop them
+      WAKING a sleeping service all week — and Render's free tier is metered
+      in instance-hours, not requests, so keeping it awake is the actual cost.
+      Nothing can change on a Wednesday. Verified: a cache one minute old
+      makes **zero** calls, and `checks.js` fails if the two throttles ever
+      invert.
+      ⚠️ It reads the DEVICE's clock, so a wrong timezone shifts the window by
+      those hours — the only consequence is slightly more or fewer refreshes,
+      never wrong data. ⚠️ And deliberately NOT derived from the scores
+      instead: before week 1 every score is 0, which is indistinguishable from
+      "games pending", so the data alone would hold the short throttle open
+      for days in exactly the stretch this is meant to quieten.
     - ⚠️ **It never DEPENDS on the backend.** Asleep, dead, or an expired ESPN
       cookie all degrade to the last real data with a line saying which — the
       hard constraint survives, and that is what keeps this safe to hand to
@@ -1238,6 +1249,34 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v43 — the refresh follows the NFL schedule (11 Sep 2026)** — the owner, on
+  v42's flat throttle: *"It's an nfl schedule so don't have to run in off
+  times as well only 1 a day when not playing games."*
+  - **He is right, and the reason is subtler than request count.** A flat
+    10-minute throttle stops twelve phones stampeding, which is what I built it
+    for — but it does nothing about WAKING a sleeping service all week. Render's
+    free tier is metered in **instance-hours, not requests**, so the cost is
+    how much of the day the thing is awake, and twelve people idly opening the
+    app on a Tuesday keeps it up for an answer that cannot have moved.
+    **I sized the throttle against the wrong resource.**
+  - **10 minutes inside a game window, 12 hours outside one.** Thursday night,
+    Sunday, Monday night — everything else is a league that is not playing.
+  - ⚠️ **Deliberately NOT derived from the scores**, which was the more elegant
+    idea and is wrong: before week 1 every score is 0, which is
+    indistinguishable from "this week's games are still pending" — so a
+    data-driven rule would hold the short throttle open through the whole
+    preseason, which is exactly the stretch this exists to quieten. The clock
+    knows something the payload does not.
+  - ⚠️ **It reads the device's clock**, so a phone in the wrong timezone shifts
+    the window. Stated rather than fixed: the only consequence is slightly more
+    or fewer refreshes, never wrong data, and the freshness line always says
+    which copy is on screen. A timezone library for that trade is not worth its
+    bytes.
+  - `checks.js` walks a week and fails if a game window is not on the short
+    throttle, a quiet day is not on the long one, or the two ever invert —
+    which would hammer the backend all week and go quiet exactly when the
+    scores are moving. Verified by inverting them.
 
 - **v42 — the Season tab fetches for itself (11 Sep 2026)** — the owner, on
   the tab that had been saying "not published yet" since it shipped: *"Why's
