@@ -492,3 +492,7 @@
 @media (max-width: 360px) {
   :root[data-palette] #lg-sub button { font-size: 10.5px; letter-spacing: -.01em; padding-left: 1px; padding-right: 1px; }
 }
+
+/* The freshness line: which of the three sources you are looking at (v42). */
+:root[data-palette] .ls-fresh {
+  margin: 8px 0 0; font-size: 11.5px; line-height: 1.4; color: var(--mu); }

@@ -69,6 +69,56 @@
     return isNaN(t) ? d : t.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
+  /* ══ WHERE THE DATA COMES FROM (v42) ═══════════════════════════════════
+     🚨 IT FETCHES ESPN NOW, AND THE PUBLISHED FILE IS THE FLOOR RATHER THAN
+     THE SOURCE. The first cut read only `season/current.json`, which meant
+     the commissioner had to PUBLISH the standings — and standings are facts,
+     not an opinion column. The rankings are his editorial and must not
+     silently re-derive; the standings, the odds and the schedule should just
+     be current. Applying the rankings model to facts was the mistake, and the
+     copy saying "the commissioner publishes the standings" is what made it
+     obvious on screen.
+
+     ⚠️ CACHE FIRST, THEN REVALIDATE — never a spinner. The backend is on a
+     free tier and sleeps after 15 minutes, so awaiting it would make whoever
+     of the twelve opens the app first each day wait 30-60s looking at
+     nothing. So: paint what this phone already has, ask the backend behind
+     them, and update in place if the answer differs. Same shape the Lab has
+     used since v25 (122ms against a 3s backend).
+
+     ⚠️ THROTTLED, because twelve people share one free-tier backend. A device
+     only asks if its own copy is older than `THROTTLE`; opening the app four
+     times in an hour costs one request, not four.
+
+     ⚠️ AND IT NEVER DEPENDS ON THE BACKEND. Three sources, in order: this
+     phone's last good copy, the published snapshot in the repo, then the
+     network. If the backend sleeps, dies, or the ESPN cookie expires, the tab
+     still renders the last real data and SAYS so — which is what keeps this
+     safe to hand to eleven other people. The hard constraint holds: the app
+     still works with nothing but static files.
+
+     🚨 `isMe` is never read — see `espn.js`. */
+  const CACHE_KEY = 'lh:season';
+  const THROTTLE = 10 * 60 * 1000;
+  const readCache = () => { try { return JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch (_) { return null; } };
+  const writeCache = (snap) => { try { localStorage.setItem(CACHE_KEY, JSON.stringify({ at: Date.now(), snap })); } catch (_) {} };
+
+  async function fetchLive() {
+    const E = window.LeagueESPN;
+    if (!E) throw new Error('no espn helper');
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 45000);
+    try {
+      const r = await fetch(E.SEASON_URL, { signal: ctrl.signal, cache: 'no-store' });
+      if (!r.ok) throw new Error('http ' + r.status);
+      const p = await r.json();
+      if (!p || !Array.isArray(p.teams) || !p.teams.length) throw new Error('empty');
+      /* Bind teamId -> manager while the names still resolve (v37). */
+      E.learnTeams(p);
+      return E.toSnapshot(p);
+    } finally { clearTimeout(t); }
+  }
+
   /* ── the snapshot ──────────────────────────────────────────────────────
      ⚠️ FOUR OUTCOMES, FOUR SENTENCES — the app's own rule (v29), which exists
      because "nothing published yet" when the truth is "you are offline" is a
@@ -77,11 +127,9 @@
      repo with an empty `t`, so a season nobody has published still answers
      200. A 404 means the deploy is broken, and folding that into the friendly
      copy would hide it behind the one sentence that says all is well. */
-  const S = { snap: null, err: null, done: false };
+  const S = { snap: null, err: null, src: null, at: 0, checking: false, failed: false, host: null, cr: null };
 
-  async function load() {
-    if (S.done) return S.snap;
-    S.done = true;
+  async function loadFile() {
     let j;
     try {
       const r = await fetch(FILE, { cache: 'no-store' });
@@ -100,12 +148,33 @@
     return j;
   }
 
+  /* ⚠️ THE OLD COPY HERE SAID "the commissioner publishes the standings",
+     and reading that out loud is what exposed the design fault: standings are
+     facts and nobody should have to publish them. Now that the tab fetches,
+     an empty screen means the data could not be reached — never that somebody
+     forgot to press a button. */
   const EMPTY = {
-    none: "<b>The season hasn't been published yet.</b>The commissioner publishes the standings, the odds and the schedule alongside each week's rankings. When the first one lands it shows up here. The league's thirteen finished seasons are on the History tab and need no connection at all.",
-    missing: "<b>The season file didn't load.</b>The file that holds this year's standings is not there — a fault at our end, not yours. The League History tab is unaffected.",
-    offline: "<b>Can't reach this season's numbers.</b>You are offline, or the page didn't load properly. The League History tab works with no connection at all, so all thirteen seasons are still there.",
-    bad: "<b>This season's data doesn't look right.</b>The file is there but what's inside it could not be read, so nothing is shown rather than half of it. The League History tab is unaffected.",
+    none: "<b>This season hasn't loaded yet.</b>Nothing is saved on this phone and the league's live data couldn't be reached just now. It fills in by itself as soon as it can be — no action needed. The thirteen finished seasons on the History tab work with no connection at all.",
+    offline: "<b>Can't reach this season's numbers.</b>You're offline, or the page didn't load properly. The History tab works with no connection at all, so all thirteen seasons are still there.",
+    bad: "<b>This season's data doesn't look right.</b>What came back could not be read, so nothing is shown rather than half of it. The History tab is unaffected.",
   };
+
+  /* Four states, four different facts — "showing a saved copy while I check"
+     and "showing a saved copy because nothing answered" are opposite
+     situations, and one banner saying the first when it means the second is
+     the lie this app keeps refusing to tell. */
+  function freshLine() {
+    const when = S.at ? new Date(S.at).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : '';
+    if (S.checking) return S.src === 'file'
+      ? 'Showing the last published copy · checking for newer\u2026'
+      : `Showing what's saved on this phone · checking for newer\u2026`;
+    if (S.src === 'live') return 'Straight from ESPN, just now.';
+    if (S.failed && S.src === 'cache') return `The live data didn't answer, so this is the copy saved on this phone${when ? ` on ${esc(when)}` : ''}.`;
+    if (S.failed && S.src === 'file') return "The live data didn't answer, so this is the last copy published to the app.";
+    if (S.src === 'cache') return `Saved on this phone${when ? ` ${esc(when)}` : ''}.`;
+    if (S.src === 'file') return 'The last copy published to the app.';
+    return '';
+  }
 
   /* ══ DERIVE ════════════════════════════════════════════════════════════
      🚨 THE WEEK IS DERIVED FROM THE SCORES, NOT READ OFF A FIELD. The payload
@@ -320,7 +389,8 @@
       <h2>This Season</h2>
       <p class="pr-sub">${d.pre
         ? 'No games played yet, so nothing here is a result. What is real before week 1 is the schedule and the projection.'
-        : `Standings, odds and form after ${spell(d.wp)} week${d.wp === 1 ? '' : 's'}.`}${p.d ? ` Updated ${esc(niceDate(p.d))}.` : ''}</p>
+        : `Standings, odds and form after ${spell(d.wp)} week${d.wp === 1 ? '' : 's'}.`}</p>
+      ${(() => { const f = freshLine(); return f ? `<p class="ls-fresh">${f}</p>` : ''; })()}
     </div>`;
   }
 
@@ -488,18 +558,60 @@
       <div class="ffp-card ls-sched">${cells}</div>`;
   }
 
-  async function paint(host, cr) {
-    host.innerHTML = '<div class="ffp-card"><div class="ffp-empty">Loading this season…</div></div>';
-    const p = await load();
-    if (!p) {
+  function render() {
+    const host = S.host, cr = S.cr;
+    if (!host) return;
+    if (!S.snap) {
       host.innerHTML = `<h2 class="section-title">📊 This Season</h2>
         <div class="ffp-card"><div class="ffp-empty">${EMPTY[S.err] || EMPTY.none}</div></div>`;
       return;
     }
-    const d = derive(p);
+    const d = derive(S.snap);
     const me = LH.me();
     host.innerHTML = headHTML(d) + meHTML(d, cr, me) + oddsHTML(d, cr, me)
       + weekHTML(d, cr, me) + tableHTML(d, cr, me) + schedHTML(d, cr, me);
+  }
+
+  /* Ask the backend behind the reader, never in front of them. Throttled so
+     twelve phones opening the app cannot stampede one free-tier service. */
+  async function revalidate() {
+    if (S.checking) return;
+    const c = readCache();
+    if (c && c.at && Date.now() - c.at < THROTTLE && S.snap) return;
+    S.checking = true;
+    S.failed = false;
+    if (S.snap) render();
+    try {
+      const snap = await fetchLive();
+      writeCache(snap);
+      S.snap = snap; S.src = 'live'; S.at = Date.now(); S.err = null;
+    } catch (e) {
+      /* ⚠️ It LOGS. A refresh that fails silently behind a page that looks
+         fine is the hardest thing in this app to diagnose from a phone. */
+      console.warn('[season] live refresh failed', e);
+      S.failed = true;
+      if (!S.snap) S.err = /http|empty/.test(String(e && e.message)) ? 'bad' : 'offline';
+    }
+    S.checking = false;
+    render();
+  }
+
+  async function paint(host, cr) {
+    S.host = host; S.cr = cr;
+    /* 1. What this phone already has — instant, no network. */
+    const c = readCache();
+    if (c && c.snap && Array.isArray(c.snap.t) && c.snap.t.length) {
+      S.snap = c.snap; S.src = 'cache'; S.at = c.at || 0;
+    } else {
+      /* 2. The published snapshot in the repo — the floor that means this
+         still works with nothing but static files. */
+      host.innerHTML = '<div class="ffp-card"><div class="ffp-empty">Loading this season…</div></div>';
+      const f = await loadFile();
+      if (f) { S.snap = f; S.src = 'file'; }
+    }
+    render();
+    /* 3. The network, behind them. Deliberately not awaited. */
+    revalidate();
   }
 
   window.LeagueSeason = {

@@ -64,8 +64,14 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 
 ## Hard constraints (do not break these)
 
-- **No backend, no API keys, no build step.** The members' app must work with
-  nothing but static files. It has no ESPN cookies and never will.
+- **No API keys, no build step, and the members' app must WORK with nothing
+  but static files.** ⚠️ **Softened in v42, deliberately and only here:** the
+  Season tab now *refreshes* from the owner's backend, because standings are
+  facts and making him publish them was the wrong model. The constraint still
+  holds where it matters — the app never DEPENDS on that call. Three sources
+  in order (this phone's cache → the published snapshot in the repo → the
+  network), so a dead backend costs freshness and nothing else. It still has
+  no ESPN cookies and never will.
 - **Deploys from `main`** via GitHub Pages (root).
 - **The rankings are FILES, not a live model run.** See below.
 - **No model identifier** (exact model name/ID) in commits, code, PRs or any
@@ -283,13 +289,27 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   - `key()` — the three-badge provenance key, for the ? sheet in `league.js`
 - `season.js` — **the season still being played** (v39). One global,
   `window.LeagueSeason`, one entry point `paint(host, crest)`.
-  - 🚨 **IT READS A FILE, `season/current.json`, NEVER A BACKEND.** The Lab
-    writes it on 🚀 Publish; every member reads it as a static file. Four
-    reasons, in order of weight: a fantasy standings table changes **once a
-    week**, so a weekly snapshot is not a stale copy of the live table, it IS
-    the live table; the backend is free-tier and asleep, so live would make
-    whichever of the twelve opens the app first each day wait 30-60s on a cold
-    start; a file works when the backend does not; and —
+  - 🚨 **IT FETCHES ESPN, AND THE PUBLISHED FILE IS THE FLOOR (v42).**
+    ⚠️ **SUPERSEDED the v39 design**, which read only `season/current.json`.
+    That made the commissioner PUBLISH the standings — and the copy saying so
+    is what exposed the fault: **rankings are an opinion column and must not
+    silently re-derive; standings, odds and matchups are facts and should just
+    be current.** Applying the rankings model to facts was the mistake.
+    - **Three sources, in order:** this phone's last good copy (`lh:season`,
+      instant) → the published snapshot in the repo → the network, behind the
+      reader. Never awaited before paint: measured, **first paint 297-357ms
+      against a deliberately 2-second backend**, so nobody ever sees a spinner.
+    - ⚠️ **THROTTLED at 10 minutes**, because twelve people share one free-tier
+      backend. Opening the app four times in an hour costs one request.
+      Verified: a cache one minute old makes **zero** backend calls.
+    - ⚠️ **It never DEPENDS on the backend.** Asleep, dead, or an expired ESPN
+      cookie all degrade to the last real data with a line saying which — the
+      hard constraint survives, and that is what keeps this safe to hand to
+      eleven other people.
+    - **Four states, four facts** (`freshLine()`): straight from ESPN · saved
+      on this phone · the last published copy · and "the live data didn't
+      answer" — which is a different sentence from "checking", the distinction
+      this app keeps insisting on.
   - 🚨 **`isMe` IS A TRAP AND IS NEVER READ HERE.** The season payload flags
     the team of the account the BACKEND authenticates as — the commissioner's,
     on every device that ever asks. A members' app reading it would badge HIS
@@ -320,6 +340,27 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     SHIPS with an empty `t` so an unpublished season answers 200 — which is
     what makes a 404 reportable as a broken deploy rather than as business as
     usual. `checks.js` asserts the file ships.
+- `espn.js` — **the manager map and the ESPN transform**, loaded by BOTH pages
+  (v42), `window.LeagueESPN`.
+  - 🚨 **IT EXISTS BECAUSE THE ALTERNATIVE WAS TWO COPIES.** When the Season
+    tab started fetching live it needed exactly what the Lab already had:
+    which team belongs to which manager, and how to turn an ESPN payload into
+    the app's shape. Written twice, those drift every September — and **v36 is
+    what ONE stale map already cost**: half the league lost its crests and its
+    YOU row. `checks.js` fails if `power.js` or `season.js` grows its own.
+  - `toSnapshot(payload)` is the one transform, so a published week and a live
+    refresh can never disagree about what the same payload means. ⚠️ Verified
+    **byte-identical** to what the Lab's own `seasonSnapshot()` produced before
+    it moved, against the owner's real capture.
+  - 🚨 **`isMe` IS NEVER READ, and this is where it would have bitten.** It
+    flags the team of the account the BACKEND authenticates as — the
+    commissioner's, on every device. The members' app fetching live is exactly
+    the case that would badge his team as theirs on eleven phones (the v33
+    byline bug, one field over). `checks.js` asserts neither this file nor
+    `season.js` mentions it.
+  - `mgrFor(name, teams)` takes the teams IN rather than reading a module
+    cache — the v37 rule: a refresh swaps the season in place, so a resolver
+    holding its own snapshot goes stale exactly when a correction lands.
 - `odds.js` — **the app's own playoff odds** (v40), `window.LeagueOdds`.
   - 🚨 **THE ONE MODEL HERE THAT CAN BE GRADED.** A power ranking has no
     outcome to score against, which is why that card says its weights are a
@@ -758,6 +799,9 @@ Lab, which only he opens.
   the picker, and puts the Lab link back in the footer. ⚠️ **It is not an
   account and it holds nothing** — no name, no token, no phrase. Clearing site
   data locks the device and he types the phrase again.
+- `lh:season` — the Season tab's last good ESPN payload, transformed (v42).
+  What makes the tab open instantly instead of waiting on a sleeping backend,
+  and what it falls back to when the backend never answers. Per-device.
 - `lh:guest` — a **guest pass** (v33): `{w, u, i}` — which manager, the last
   day it works, and the day it was issued. Written by `owner.js` when an
   invite link is opened, and **checked for expiry on every read** rather than
@@ -1039,7 +1083,10 @@ whole design:
 >    same week, so REPLACE that entry and overwrite the file rather than
 >    adding a second.
 > 2b. **Overwrite `season/current.json`** with the third block the Lab hands
->    over (v39) — the standings, ESPN's playoff odds and the schedule that the
+>    over. ⚠️ **Since v42 this is a FLOOR, not the source** — the Season tab
+>    fetches ESPN itself, so this file only matters for a device that has
+>    never loaded and cannot reach the backend. Worth refreshing when it is
+>    handed over; not worth chasing him for. — the standings, ESPN's playoff odds and the schedule that the
 >    **📊 Season** tab reads. ⚠️ It is OVERWRITTEN, never appended to and never
 >    indexed: one file, one current state. A paste that carries only the
 >    rankings blob is an older Lab or a hand-copied one, and the season tab
@@ -1191,6 +1238,66 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v42 — the Season tab fetches for itself (11 Sep 2026)** — the owner, on
+  the tab that had been saying "not published yet" since it shipped: *"Why's
+  it saying commish publishes the standings this is all supposed to be
+  information… what did you build?"*
+  - 🚨 **HE WAS RIGHT, AND THE COPY IS WHAT GAVE IT AWAY.** v39 read only
+    `season/current.json`, written by the Lab's 🚀 button. That is exactly
+    right for **rankings** — an opinion column, dated, which must not silently
+    re-derive into a different answer next week. It is exactly wrong for
+    **standings, odds and matchups**, which are facts and should just be
+    current. I applied the rankings model to the wrong kind of data, and the
+    sentence *"the commissioner publishes the standings"* is that mismatch
+    stated out loud on his screen. **When generated copy sounds absurd read
+    back, the design is usually what is absurd.**
+  - 🚨 **AND BEFORE ANY OF THAT: THE TAB WAS EMPTY BECAUSE I NEVER COMMITTED
+    THE DATA I ALREADY HAD.** He pasted a live capture in v39; I ran it through
+    the real Lab to build a snapshot, verified against it, and left it in a
+    scratch directory — then told him to go press the button himself. He spent
+    three exchanges asking why a finished feature showed nothing. **A verified
+    artifact sitting in a scratch directory is not shipped**, and "the user can
+    do that step" is not a reason to hand somebody an empty screen.
+  - **Three sources, in order: this phone → the repo → the network.** Cache
+    first and revalidate behind, the v25 shape. Measured: **first paint
+    297-357ms against a deliberately 2-second backend**, so the free tier's
+    30-60s cold start never reaches a reader. ⚠️ **Throttled at 10 minutes**
+    because twelve people share one free service — a cache a minute old makes
+    **zero** calls, verified.
+  - ⚠️ **The hard constraint survives, and that is the design.** "No backend"
+    becomes "never DEPENDS on the backend": asleep, dead, or an expired ESPN
+    cookie each degrade to the last real data with a line saying which. The
+    published snapshot is the floor beneath the cache. That is what keeps this
+    safe to hand to eleven people who cannot debug it.
+  - 🚨 **ONE MANAGER MAP AND ONE TRANSFORM, IN `espn.js`.** The Season tab
+    needed both, and the Lab already had both. A second copy drifts every
+    September — **v36 is what one stale map cost: half the league lost its
+    crests AND its YOU row.** So they moved out and both pages delegate.
+    ⚠️ **Verified byte-identical**: the shared transform run against his real
+    capture produces exactly what the Lab's own function produced before the
+    move, and the Lab's publish output after the refactor matches what is live
+    character for character. A refactor of a data path is only safe if you can
+    show the bytes did not move.
+  - 🚨 **`isMe` is the field this change made dangerous**, and it is now
+    asserted absent from both `espn.js` and `season.js`. It flags the team of
+    the account the BACKEND authenticates as — his, on every device. A members'
+    app fetching live is precisely the case where reading it badges his team as
+    theirs on eleven phones. Third time that flag has nearly leaked his
+    identity into somebody else's screen (v33, v39, here).
+  - **Verified across six data paths**, each with a mocked backend: a fresh
+    device against a slow backend (paints the published file, upgrades to live,
+    caches it), a one-minute-old cache (instant, zero calls), an hour-old cache
+    (instant, then refreshes), the backend down with a cache (keeps the data,
+    says the live data didn't answer), the backend down with no cache (falls
+    back to the repo), and nothing anywhere (one honest sentence).
+  - ⚠️ **Two of my own tests failed for being stale, not for finding a bug**, and
+    both were worth reading rather than reflexively fixing: one asserted the
+    exact "not published yet" copy this version deletes, and the other was an
+    "empty state" test that now renders real data — because the repo's snapshot
+    stopped being empty. **A test that encodes the old design fails at exactly
+    the moment the design changes, which is the one time it is easiest to
+    "fix" it without thinking.**
 
 - **v41 — the passphrase can be reset without ever saying it (11 Sep 2026)** —
   the owner: *"Reset my passphrase"*.

@@ -69,80 +69,18 @@ const W = { allPlay: 0.40, ppg: 0.25, recent: 0.25, record: 0.10 };
    harmlessly, so a mid-season revert still resolves.
    ⚠️ Normalised with lowercase+trim only (see `mgrFor`), so keys are
    lowercase; a double space in an ESPN name would miss — none here do. */
-const MANAGERS = {
-  // ── 2026 names (ESPN season, owner column verified) ──────────────────────
-  'aarogant fraudgers': 'Hurd',        'mortal wombats': 'Christel',
-  'slob on my cobb': 'Slemp',          'morning woods': 'Woods',
-  'gregs morning dew dew': 'Buley',    'jared goff hits women': 'Zach',
-  'death dont hurts very long': 'McD', 'joe sleepin on dee teetees': 'CC',
-  'puka atta adonai': 'Wolff',         'thurgood marshall': 'Gotch',
-  'jefferson airplane': 'Riz',         'pepperoni tds': 'Hyman',
-  // ── legacy aliases from prior seasons — kept so an old name still resolves ─
-  samrizz: 'Riz', cummish: 'Hurd', 'cheeky clapz': 'Hyman', christel: 'Christel',
-  'goff hits women': 'Zach', cc: 'CC', 'current champ': 'McD', gmdd: 'Buley',
-  'future champ': 'Wolff',
-};
-/* 🚨 RENAME-PROOF (v37). `MANAGERS` keys on the TEAM NAME, which ESPN lets a
-   manager change every season — so a name-only map goes stale yearly and a
-   renamed team silently loses its crest and its published YOU row (v36 was
-   that failure). ESPN's `teamId` is the FRANCHISE id and does NOT change on a
-   rename, so the durable key is the id.
+/* 🚨 THE MANAGER MAP AND THE ESPN TRANSFORM LIVE IN `espn.js` NOW, because
+   the Season tab needs the same two facts and a second copy of either is a
+   second thing to update every September. v36 is what one stale map costs:
+   half the league lost its crests AND its YOU row, from one file drifting.
 
-   The catch: nothing in the repo knows which id is whose — that fact lives on
-   ESPN, which this sandbox cannot reach. So the Lab LEARNS it: every time a
-   team's current name resolves through `MANAGERS`, it records
-   `teamId -> code` to `powerlab:teams`. Today all twelve names resolve (v36),
-   so one Lab open binds all twelve ids; next season, when the NAMES change,
-   the ids have not, and the learned map still answers.
-
-   Resolution order, and the order matters:
-     1. the NAME map — authoritative when the name is known, and it also
-        REFRESHES the learned binding, so an ownership change (a new person on
-        an old franchise id) corrects itself the moment their new name is
-        added to `MANAGERS`;
-     2. the learned id map — the rename-proof carry-forward;
-     3. nothing — a genuinely unknown team still degrades to the helmet.
-
-   `mgrFor(name)` keeps its signature so no caller changes: it finds the id for
-   that name in the loaded season (`NAME2ID`, rebuilt per season) and falls
-   through to what was learned for it. */
-const nrm = (x) => String(x == null ? '' : x).toLowerCase().trim();
-/* ⚠️ LAZY, NOT EAGER. `load` is a `const` defined further down the file, so
-   reading `load(K_TEAMS)` at module-eval time is a temporal-dead-zone throw —
-   and power.js throwing at load is a BLANK LAB, invisible to `node --check`
-   and caught only by actually loading the module. So the persisted map is
-   read on first use, which is always well after the whole file has evaluated. */
-let LEARNED = null;                        // teamId -> manager code, persisted
-const learnedMap = () => (LEARNED || (LEARNED = load(K_TEAMS, {}) || {}));
-
-/* Persist a teamId -> code binding for every team whose CURRENT name still
-   resolves through `MANAGERS`. Run wherever a season is adopted, so bindings
-   are captured (and refreshed, handling an ownership change) while the name is
-   known. It only WRITES; `mgrFor` only READS — a resolver that writes during a
-   render is a resolver that fights repaints. */
-function learnTeams(season) {
-  const L = learnedMap();
-  let changed = false;
-  ((season && season.teams) || []).forEach((t) => {
-    const code = MANAGERS[nrm(t.team)];
-    if (code && L[String(t.teamId)] !== code) { L[String(t.teamId)] = code; changed = true; }
-  });
-  if (changed) save(K_TEAMS, L);
-}
-
-/* 🚨 The teamId is looked up LIVE from `S.season`, never from a cached index.
-   `revalidate` swaps `S.season` in place without going through
-   `restoreOrBuild`, so any name->id snapshot taken at adoption goes stale the
-   moment a corrected roster lands — a rename-proof reader that reads a stale
-   index is not rename-proof. The current season is the only truth for which id
-   a name has right now. */
-const mgrFor = (name) => {
-  const k = nrm(name);
-  const byName = MANAGERS[k];
-  if (byName) return byName;
-  const t = ((S.season && S.season.teams) || []).find((x) => nrm(x.team) === k);
-  return (t && learnedMap()[String(t.teamId)]) || '';
-};
+   `mgrFor` takes the teams explicitly rather than reading `S.season` — the
+   v37 rule, kept: `revalidate` swaps the season in place, so a resolver
+   holding its own snapshot goes stale exactly when a correction lands. */
+const nrm = (x) => window.LeagueESPN.nrm(x);
+const MANAGERS = window.LeagueESPN.MANAGERS;
+const learnTeams = (season) => window.LeagueESPN.learnTeams(season);
+const mgrFor = (name) => window.LeagueESPN.mgrFor(name, (S.season && S.season.teams) || []);
 /* A manager label that just repeats the team name is noise ("CC CC"). */
 const mgrLabel = (name) => {
   const m = mgrFor(name);
@@ -538,43 +476,11 @@ function publishIndexEntry() {
    compressed because it rides inside a URL; this one is a file nobody has to
    fit in a hash, so a field somebody can read beats four bytes saved. */
 function seasonSnapshot() {
-  const d = S.season || {};
-  const teams = Array.isArray(d.teams) ? d.teams : [];
-  const ap = d.allPlay || {};
-  const played = (sc) => (sc || []).filter((x) => Number(x) > 0);
-  return {
-    v: 1,
-    k: S.key,
-    l: keyLabel(S.key),
-    d: new Date().toISOString().slice(0, 10),
-    y: new Date().getFullYear(),
-    rw: Number(d.regularSeasonWeeks) || 14,
-    pt: Number(d.playoffTeams) || 6,
-    t: teams.map((t) => {
-      const a = ap[String(t.teamId)] || {};
-      return {
-        id: String(t.teamId == null ? '' : t.teamId),
-        /* ⚠️ Trimmed. One of the real 2026 team names ships with a trailing
-           space; `nrm` copes when resolving a manager, a heading does not. */
-        n: String(t.team == null ? '' : t.team).trim(),
-        m: mgrFor(t.team) || '',
-        w: Number(t.wins) || 0,
-        l: Number(t.losses) || 0,
-        ti: Number(t.ties) || 0,
-        pf: Math.round((Number(t.pointsFor) || 0) * 10) / 10,
-        pa: Math.round((Number(t.pointsAgainst) || 0) * 10) / 10,
-        apw: Number(a.w) || 0,
-        apl: Number(a.l) || 0,
-        /* ESPN's own playoff percentage, passed through untouched. The app
-           says so on the card: it is not a number anything here computes. */
-        pct: t.playoffPct == null ? null : Math.round(Number(t.playoffPct) * 10) / 10,
-        /* Only the weeks actually played — ESPN pads the rest with 0, and a
-           padded zero read as a score is the `outcomes` trap in another hat. */
-        s: played(t.scores).map((x) => Math.round(Number(x) * 10) / 10),
-        sch: Array.isArray(t.schedule) ? t.schedule.map(String) : [],
-      };
-    }),
-  };
+  /* ⚠️ One transform, in `espn.js`, shared with the Season tab's live fetch —
+     so a published snapshot and a live refresh can never disagree about what
+     the same payload means. Verified byte-identical to what this function
+     produced before it was moved. */
+  return window.LeagueESPN.toSnapshot(S.season, { date: new Date().toISOString().slice(0, 10) });
 }
 function seasonSnapshotJSON() {
   return JSON.stringify(seasonSnapshot(), null, 2);

@@ -373,6 +373,36 @@ function seasonLaws() {
     if (a !== b) fail(`${f} is ?v=${a} in index.html but ?v=${b} in power.html — one page serves a stale copy`);
   });
 
+  /* 🚨 ONE MANAGER MAP, ONE TRANSFORM (v42). The Season tab fetches ESPN now,
+     so it needs the same two facts the Lab does. A second copy of either is a
+     second thing to update every September — and v36 is what ONE stale map
+     already cost: half the league lost its crests AND its YOU row. */
+  const espn = fs.readFileSync('./espn.js', 'utf8');
+  const pj0 = fs.readFileSync('./power.js', 'utf8');
+  const sj0 = fs.readFileSync('./season.js', 'utf8');
+  if (!/const MANAGERS = \{/.test(espn)) fail('espn.js does not hold the manager map');
+  [['power.js', pj0], ['season.js', sj0]].forEach(([n, src]) => {
+    if (/const MANAGERS = \{/.test(src)) fail(`${n} has its OWN manager map — there must be exactly one, in espn.js`);
+  });
+  ['index.html', 'power.html'].forEach((f) => {
+    if (!/espn\.js\?v=/.test(fs.readFileSync('./' + f, 'utf8'))) fail(`${f} does not load espn.js`);
+  });
+
+  /* 🚨 `isMe` FLAGS THE COMMISSIONER'S TEAM ON EVERY DEVICE THAT ASKS. The
+     members' app fetching live is exactly where reading it would badge his
+     team as theirs on eleven phones — the v33 byline bug, one field over.
+     Neither the transform nor the view may touch it. */
+  [['espn.js', espn], ['season.js', sj0]].forEach(([n, src]) => {
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+    if (/\bisMe\b/.test(code)) fail(`${n} reads isMe — it flags the commissioner's team on every device`);
+  });
+
+  /* The live fetch must be throttled and must never be awaited before paint:
+     twelve people share one free-tier backend, and a cold start in front of
+     the render is a 30-60s spinner for whoever opens the app first. */
+  if (!/THROTTLE/.test(sj0)) fail('season.js has no throttle on the live fetch');
+  if (/await revalidate\(\)/.test(sj0)) fail('season.js awaits the live fetch — that puts a cold start in front of the reader');
+
   /* A tab with no entry in HELP still lists itself in the ? sheet, but the one
      sentence a tab cannot know about itself would be missing. */
   if (!/\['season',/.test(lj)) return fail('league.js has no season tab in L1');
