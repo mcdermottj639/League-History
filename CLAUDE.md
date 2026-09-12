@@ -235,7 +235,7 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   a single-pass stats engine, and every view. Exposes ONE global,
   `window.LeagueHistory`:
   - 🏈 **`MGR_TEAM` / `mascot(m)` — each manager's NFL team as one emoji**
-    (v48), on the You tab heading and the profile name. Keyed by MANAGER CODE
+    (v49), on the You tab heading and the profile name. Keyed by MANAGER CODE
     like `MGR_LOGO`, for the same reason: fantasy team names change every
     September, the twelve people do not.
     - 🚨 **The fallback is 👤 and must never be a team.** The 🦅 it replaced was
@@ -253,10 +253,25 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     - ⚠️ Ravens (`🐦‍⬛`) is the one ZWJ sequence here and the only glyph that can
       degrade to a PAIR of marks on a device that predates it (iOS < 16.4).
       Swap for `🪶` if anyone ever reports two.
-  - ⚠️ **Playoff record + Finals reached are in `rec`, not `cb` (v9).** They are
-    career résumé — who gets in, who reaches the final — and the Cum Bowl is
-    the opposite bracket, for the teams that missed. Filing them there put the
-    league's best achievement behind the tab named for its worst.
+  - ⚠️ **The playoff résumé is split across two tabs (v48, owner's call), and
+    the split is by KIND.** 🎖️ **Final fours** — the funnel, final fours ·
+    finals · won — closes **Honors**, because it is an achievement and that is
+    the page of achievements. 📊 **Playoff appearances** — how often each
+    manager gets in, as a rate — stays on **Records**, because it is a
+    leaderboard. Neither is on Cum Bowl (v9): that is the opposite bracket, for
+    the teams that missed, and filing the league's best achievement behind the
+    tab named for its worst was the original fault.
+    - ⚠️ **`playoffHTML` was renamed on screen in the same edit.** It headed
+      BOTH cards as "Playoff record", which covered the résumé; alone over an
+      appearance rate, a heading promising a *record* describes something
+      **this app deliberately does not keep** (v19) — the v14 fault, a name
+      that makes a number sound like another number. It reads **Playoff
+      appearances**, matching the career tile's `Playoff apps` since v10.
+    - ⚠️ **Final fours became a `.section-title`, not a `.fh-sub`.** It was a
+      sub-card *inside* Playoff record, so moving it meant promoting it — and
+      that is also what puts it in the jump nav with no second edit, and what
+      side-steps the `.fh-sub` badge trap (a 9.5px line box cannot hold a 19px
+      badge; measured here at 26px with the badge inside it).
   - 🚨 **THE APP KEEPS NO BRACKET WIN-LOSS RECORD (v19, owner's call:
     *"Title brackets have to be changed to final 4s everywhere"*).** A
     manager's playoff résumé is **final fours**, then finals, then titles.
@@ -808,7 +823,7 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 - `logos/` — the league's own twelve crests, keyed by manager.
 - `sw.js` — network-first service worker. Bump `CACHE` on every release.
 - `checks.js` — **run `node checks.js` after ANY data or detector change.**
-  ⚠️ **A summary line reports ITS OWN block — use `block()`** (v48). Three of
+  ⚠️ **A summary line reports ITS OWN block — use `block()`** (v49). Three of
   them read the running `bad` counter, so any failure above turned them ❌
   about a subject that was fine. Only the total at the bottom reads the global.
   It
@@ -818,7 +833,7 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   which is exactly why it is asserted. ⚠️ The first law is about `power.html`
   only — `power.css` is legitimately in `index.html`, because the rankings view
   reuses the Lab's row styling so a member reads what the commissioner built. It
-  runs the mascot law (v48 — every manager's team glyph is read off the
+  runs the mascot law (v49 — every manager's team glyph is read off the
   RENDERED You heading and profile and must match, and a reader who has picked
   nobody must get the neutral 👤 rather than any manager's team), the
   conservation laws below, plus the storyline laws: every manager has
@@ -1284,7 +1299,7 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
 
-- **v48 — everyone gets their own mascot (12 Sep 2026)** — the owner, on the
+- **v49 — everyone gets their own mascot (12 Sep 2026)** — the owner, on the
   🦅 above his career page: *"Where we have this eagle for me cause I am an
   eagles fan can we get a different one for each person based on there team.
   Ask me each and I'll tell u"*.
@@ -1342,6 +1357,46 @@ stale entry written in the present tense reads as current to anyone who greps.
     answers for what happened since; the total at the bottom stays global,
     because the total is what it reports. Verified both ways — an unrelated
     fault leaves the other three ✅, and each still goes ❌ for its own.
+
+- **v48 — final fours close Honors (12 Sep 2026)** — the owner: *"Put final
+  fours at the bottom of honors instead of records"*.
+  - ⚠️ **"Final fours" was ONE OF TWO CARDS under one heading, and only one of
+    them moved.** `playoffHTML()` rendered the appearance-rate leaderboard AND
+    the final-four funnel under **📊 Playoff record**. He named the second by
+    its own on-screen label, so that is what moved; the rate card is a
+    leaderboard and stays with the record book and the luck index. Said plainly
+    when reporting it, because "instead of records" could have meant both.
+  - **The split is by KIND, which is why it reads right:** final fours · finals
+    · won is an achievement, and Honors is the page of achievements (trophy
+    case · champions · still waiting); how often you get in is a rate, and
+    Records is the page of rates.
+  - 🚨 **IT COULD NOT MOVE WITHOUT BEING PROMOTED.** It was a `.fh-sub`
+    sub-card *inside* another section, so a bare move would have hung a small
+    9.5px subheading under "Still waiting" with no section of its own and **no
+    jump chip** — the nav is built from `.section-title` headings. As a real
+    section it reorders, chips and scroll-spies like every other card for free.
+    ⚠️ And it side-steps the v9 trap rather than meeting it: a `.fh-sub` cannot
+    contain its own provenance badge (9.5px line box, 19px badge). Measured on
+    the render at 26px with the badge inside the box.
+  - ⚠️ **THE HEADING LEFT BEHIND BECAME A LIE, AND THAT IS THE REAL FINDING.**
+    "Playoff record" covered a résumé while it headed both cards. Alone above
+    an appearance rate it promises a win-loss record — the one thing **this app
+    deliberately does not keep** (v19, where a bracket W-L was deleted rather
+    than renamed). That is the v14 fault exactly: a name that makes a number
+    sound like a different number. It reads **📊 Playoff appearances** now, the
+    same word the career tile has used since v10. Not asked for; a consequence
+    of the move, fixed in the same edit as the move.
+  - **The ? sheet's two sentences moved with it** — they name what each tab
+    holds, the one thing a list built from `SUBS` cannot derive. Third version
+    running that this is the only hand-edit a card move needs, which is the
+    argument for keeping every other list derived.
+  - Verified at 320 and 390px, as a reader and as a stranger: Honors renders
+    **👑 The trophy case · 🏆 Champions · 💔 Still waiting · 🎖️ Final fours**,
+    the last of those closing the page with twelve rows and the reader's own
+    row lit; Records keeps twelve appearance rows, zero final-four rows, and
+    its three legitimate `.fh-sub` subheadings; the jump nav picked the new chip
+    up and dropped nothing; the storyline cards that quote final fours still
+    render; no overflow, no type under 9px, no page errors, checks.js green.
 
 - **v47 — the tab is spelled "Honors" (12 Sep 2026)** — the owner: *"Spell of
   Honors too"*.
@@ -2545,7 +2600,9 @@ stale entry written in the present tense reads as current to anyone who greps.
   - ⚠️ **Not a final-four W-L either**, though that was the obvious compromise.
     "8 final fours" beside "5-3 in the final four" is two denominators side by
     side, and a reader will try to add them — v3, in a new costume.
-  - **The playoff card is a funnel now**: final fours · finals · won. Three
+  - **The playoff card is a funnel now**: final fours · finals · won (⚠️ **v48
+    moved that card to the bottom of Honors** and renamed what it left behind
+    on Records to "Playoff appearances"). Three
     numbers from one source, each a subset of the one before it.
   - 🚨 **And the "never won a bracket game" card finally got a stat it can
     stand on.** v14 caught it counting six missing seasons as losses and scoped

@@ -69,7 +69,7 @@ SEASON.forEach((s) => {
 window.LeagueHistory.setMe(null);
 ALL.forEach((a) => { const p = window.LeagueHistory.profile(a.m);
   if (/undefined|NaN|\[object/.test(p)) { console.log(`  ❌ profile ${a.m} has a template hole`); bad++; } });
-/* 🏈 EVERY MANAGER HAS A MASCOT, AND IT IS THE SAME ONE IN BOTH PLACES (v48).
+/* 🏈 EVERY MANAGER HAS A MASCOT, AND IT IS THE SAME ONE IN BOTH PLACES (v49).
    Read off the RENDER rather than out of `MGR_TEAM`, so this cannot pass by
    agreeing with a map that the views have stopped using — and so checks.js
    never holds a second copy of who supports whom. A manager added without a

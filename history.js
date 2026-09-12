@@ -493,7 +493,7 @@
     Christel: 'christel', Woods: 'woods', Zach: 'zach', Buley: 'buley',
     Wolff: 'wolff', Riz: 'riz', Slemp: 'slemp', Gotch: 'gotch' };
   /* 🏈 Each manager's NFL team, as the mascot on the heading of the page about
-     them (v48, owner's call). The 🦅 that was there was HIS team — so every
+     them (v49, owner's call). The 🦅 that was there was HIS team — so every
      one of the other eleven opened their own career page under somebody else's
      bird. The teams are the owner's own answers, manager by manager.
      ⚠️ Keyed by MANAGER CODE, like MGR_LOGO and for the same reason: the
@@ -980,10 +980,17 @@
     </div>`;
   }
 
-  /* ══ 📊 PLAYOFF RECORD ════════════════════════════════════════════════ */
+  /* ══ 📊 PLAYOFF APPEARANCES ═══════════════════════════════════════════
+     ⚠️ RENAMED FROM "Playoff record" IN v48, because the card under it
+     changed. It used to head two cards — this rate AND the final-four funnel
+     — so "record" covered the whole résumé. Alone, it heads a card that is
+     only how often you get in, and **this app keeps no bracket win-loss
+     record at all** (v19): a heading promising one over a card that has none
+     is the v14 fault, a name that makes a number sound like something else.
+     It matches the career tile, which has read `Playoff apps` since v10. */
   function playoffHTML() {
     const rows = [...ALL].sort((a, b) => b.poRate - a.poRate || b.po - a.po);
-    return `<h2 class="section-title">📊 Playoff record ${tag('fin')}</h2>
+    return `<h2 class="section-title">📊 Playoff appearances ${tag('fin')}</h2>
     <div class="ffp-card">
       ${rows.map((a) => `<div class="fh-po${isMe(a.m) ? ' you' : ''}">
         ${tap(a.m, `<div class="fh-po-n"><b>${esc(a.name)}</b><i>${a.po} of ${a.seasons} seasons</i></div>`)}
@@ -992,8 +999,25 @@
       </div>`).join('')}
       <p class="ffp-cap">The bar <b>is</b> the rate — a top-6 seed always finishes top 6 in this format, verified on every bracket, so this covers all ${SEASON.length} seasons.</p>
     </div>
+    </div>`;
+  }
+
+  /* ══ 🎖️ FINAL FOURS ═══════════════════════════════════════════════════
+     🚨 ITS OWN SECTION, AT THE BOTTOM OF HONORS (v48, owner's call: *"Put
+     final fours at the bottom of honors instead of records"*). It was the
+     second card inside `playoffHTML`, under a `.fh-sub` subheading — so it
+     was a sub-card of Playoff record and could not be moved without being
+     promoted first. As a `.section-title` it is a jump chip like every other
+     card, which is the whole reason the nav picks it up with no edit.
+     ⚠️ The 🎖️ is not decoration: Honors is the page of 🏆 / 👑 / 💔 and a
+     fourth card needs a mark of its own to be findable in the jump row.
+     ⚠️ AND IT IS THE FUNNEL, NOT A W-L (v19) — final fours · finals · won,
+     three numbers from one source, each a subset of the one before it. The
+     caption says why there is no bracket record and must not be trimmed into
+     implying one exists. */
+  function finalFoursHTML() {
+    return `<h2 class="section-title">🎖️ Final fours ${tag('fin')}</h2>
     <div class="ffp-card">
-      <div class="fh-sub">Final fours ${tag('fin')}</div>
       ${[...ALL].sort((a, b) => b.f4 - a.f4 || b.fin - a.fin || b.t1 - a.t1).map((a) => `<div class="fh-fr${isMe(a.m) ? ' you' : ''}">
         ${tap(a.m, `<b>${esc(a.name)}</b>`)}
         <span class="fh-fr-f">${a.f4 ? `${a.f4} final four${a.f4 > 1 ? 's' : ''}` : '<i>no final fours</i>'}${a.fin ? ` · ${a.fin} final${a.fin > 1 ? 's' : ''}` : ''}</span>
@@ -1841,7 +1865,7 @@
        term — but `heroHTML()` stays first: it is the page's standfirst and
        stat strip, not one of the cards, and it carries no heading so it is not
        a jump chip either. */
-    hon: () => heroHTML() + trophyHTML() + champsHTML() + ringlessHTML(),
+    hon: () => heroHTML() + trophyHTML() + champsHTML() + ringlessHTML() + finalFoursHTML(),
     sea: () => seasonsHTML(),
     /* Playoff record + Finals reached sit HERE, not on Cum Bowl (v9, owner's
        call). They are career résumé — who gets in, who reaches the final —
