@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v43';
+  const APP_VERSION = 'v44';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -251,9 +251,9 @@
     hist: 'Thirteen seasons, 2013–2025. Five pages:',
     season: 'This year as it stands — the standings, ESPN\'s playoff odds, who you play next, and your season measured against your other thirteen.',
     rank: "The commissioner's weekly power rankings — every team in order, with a take on each. Only during the season, and only once he publishes a set.",
-    hon: 'The champions, the trophy case, and who is still waiting. Opens with the storylines the archive throws up.',
+    hon: 'The champions, the trophy case, and who is still waiting.',
     you: 'Your thirteen seasons — medals, Cum Bowls, your best and worst years.',
-    rec: 'Every leaderboard: the record book, the luck index, rivalries, playoff record, the champion\'s curse.',
+    rec: 'Opens with the storylines the archive throws up, then every leaderboard: the record book, the luck index, rivalries, playoff record, the champion\'s curse.',
     cb: "The other bracket. The two worst seeds play on the first weekend of the playoffs, and the loser is the league's worst.",
     sea: 'All thirteen final standings, newest first.',
   };

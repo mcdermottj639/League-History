@@ -283,7 +283,7 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     owner's call). Reordering is that array alone; `VIEWS` is a map and
     `league.js` just walks `SUBS`.
   - `view(key)` — `hon` · `you` · `rec` · `cb` · `sea`. **Storylines opens
-    `hon`** (v13), in the slot the badge key used to hold.
+    `rec`** (v44, owner's call), back where it sat before v13.
   - `profile(mgr)` — the drill-down every name opens
   - `setMe(mgr)` / `me()` / `name(mgr)` / `roster()` — identity
   - `key()` — the three-badge provenance key, for the ? sheet in `league.js`
@@ -913,8 +913,8 @@ untrustworthy. Every view carries a badge saying which it is.
 
 ## 📌 Storylines — detected, never written
 
-The cards at the top of Honours, on the You page and on every profile (v13 —
-they opened Records until then) started life as
+The cards at the top of Records, on the You page and on every profile (v44 —
+they opened Honours from v13 until then) started life as
 paragraphs typed into a chat. **They are not typed in now, and that is the
 whole point:** a sentence like "Buley has finished 11th seven times" is wrong
 the moment a season lands. A detector looks for a SHAPE in the data and fills
@@ -1249,6 +1249,46 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v44 — Storylines goes back to the top of Records (12 Sep 2026)** — the
+  owner: *"Move storylines back to the top of records tab instead"*.
+  - **It is the same one-term move v13 was, run backwards**: `storiesHTML()`
+    out of the `hon` view and onto the front of `rec`. Nothing else about the
+    feature changes — same detectors, same one-card-per-manager roll-call, same
+    cards on the You page and every profile, `LH.SUBS` order untouched.
+  - ⚠️ **v13's argument was about REACH, and reach is no longer the problem.**
+    It moved the strip to Honours because it was *"filed third-of-five behind a
+    tab called Records, so most readers never reached it"* — which was true
+    when the only route to a buried card was scrolling for it. Since then the
+    **?** sheet names what each tab opens with and the jump nav chips straight
+    to any card on a page. Those were built for other reasons and they retired
+    the premise of the move.
+  - **What Honours lost by holding it is coherence.** That page is now the
+    Champions list, the trophy case and who is still waiting — three views of
+    the same trophy — while Records is the page of *derived findings*, which is
+    what a storyline is. The strip sits with the record book, the luck index
+    and the champion's curse rather than above a list of champions it keeps
+    half-restating. The owner's read, and it is the better filing.
+  - ⚠️ **One comment went stale and was marked rather than quietly left.**
+    v16's `own: true` on the titles card was argued from ADJACENCY — "the next
+    two cards down ARE the title count, ranked" — and those two cards are not
+    underneath it any more. **The flag stays**: he picked which card holds his
+    one slot, and that choice is about the card, not about which tab renders
+    it. Re-deriving the `own` flags off the new layout would have undone two
+    explicit owner calls (v16, v18) as a side effect of moving a term.
+  - **The ? sheet's two sentences moved with it**, because they name what each
+    tab opens with — a tab list that is built from `L1`/`SUBS` still can't know
+    that, which is exactly why `HELP` exists and why it has to be edited in the
+    same pass. Verified on the render, not by reading the code.
+  - Verified in headless Chromium at 320 and 390px, as the reader and as a
+    stranger who has tapped nothing: Records opens on **twelve** storyline
+    cards, Honours renders **zero** and still opens on Champions, the jump nav
+    picked the chip up on Records and dropped it from Honours **with no code
+    change** (it reads the DOM), Honours still has three landmarks so the nav
+    does not hit the under-two `hidden` branch, no horizontal overflow, no type
+    under 9px, no clipped tab label, no page errors, and `node checks.js`
+    green — including the laws that count storylines on the **rendered** You
+    page and profile, which is where the per-manager floor of two lives.
 
 - **v43 — the refresh follows the NFL schedule (11 Sep 2026)** — the owner, on
   v42's flat throttle: *"It's an nfl schedule so don't have to run in off
@@ -2364,7 +2404,10 @@ stale entry written in the present tense reads as current to anyone who greps.
   the playoff-rise card circled on their own You page: *"Change my honors page
   storyline to this actually."*
   - **The titles card was redundant with the page it sat on.** Storylines opens
-    Honours, and the next two cards down are the Champions list and the trophy
+    Honours (⚠️ **SUPERSEDED in v44 — the strip moved back to Records**, so the
+    adjacency below no longer holds; the owner's choice of WHICH card holds his
+    slot stands, since that is about the card and not about the tab), and the
+    next two cards down are the Champions list and the trophy
     case — which ARE the title count, ranked. (⚠️ It said "the Champions crown"
     when this was written; **v20 deleted that crown**, and the reasoning holds
     either way.) So "4 titles" as a storyline told
@@ -2465,8 +2508,10 @@ stale entry written in the present tense reads as current to anyone who greps.
     fours** (13 seasons × 4, less the two untracked). The old law totalled
     every playoff game and stayed green while `bw` meant two things.
 
-- **v13 — Storylines opens the app; the key moves behind a ? (10 Sep 2026)** —
-  the owner: *"I want story lines moved to where how to read this is on honours
+- **v13 — Storylines opens the app; the key moves behind a ? (10 Sep 2026)**
+  ⚠️ **SUPERSEDED in v44 in its FIRST half only: Storylines is back at the top
+  of Records.** The ? sheet is unchanged and the badge key still lives behind
+  it — that half of this entry is current. — the owner: *"I want story lines moved to where how to read this is on honours
   page. And how to read this goes up to a ? Button at the top that explains all
   the functions of the app along with it."*
   - **Storylines was the best thing the archive produces and it was filed
@@ -2656,7 +2701,9 @@ stale entry written in the present tense reads as current to anyone who greps.
     `signature` closes that, and `checks.js` now fails if it ever reopens.
   - Placed in three spots rather than a sixth tab (five already crowd 390px):
     the top of **Records** (⚠️ **SUPERSEDED in v13 — they open Honours now**,
-    where the badge key used to sit), **Your storylines** on the You page, and
+    where the badge key used to sit — ⚠️ **and RE-SUPERSEDED in v44, which put
+    them back at the top of Records**, so this line is current again),
+    **Your storylines** on the You page, and
     each manager's own on their profile.
   - `checks.js` moved into the repo from the scratch harness — it was testing
     a path in the other repo, which stopped existing when history.js moved.

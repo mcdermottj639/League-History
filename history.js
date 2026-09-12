@@ -1202,7 +1202,12 @@
          storyline told a reader something the next two screens tell them
          better, and it spent the title-holder's one slot doing it. It stays on
          that manager's own pages, where the surrounding page is about them
-         rather than about the trophies. */
+         rather than about the trophies.
+         ⚠️ v44 moved the strip to Records, so the ADJACENCY argument above no
+         longer holds — the Champions card is not underneath it any more. The
+         flag stays because the owner picked which card holds his one slot
+         (*"Change my honors page storyline to this actually"*), and that
+         choice is about the card, not about which tab it renders on. */
       return top.map((a) => {
         const tied = tiedWith(top, a.m);
         return { id: 'dynasty', t: 'title', m: a.m, w: 80, src: 'fin', own: true,
@@ -1773,12 +1778,17 @@
   const SUBS = [['hon', 'Honours'], ['you', 'You'], ['rec', 'Records'],
                 ['cb', 'Cum Bowl'], ['sea', 'Seasons']];
   const VIEWS = {
-    /* 🚨 Storylines opens Honours (v13, owner's call), in the slot the badge
-       key used to hold. It is the best thing the archive produces and it was
-       filed third-of-five behind a tab called Records, so most readers never
-       reached it; the key it replaced is a reference, and a reference belongs
-       behind the ? rather than above the champions. */
-    hon: () => heroHTML() + storiesHTML() + champsHTML() + trophyHTML() + ringlessHTML(),
+    /* 🚨 Storylines opens RECORDS (v44, owner's call), back where it lived
+       before v13. v13 moved it to Honours on the reasoning that it was the
+       best thing the archive produces and was buried third-of-five — that
+       argument was about REACH, and reach is no longer the problem: the ?
+       sheet names it and the jump nav on Records chips straight to it. What
+       Honours lost by holding it is that the page is now the champions, the
+       trophy case and who is waiting — three views of the same trophy —
+       while Records is the page of derived findings, which is what a
+       storyline IS. ⚠️ It is ONE TERM, moved: nothing else about the feature
+       changes, and `LH.SUBS` order is untouched. */
+    hon: () => heroHTML() + champsHTML() + trophyHTML() + ringlessHTML(),
     sea: () => seasonsHTML(),
     /* Playoff record + Finals reached sit HERE, not on Cum Bowl (v9, owner's
        call). They are career résumé — who gets in, who reaches the final —
@@ -1786,7 +1796,7 @@
        Filing them there put the league's best achievement behind the tab
        named for its worst. Ordered baseline-first: who makes the playoffs,
        then the two cards that comment on what happens once you are in. */
-    rec: () => recordHTML() + luckHTML() + rivalsHTML() + playoffHTML() + curseHTML() + seedHTML(),
+    rec: () => storiesHTML() + recordHTML() + luckHTML() + rivalsHTML() + playoffHTML() + curseHTML() + seedHTML(),
     cb: () => cumbowlHTML(),
     you: () => youHTML(),
   };
