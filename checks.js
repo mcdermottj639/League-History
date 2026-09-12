@@ -40,6 +40,17 @@ PLAYOFF_GAMES.filter((g) => g.br === 'W').forEach((g) => {
 });
 const T = [
   ['seasons counted', ALL.reduce((a, x) => a + x.seasons, 0), rows.length - exRows.length],
+  /* 🚨 THE ALL-TIME STANDINGS ARE A DISPLAYED TOTAL NOW (v61), so they get a
+     law — v52's rule, that a law over a value nothing displays is testing
+     dead code, cuts both ways. Career W-L and career points-for are summed
+     per manager in `MGRS` and printed straight onto the card; conserved
+     against the season rows they came from, this catches a manager counted
+     twice or dropped — the "Slemp: 36 Cum Bowls" shape, on the one table in
+     the app that is pure accumulation. Points are rounded because both sides
+     are float sums in different orders. */
+  ['career wins', ALL.reduce((a, x) => a + x.w, 0), rows.filter((r) => r.mgr).reduce((a, r) => a + r.w, 0)],
+  ['career losses', ALL.reduce((a, x) => a + x.l, 0), rows.filter((r) => r.mgr).reduce((a, r) => a + r.l, 0)],
+  ['career points for', Math.round(ALL.reduce((a, x) => a + x.pf, 0)), Math.round(rows.filter((r) => r.mgr).reduce((a, r) => a + r.pf, 0))],
   ['cum bowls played', ALL.reduce((a, x) => a + x.cbA, 0), CUMBOWL.length * 2 - exCB],
   ['cum bowls lost', ALL.reduce((a, x) => a + x.cb, 0), CUMBOWL.length - exCBloss],
   /* Places 1-4 ARE the final four in this format (the semi-final losers play

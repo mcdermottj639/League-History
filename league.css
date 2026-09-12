@@ -555,3 +555,19 @@
 .lg-body { touch-action: manipulation; }
 .lg-body button, .lg-body a, .lg-body summary, .lg-body label,
 .lg-body input, .lg-body select, .lg-body textarea { touch-action: manipulation; }
+
+/* ══ 🏅 ALL-TIME STANDINGS (v61) ════════════════════════════════════════════
+   Mirrors `.fh-po` exactly — name and record on one line, the context on a
+   full-width second. That is the v39/v52 shape and it is not a style choice:
+   the numeric columns have floors and the name is the only thing left to
+   squeeze, so five columns on a phone truncate the name instead. The reader's
+   own row bleeds to the card edge the same way `.fh-po.you` does. */
+.fh-as { padding: 7px 0; }
+.fh-as + .fh-as { box-shadow: inset 0 1px 0 var(--l07); }
+.fh-as.you { background: rgba(var(--acRGB), .09); margin: 0 -14px; padding: 7px 14px; border-radius: var(--r1); }
+.fh-as-top { display: grid; grid-template-columns: 22px 1fr auto; gap: 9px; align-items: center; }
+.fh-as-r { font: 800 11px/1 Archivo, system-ui, sans-serif; color: var(--mu2); font-variant-numeric: tabular-nums; }
+.fh-as-n { font-size: 12.5px; font-weight: 800; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fh-as-w { font-size: 13px; font-weight: 800; color: var(--gy); }
+.fh-as-s { margin-top: 4px; padding-left: 31px; font: 700 9.5px/1.6 Archivo, system-ui, sans-serif; color: var(--mu2); }
+.fh-as-s b { color: var(--gy); font-weight: 800; }

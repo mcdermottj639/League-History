@@ -378,6 +378,30 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     - ⚠️ The `#6`-seed claim in that caption is **derived** now, not typed. It
       read "Two #6 seeds have won the whole thing" as prose — true by luck,
       and it would have gone on saying "two" through any new seeded season.
+  - 🏅 **`standingsHTML` — ALL-TIME STANDINGS (v61, owner's ask: *"Lifetime
+    standings like w-l and pts for all should be in here somewhere"*).**
+    Thirteen regular seasons added up: W-L, win%, points for, points a game.
+    - ⚠️ **He was right that it was missing, and the near-misses are why it
+      read as present.** The trophy case carries a career W-L as a SUB-LINE
+      under a table sorted by MEDALS, and the luck index carries one as the
+      "actual" half of a gap. **Career points-for was nowhere in the app at
+      all**, and nothing was ranked by record.
+    - 🚨 **Sorted by win RATE, and the totals cannot be.** Hyman has 9 seasons
+      against everyone else's 13, so ranking on total wins ranks longevity —
+      and on total points doubly so: **Hurd leads all-time scoring with 18,235
+      while Hyman's 104.9 a game is the best in the league.** Both are on the
+      card, the order is the rate, and every row names its own season count
+      (the v51 rule).
+    - ⚠️ **Competition rank, like `signature` since v58** — McD and Zach are
+      both 93-81, Gotch and CC both 88-86.
+    - ⚠️ **`tag('reg')`, never `fin`.** The order here is the REGULAR SEASON
+      and it disagrees with the trophy case constantly — Wolff is first with
+      no title. The caption says so, rather than leaving two tables on two
+      tabs to quietly contradict each other.
+    - ⚠️ It reuses `.fh-po`'s shape (name + record on one line, context on a
+      full-width second) because five columns on a phone squeeze the name —
+      the v39/v52 finding. `checks.js` conserves career W, L and points-for
+      against the season rows they were summed from.
   - 🔥 **`januaryHTML` — WHO SHOWS UP IN JANUARY (v58).** Every manager's
     regular-season ppg against their own playoff ppg, over the same seasons.
     - 🚨 **It reads `ST.era`, the SAME object the storyline detectors read,
@@ -462,8 +486,9 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   - `view(key)` — `hon` · `you` · `rec` · `cb` · `sea`. **Storylines opens
     `rec`** (v44, owner's call), back where it sat before v13.
     - ⚠️ **The order WITHIN `rec` is the owner's call too** (v51): Storylines ·
-      the record book · Playoff appearances · Seeds & upsets ·
-      🔥 Who shows up in January (v58) · **the luck index · Rivalries last**.
+      🏅 All-time standings (v61) · the record book · Playoff appearances ·
+      Seeds & upsets · 🔥 Who shows up in January (v58) ·
+      **the luck index · Rivalries last**.
       ⚠️ The champion's curse left for Honors in v50. The new card went in
       ABOVE the luck index precisely to keep *"luck index and rivalries to
       bottom of records"* (v53, his words) true. It is one expression and
@@ -1077,7 +1102,9 @@ correction, zero unresolved conflicts**.
   13 titles · 76 playoff berths · h2h games == meetings · **losses ==
   brackets − titles per manager** · **every tied rank says "joint"** (v58) ·
   **brackets on file == playoff appearances, per manager** (v59 — the claim
-  the Playoff appearances caption makes as fact, so it is a law).
+  the Playoff appearances caption makes as fact, so it is a law) · **career
+  wins, losses and points-for == the season rows they were summed from**
+  (v61, now that the all-time standings display them).
   ⚠️ The bracket law counted **every** playoff game until v14 and was green
   the whole time `bw` meant two different things in two different views — a
   law over a total cannot see a definition drift underneath it. Re-run them after ANY
@@ -1467,6 +1494,74 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v61 — the lifetime table the archive never had (12 Sep 2026)** — the
+  owner: *"Lifetime standings like w-l and pts for all should be in here
+  somewhere."*
+  - **He was right, and the near-misses are why nobody had noticed.** A career
+    W-L was already on screen twice — as a sub-line under the trophy case
+    (a table sorted by MEDALS) and as the "actual" half of the luck index's
+    gap. So the number existed and the TABLE did not: nothing in the app was
+    ranked by record, and **career points-for was not anywhere at all.**
+    ⚠️ Worth recording as a shape: *a fact present as a sub-line under
+    something else reads as covered.* Third time this archive has held the
+    data and not the view (v13's badge key, v52's playoff record).
+  - 🚨 **RANKED BY WIN RATE, AND THE TOTALS CANNOT BE — the card says so with
+    its own numbers.** Hyman has 9 seasons against everyone else's 13, so
+    total wins would rank longevity. Points are worse: **Hurd leads all-time
+    scoring with 18,235 and Hyman scores the most per game at 104.9.** Both
+    are printed, which is the honest version of the v3 rule — not hiding a
+    total that is not a ranking, but putting the rate beside it and naming
+    every row's season count.
+  - ⚠️ **Competition rank from the first commit.** McD and Zach are both
+    93-81; Gotch and CC are both 88-86. Shipping a new table that handed out a
+    sole 3rd and 4th from one identical record would have been v58's fault
+    reintroduced in the very next feature — so the tie handling went in with
+    the card rather than after somebody read it.
+  - ⚠️ **`tag('reg')`, and the caption states the contradiction rather than
+    leaving it.** This order is the regular season and it disagrees with the
+    trophy case constantly — **Wolff is first all-time with no title.** Two
+    tables on two tabs ranking the same twelve people in different orders is
+    only honest if each says which question it answers.
+  - ⚠️ **Two-line rows, not five columns** — the v39/v52 finding applied
+    before it could bite. Reuses `.fh-po`'s shape, so no new layout idea, and
+    the reader's own row bleeds to the card edge the same way.
+  - Verified at 320 and 390px as a stranger, as the league leader, as the
+    9-season manager and as the bottom row: twelve rows of uniform height, no
+    clipped name, no wrapped sub-line, no overflow, no page error, the jump
+    nav picking up an eighth chip with no code change, and checks green
+    including the three new laws.
+
+- **v60 — the seeds were never missing, just never copied across (12 Sep
+  2026)** — the owner, with the 2017 bracket on screen: *"Seeds are right
+  there u said they weren't before."*
+  - 🚨 **HE IS RIGHT, AND IT IS THE v56 LESSON REPEATING ONE LAYER DOWN.**
+    v58's Seeds & upsets caption said *"ESPN published a seeding for 8 of the
+    13."* False. ESPN prints `#1`-`#6` on the Final Playoff Results page for
+    **every** season, including the five he captured for v56 — they are on the
+    2017 screenshot in plain sight. The archive has no `seed` for 2013-2017
+    because those numbers were never transcribed, not because they do not
+    exist. **v56's own entry says THE GAMES WERE NEVER MISSING FROM ESPN;
+    THEY HAD NOT BEEN COLLECTED, in capitals, in this file — and I made the
+    identical inference about the seeds two versions later.** "Not in our
+    data" is not "does not exist", and the check for it is to look at the
+    source rather than at the schema.
+  - **Verified the screenshot is 2017** before changing anything: same teams,
+    same records, same final placings, same round-1 scores (110.5, 119, 74,
+    69.6). Its seeding is #1 My Knee Grows, #2 Morning Woods, #3 Pepperoni
+    TD's, #4 What Can Browns Do For Jews, #5 The Great Wentz, #6 Shady (ACL)
+    Crack Cooks.
+  - ⚠️ **The case against COMPUTING them is unchanged and better evidenced.**
+    2016 gave a bye to an **8-5 team over a 10-3 team**, and 2013 seeded a 9-4
+    team above another 9-4 team with **161 more points**. No arithmetic on
+    records or points recovers either, so `calcSeed` stays unwired — but the
+    reason is "ESPN used a tiebreak this archive does not hold", not "ESPN
+    published nothing."
+  - The caption now says the other five seasons **are** seeded on ESPN and the
+    gap is transcription, with the 8-5-over-10-3 fact as the reason the card
+    will not guess. No data change; the card still covers 8 of 13 and now says
+    why. ⚠️ **Open: the four remaining brackets** (2013-2016) — same screenshot
+    he already took once, and the card goes to 13 of 13.
 
 - **v59 — a second look at v58, asked for (12 Sep 2026)** — the owner, after
   a model switch: *"Anything you'd alter?"* Three things, all in v58's own

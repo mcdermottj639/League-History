@@ -1131,6 +1131,49 @@
     </div>`;
   }
 
+  /* ══ 🏅 ALL-TIME STANDINGS (v61, owner's ask: *"Lifetime standings like
+     w-l and pts for all should be in here somewhere"*) ══════════════════
+     Thirteen seasons added up. ⚠️ He was right that it was missing, and the
+     near-misses are why it read as present: the trophy case carries a career
+     W-L as a SUB-LINE under a table sorted by medals, and the luck index
+     carries one as the "actual" half of a gap. **Career points-for was
+     nowhere in the app at all**, and nothing was ranked by record.
+     🚨 SORTED BY WIN RATE, AND THE TOTALS CANNOT BE. Hyman has 9 seasons
+     against everyone else's 13, so ranking on total wins would rank on
+     longevity — and ranking on total points doubly so: Hurd leads all-time
+     scoring with 18,235 while Hyman's 104.9 a game is the best in the league.
+     Both facts are on the card; the order is the rate, and every row names
+     its own season count (the v51 rule).
+     ⚠️ COMPETITION RANK, like `signature` since v58 — McD and Zach are both
+     93-81 and Gotch and CC are both 88-86. A standings table that invented a
+     sole 3rd and 4th out of one identical record would be the exact fault
+     v58 fixed, shipped fresh in a new card.
+     ⚠️ `tag('reg')`, not `fin`: this is the REGULAR SEASON, and the rank in
+     it disagrees with the trophy case constantly — Wolff is first here with
+     no title. That gap is the archive's whole premise, so the caption says
+     it rather than leaving two tables to quietly contradict each other. */
+  const grp = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  function standingsHTML() {
+    const rows = [...ALL].sort((a, b) => b.pct - a.pct || b.w - a.w || b.pf - a.pf);
+    const place = (a) => 1 + ALL.filter((x) => x.pct > a.pct).length;
+    const top = rows[0], mostPf = [...ALL].sort((a, b) => b.pf - a.pf)[0];
+    const bestPpg = [...ALL].sort((a, b) => b.ppg - a.ppg)[0];
+    const shortest = [...ALL].sort((a, b) => a.seasons - b.seasons)[0];
+    return `<h2 class="section-title">🏅 All-time standings ${tag('reg')}</h2>
+    <div class="ffp-card">
+      <p class="fh-lead">Every regular season since 2013, added together. <b>Ranked by win rate</b> — not by total wins, because ${esc(shortest.name)} ${vb(shortest.m, 'have', 'has')} played ${pl(shortest.seasons, 'season')} and most of the league has played ${SEASON.length}.</p>
+      ${rows.map((a) => `<div class="fh-as${isMe(a.m) ? ' you' : ''}">
+        <div class="fh-as-top">
+          <span class="fh-as-r">${place(a)}</span>
+          <span class="fh-as-n">${tap(a.m, esc(a.name))}</span>
+          <span class="fh-as-w mono">${a.w}-${a.l}</span>
+        </div>
+        <div class="fh-as-s"><b>${pct1(a.pct)}</b> · ${a.seasons} season${a.seasons === 1 ? '' : 's'} · <b>${grp(Math.round(a.pf))}</b> points for · ${one(a.ppg)} a game</div>
+      </div>`).join('')}
+      <p class="ffp-cap"><b>${esc(top.name)}</b> ${vb(top.m, 'have', 'has')} the best record in league history and ${top.t1 ? pl(top.t1, 'title') : '<b>no title</b>'} — the order here is the <b>regular season</b>, and it disagrees with the trophy case constantly. That gap is most of what this archive is about.<br><br>⚠️ <b>The two totals are not a ranking.</b> Seasons ran 13 games until 2021 and 14 since, and careers here run ${shortest.seasons} to ${SEASON.length} seasons, so a points total measures how long somebody has played as much as how well: <b>${esc(mostPf.name)}</b> ${vb(mostPf.m, 'have', 'has')} the most points of anyone, while <b>${esc(bestPpg.name)}</b> ${vb(bestPpg.m, 'score', 'scores')} the most per game. The rate columns are the comparison; the totals are the history.<br><br>⚠️ Scoring has climbed across the thirteen years, so a career average still flatters whoever played the recent ones. Nothing here is adjusted for that — the ⚑ playoff pages and the Season tab are where the era-relative numbers live.</p>
+    </div>`;
+  }
+
   /* ══ 📕 THE RECORD BOOK ═══════════════════════════════════════════════ */
   function recordHTML() {
     const pick = (arr, f, d) => [...arr].sort((a, b) => d * (f(a) - f(b)))[0];
@@ -2247,7 +2290,7 @@
        other call, landed in parallel). Both moves are his and they compose:
        this one says where luck and rivalries sit, that one says the curse is
        an honour. Merged rather than either one winning. */
-    rec: () => storiesHTML() + recordHTML() + playoffHTML() + seedHTML() + januaryHTML() + luckHTML() + rivalsHTML(),
+    rec: () => storiesHTML() + standingsHTML() + recordHTML() + playoffHTML() + seedHTML() + januaryHTML() + luckHTML() + rivalsHTML(),
     cb: () => cumbowlHTML(),
     you: () => youHTML(),
   };
