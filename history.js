@@ -492,6 +492,40 @@
   const MGR_LOGO = { McD: 'mcd', CC: 'cc', Hurd: 'hurd', Hyman: 'hyman',
     Christel: 'christel', Woods: 'woods', Zach: 'zach', Buley: 'buley',
     Wolff: 'wolff', Riz: 'riz', Slemp: 'slemp', Gotch: 'gotch' };
+  /* 🏈 Each manager's NFL team, as the mascot on the heading of the page about
+     them (v49, owner's call). The 🦅 that was there was HIS team — so every
+     one of the other eleven opened their own career page under somebody else's
+     bird. The teams are the owner's own answers, manager by manager.
+     ⚠️ Keyed by MANAGER CODE, like MGR_LOGO and for the same reason: the
+     fantasy team names change every September, the twelve people do not.
+     ⚠️ Duplicates are CORRECT — three Jets fans and two Patriots. A mascot
+     says who someone roots for, and it was never meant to be unique.
+     🚨 The fallback is 👤 and must never be a team. A reader who has picked
+     nobody is not an Eagles fan by default, and making one manager's mascot
+     the app's own would put the commissioner's team on eleven strangers'
+     screens — the same fault `isMe` keeps nearly causing elsewhere. */
+  const MGR_TEAM = {
+    McD: '🦅',       // Eagles
+    Buley: '✈️',     // Jets
+    Riz: '✈️',       // Jets
+    Woods: '✈️',     // Jets
+    CC: '🐴',        // Colts
+    Christel: '🇺🇸',  // Patriots
+    Hurd: '🇺🇸',      // Patriots
+    Gotch: '🐻',     // Bears
+    /* ⚠️ Ravens is the one ZWJ sequence here (bird + black square), so it is
+       the only glyph that can degrade to a PAIR of marks on a device too old
+       to know it. iOS 16.4 and up are fine — every phone in this league — but
+       this is the one to swap for 🪶 if anyone ever reports two. */
+    Hyman: '🐦‍⬛',    // Ravens
+    /* ⚠️ U+26A1 needs the variation selector, exactly as ✈️ above does, or a
+       font is free to draw it as a thin monochrome TEXT glyph beside twelve
+       colour ones — which is what it did on first render. */
+    Slemp: '⚡️',     // Chargers
+    Wolff: '🗽',     // Giants
+    Zach: '🐆',      // Panthers
+  };
+  const mascot = (m) => MGR_TEAM[m] || '👤';
 
   const LH = LEAGUE_HISTORY;
   /* ══════════════════════════════════════════════════════════════════════════
@@ -902,7 +936,7 @@
     });
     const avg = pairs.reduce((a, p) => a + p.place, 0) / pairs.length;
     const made = pairs.filter((p) => p.place <= 6).length;
-    /* ⚠️ 📉, NOT 👑 (v49). The curse moved onto Honors, where **👑 is already
+    /* ⚠️ 📉, NOT 👑 (v50). The curse moved onto Honors, where **👑 is already
        the trophy case** — two identical marks on one page, and two identical
        chips in the jump row, which is read by its mark. The clash did not
        exist while the two cards were on different tabs; it is a consequence of
@@ -1660,7 +1694,7 @@
     </details>`;
   }
 
-  /* ══ 🦅 YOUR CAREER ═══════════════════════════════════════════════════ */
+  /* ══ 🏈 YOUR CAREER ═══════════════════════════════════════════════════ */
   function youHTML() {
     const a = MGRS[ME];
     /* 🚨 Nobody picked → this tab must say what it needs, not render blank.
@@ -1668,7 +1702,7 @@
        he was always known. Here a blank panel is the likeliest first thing a
        league member ever sees. */
     if (!a) {
-      return `<h2 class="section-title">🦅 Your career</h2>
+      return `<h2 class="section-title">${mascot(null)} Your career</h2>
       <div class="ffp-card"><div class="ffp-empty"><b>Tell the app who you are.</b>
       Pick your name and this page becomes your thirteen seasons — every finish, your
       medals, your playoff record and your Cum Bowls. Everything else on the app starts
@@ -1676,7 +1710,7 @@
       <button type="button" class="fan-btn" data-pickme="1">👤 Choose my name</button></div>`;
     }
     const mine = storiesFor(ME);
-    return `<h2 class="section-title">🦅 Your career ${tag('mix')}</h2>
+    return `<h2 class="section-title">${mascot(ME)} Your career ${tag('mix')}</h2>
     ${careerCard(a, true)}
     ${mine.length ? `<h2 class="section-title">📌 Your storylines</h2>
     <div class="ffp-card fh-stories">${mine.map(storyCardHTML).join('')}</div>` : ''}
@@ -1721,7 +1755,7 @@
     const teams = [...new Set([...a.yrs].sort((x, y) => y.yr - x.yr).map((r) => r.t))];
     return `<div class="fh-prof">
       <div class="fh-prof-h">${crest(m, 66)}
-        <div><h3>${esc(a.name)}</h3><p>${a.seasons} seasons · ${a.w}-${a.l} · ${one(a.ppg)} per game</p></div>
+        <div><h3>${mascot(m)} ${esc(a.name)}</h3><p>${a.seasons} seasons · ${a.w}-${a.l} · ${one(a.ppg)} per game</p></div>
       </div>
       <div class="fh-prof-m"><span>${a.t1} 🥇 · ${a.t2} 🥈 · ${a.t3} 🥉 · ${a.cb} 🚽 · ${a.po} playoffs · ${sgn(a.luck)} luck</span></div>
       ${careerCard(a, true)}
@@ -1837,7 +1871,7 @@
        term — but `heroHTML()` stays first: it is the page's standfirst and
        stat strip, not one of the cards, and it carries no heading so it is not
        a jump chip either. */
-    /* ⚠️ The champion's curse closes the page, UNDER final fours (v48, owner's
+    /* ⚠️ The champion's curse closes the page, UNDER final fours (v50, owner's
        call: *"Put champions curse below that"*). It belongs with these four
        rather than among the Records leaderboards: it is about what happens to
        a CHAMPION, and Honors is where the champions are. Self-contained — its

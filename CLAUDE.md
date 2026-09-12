@@ -234,6 +234,25 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 - `history.js` — **the archive** (~1,130 lines): the curated 13-season data,
   a single-pass stats engine, and every view. Exposes ONE global,
   `window.LeagueHistory`:
+  - 🏈 **`MGR_TEAM` / `mascot(m)` — each manager's NFL team as one emoji**
+    (v49), on the You tab heading and the profile name. Keyed by MANAGER CODE
+    like `MGR_LOGO`, for the same reason: fantasy team names change every
+    September, the twelve people do not.
+    - 🚨 **The fallback is 👤 and must never be a team.** The 🦅 it replaced was
+      the commissioner's own Eagles, hardcoded — so eleven other managers, and
+      every stranger the link reaches, opened the app under his bird. A reader
+      who has picked nobody is not an Eagles fan by default. `checks.js`
+      asserts the stranger case by name.
+    - ⚠️ **Duplicates are CORRECT** — three Jets fans and two Patriots. A
+      mascot says who somebody roots for; it was never meant to be unique, and
+      there is deliberately no uniqueness law.
+    - ⚠️ **The law reads the RENDER, not the map** — the same reason `_stories`
+      gave way to `_cardStories` in v7: a law that agrees with `MGR_TEAM`
+      passes happily over views that have stopped reading it. It asserts the
+      You heading and the profile show the same glyph, per manager.
+    - ⚠️ Ravens (`🐦‍⬛`) is the one ZWJ sequence here and the only glyph that can
+      degrade to a PAIR of marks on a device that predates it (iOS < 16.4).
+      Swap for `🪶` if anyone ever reports two.
   - ⚠️ **The playoff résumé is split across two tabs (v48, owner's call), and
     the split is by KIND.** 🎖️ **Final fours** — the funnel, final fours ·
     finals · won — closes **Honors**, because it is an achievement and that is
@@ -248,7 +267,7 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       **this app deliberately does not keep** (v19) — the v14 fault, a name
       that makes a number sound like another number. It reads **Playoff
       appearances**, matching the career tile's `Playoff apps` since v10.
-    - ⚠️ **Honors closes with 📉 The champion's curse (v49, owner's call),
+    - ⚠️ **Honors closes with 📉 The champion's curse (v50, owner's call),
       under final fours.** It is about what happens to a CHAMPION, so it sits
       with the champions rather than among the Records leaderboards. Its mark
       changed from 👑 to 📉 in the same edit: 👑 is the trophy case, two cards
@@ -808,14 +827,21 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 - `rankings/` — published weeks. `index.json` lists them; one JSON file each.
 - `logos/` — the league's own twelve crests, keyed by manager.
 - `sw.js` — network-first service worker. Bump `CACHE` on every release.
-- `checks.js` — **run `node checks.js` after ANY data or detector change.** It
+- `checks.js` — **run `node checks.js` after ANY data or detector change.**
+  ⚠️ **A summary line reports ITS OWN block — use `block()`** (v49). Three of
+  them read the running `bad` counter, so any failure above turned them ❌
+  about a subject that was fine. Only the total at the bottom reads the global.
+  It
   also holds the **gate laws** (v21): `index.html` must not name `power.html`,
   `owner.js` must hold a 64-hex hash rather than a phrase, and the phrase must
   not be one of sixteen obvious guesses. None of that is visible in a render,
   which is exactly why it is asserted. ⚠️ The first law is about `power.html`
   only — `power.css` is legitimately in `index.html`, because the rankings view
   reuses the Lab's row styling so a member reads what the commissioner built. It
-  runs the conservation laws below plus the storyline laws: every manager has
+  runs the mascot law (v49 — every manager's team glyph is read off the
+  RENDERED You heading and profile and must match, and a reader who has picked
+  nobody must get the neutral 👤 rather than any manager's team), the
+  conservation laws below, plus the storyline laws: every manager has
   one **and is on the rendered Storylines card** (v7 — those are different
   assertions; see Storylines), none has a template hole, each reader's own
   storyline is in second person, the card is still ranked by weight, and no
@@ -1278,8 +1304,17 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
 
-- **v49 — the champion's curse closes Honors (12 Sep 2026)** — the owner: *"Put
+- **v50 — the champion's curse closes Honors (12 Sep 2026)** — the owner: *"Put
   champions curse below that"*.
+  - ⚠️ **Shipped as v49 and renumbered to v50 on the merge.** Another session's
+    mascot work reached `main` first with its own v49 — and because both sides
+    had independently written `'v49'` into `APP_VERSION`, `CACHE` and both
+    pages' `?v=`, **git merged those lines clean**: an identical string is not a
+    conflict, so the collision was invisible to the merge and was caught by
+    reading the version out of the merged tree. The entry below keeps v49,
+    having got there first; this one moves up. **Two sessions in flight cannot
+    both be trusted to pick the next number — read `origin/main` before
+    bumping, and check the version again after any merge.**
   - **One term out of `rec` and onto the end of `hon`.** The card is
     self-contained — its copy names no neighbour — so nothing else moved, and
     Records is now Storylines · the record book · the luck index · rivalries ·
@@ -1311,6 +1346,64 @@ stale entry written in the present tense reads as current to anyone who greps.
     curse last with twelve rows and the reader's own three title years lit;
     Records renders six sections with no curse rows; both ? sheet sentences
     follow; no overflow, no type under 9px, no page errors, checks.js green.
+- **v49 — everyone gets their own mascot (12 Sep 2026)** — the owner, on the
+  🦅 above his career page: *"Where we have this eagle for me cause I am an
+  eagles fan can we get a different one for each person based on there team.
+  Ask me each and I'll tell u"*.
+  - 🚨 **THE EAGLE WAS NEVER GENERIC AND NOBODY HAD NOTICED.** It was hardcoded
+    in the "Your career" heading from v1, and it is HIS team — so the other
+    eleven managers each opened the one page in the app that is about them,
+    under somebody else's bird, and so did every stranger the link reached.
+    **The app's most personal screen was carrying the commissioner's identity
+    as if it were the app's own.** Same family as the `isMe` trap the season
+    and byline code keep nearly walking into (v33, v39, v42): a fact about one
+    particular person, wearing the costume of a default.
+  - **The teams are the owner's own answers, twelve of them, asked and told** —
+    never inferred, which is this repo's oldest data rule ("Christels Mattress
+    is Will Hurd"; never map a person by name similarity). Guessing a person's
+    NFL team from their fantasy team name would have been that fault exactly.
+  - 🚨 **The fallback is 👤, and choosing it was the only real design decision
+    here.** The obvious fallback is to leave the 🦅 for anyone unrecognised —
+    which quietly re-creates the whole bug for the reader most exposed to it,
+    the stranger who has tapped nothing. `checks.js` asserts the stranger case
+    by name, because the failure is one line and looks like nothing on screen.
+  - ⚠️ **Deliberately NO uniqueness law.** Three of the twelve are Jets fans
+    and two are Patriots fans. A mascot says who you root for; a check that
+    demanded twelve distinct glyphs would have been asserting something the
+    owner's own answers make false.
+  - ⚠️ **The law reads the RENDER, not `MGR_TEAM`** — the v7 lesson, which is
+    exactly what makes it worth writing: a law that agrees with the map passes
+    over views that have stopped reading the map. It pulls the glyph out of the
+    rendered You heading and the rendered profile and requires them to match,
+    per manager. **Verified by reinstating three faults** — a manager dropped
+    from the map, the fallback set back to 🦅, and the profile hardcoded —
+    and each is reported by name.
+  - **It went on the profile too, not just the You tab.** Eleven of the twelve
+    mascots are otherwise invisible to everybody but their owner, and the
+    profile is where you look at somebody else's career — so the mark that
+    says whose page this is belongs on it.
+  - ⚠️ **Ravens is the one glyph with a rendering risk, stated rather than
+    swapped away.** 🐦‍⬛ is a ZWJ sequence; a device older than iOS 16.4 draws
+    it as a bird AND a black square. Every phone in this league is far past
+    that, and the swap is one character (🪶) if it ever shows up.
+  - ⚠️ **And LOOKING at it caught one the measurements could not: `⚡` drew as
+    a thin monochrome TEXT glyph** beside eleven colour ones. U+26A1 needs the
+    variation selector, exactly as `✈️` already carries — every assertion was
+    green over it, because a glyph in the wrong presentation is the right
+    character at the right size in the right place.
+  - Rendered at 390 and 320px for all twelve plus the stranger: one line each,
+    no clipping, no horizontal overflow, no page errors, `checks.js` green.
+  - 🚨 **AND THE FAULT INJECTION EXPOSED A LIAR IN THE SUITE ITSELF.** Dropping
+    one manager from the mascot map turned **`❌ own-page stories`** red too —
+    a subject the injected fault does not touch. Three summary lines printed
+    `${bad ? '❌' : '✅'}`, the RUNNING TOTAL, so any failure anywhere above
+    them reported itself again under two or three unrelated headings. **The one
+    moment a suite is read most carefully is the moment it was most
+    misleading**, and it would have sent a session debugging one real failure
+    straight into three innocent blocks. `block()` snapshots the counter and
+    answers for what happened since; the total at the bottom stays global,
+    because the total is what it reports. Verified both ways — an unrelated
+    fault leaves the other three ✅, and each still goes ❌ for its own.
 
 - **v48 — final fours close Honors (12 Sep 2026)** — the owner: *"Put final
   fours at the bottom of honors instead of records"*.

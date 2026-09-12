@@ -31,6 +31,14 @@ const T = [
     return a2 && b2 && a2.mgr && b2.mgr && a2.mgr !== b2.mgr; }).length],
 ];
 let bad = 0;
+/* 🚨 A SUMMARY LINE MUST REPORT ITS OWN BLOCK, NOT THE RUNNING TOTAL.
+   Three of them read `bad` directly — every failure in the suite so far — so
+   any fault above turned them ❌ about a subject that was perfectly fine, and
+   a session debugging one real failure was handed three false ones pointing
+   at the wrong code. The line at the very bottom is the only one that SHOULD
+   read the global, because the total is what it is reporting.
+   `block()` snapshots the counter and answers for what happened since. */
+const block = () => { const at = bad; return () => (bad > at ? '❌' : '✅'); };
 T.forEach(([k, got, want]) => { const ok = got === want; if (!ok) bad++;
   console.log(`  ${ok ? '✅' : '❌'} ${k.padEnd(22)} ${String(got).padStart(4)} ${ok ? '==' : '!='} ${want}`); });
 /* W==L is a LEAGUE-wide law, so it is checked over EVERY row in each season —
@@ -61,6 +69,33 @@ SEASON.forEach((s) => {
 window.LeagueHistory.setMe(null);
 ALL.forEach((a) => { const p = window.LeagueHistory.profile(a.m);
   if (/undefined|NaN|\[object/.test(p)) { console.log(`  ❌ profile ${a.m} has a template hole`); bad++; } });
+/* 🏈 EVERY MANAGER HAS A MASCOT, AND IT IS THE SAME ONE IN BOTH PLACES (v49).
+   Read off the RENDER rather than out of `MGR_TEAM`, so this cannot pass by
+   agreeing with a map that the views have stopped using — and so checks.js
+   never holds a second copy of who supports whom. A manager added without a
+   team falls through to the 👤 fallback, which is correct behaviour and a
+   silent one: the page still renders, it just quietly stops being about them.
+   ⚠️ Deliberately NO uniqueness law. Three of the twelve are Jets fans. */
+const HEAD_M = (h) => (h.match(/<h2 class="section-title">(\S+) Your career/) || [])[1];
+const PROF_M = (h) => (h.match(/<h3>(\S+) /) || [])[1];
+window.LeagueHistory.setMe(null);
+const strangerM = HEAD_M(window.LeagueHistory.view('you'));
+const seen = [];
+/* 🚨 A reader who has picked nobody must get the neutral mark, never a team.
+   The 🦅 this replaced was the commissioner's own — so eleven other people,
+   and every stranger the link is forwarded to, opened the app under his bird. */
+if (strangerM !== '👤') { console.log(`  ❌ nobody picked: the You heading shows "${strangerM}", not the neutral 👤`); bad++; }
+window.LeagueHistory.roster().forEach((r) => {
+  window.LeagueHistory.setMe(r.m);
+  const mine = HEAD_M(window.LeagueHistory.view('you'));
+  const prof = PROF_M(window.LeagueHistory.profile(r.m));
+  if (!mine || mine === '👤') { console.log(`  ❌ ${r.name} has no mascot on their You page (shows "${mine}")`); bad++; }
+  else if (mine !== prof) { console.log(`  ❌ ${r.name}'s mascot is "${mine}" on the You page but "${prof}" on their profile`); bad++; }
+  else seen.push(mine);
+});
+console.log(`  ${seen.length === 12 ? '✅' : '❌'} mascots: ${new Set(seen).size} teams across ${seen.length} of 12 managers, neutral for a stranger`);
+if (seen.length !== 12) bad++;
+window.LeagueHistory.setMe(null);
 /* 🚨 Every manager must have at least one storyline, in every voice.
    The detectors look for EXTREMES, so a manager who has never been extreme at
    anything gets nothing — and that means someone opens their own You page and
@@ -141,6 +176,7 @@ window.LeagueHistory.roster().forEach((r) => {
    RENDERED profile, not against the detector: a story being found and a
    reader seeing it are different facts, and only the second one matters. */
 window.LeagueHistory.setMe(null);
+const ownMark = block();
 const owned = window.LeagueHistory._stories().filter((x) => x.own);
 owned.forEach((x) => {
   if (window.LeagueHistory._cardStories().some((c) => c.id === x.id && c.m === x.m)) {
@@ -166,7 +202,7 @@ owned.forEach((x) => {
   const st = window.LeagueHistory._stories().find((x) => x.id === id);
   if (st && !st.own) { console.log(`  ❌ story "${id}" is a league headline again; the owner made it own-page only (v15)`); bad++; }
 });
-console.log(`  ${bad ? '❌' : '✅'} own-page stories: ${owned.length} kept off the card, live on their own pages`);
+console.log(`  ${ownMark()} own-page stories: ${owned.length} kept off the card, live on their own pages`);
 
 /* 🚨 EVERYONE HAS AT LEAST TWO STORYLINES (v22, owner's call: "Make sure
    everyone has at least 2 storylines"). Counted on the RENDER — the You page
@@ -177,6 +213,7 @@ console.log(`  ${bad ? '❌' : '✅'} own-page stories: ${owned.length} kept off
    ⚠️ The heading re-voices for whoever is reading, so it is re-derived in
    their voice before being looked for on their own page. */
 {
+  const twoMark = block();
   const WANT2 = 2;
   window.LeagueHistory.roster().forEach((r) => {
     window.LeagueHistory.setMe(null);
@@ -194,9 +231,10 @@ console.log(`  ${bad ? '❌' : '✅'} own-page stories: ${owned.length} kept off
   });
   const counts = window.LeagueHistory.roster()
     .map((r) => window.LeagueHistory._stories().filter((x) => x.m === r.m).length);
-  console.log(`  ${bad ? '❌' : '✅'} every manager has ${Math.min(...counts)}+ storylines on their own pages (most: ${Math.max(...counts)})`);
+  console.log(`  ${twoMark()} every manager has ${Math.min(...counts)}+ storylines on their own pages (most: ${Math.max(...counts)})`);
 }
 
+const cardMark = block();
 /* 🚨 ONE CARD PER MANAGER on the league roll-call (v16). Twice a spare slot
    went to a second card about someone who already had one, and both times it
    made the same case in a duller way — fixing the instance just moved it. */
@@ -209,7 +247,7 @@ console.log(`  ${bad ? '❌' : '✅'} own-page stories: ${owned.length} kept off
 /* And it must still LEAD with the biggest story — coverage that reordered the
    card into a flat roll-call would have fixed one thing by breaking another. */
 if (card.length > 1 && card[0].w < card[card.length - 1].w) { console.log('  ❌ Storylines card is not ranked by weight'); bad++; }
-console.log(`  ${bad ? '❌' : '✅'} storylines: ${window.LeagueHistory._stories().length} found, ${card.length} on the card, covering ${onCard.size} of ${window.LeagueHistory.roster().length} managers`);
+console.log(`  ${cardMark()} storylines: ${window.LeagueHistory._stories().length} found, ${card.length} on the card, covering ${onCard.size} of ${window.LeagueHistory.roster().length} managers`);
 
 /* ══ 🔒 THE GATE ═══════════════════════════════════════════════════════════
    The link goes to eleven other people. Two things have to stay true about
