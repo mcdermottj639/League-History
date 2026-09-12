@@ -472,6 +472,98 @@
     { yr: 2018, br: "C", rd: "GmC7", a: "My Knee Grows", as: 101.1, b: "Pepperoni TDs", bs: 121.3 },
     { yr: 2018, br: "C", rd: "GmC8", a: "Morning Woods", as: 107.7, b: "Greg's Pirate Daddy", bs: 93.4 },
     { yr: 2018, br: "C", rd: "GmC9", a: "Slob on my Cobb", as: 104.7, b: "Whipits Rule", bs: 99.7 },
+    /* ── 2013-17, added in v54 ─────────────────────────────────────────
+       From the owner's own ESPN "Final Playoff Results" captures — the
+       five seasons whose bracket tab had never been opened. Parsed by
+       COORDINATE, not off a flat text dump: the page is three columns and
+       a text extraction interleaves them, so every pairing would have been
+       a guess. Cross-checked against this archive before being trusted —
+       see the v54 entry in CLAUDE.md. */
+    { yr: 2017, br: "W", rd: "R1", a: "The Great Wentz", as: 110.5, b: "What Can Browns Do For Jews", bs: 119 },
+    { yr: 2017, br: "W", rd: "R1", a: "Shady (ACL) Crack Cooks", as: 74, b: "Pepperoni TD's", bs: 69.6 },
+    { yr: 2017, br: "W", rd: "R2", a: "What Can Browns Do For Jews", as: 75.4, b: "My Knee Grows", bs: 76.4 },
+    { yr: 2017, br: "W", rd: "R2", a: "Shady (ACL) Crack Cooks", as: 77.9, b: "Morning Woods", bs: 163.6 },
+    { yr: 2017, br: "W", rd: "FINAL", a: "Morning Woods", as: 141.5, b: "My Knee Grows", bs: 89.1 },
+    { yr: 2017, br: "WC", rd: "", a: "The Great Wentz", as: 137.5, b: "Pepperoni TD's", bs: 117.3 },
+    { yr: 2017, br: "WC", rd: "", a: "Shady (ACL) Crack Cooks", as: 77.1, b: "What Can Browns Do For Jews", bs: 76.5 },
+    { yr: 2017, br: "WC", rd: "", a: "The Great Wentz", as: 93.4, b: "Pepperoni TD's", bs: 111.6 },
+    { yr: 2017, br: "C", rd: "GmC1", a: "Smoke a Bowe, Drink a Forte", as: 78.2, b: "Greg's Father", bs: 131 },
+    { yr: 2017, br: "C", rd: "GmC2", a: "Billy Breathes", as: 122.9, b: "Slob on my Cobb", bs: 111 },
+    { yr: 2017, br: "C", rd: "GmC3", a: "Greggs Morning Dew Dew", as: 105.6, b: "Mortal Wombats", bs: 96.1 },
+    { yr: 2017, br: "C", rd: "GmC4", a: "Billy Breathes", as: 72.4, b: "Greg's Father", bs: 142.9 },
+    { yr: 2017, br: "C", rd: "GmC5", a: "Greggs Morning Dew Dew", as: 97.8, b: "Smoke a Bowe, Drink a Forte", bs: 99.8 },
+    { yr: 2017, br: "C", rd: "GmC6", a: "Mortal Wombats", as: 75.6, b: "Slob on my Cobb", bs: 93.6 },
+    { yr: 2017, br: "C", rd: "GmC7", a: "Smoke a Bowe, Drink a Forte", as: 84.2, b: "Greg's Father", bs: 87.6 },
+    { yr: 2017, br: "C", rd: "GmC8", a: "Billy Breathes", as: 89.5, b: "Slob on my Cobb", bs: 65.4 },
+    { yr: 2017, br: "C", rd: "GmC9", a: "Greggs Morning Dew Dew", as: 88.8, b: "Mortal Wombats", bs: 80.8 },
+    { yr: 2016, br: "W", rd: "R1", a: "My Knee Grows", as: 76.9, b: "Greg's Father", bs: 102.3 },
+    { yr: 2016, br: "W", rd: "R1", a: "Frank's Whores", as: 63.9, b: "Smoke a Bowe, Drink a Forte", bs: 110.1 },
+    { yr: 2016, br: "W", rd: "R2", a: "Greg's Father", as: 109.9, b: "I Had a Dog His Name Was Jimmy", bs: 93.4 },
+    { yr: 2016, br: "W", rd: "R2", a: "Smoke a Bowe, Drink a Forte", as: 85.3, b: "Air Cunt", bs: 86.6 },
+    { yr: 2016, br: "W", rd: "FINAL", a: "Greg's Father", as: 89.4, b: "Air Cunt", bs: 126 },
+    { yr: 2016, br: "WC", rd: "", a: "Frank's Whores", as: 76.2, b: "My Knee Grows", bs: 99.4 },
+    { yr: 2016, br: "WC", rd: "", a: "Smoke a Bowe, Drink a Forte", as: 96.7, b: "I Had a Dog His Name Was Jimmy", bs: 104.7 },
+    { yr: 2016, br: "WC", rd: "", a: "Frank's Whores", as: 81.7, b: "My Knee Grows", bs: 83.7 },
+    { yr: 2016, br: "C", rd: "GmC1", a: "Slob on my Cobb", as: 63.1, b: "What Can Browns Do For Jews", bs: 43.2 },
+    { yr: 2016, br: "C", rd: "GmC2", a: "Gregs Morning Dew Dew", as: 73.1, b: "Jim Crow All-Stars", bs: 76.9 },
+    { yr: 2016, br: "C", rd: "GmC3", a: "I'm Fucked", as: 79.3, b: "Mortal Wombats", bs: 80.4 },
+    { yr: 2016, br: "C", rd: "GmC4", a: "Jim Crow All-Stars", as: 74.4, b: "Slob on my Cobb", bs: 134 },
+    { yr: 2016, br: "C", rd: "GmC5", a: "Mortal Wombats", as: 74.7, b: "What Can Browns Do For Jews", bs: 43.3 },
+    { yr: 2016, br: "C", rd: "GmC6", a: "I'm Fucked", as: 64.7, b: "Gregs Morning Dew Dew", bs: 63 },
+    { yr: 2016, br: "C", rd: "GmC7", a: "Mortal Wombats", as: 72.5, b: "Slob on my Cobb", bs: 75.6 },
+    { yr: 2016, br: "C", rd: "GmC8", a: "I'm Fucked", as: 86.7, b: "Jim Crow All-Stars", bs: 112.1 },
+    { yr: 2016, br: "C", rd: "GmC9", a: "Gregs Morning Dew Dew", as: 64.6, b: "What Can Browns Do For Jews", bs: 54.7 },
+    { yr: 2015, br: "W", rd: "R1", a: "Jim Crow All-Stars", as: 97.6, b: "Gregs Morning Dew Dew", bs: 66 },
+    { yr: 2015, br: "W", rd: "R1", a: "Mr. Flee Flee Fleeeeener", as: 54.9, b: "My Knee Grows", bs: 95.8 },
+    { yr: 2015, br: "W", rd: "R2", a: "Jim Crow All-Stars", as: 118.9, b: "The Bash Brothers", bs: 109.1 },
+    { yr: 2015, br: "W", rd: "R2", a: "My Knee Grows", as: 78.4, b: "Furher Goodell", bs: 130.5 },
+    { yr: 2015, br: "W", rd: "FINAL", a: "Jim Crow All-Stars", as: 107.2, b: "Furher Goodell", bs: 95.5 },
+    { yr: 2015, br: "WC", rd: "", a: "Mr. Flee Flee Fleeeeener", as: 87.6, b: "Gregs Morning Dew Dew", bs: 79.5 },
+    { yr: 2015, br: "WC", rd: "", a: "My Knee Grows", as: 106.2, b: "The Bash Brothers", bs: 105.8 },
+    { yr: 2015, br: "WC", rd: "", a: "Mr. Flee Flee Fleeeeener", as: 97.7, b: "Gregs Morning Dew Dew", bs: 77.4 },
+    { yr: 2015, br: "C", rd: "GmC1", a: "Smoke a Bowe, Drink a Forte", as: 64.9, b: "Immortal Wombats", bs: 85.9 },
+    { yr: 2015, br: "C", rd: "GmC2", a: "Slob on my Cobb", as: 71.4, b: "Tucker Right In The Pussy", bs: 91.7 },
+    { yr: 2015, br: "C", rd: "GmC3", a: "Help Please Help", as: 88, b: "Greg's Father", bs: 123.7 },
+    { yr: 2015, br: "C", rd: "GmC4", a: "Tucker Right In The Pussy", as: 107.9, b: "Immortal Wombats", bs: 105.7 },
+    { yr: 2015, br: "C", rd: "GmC5", a: "Greg's Father", as: 83.9, b: "Smoke a Bowe, Drink a Forte", bs: 87.5 },
+    { yr: 2015, br: "C", rd: "GmC6", a: "Help Please Help", as: 85.5, b: "Slob on my Cobb", bs: 122.9 },
+    { yr: 2015, br: "C", rd: "GmC7", a: "Tucker Right In The Pussy", as: 91.2, b: "Smoke a Bowe, Drink a Forte", bs: 52.5 },
+    { yr: 2015, br: "C", rd: "GmC8", a: "Slob on my Cobb", as: 109.1, b: "Immortal Wombats", bs: 86.3 },
+    { yr: 2015, br: "C", rd: "GmC9", a: "Help Please Help", as: 95.3, b: "Greg's Father", bs: 83.2 },
+    { yr: 2014, br: "W", rd: "R1", a: "Slob on my Cobb", as: 106, b: "Buley is Greek", bs: 84.5 },
+    { yr: 2014, br: "W", rd: "R1", a: "Mike Hunthurts hunthurts", as: 115.8, b: "Hoyer... Fornicator", bs: 113.3 },
+    { yr: 2014, br: "W", rd: "R2", a: "Slob on my Cobb", as: 101.6, b: "wreck it Ray", bs: 92.3 },
+    { yr: 2014, br: "W", rd: "R2", a: "Mike Hunthurts hunthurts", as: 78.9, b: "My Knee Grows", bs: 76.7 },
+    { yr: 2014, br: "W", rd: "FINAL", a: "Mike Hunthurts hunthurts", as: 67.2, b: "Slob on my Cobb", bs: 114.9 },
+    { yr: 2014, br: "WC", rd: "", a: "Buley is Greek", as: 75.8, b: "Hoyer... Fornicator", bs: 86 },
+    { yr: 2014, br: "WC", rd: "", a: "My Knee Grows", as: 64.8, b: "wreck it Ray", bs: 125.2 },
+    { yr: 2014, br: "WC", rd: "", a: "Buley is Greek", as: 89.9, b: "Hoyer... Fornicator", bs: 59.4 },
+    { yr: 2014, br: "C", rd: "GmC1", a: "BALTIMORE STAND UP", as: 85.7, b: "Weggie Rayne", bs: 73.8 },
+    { yr: 2014, br: "C", rd: "GmC2", a: "Hugh Junions", as: 105, b: "Kitchens Hammer", bs: 107.5 },
+    { yr: 2014, br: "C", rd: "GmC3", a: "Dez-ed and Confused", as: 54.7, b: "Jamm Boys", bs: 83.4 },
+    { yr: 2014, br: "C", rd: "GmC4", a: "Kitchens Hammer", as: 48, b: "BALTIMORE STAND UP", bs: 66.7 },
+    { yr: 2014, br: "C", rd: "GmC5", a: "Jamm Boys", as: 78.2, b: "Weggie Rayne", bs: 119.8 },
+    { yr: 2014, br: "C", rd: "GmC6", a: "Dez-ed and Confused", as: 82.4, b: "Hugh Junions", bs: 91.4 },
+    { yr: 2014, br: "C", rd: "GmC7", a: "BALTIMORE STAND UP", as: 61.1, b: "Weggie Rayne", bs: 90.5 },
+    { yr: 2014, br: "C", rd: "GmC8", a: "Hugh Junions", as: 102, b: "Kitchens Hammer", bs: 61.7 },
+    { yr: 2014, br: "C", rd: "GmC9", a: "Dez-ed and Confused", as: 73.4, b: "Jamm Boys", bs: 107.7 },
+    { yr: 2013, br: "W", rd: "R1", a: "Slob on my Cobb", as: 130.5, b: "Cutty-Marshall ALLDAYBABY", bs: 112.1 },
+    { yr: 2013, br: "W", rd: "R1", a: "Mike Hawksuge hawksuge", as: 119.2, b: "Christels Mattress", bs: 102.2 },
+    { yr: 2013, br: "W", rd: "R2", a: "Slob on my Cobb", as: 124.1, b: "Jamm Boys", bs: 112.1 },
+    { yr: 2013, br: "W", rd: "R2", a: "Mike Hawksuge hawksuge", as: 103.5, b: "Weggie Rayne", bs: 77.9 },
+    { yr: 2013, br: "W", rd: "FINAL", a: "Mike Hawksuge hawksuge", as: 89.2, b: "Slob on my Cobb", bs: 124.7 },
+    { yr: 2013, br: "WC", rd: "", a: "Cutty-Marshall ALLDAYBABY", as: 95.9, b: "Christels Mattress", bs: 118.2 },
+    { yr: 2013, br: "WC", rd: "", a: "Weggie Rayne", as: 130, b: "Jamm Boys", bs: 107.3 },
+    { yr: 2013, br: "WC", rd: "", a: "Cutty-Marshall ALLDAYBABY", as: 97.1, b: "Christels Mattress", bs: 83.9 },
+    { yr: 2013, br: "C", rd: "GmC1", a: "Team Wolff", as: 65.5, b: "Kitchen Sink", bs: 117.1 },
+    { yr: 2013, br: "C", rd: "GmC2", a: "Slemp The Man Whore", as: 100.7, b: "My Knee Grows", bs: 65.6 },
+    { yr: 2013, br: "C", rd: "GmC3", a: "Hugh Junions", as: 75.8, b: "Dow Jones", bs: 77.4 },
+    { yr: 2013, br: "C", rd: "GmC4", a: "Slemp The Man Whore", as: 111, b: "Kitchen Sink", bs: 98.9 },
+    { yr: 2013, br: "C", rd: "GmC5", a: "Dow Jones", as: 106.5, b: "Team Wolff", bs: 79.8 },
+    { yr: 2013, br: "C", rd: "GmC6", a: "Hugh Junions", as: 79.6, b: "My Knee Grows", bs: 86.4 },
+    { yr: 2013, br: "C", rd: "GmC7", a: "Dow Jones", as: 97.5, b: "Slemp The Man Whore", bs: 65.9 },
+    { yr: 2013, br: "C", rd: "GmC8", a: "My Knee Grows", as: 45.4, b: "Kitchen Sink", bs: 54.6 },
+    { yr: 2013, br: "C", rd: "GmC9", a: "Hugh Junions", as: 123.3, b: "Team Wolff", bs: 62.8 },
   ];
 
   /* 🚨 EVERY name here is a REAL PERSON'S, and the map is what the twelve of
@@ -682,10 +774,11 @@
   const LEAGUE_PPG = SEASON.reduce((a, s) => a + s.lgPpg, 0) / SEASON.length;
 
   /* ── EVERY RECORDED MEETING ────────────────────────────────────────────────
-     PLAYOFF_GAMES covers 2018-24 — because those are the seasons whose ESPN
-     "Final Playoff Results" tab was captured; 2013-17 only ever had their
-     Standings tab captured and 2025 is the Sleeper season. See CLAUDE.md
-     "Open / next" — the games exist, they were not collected.
+     PLAYOFF_GAMES covers 2013-24 — every season but 2025. ⚠️ It covered only
+     2018-24 until v56: the gap was never missing data, it was five seasons
+     whose ESPN "Final Playoff Results" tab had not been captured, and the
+     owner opened all five. 2025 remains uncovered because it is the one
+     Sleeper season; only its final score is on file.
      The Cum Bowls from 2013-17 and 2025, and the
      2025 final, are real head-to-heads that live in other fields — fold them in
      so the h2h pool is everything the archive actually knows.
@@ -727,10 +820,14 @@
      the final. NOT the WC placement ladder (games between teams already out
      of the title race), NOT the C consolation ladder, NOT the Cum Bowl. That
      is the population v14 settled on and it has not changed.
-     ⚠️ 35 games across 7 of 13 seasons, and THAT IS THE WHOLE RISK. It sits
-     beside an appearance rate covering all 13 — two denominators side by
-     side, which is the v3 fault if they are left to look comparable. Every
-     place it prints carries the ⚑ badge and the card states both spans.
+     ⚠️ 60 games across 12 of 13 seasons — every year but 2025 (v56, when the
+     owner supplied the five missing brackets). **The adjacency is still the
+     risk**: it sits beside an appearance rate covering all 13, two
+     denominators side by side, which is the v3 fault if they are left to look
+     comparable. The gap is one season now rather than six, which makes it
+     easier to forget rather than safe to. Every place it prints carries the
+     ⚑ badge, the row names its own bracket count, and the card states both
+     spans.
      ⚠️ Deliberately NOT reconstructed from `s2.final` the way MEET is: that
      would add a final from seasons with no bracket, so the record would cover
      more seasons in its last round than in its first. One population.
@@ -1380,9 +1477,12 @@
 
     /* ── as close as anyone has come without ever getting there ─────────
        🚨 THIS CARD USED TO SAY "NEVER WON A WINNER'S-BRACKET GAME" AND THAT
-       WAS FALSE (v14). Brackets exist for 7 of 13 seasons and Wolff — the
-       manager it fires for — reached the final four in 2017 and 2014, which
-       the archive could not see, so it counted six missing seasons as losses.
+       WAS FALSE (v14). Brackets existed for only 7 of 13 seasons then, and
+       Wolff — the manager it fires for — reached the final four in 2017 and
+       2014, which the archive could not see, so it counted six missing
+       seasons as losses. ⚠️ Twelve of thirteen are on file since v56 and the
+       claim would now be checkable; it is still stated as final fours,
+       because that is the number that needs no caveat at all.
        v14 scoped it to the seasons on file; v19 removed the underlying stat
        altogether, because a record that needs a "seasons on file" caveat
        every time it is printed is a record that will eventually be printed

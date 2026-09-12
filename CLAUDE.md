@@ -204,8 +204,12 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     tabs would drift the first time one is renamed, the same way a hand-kept
     jump-nav manifest would.
   - ⚠️ **The badge key inside it comes from `LH.key()`, not from prose here.**
-    It quotes "119 bracket games from 7 of 13 seasons" — counts that must
-    re-derive, so they stay in `history.js` where the data is.
+    It quotes "204 bracket games from 12 of 13 seasons" — counts that must
+    re-derive, so they stay in `history.js` where the data is. ⚠️ **v56 is the
+    proof this rule was worth it**: five seasons of brackets landed and that
+    sentence, the Playoff appearances caption and the record's own span all
+    re-derived with no edit. A hand-typed "119" would have been the one place
+    in the app that lied the day the data arrived.
   - 📤 **The link to send lives in the ? sheet** (`appURL` / `copyText` /
     `shareApp`, v28), under "Send it to someone" — one tap from every screen,
     because the ? is the only control that is on every screen.
@@ -305,11 +309,16 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     - **One population: `br === 'W'`.** The six-team championship bracket —
       R1, the final four, the final. **NOT** the WC placement ladder, **NOT**
       the C consolation ladder, **NOT** the Cum Bowl. That is the definition
-      v14 settled on; McD reads 10-3, which is the exact figure v14 named.
-    - 🚨 **35 games across 7 of 13 seasons, printed beside a rate covering all
-      13 — that adjacency IS the v3 fault if it is left unlabelled.** So it
-      prints in exactly ONE place, carries the ⚑, and the caption states both
-      spans and says the two will never square with the head-to-head counts.
+      v14 settled on. ⚠️ McD read **10-3** on the 7 seasons then on file —
+      the exact figure v14 named, which is how the definition was confirmed —
+      and reads **12-6** now that 2013-17 are in.
+    - 🚨 **60 games across 12 of 13 seasons** (35 across 7 until v56),
+      **printed beside a rate covering all 13 — that adjacency IS the v3 fault
+      if it is left unlabelled.** So it prints in exactly ONE place, carries
+      the ⚑, and the caption states both spans and says the two will never
+      square with the head-to-head counts. ⚠️ **A one-season gap is easier to
+      forget than a six-season one, not safer**: 2025 is still missing and the
+      labelling matters exactly as much.
     - ⚠️ **Deliberately NOT reconstructed from `s2.final` the way `MEET` is.**
       That would add a final from seasons with no bracket, so the record would
       cover more seasons in its last round than in its first.
@@ -1013,7 +1022,7 @@ untrustworthy. Every view carries a badge saying which it is.
 |---|---|
 | **Final placing** | The rank in every table — where you finished after the playoffs |
 | **Regular season** | Every W-L and points total. ESPN's standings are regular-season standings |
-| **⚑ Playoffs only** | 119 bracket games from **7 of 13 seasons**, plus 13 Cum Bowls |
+| **⚑ Playoffs only** | 204 bracket games from **12 of 13 seasons** (all but 2025), plus 13 Cum Bowls |
 
 - ⚠️ **There is NO regular-season schedule anywhere in this data.** So nothing
   here is a career head-to-head, however much it looks like one. **If you add a
@@ -1367,6 +1376,66 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
 
+- **v56 — the five missing brackets, from the owner's own captures (12 Sep
+  2026)** — the owner, on being told 6 of 13 seasons had no bracket games:
+  *"What? U don't have every bracket from the whole history?"* — then sent the
+  five ESPN "Final Playoff Results" pages.
+  - 🚨 **THE GAMES WERE NEVER MISSING FROM ESPN; THEY HAD NOT BEEN
+    COLLECTED.** A parallel session had just worked that out from the source
+    captures — ESPN serves two tabs a season, Standings and Final Playoff
+    Results, and 2013-17 only ever had Standings opened. The owner opened the
+    other five tabs in about three minutes. **119 games from 7 seasons → 204
+    from 12.** Only 2025 is still out, and only because it is the Sleeper
+    season.
+  - 🚨 **PARSED BY COORDINATE, NOT BY READING THE TEXT DUMP.** The page is
+    three columns — round 1, round 2, championship — and a flat text
+    extraction interleaves them, so `Slob on my Cobb 130.5` and
+    `Cutty-Marshall 112.1` arrive on lines that do not say they are the same
+    game. Every pairing would have been a guess. The extractor reads word
+    boxes: a team's score sits at the same y + 8.5px in the next column, two
+    adjacent entries in one column are one game. **Getting this wrong would
+    have put the right scores against the wrong people** — silently, and in a
+    way no conservation law could see, because the totals would still balance.
+  - 🚨 **AND THE PROOF THAT IT DIDN'T IS THE CUM BOWL.** `GmC3` **is** the Cum
+    Bowl, and this archive has had all thirteen Cum Bowls by hand since v1 —
+    entered from a different source, years apart. All five extracted GmC3
+    games match the stored ones **exactly, team names and scores to the
+    decimal**. Plus: every champion and runner-up matches the recorded
+    placings, the six winner's-bracket teams are exactly that season's top
+    six, the six consolation teams are exactly the rest, and every third-place
+    finisher wins a placement game. **A parser validated against data it never
+    saw.**
+  - ⚠️ **One name arrived truncated** — ESPN clipped "I Had a Dog His Name Was
+    Ji…" in the 2016 bracket. Resolved against that season's own standings,
+    where exactly one team matches the prefix, and the resolver asserts
+    uniqueness rather than taking the first hit.
+  - 🚨 **THE NEW DATA BROKE TWO OF MY OWN LAWS, AND THEY WERE RIGHT TO
+    BREAK.** `title-bracket slots` came out 114 against 120 and `W == L` came
+    out 56 against 58. The cause is **Ebzery**, who is untracked and who
+    reached the final in **both** 2013 and 2014 — six winner's-bracket slots
+    belonging to nobody with a career. Every other law in this file already
+    subtracts the untracked pair; mine were written when no untracked manager
+    had ever been in a bracket, so the exclusion had never been exercised.
+    - ⚠️ **`W == L` is retired rather than patched.** Over the tracked subset
+      that symmetry is now legitimately FALSE — Ebzery went 4-2 across the two
+      — so it was a law that happened to hold, not one that has to. Wins and
+      losses are counted straight off the games instead, which is strictly
+      stronger: it catches an outcome flipped in one direction, which a
+      symmetric total never could.
+  - **The owner's own arithmetic closes.** He asked why he had 3 losses when
+    10 appearances and 4 titles should mean 6. With the brackets in he reads
+    **12-6 from 9 brackets** — 9 − 3 titles on file = 6, and the per-manager
+    law asserts it for all twelve.
+  - ⚠️ **Nothing user-facing had to be edited, and that is the derivation rule
+    paying out.** The ⚑ key re-read itself to "204 bracket games from 12 of 13
+    seasons", the Playoff appearances caption to "60 games across the 12
+    seasons (2013-2024)", every row to its own new bracket count. A hand-typed
+    count would have been the one thing in the app that lied the day the data
+    landed — which is exactly what v13 said when it refused to type one.
+  - Verified: 204 games, 12 of 13 seasons, all conservation laws green, and
+    the playoff card, the mascots and the Records order all re-rendered at 390
+    and 320px as the reader, another manager and a stranger.
+
 - **v55 — bigger tab type, and the row did not move (12 Sep 2026)** — the
   owner: *"these fonts should be larger. Looks like there space to make them
   bigger without shifting anything else lower which is what I want"*.
@@ -1449,7 +1518,10 @@ stale entry written in the present tense reads as current to anyone who greps.
     career losses ARE appearances minus titles: 10 − 4 = 6. It read **10-3**
     because the record covers the **5 brackets he is in on file**, not his 10
     appearances — brackets exist for 7 of 13 seasons, and he missed two of
-    those seven. Both numbers correct; the row never said which seasons it
+    those seven. ⚠️ **SUPERSEDED in v56**: he then supplied the five missing
+    brackets, so the record covers 12 of 13 and reads **12-6** — his 6 losses,
+    arrived at from the data rather than from the rule. The reasoning here
+    stands and is why `bA` exists; only the numbers moved. Both numbers correct; the row never said which seasons it
     counted. **This is the v3 fault in its purest form, and v52 shipped it one
     version after writing "the risk it reintroduces is adjacency" in its own
     changelog entry.** A caption at the bottom of the card is not the same as
@@ -1494,7 +1566,8 @@ stale entry written in the present tense reads as current to anyone who greps.
     and McD reads **10-3**, the exact figure v14 named for that population.
     One definition, one place it prints, both spans on the card.
   - 🚨 **The risk it reintroduces is ADJACENCY, not arithmetic.** 35 games
-    across 7 of 13 seasons now sits beside an appearance rate covering all 13
+    across 7 of 13 seasons (⚠️ **60 across 12 of 13 since v56**) now sits
+    beside an appearance rate covering all 13
     — two denominators side by side, which is the v3 fault whenever they are
     left looking comparable. The row carries the ⚑; the caption says the rate
     is all thirteen seasons, the record is 35 championship-bracket games from
@@ -3005,7 +3078,8 @@ stale entry written in the present tense reads as current to anyone who greps.
   accurate… His playoff head to head and playoff record and bracket record are
   all diffferent."*
   - **🚨 "WOLFF HAS NEVER WON A WINNER'S-BRACKET GAME" WAS FALSE, AND THE
-    OWNER CAUGHT IT BY READING IT.** Brackets exist for 7 of 13 seasons, and
+    OWNER CAUGHT IT BY READING IT.** Brackets existed for 7 of 13 seasons
+    (⚠️ **12 of 13 since v56**), and
     Wolff finished **4th in 2017** — in a six-team bracket that means he was
     still alive in the final four, so he won or was gifted a round-1 game the
     archive cannot see. The card counted the six missing seasons as if they
@@ -3079,7 +3153,8 @@ stale entry written in the present tense reads as current to anyone who greps.
     drifts the first time a tab is renamed, and nothing fails when it does.
   - 🚨 **`LH.key()` stays in `history.js`.** The key quotes "119 bracket games
     from 7 of 13 seasons, plus 13 Cum Bowls" — three numbers that must
-    re-derive. Typing them into the sheet in `league.js` would have made the
+    re-derive. ⚠️ **They did, in v56**: the counts read 204 and 12 of 13 now,
+    with no edit to this sentence's subject — which is the whole argument. Typing them into the sheet in `league.js` would have made the
     help text the one place in the app that lies after a season lands.
   - ⚠️ **The sheet hides by property AND by rule.** `:root[data-palette]
     .lg-sheet { display: flex }` is (0,2,1) and the UA's `[hidden]` is (0,1,0),
@@ -3318,9 +3393,15 @@ stale entry written in the present tense reads as current to anyone who greps.
   and a synthetic week 5), so what is untested is only the part this sandbox
   cannot reach: the Lab pulling live data off the Render backend.
 - **🚨 WHY 2013-17 AND 2025 HAVE NO BRACKET GAMES — answered, 12 Sep 2026.**
-  The archive holds 119 bracket games from 7 of 13 seasons and this file used
-  to state that as a limit without a cause. The cause is now known, and it is
-  **not** that the data does not exist:
+  ⚠️ **MOSTLY CLOSED IN v56: 2013-17 ARE IN.** The owner opened the five
+  "Final Playoff Results" tabs named below and the archive now holds **204
+  games from 12 of 13 seasons**. Only **2025** is still missing, and only
+  because it is the Sleeper season — everything below about ESPN's two tabs
+  stands, and is why the gap existed at all. The instructions are kept because
+  the 2025 bracket is still to come and the shape is the same.
+  The archive used to hold 119 bracket games from 7 of 13 seasons and this file
+  stated that as a limit without a cause. The cause is now known, and it was
+  **not** that the data did not exist:
   - Every season was built from Safari print-to-PDF captures of ESPN's league
     history pages. ESPN serves **two different pages per season** — the
     **Standings** tab and the **Final Playoff Results** tab (the bracket, with
@@ -3339,6 +3420,9 @@ stale entry written in the present tense reads as current to anyone who greps.
     2017 → the **Final Playoff Results** tab, plus the 2025 bracket from
     Sleeper. 17 games a season completes everything; the 5 winner's-bracket
     games a season completes the title record alone.
+    ✅ **The five ESPN seasons were done in v56** — 85 games, 17 each,
+    exactly this shape. **What remains is 2025 from Sleeper**, and it is the
+    one season this route cannot reach.
   - ⚠️ **Do NOT derive the missing games from the final placings.** It looks
     arithmetic — 1st won every game, 2nd lost the final — but the number of
     games each team played depends on byes, which depend on seeding, and it

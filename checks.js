@@ -17,6 +17,26 @@ const exCBloss = CUMBOWL.filter((c) => exYrs.has(c.yr + '\0' + (c.p12 > c.p11 ? 
    untracked pair are still excluded from the final-four law below, which is
    now the only one derived from placements. */
 const BR_ON_FILE = new Set(PLAYOFF_GAMES.filter((g) => g.br === 'W').map((g) => g.yr));
+/* 🚨 THE UNTRACKED PAIR REACH THE FINAL, so the title-bracket laws need the
+   same exclusion `exRows` makes everywhere else — v54 added 2013-17 and
+   Ebzery is the 2013 AND 2014 runner-up, six winner's-bracket slots that
+   belong to nobody with a career. ⚠️ It also retires `W == L`: over the
+   TRACKED subset that symmetry is legitimately false (Ebzery went 4-2 across
+   the two seasons), and a law that has to be true is worth more than one that
+   merely was. Wins and losses are counted straight off the games instead,
+   which is strictly stronger — it catches an outcome flipped in one direction
+   as well as a game let in from the wrong bracket. */
+const trackedTeam = (yr, t) => {
+  const s = SEASON.find((x) => x.yr === yr);
+  const r = s && s.rows.find((x) => x.t === t);
+  return !!(r && r.mgr);
+};
+const WB = { w: 0, l: 0 };
+PLAYOFF_GAMES.filter((g) => g.br === 'W').forEach((g) => {
+  const aWon = g.as > g.bs;
+  if (trackedTeam(g.yr, g.a)) { if (aWon) WB.w++; else WB.l++; }
+  if (trackedTeam(g.yr, g.b)) { if (aWon) WB.l++; else WB.w++; }
+});
 const T = [
   ['seasons counted', ALL.reduce((a, x) => a + x.seasons, 0), rows.length - exRows.length],
   ['cum bowls played', ALL.reduce((a, x) => a + x.cbA, 0), CUMBOWL.length * 2 - exCB],
@@ -34,8 +54,8 @@ const T = [
      `bw`/`bl` start absorbing the placement or consolation ladder again the
      total overshoots. The v14 drift — `bw` quietly meaning two things in two
      views — is exactly what a law over the wrong total cannot see. */
-  ['title-bracket slots', ALL.reduce((a, x) => a + x.bw + x.bl, 0), PLAYOFF_GAMES.filter((g) => g.br === 'W').length * 2],
-  ['title-bracket W == L', ALL.reduce((a, x) => a + x.bw, 0), ALL.reduce((a, x) => a + x.bl, 0)],
+  ['title-bracket wins', ALL.reduce((a, x) => a + x.bw, 0), WB.w],
+  ['title-bracket losses', ALL.reduce((a, x) => a + x.bl, 0), WB.l],
   /* 🚨 THE OWNER'S OWN ARITHMETIC, AS A LAW (v51). He read his row — 10-3 —
      and asked why it was not 6, since a bracket is single elimination and he
      has 10 appearances and 4 titles. He was right about the RULE and the row
