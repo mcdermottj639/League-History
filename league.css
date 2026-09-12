@@ -489,8 +489,44 @@
    the v32 lesson about fixing the squeeze rather than its spelling.
    ⚠️ Scoped to `#lg-sub`: `#lg-sub2` is the same `.ai-sub` class carrying the
    five history sub-tabs, which have their own measured sizing. */
+/* 🚨 BOTH TAB ROWS GOT BIGGER TYPE WITHOUT GETTING TALLER (v53, owner: "these
+   fonts should be larger. Looks like there's space to make them bigger
+   without shifting anything else lower").
+   ⚠️ **The height genuinely does not move, and that is measured, not hoped.**
+   `.ai-sub button` is `min-height: 38px` with `line-height: 1`, so the box is
+   38px while the text only needs padding + font — 8+15 = 31px on level 1 and
+   11+13 = 35px on level 2. Both stay under 38, so every size below leaves the
+   row at exactly 47px. Push past ~19px and the text starts driving the height
+   instead, and everything below it moves.
+   🚨 **THE WIDTH IS THE REAL LIMIT, AND IT CLIPS IN SILENCE** — `.ai-sub
+   button` is `white-space: nowrap; overflow: hidden`, so a label too wide for
+   its share is simply cut off with nothing on screen saying so. It has now
+   caught this app three times (v218's "Cum Bowl", v39's "This Season", and
+   below). Measured by comparing every button's `scrollWidth` to its
+   `clientWidth` across nine widths, which is the only thing that can see it.
+   🚨 **`flex: 1 1 auto` REPLACES `flex: 1`, AND IT IS A BUG FIX, NOT A
+   TUNING.** Equal thirds/fifths gave "You" (three letters) exactly as much
+   room as "Cum Bowl" (eight) — so the bar was starving its longest label to
+   subsidise its shortest, and **"Cum Bowl" was ALREADY being clipped at 320
+   and 360px**, on sizing measured only at 390. Content-width plus an equal
+   share of the leftover fixes that and buys the headroom this version spends:
+   at 320px the ceiling goes 9px → 12px on level 2.
+   ⚠️ **Sized against the FALLBACK font, not Archivo.** Measured both: real
+   Archivo is narrower, so its ceilings are 2-4px higher. A phone that cannot
+   reach Google Fonts renders the fallback — so the fallback is the number
+   that must fit, and every size here clears it by at least 1.5px. Sizing to
+   Archivo would clip on exactly the offline first-load this app is built to
+   survive. */
+:root[data-palette] .lg-body .ai-sub button { flex: 1 1 auto; }
+:root[data-palette] #lg-sub button  { font-size: 15px; }
+:root[data-palette] #lg-sub2 button { font-size: 13px; }
 @media (max-width: 360px) {
-  :root[data-palette] #lg-sub button { font-size: 10.5px; letter-spacing: -.01em; padding-left: 1px; padding-right: 1px; }
+  :root[data-palette] #lg-sub button  { font-size: 13px; letter-spacing: -.01em; padding-left: 1px; padding-right: 1px; }
+  :root[data-palette] #lg-sub2 button { font-size: 11px; letter-spacing: -.015em; }
+}
+@media (min-width: 700px) {
+  :root[data-palette] #lg-sub button  { font-size: 17px; }
+  :root[data-palette] #lg-sub2 button { font-size: 14px; }   /* 15px tips the border past min-height and the row grows 1px */
 }
 
 /* The freshness line: which of the three sources you are looking at (v42). */

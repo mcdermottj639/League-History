@@ -231,6 +231,15 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       getting lost in a group chat is a real way this app goes unread, and any
       of the twelve re-sending it is a feature.
 - `league.css` — the `.lg-` layer. Loaded LAST, so it wins ties.
+  - 🚨 **THE TAB BARS ARE `flex: 1 1 auto`, NOT `flex: 1`** (v53), and the
+    type is sized against the FALLBACK font. Equal shares gave "You" as much
+    room as "Cum Bowl", which was clipping at ≤360px. Content width plus an
+    equal share of the leftover. ⚠️ **The row height is pinned by
+    `min-height: 38px` with `line-height: 1`**, so type can grow to ~19px
+    before the text starts driving the height and everything below it moves —
+    that headroom is what this change spends, and the limit is width, not
+    height. ⚠️ **Never size these to Archivo**: it is narrower than the
+    fallback, so a phone that cannot reach Google Fonts would clip.
   - ⚠️ **`touch-action: manipulation` on the shell AND on every control**
     (v52). Two quick taps on a tab were reading as iOS double-tap-to-zoom, and
     the tab bar is the one thing here that gets tapped in a rhythm. It is set
@@ -1350,6 +1359,45 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v53 — bigger tab type, and the row did not move (12 Sep 2026)** — the
+  owner: *"these fonts should be larger. Looks like there space to make them
+  bigger without shifting anything else lower which is what I want"*.
+  - **He was right that the space was there, and it is worth writing down
+    WHERE.** `.ai-sub button` is `min-height: 38px` with `line-height: 1`, so
+    the box is 38px while the text needs only padding + font — 27px at the old
+    size. The height is pinned by the tap-target floor, not by the type, so
+    roughly 11px of growth is free and the row stays 47px. Past ~19px the text
+    starts driving the height and everything below it moves.
+  - 🚨 **THE LIMIT IS WIDTH, AND IT CLIPS IN SILENCE — AND MEASURING IT FOUND
+    A LIVE BUG.** `.ai-sub button` is `white-space: nowrap; overflow: hidden`,
+    so an over-wide label is cut off with nothing on screen saying so. Sweeping
+    every button's `scrollWidth` against its `clientWidth` across nine widths
+    showed **"Cum Bowl" was ALREADY clipped at 320 and 360px** — its 11px was
+    measured at 390px only (v218's note says so in as many words) and never
+    re-checked narrower. Third time this trap has bitten (v218, v39, here).
+  - 🚨 **`flex: 1 1 auto` IS THE FIX, AND IT IS WHAT PAID FOR THE BIGGER
+    TYPE.** Equal fifths handed "You" — three letters — exactly as much room
+    as "Cum Bowl", so the bar was starving its longest label to subsidise its
+    shortest. Content width plus an equal share of the leftover raises the
+    320px ceiling from 9px to 12px, which is what makes the increase possible
+    at all rather than just possible on big phones.
+  - 🚨 **SIZED AGAINST THE FALLBACK FONT, NOT ARCHIVO.** Measured both, by
+    serving the real Archivo from disk: **Archivo is narrower, so its ceilings
+    run 2-4px higher.** A phone that cannot reach Google Fonts renders the
+    fallback — so the fallback is the number that has to fit. Sizing to
+    Archivo would have clipped on exactly the offline first load this app is
+    built to survive. Every size clears the fallback ceiling by ≥1.5px.
+  - **11px → 15px on the tabs, 11px → 13px on the sub-tabs** at phone widths
+    (13/11 under 360px, 17/14 on desktop).
+  - ⚠️ **Desktop wanted 15px on the sub-tabs and it cost a pixel.** At that
+    size the button's transparent 1px border tips the box past `min-height`
+    and the row goes 47px → 48px — which is exactly the "shifting things
+    lower" he asked not to have, one pixel at a time. 14px instead.
+  - **Proved by diffing against the previous build, not by eyeballing it**: a
+    second copy of the repo at v52 served on its own port, and the top of
+    `#lg-body` compared width by width. Identical at 320, 360, 375, 390, 414,
+    430 and 900 — under both fonts — with the type larger at every one.
 
 - **v52 — a double tap on a tab zoomed the page in (12 Sep 2026)** — the
   owner: *"if I double click the you tab it zooms in fix that"*.
