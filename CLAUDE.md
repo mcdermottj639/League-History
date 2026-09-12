@@ -248,6 +248,11 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       **this app deliberately does not keep** (v19) — the v14 fault, a name
       that makes a number sound like another number. It reads **Playoff
       appearances**, matching the career tile's `Playoff apps` since v10.
+    - ⚠️ **Honors closes with 📉 The champion's curse (v49, owner's call),
+      under final fours.** It is about what happens to a CHAMPION, so it sits
+      with the champions rather than among the Records leaderboards. Its mark
+      changed from 👑 to 📉 in the same edit: 👑 is the trophy case, two cards
+      up, and the jump row is read by its mark.
     - ⚠️ **Final fours became a `.section-title`, not a `.fh-sub`.** It was a
       sub-card *inside* Playoff record, so moving it meant promoting it — and
       that is also what puts it in the jump nav with no second edit, and what
@@ -1272,6 +1277,40 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v49 — the champion's curse closes Honors (12 Sep 2026)** — the owner: *"Put
+  champions curse below that"*.
+  - **One term out of `rec` and onto the end of `hon`.** The card is
+    self-contained — its copy names no neighbour — so nothing else moved, and
+    Records is now Storylines · the record book · the luck index · rivalries ·
+    playoff appearances · seeds and upsets.
+  - **And it belongs here**: the curse is about what happens to a CHAMPION the
+    year after, so it reads as the last word on a page about champions rather
+    than as one more leaderboard.
+  - 🚨 **THE MOVE CREATED AN ICON CLASH THAT DID NOT EXIST BEFORE.** It was
+    **👑 The champion's curse** — and 👑 is also **The trophy case**, two cards
+    above it on the page it just landed on. Two identical marks on one page,
+    and **two identical chips in the jump row**, which is scanned by its mark:
+    the same argument v48 used to give final fours a 🎖️ of its own. So it is
+    📉 now, which also says what the card found. ⚠️ **A card that was fine
+    where it was can be wrong where it lands** — an icon is only unique
+    relative to its page, so check the destination's marks on any move, not
+    just the card's own copy. Second version running where the knock-on was a
+    NAME rather than a layout (v48 renamed Playoff record).
+  - ⚠️ **And a near-miss worth recording: `ord()` here is the WHOLE ordinal.**
+    The curse rows read `${p.next}: ${ord(p.place)}`, which looks exactly like
+    the v39 fault in `season.js` — where `ord()` is the SUFFIX only and reading
+    it as a whole ordinal printed *"a best finish of st."* Two files, two
+    functions, one name. `history.js`'s returns `n + suffix`, so the rows are
+    correct (verified on the render: **"2025: 3rd 8-6"**). **Checked before
+    "fixing" it** — a repo rule applied to the wrong file would have produced
+    "2025: 33rd".
+  - Verified at 320 and 390px, as a reader and as a stranger: Honors renders
+    **👑 The trophy case · 🏆 Champions · 💔 Still waiting · 🎖️ Final fours ·
+    📉 The champion's curse**, five distinct marks and five distinct chips, the
+    curse last with twelve rows and the reader's own three title years lit;
+    Records renders six sections with no curse rows; both ? sheet sentences
+    follow; no overflow, no type under 9px, no page errors, checks.js green.
 
 - **v48 — final fours close Honors (12 Sep 2026)** — the owner: *"Put final
   fours at the bottom of honors instead of records"*.

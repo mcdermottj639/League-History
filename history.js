@@ -902,7 +902,13 @@
     });
     const avg = pairs.reduce((a, p) => a + p.place, 0) / pairs.length;
     const made = pairs.filter((p) => p.place <= 6).length;
-    return `<h2 class="section-title">👑 The champion's curse ${tag('fin')}</h2>
+    /* ⚠️ 📉, NOT 👑 (v49). The curse moved onto Honors, where **👑 is already
+       the trophy case** — two identical marks on one page, and two identical
+       chips in the jump row, which is read by its mark. The clash did not
+       exist while the two cards were on different tabs; it is a consequence of
+       the move, so it is fixed in the same edit. 📉 also says what the card
+       found: the year after you win it, you fall. */
+    return `<h2 class="section-title">📉 The champion's curse ${tag('fin')}</h2>
     <div class="ffp-card">
       <div class="fh-big"><b>${one(avg)}</b><span>average finish the year after winning it</span></div>
       <p class="fh-lead">Only <b>${made} of ${pairs.length}</b> defending champions even made the playoffs again.</p>
@@ -1831,7 +1837,12 @@
        term — but `heroHTML()` stays first: it is the page's standfirst and
        stat strip, not one of the cards, and it carries no heading so it is not
        a jump chip either. */
-    hon: () => heroHTML() + trophyHTML() + champsHTML() + ringlessHTML() + finalFoursHTML(),
+    /* ⚠️ The champion's curse closes the page, UNDER final fours (v48, owner's
+       call: *"Put champions curse below that"*). It belongs with these four
+       rather than among the Records leaderboards: it is about what happens to
+       a CHAMPION, and Honors is where the champions are. Self-contained — its
+       copy names no neighbour — so this is one term moved out of `rec`. */
+    hon: () => heroHTML() + trophyHTML() + champsHTML() + ringlessHTML() + finalFoursHTML() + curseHTML(),
     sea: () => seasonsHTML(),
     /* Playoff record + Finals reached sit HERE, not on Cum Bowl (v9, owner's
        call). They are career résumé — who gets in, who reaches the final —
@@ -1839,7 +1850,7 @@
        Filing them there put the league's best achievement behind the tab
        named for its worst. Ordered baseline-first: who makes the playoffs,
        then the two cards that comment on what happens once you are in. */
-    rec: () => storiesHTML() + recordHTML() + luckHTML() + rivalsHTML() + playoffHTML() + curseHTML() + seedHTML(),
+    rec: () => storiesHTML() + recordHTML() + luckHTML() + rivalsHTML() + playoffHTML() + seedHTML(),
     cb: () => cumbowlHTML(),
     you: () => youHTML(),
   };
