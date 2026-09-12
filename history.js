@@ -2111,7 +2111,7 @@
     if (!a) {
       return `<h2 class="section-title">${mascot(null)} Your career</h2>
       <div class="ffp-card"><div class="ffp-empty"><b>Tell the app who you are.</b>
-      Pick your name and this page becomes your thirteen seasons — every finish, your
+      Pick your name and this page becomes your own seasons — every finish, your
       medals, your final fours and your Cum Bowls. Everything else on the app starts
       calling you <i>you</i> at the same time.</div>
       <button type="button" class="fan-btn" data-pickme="1">👤 Choose my name</button></div>`;
@@ -2136,7 +2136,7 @@
     const cls = (r) => (r.place === 1 ? 'g' : r.place === 2 ? 's' : r.place === 3 ? 'b' : r.place && r.place > 9 ? 'l' : '');
     const bestPf = [...a.yrs].sort((x, y) => y.ppg - x.ppg)[0];
     return `<div class="ffp-card">
-      <div class="fh-car">${yrs.map((r) => `<div class="fh-car-c ${cls(r)}" title="${r.yr} — ${r.place ? ord(r.place) : '?'}">
+      <div class="fh-car" style="--n:${yrs.length}">${yrs.map((r) => `<div class="fh-car-c ${cls(r)}" title="${r.yr} — ${r.place ? ord(r.place) : '?'}">
         <b>${r.place === 1 ? '🏆' : r.place || '·'}</b><i>'${String(r.yr).slice(2)}</i></div>`).join('')}</div>
       <div class="fh-car-l">
         <span><b>${a.t1}</b>titles</span><span><b>${a.t2}</b>silver</span>

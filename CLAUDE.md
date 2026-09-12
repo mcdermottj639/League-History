@@ -469,6 +469,19 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     - The games are still used as MEETINGS and SCORES: head-to-heads,
       rivalries, the highest playoff score, the regular-season-to-playoff
       scoring gap. Never totalled into a record.
+  - 🚨 **`careerCard`'s year strip is sized by the MANAGER'S season count, not
+    by 13** (v64, owner: *"fix this view for Hyman since he's got less total
+    seasons"*). `.fh-car` was `grid-template-columns: repeat(13, 1fr)`, so a
+    manager who has not played all thirteen filled the FIRST n columns and left
+    the rest of the card empty — **Hyman's nine squares stopped two-thirds
+    across** and Riz's eleven stopped short too. `careerCard` sets `--n` inline
+    from the row count; the CSS reads `repeat(var(--n, 13), minmax(0, 1fr))`.
+    ⚠️ `minmax(0, 1fr)` rather than `1fr`, because a bare `1fr` floors at the
+    content's min-width and that is how a grid silently overflows.
+    ⚠️ **Only the LAYOUT was wrong — every number on that page was already
+    right** (`6/9` playoff apps, `3/9` final fours, "6 of 9 seasons" in the
+    storyline). The stats engine has always counted a manager's own seasons;
+    it was one hard-coded 13 in a stylesheet.
   - ⚠️ **The career tiles are `Playoff apps` (10/13) and `Final fours` (8/13)**
     — renamed in v10, corrected in v14 when "Playoff record" turned out to be
     counting placement games, and replaced outright in v19 when the record
@@ -1505,6 +1518,34 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v64 — the career strip fits the career (12 Sep 2026)** — the owner, with
+  his own You page open: *"Fix this view for Hyman since he's got less total
+  seasons. Make sure nothing else is screwed for him."*
+  - 🚨 **ONE HARD-CODED 13, IN A STYLESHEET.** `.fh-car` was
+    `grid-template-columns: repeat(13, 1fr)`, so the year strip always laid out
+    thirteen columns however many seasons the manager had. Hyman has **nine**:
+    his squares filled the first nine columns and the last four were empty, so
+    the strip stopped two-thirds across a full-width card. Riz's eleven stopped
+    short too. `--n` is set inline from the row count now and the strip fills
+    its card at every width — measured, dead space right went **86px → 0** at
+    390px, with the squares growing 23px → 34px.
+  - ⚠️ **Everything else on his page was already correct, which is worth saying
+    because it is the whole argument for deriving.** `6/9` playoff apps, `3/9`
+    final fours, *"made the playoffs in 6 of 9 seasons"*, his avg finish, his
+    luck, his best and worst years — every one reads his own career length.
+    The stats engine never assumed thirteen; a stylesheet did.
+  - ⚠️ **And the invitation card was promising a number it could not keep.**
+    *"this page becomes your thirteen seasons"* — shown to somebody who has
+    picked nobody, and then Hyman taps his name and gets nine. It promises no
+    count now. A hand-typed thirteen in the one file whose whole discipline is
+    derivation, on the screen a stranger sees first.
+  - ⚠️ `minmax(0, 1fr)` rather than `1fr`: a bare `1fr` floors at the content's
+    min-width, which is how a grid silently overflows its container. Not a
+    problem at nine to thirteen columns; it is the guard for whoever joins.
+  - Verified at 320 and 390px for a 9-, an 11- and a 13-season manager, on the
+    You tab and on a profile: zero dead space, no clipped cell, no overflow,
+    and 50 view-contexts clean.
 
 - **v63 — one mascot for the league, the eagle for the commissioner (12 Sep
   2026)** — the owner: *"🎖️ make this the emoji instead of the custom by player
