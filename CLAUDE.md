@@ -257,27 +257,36 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 - `history.js` — **the archive** (~1,130 lines): the curated 13-season data,
   a single-pass stats engine, and every view. Exposes ONE global,
   `window.LeagueHistory`:
-  - 🏈 **`MGR_TEAM` / `mascot(m)` — each manager's NFL team as one emoji**
-    (v49), on the You tab heading and the profile name. Keyed by MANAGER CODE
-    like `MGR_LOGO`, for the same reason: fantasy team names change every
-    September, the twelve people do not.
-    - 🚨 **The fallback is 👤 and must never be a team.** The 🦅 it replaced was
-      the commissioner's own Eagles, hardcoded — so eleven other managers, and
-      every stranger the link reaches, opened the app under his bird. A reader
-      who has picked nobody is not an Eagles fan by default. `checks.js`
-      asserts the stranger case by name.
-    - ⚠️ **Duplicates are CORRECT** — three Jets fans share ✈️, and the two
-      Patriots fans share **🍺** (v51, the owner's call — so the glyph is not
-      always the team's own mark, and both managers on a team move together). A
-      mascot says who somebody roots for; it was never meant to be unique, and
-      there is deliberately no uniqueness law.
-    - ⚠️ **The law reads the RENDER, not the map** — the same reason `_stories`
-      gave way to `_cardStories` in v7: a law that agrees with `MGR_TEAM`
-      passes happily over views that have stopped reading it. It asserts the
-      You heading and the profile show the same glyph, per manager.
-    - ⚠️ Ravens (`🐦‍⬛`) is the one ZWJ sequence here and the only glyph that can
-      degrade to a PAIR of marks on a device that predates it (iOS < 16.4).
-      Swap for `🪶` if anyone ever reports two.
+  - 🎖️ **`MGR_TEAM` / `mascot(m)` — 🎖️ for the league, 🦅 for the
+    commissioner** (v63, owner's call: *"make this the emoji instead of the
+    custom by player but leave mine the eagles"*). It sits on the heading of
+    the page about a manager — their You tab and their profile.
+    - ⚠️ **This reverses v49's per-team mascots, which were also his idea** —
+      twelve NFL teams, asked and answered one by one. **His answers are kept
+      in the comment above the map rather than deleted**, because re-collecting
+      them means asking twelve people again. That is documentation, not dead
+      code.
+    - 🚨 **v49'S REAL RULE SURVIVES, AND IT IS NOT "EVERYONE GETS THEIR OWN
+      MARK".** The fault v49 fixed was that the 🦅 was the **fallback** — so
+      every other manager, and every stranger, opened the app under the
+      commissioner's bird. Here the 🦅 is an **entry**, reached only by his own
+      code, and the fallback is still 👤. `checks.js` still asserts the
+      stranger case by name.
+    - ⚠️ **A stranger gets 👤, not 🎖️, deliberately.** With eleven managers on
+      🎖️ it is effectively the members' mark, so handing it to somebody who has
+      tapped no name would tell them they are one.
+    - ⚠️ **U+1F396 has `Emoji_Presentation=No` and therefore NEEDS its
+      variation selector** — the exact ⚡ trap v49 found, where a font is free
+      to draw the bare codepoint as a thin monochrome TEXT glyph. Verified on
+      the render: `U+1F396 U+FE0F`, in colour.
+    - ⚠️ **🎖️ is also the Final fours section mark on Honors, and that is
+      checked rather than assumed.** They never share a page — the mascot is on
+      You and on a profile, Final fours is on Honors — so the v50 jump-nav
+      clash does not arise. It does mean the glyph carries two meanings across
+      the app; the owner's call, and worth knowing before a future session
+      "fixes" one of them.
+    - ⚠️ Keyed by MANAGER CODE, like `MGR_LOGO` and for the same reason: the
+      fantasy team names change every September, the twelve people do not.
   - ⚠️ **The playoff résumé is split across two tabs (v48, owner's call), and
     the split is by KIND.** 🎖️ **Final fours** — the funnel, final fours ·
     finals · won — closes **Honors**, because it is an achievement and that is
@@ -1496,6 +1505,37 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v63 — one mascot for the league, the eagle for the commissioner (12 Sep
+  2026)** — the owner: *"🎖️ make this the emoji instead of the custom by player
+  but leave mine the eagles"*.
+  - **A straight reversal of v49, which was his idea too**, and the answers
+    that made it are kept in the comment rather than thrown away — twelve NFL
+    teams collected one question at a time. Deleting them would cost twelve
+    questions to get back; a comment costs nothing.
+  - 🚨 **AND v49'S ACTUAL RULE IS UNTOUCHED, WHICH IS WORTH BEING PRECISE
+    ABOUT.** v49 did not exist to give everyone a *different* mark — it existed
+    because the 🦅 was the **fallback**, so eleven managers and every stranger
+    opened their own career page under the commissioner's bird. Here the 🦅 is
+    an **entry**, reachable only by his own code, and the fallback is still 👤.
+    The failure v49 named cannot recur; what changed is only how many entries
+    share a glyph, which v49 already said was fine ("duplicates are CORRECT").
+  - ⚠️ **A stranger keeps 👤 rather than 🎖️.** With eleven of twelve on the
+    medal it is effectively the members' mark, and handing it to somebody who
+    has tapped no name would tell them they are one.
+  - ⚠️ **U+1F396 needs its variation selector, and this is the third time that
+    has mattered here.** `Emoji_Presentation=No`, so the bare codepoint may be
+    drawn as a thin monochrome TEXT glyph — exactly what ⚡ did on v49's first
+    render. Checked on the rendered heading rather than in the source:
+    `U+1F396 U+FE0F`, in colour, on both the heading and its jump chip.
+  - ⚠️ **🎖️ is already the Final fours mark on Honors — checked, and they never
+    share a page.** The mascot renders on You and on a profile; Final fours is
+    on Honors. So the v50 clash (two identical marks in one jump row) does not
+    arise. The glyph does now carry two meanings across the app, which is his
+    call and is written down so a later session does not "fix" one of them.
+  - Verified on the render at 390px: 🎖️ on all eleven, 🦅 on his own heading and
+    profile, 👤 for a stranger, the per-manager mascot law still green (now
+    reporting **2 distinct across 12 of 12**), and 50 view-contexts clean.
 
 - **v62 — the last four brackets, and why the guess was wrong (12 Sep 2026)**
   — the owner sent the 2013, 2014, 2015 and 2016 winner's brackets, the four

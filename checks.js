@@ -196,7 +196,7 @@ window.LeagueHistory.roster().forEach((r) => {
   else if (mine !== prof) { console.log(`  ❌ ${r.name}'s mascot is "${mine}" on the You page but "${prof}" on their profile`); bad++; }
   else seen.push(mine);
 });
-console.log(`  ${seen.length === 12 ? '✅' : '❌'} mascots: ${new Set(seen).size} teams across ${seen.length} of 12 managers, neutral for a stranger`);
+console.log(`  ${seen.length === 12 ? '✅' : '❌'} mascots: ${new Set(seen).size} distinct across ${seen.length} of 12 managers, neutral for a stranger`);
 if (seen.length !== 12) bad++;
 window.LeagueHistory.setMe(null);
 /* 🚨 Every manager must have at least one storyline, in every voice.

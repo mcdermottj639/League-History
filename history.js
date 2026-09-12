@@ -601,45 +601,33 @@
   const MGR_LOGO = { McD: 'mcd', CC: 'cc', Hurd: 'hurd', Hyman: 'hyman',
     Christel: 'christel', Woods: 'woods', Zach: 'zach', Buley: 'buley',
     Wolff: 'wolff', Riz: 'riz', Slemp: 'slemp', Gotch: 'gotch' };
-  /* 🏈 Each manager's NFL team, as the mascot on the heading of the page about
-     them (v49, owner's call). The 🦅 that was there was HIS team — so every
-     one of the other eleven opened their own career page under somebody else's
-     bird. The teams are the owner's own answers, manager by manager.
+  /* 🎖️ THE MASCOT IS 🎖️ FOR THE LEAGUE AND 🦅 FOR THE COMMISSIONER (v63,
+     owner's call: *"make this the emoji instead of the custom by player but
+     leave mine the eagles"*). It sits on the heading of the page about a
+     manager — their You tab and their profile.
+     ⚠️ **This reverses v49's per-team mascots, which were his idea too** —
+     twelve NFL teams, asked and answered one by one. Reversed on his say-so,
+     and the answers are kept in this comment rather than thrown away, because
+     re-collecting them means asking twelve people again:
+       McD 🦅 Eagles · Buley ✈️ Jets · Riz ✈️ Jets · Woods ✈️ Jets ·
+       CC 🐴 Colts · Christel 🍺 Patriots · Hurd 🍺 Patriots · Gotch 🐻 Bears ·
+       Hyman 🐦‍⬛ Ravens · Slemp ⚡️ Chargers · Wolff 🗽 Giants · Zach 🐆 Panthers
      ⚠️ Keyed by MANAGER CODE, like MGR_LOGO and for the same reason: the
      fantasy team names change every September, the twelve people do not.
-     ⚠️ Duplicates are CORRECT — three Jets fans and two Patriots. A mascot
-     says who someone roots for, and it was never meant to be unique.
-     🚨 The fallback is 👤 and must never be a team. A reader who has picked
-     nobody is not an Eagles fan by default, and making one manager's mascot
-     the app's own would put the commissioner's team on eleven strangers'
-     screens — the same fault `isMe` keeps nearly causing elsewhere. */
+     🚨 **v49'S REAL RULE SURVIVES, AND IT IS NOT "EVERYONE GETS THE SAME
+     MARK".** The fault v49 fixed was that the 🦅 was the FALLBACK — so every
+     manager and every stranger opened the app under the commissioner's bird.
+     Here the 🦅 is an ENTRY, reached only by his own code, and the fallback is
+     still 👤. A reader who has picked nobody is still not an Eagles fan by
+     default, and `checks.js` still asserts that by name.
+     ⚠️ A stranger gets 👤 rather than 🎖️ deliberately: with eleven managers on
+     🎖️ it is effectively the members' mark, so handing it to somebody who has
+     tapped no name would say they are one. */
   const MGR_TEAM = {
-    McD: '🦅',       // Eagles
-    Buley: '✈️',     // Jets
-    Riz: '✈️',       // Jets
-    Woods: '✈️',     // Jets
-    CC: '🐴',        // Colts
-    /* 🍺 rather than a Patriots mark (v51, owner's call: *"change the pats one
-       to 🍺"*). BOTH Patriots managers change, not one: a mascot is per TEAM
-       here — three Jets fans share ✈️ — so splitting the pair would read as one
-       of them being mis-mapped rather than as a joke. ⚠️ U+1F37A is a single
-       codepoint with Emoji_Presentation=Yes, so unlike ✈️ and ⚡️ above it needs
-       no variation selector, and unlike 🐦‍⬛ it is not a ZWJ sequence that can
-       degrade to two marks. Nothing to guard. */
-    Christel: '🍺',  // Patriots
-    Hurd: '🍺',      // Patriots
-    Gotch: '🐻',     // Bears
-    /* ⚠️ Ravens is the one ZWJ sequence here (bird + black square), so it is
-       the only glyph that can degrade to a PAIR of marks on a device too old
-       to know it. iOS 16.4 and up are fine — every phone in this league — but
-       this is the one to swap for 🪶 if anyone ever reports two. */
-    Hyman: '🐦‍⬛',    // Ravens
-    /* ⚠️ U+26A1 needs the variation selector, exactly as ✈️ above does, or a
-       font is free to draw it as a thin monochrome TEXT glyph beside twelve
-       colour ones — which is what it did on first render. */
-    Slemp: '⚡️',     // Chargers
-    Wolff: '🗽',     // Giants
-    Zach: '🐆',      // Panthers
+    McD: '🦅',
+    Buley: '🎖️', Riz: '🎖️', Woods: '🎖️', CC: '🎖️', Christel: '🎖️',
+    Hurd: '🎖️', Gotch: '🎖️', Hyman: '🎖️', Slemp: '🎖️', Wolff: '🎖️',
+    Zach: '🎖️',
   };
   const mascot = (m) => MGR_TEAM[m] || '👤';
 
