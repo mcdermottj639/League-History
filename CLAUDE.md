@@ -3089,6 +3089,39 @@ stale entry written in the present tense reads as current to anyone who greps.
   against snapshots the REAL Lab wrote from a live payload capture (preseason
   and a synthetic week 5), so what is untested is only the part this sandbox
   cannot reach: the Lab pulling live data off the Render backend.
+- **🚨 WHY 2013-17 AND 2025 HAVE NO BRACKET GAMES — answered, 12 Sep 2026.**
+  The archive holds 119 bracket games from 7 of 13 seasons and this file used
+  to state that as a limit without a cause. The cause is now known, and it is
+  **not** that the data does not exist:
+  - Every season was built from Safari print-to-PDF captures of ESPN's league
+    history pages. ESPN serves **two different pages per season** — the
+    **Standings** tab and the **Final Playoff Results** tab (the bracket, with
+    every score).
+  - For **2018-24** both tabs were captured. That is exactly the 7 seasons with
+    games, at 17 games each.
+  - For **2013-17** only the **Standings** tab was captured. Those pages carry
+    final standings, records, points for/against and the playoff seed, and no
+    bracket at all — which is why those seasons have complete placings and
+    zero games. **The Final Playoff Results tab for those years was never
+    opened; it is not known to be empty.**
+  - **2025 was never captured at all** and is the one **Sleeper** season
+    (`platform: 'sleeper'`), so it is not on ESPN. Its final score
+    (JMcD6 124.04 - Cheeky_Clapz 107.28) came in by hand.
+  - **To close it:** ESPN league history → each of 2013, 2014, 2015, 2016,
+    2017 → the **Final Playoff Results** tab, plus the 2025 bracket from
+    Sleeper. 17 games a season completes everything; the 5 winner's-bracket
+    games a season completes the title record alone.
+  - ⚠️ **Do NOT derive the missing games from the final placings.** It looks
+    arithmetic — 1st won every game, 2nd lost the final — but the number of
+    games each team played depends on byes, which depend on seeding, and it
+    assumes 2013-17 used the same six-team shape. That is inventing data, which
+    this archive does not do. The `⚑ Playoffs only` badge exists precisely so
+    the seven-season limit is stated rather than papered over.
+  - The shape to add, one object per game, in `PLAYOFF_GAMES`:
+    `{ yr, br: 'W'|'WC'|'C', rd, a, as, b, bs }` — `br` is winner's bracket /
+    winner's consolation ladder / consolation, `rd` is `'R1'|'R2'|'FINAL'` for
+    W and `'GmC1'..'GmC9'` for C, `a`/`b` are TEAM names exactly as that
+    season's standings spell them, `as`/`bs` the scores.
 - **The members' app has no rankings yet** — `rankings/index.json` ships empty
   and the app says so honestly. The publish path has been driven end to end
   against the real files with fixture weeks (v31: publish · unpublish ·

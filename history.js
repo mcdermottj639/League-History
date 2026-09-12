@@ -682,7 +682,11 @@
   const LEAGUE_PPG = SEASON.reduce((a, s) => a + s.lgPpg, 0) / SEASON.length;
 
   /* ── EVERY RECORDED MEETING ────────────────────────────────────────────────
-     PLAYOFF_GAMES covers 2018-24. The Cum Bowls from 2013-17 and 2025, and the
+     PLAYOFF_GAMES covers 2018-24 — because those are the seasons whose ESPN
+     "Final Playoff Results" tab was captured; 2013-17 only ever had their
+     Standings tab captured and 2025 is the Sleeper season. See CLAUDE.md
+     "Open / next" — the games exist, they were not collected.
+     The Cum Bowls from 2013-17 and 2025, and the
      2025 final, are real head-to-heads that live in other fields — fold them in
      so the h2h pool is everything the archive actually knows.
      🚨 Still PLAYOFF meetings only: there is no regular-season schedule
