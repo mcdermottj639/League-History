@@ -10,7 +10,19 @@ const rows = [].concat(...SEASON.map((s) => s.rows));
 const exRows = rows.filter((r) => !r.mgr);          // the two untracked managers
 const exYrs = new Set(exRows.map((r) => r.yr + '\0' + r.t));
 const exCB = CUMBOWL.filter((c) => [c.s11, c.s12].some((t) => exYrs.has(c.yr + '\0' + t))).length;
-const exCBloss = CUMBOWL.filter((c) => exYrs.has(c.yr + '\0' + (c.p12 > c.p11 ? c.s11 : c.s12))).length;
+const exCBloss = CUMBOWL.filter((c) => exYrs.has(c.yr + '\0' + c.s12)).length;
+/* 🚨 THE CUM BOWL IS THE 11th/12th PLACE GAME (v66), AND THESE TWO LAWS ARE
+   WHY THAT CAN NEVER DRIFT AGAIN. From v1 to v65 the tab held `GmC3` — the
+   11-SEED v 12-SEED game, a whole round earlier — and every total above was
+   green the entire time, because a count of appearances cannot see WHICH game
+   was counted. It took the owner reading one storyline card. So the laws are
+   written against the thing that makes it the Cum Bowl: the winner finishes
+   11th, the loser finishes 12th. Under the old definition the first of these
+   reports 9 of 13 seasons wrong. */
+const cbPlace = (c, t) => { const s = SEASON.find((x) => x.yr === c.yr);
+  const r = s && s.rows.find((x) => x.t === t); return r ? r.place : null; };
+const cbPlaceBad = CUMBOWL.filter((c) => cbPlace(c, c.s11) !== 11 || cbPlace(c, c.s12) !== 12);
+const cbScoreBad = CUMBOWL.filter((c) => !(c.p11 > c.p12));
 /* ⚠️ A bracket W-L IS kept on a manager again (v50/v52 — `bw`/`bl`/`bA`),
    which is why the directional title-bracket laws below exist. This comment
    said the opposite until v58: it was written when v19 deleted the record and
@@ -53,6 +65,10 @@ const T = [
   ['career points for', Math.round(ALL.reduce((a, x) => a + x.pf, 0)), Math.round(rows.filter((r) => r.mgr).reduce((a, r) => a + r.pf, 0))],
   ['cum bowls played', ALL.reduce((a, x) => a + x.cbA, 0), CUMBOWL.length * 2 - exCB],
   ['cum bowls lost', ALL.reduce((a, x) => a + x.cb, 0), CUMBOWL.length - exCBloss],
+  /* One Cum Bowl per season, every season — it is the game that ends the year. */
+  ['cum bowls on file', CUMBOWL.length, SEASON.length],
+  ['cum bowl winner finished 11th, loser 12th', cbPlaceBad.length, 0],
+  ['cum bowl winner outscored the loser', cbScoreBad.length, 0],
   /* Places 1-4 ARE the final four in this format (the semi-final losers play
      for 3rd), so every season with placements contributes exactly four. */
   ['final fours', ALL.reduce((a, x) => a + x.f4, 0), SEASON.filter((s) => s.fin).length * 4 - exRows.filter((r) => r.place && r.place <= 4).length],
@@ -167,6 +183,14 @@ SEASON.forEach((s) => {
     const floor = (k === 'you' && !who) ? 300 : 1500;
     if (h.length < floor) { console.log(`  ❌ view ${k} (me=${who || 'nobody'}) is only ${h.length} chars`); bad++; }
     if (/undefined|NaN|\[object/.test(h)) { console.log(`  ❌ view ${k} (me=${who || 'nobody'}) has a template hole`); bad++; }
+    /* 🚨 A CODE COMMENT INSIDE A TEMPLATE LITERAL IS TEXT ON THE PAGE, and
+       v65 shipped one: four lines of source rendered as a paragraph between
+       the Cum Bowl card and the season list. It was found in the v66 render
+       by reading the page — every measurement v65 took (chip counts, tab
+       widths, tap targets) was correct and blind to it. This is the cheap
+       half of that: nothing in these views has any business containing a
+       comment opener. The other half is still looking at it. */
+    if (/\/\*|\*\//.test(h)) { console.log(`  ❌ view ${k} (me=${who || 'nobody'}) renders a code comment`); bad++; }
   });
 });
 window.LeagueHistory.setMe(null);
@@ -234,8 +258,15 @@ Object.entries(byId).forEach(([id, ms]) => {
    ("11-1" in the head, "1 title" in the body), so flagging them would be noise
    and noise gets ignored. */
 window.LeagueHistory.setMe(null);
+/* ⚠️ A DECIMAL IS ONE NUMBER, NOT TWO (v66). `\d+` split "53.4%" into 53 and
+   4, so Zach's card — headed "the joint 3rd-best win% in the league, 53.4%"
+   over a body reading "9-4 in 2019" — was reported as printing 4 twice. The
+   fractional digits of a percentage are not a number the reader sees
+   repeated. Decimals are matched whole and then skipped, because `stories()`
+   already dedupes those ACROSS cards, which is the job they need doing. */
 window.LeagueHistory._cardStories().forEach((x) => {
-  const big = (t) => new Set((String(t).match(/\d+/g) || []).map(Number).filter((n) => n >= 3));
+  const big = (t) => new Set((String(t).match(/\d+(?:\.\d+)?/g) || [])
+    .filter((s) => !s.includes('.')).map(Number).filter((n) => n >= 3));
   const inHead = big(x.head);
   const dup = [...big(x.body)].filter((n) => inHead.has(n));
   if (dup.length) { console.log(`  ❌ story "${x.id}/${x.m}" prints ${dup.join(', ')} in both its heading and its body`); bad++; }
@@ -273,6 +304,26 @@ const onCard = new Set(card.map((x) => x.m));
 window.LeagueHistory.roster().forEach((r) => {
   if (!onCard.has(r.m)) { console.log(`  ❌ ${r.name} is not on the Storylines card`); bad++; }
 });
+/* 🚨 NO TWO CARDS ON THE ROLL-CALL MAY MAKE THE SAME CLAIM (v66). The
+   backstop states a rank and a rank can be shared, so the card came out with
+   "Gotch has 5 final fours, joint 2nd of 12" directly above the identical
+   sentence about Zach — each true, correctly hedged, and reading as a
+   generator repeating itself on the one screen that is meant to be twelve
+   different findings. The decimal dedupe in `stories()` cannot see a sentence
+   with no decimal in it. Compared with the manager's name stripped, since the
+   name is the one part that always differs. */
+{
+  const dupMark = block();
+  const seen = new Map();
+  card.forEach((x) => {
+    const claim = x.head.replace(window.LeagueHistory.name(x.m), '').trim();
+    if (seen.has(claim)) {
+      console.log(`  ❌ the roll-call says the same thing twice: "${claim}" (${seen.get(claim)} and ${x.m})`); bad++;
+    } else seen.set(claim, x.m);
+  });
+  console.log(`  ${dupMark()} roll-call: ${card.length} cards, ${seen.size} distinct claims`);
+}
+
 /* 🚨 An `own` story is kept OFF the league card and must still be ON that
    manager's own pages — both halves, because either one failing silently is
    the whole point of the flag. Asserted against the RENDERED You page and the
@@ -301,7 +352,11 @@ owned.forEach((x) => {
    and said the other one is better. Recorded by detector id — never by
    manager — so it cannot be quietly undone, and so it goes quiet on its own
    if the detector ever stops firing. */
-['nofinal', 'dynasty', 'collapse'].forEach((id) => {
+/* ⚠️ 'floor' joined them in v66 for a different reason — not an owner's
+   preference between two cards, but a detector whose finding weakened when
+   the Cum Bowl was redefined. Same flag, same law: recorded by id so it
+   cannot be quietly undone. */
+['nofinal', 'dynasty', 'collapse', 'floor'].forEach((id) => {
   const st = window.LeagueHistory._stories().find((x) => x.id === id);
   if (st && !st.own) { console.log(`  ❌ story "${id}" is a league headline again; the owner made it own-page only (v15)`); bad++; }
 });

@@ -448,8 +448,9 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     - The data still files three brackets as `br`: **W** the championship
       bracket (six teams — round 1, the final four, the final), **WC** the
       placement ladder below it, **C** the consolation ladder for the six that
-      missed (GmC1-9, of which GmC3 is the Cum Bowl). None of them produces a
-      W-L on a manager.
+      missed (GmC1-9, of which **GmC9 is the Cum Bowl** — ⚠️ **it said GmC3
+      until v66, and that was the bug**; see the Cum Bowl section below).
+      None of them produces a W-L on a manager.
     - **Why it went, in two steps.** v14 found the app printing three different
       "playoff records" for one person — 11-4 (W+WC) on the career tile, 10-3
       (W) in the storyline beside it, 22 meetings in the head-to-head — each
@@ -1137,7 +1138,9 @@ correction, zero unresolved conflicts**.
   who was on it. `mgrRaw` knows them; only `mgrOf` deliberately does not, and
   every stat goes through `mgrOf`.
 - **Conservation laws** are the guard against double-counting: 150 season
-  finishes · 24 Cum Bowl appearances · 11 losses · 61 title-bracket wins and
+  finishes · 25 Cum Bowl appearances · 13 losses · **one Cum Bowl per season,
+  its winner 11th and its loser 12th, the winner outscoring the loser** (v66 —
+  the three that would have caught the wrong game) · 61 title-bracket wins and
   63 losses (counted separately since v56 — see above) · 50 final fours ·
   13 titles · 76 playoff berths · h2h games == meetings · **losses ==
   brackets − titles per manager** · **every tied rank says "joint"** (v58) ·
@@ -1146,7 +1149,8 @@ correction, zero unresolved conflicts**.
   wins, losses and points-for == the season rows they were summed from**
   (v61, now that the all-time standings display them) · **the seeds agree with
   the bracket's own shape** — byes are 1 and 2, round 1 is 3v6 and 4v5 (v62,
-  over two independent sources).
+  over two independent sources) · **no two roll-call cards make the same
+  claim** and **a decimal is one number** (v66).
   ⚠️ The bracket law counted **every** playoff game until v14 and was green
   the whole time `bw` meant two different things in two different views — a
   law over a total cannot see a definition drift underneath it. Re-run them after ANY
@@ -1162,7 +1166,7 @@ untrustworthy. Every view carries a badge saying which it is.
 |---|---|
 | **Final placing** | The rank in every table — where you finished after the playoffs |
 | **Regular season** | Every W-L and points total. ESPN's standings are regular-season standings |
-| **⚑ Playoffs only** | 209 bracket games from **all 13 seasons**, plus 13 Cum Bowls. ⚠️ 2025 is winner's-bracket only — no placement or consolation games |
+| **⚑ Playoffs only** | 209 bracket games from **all 13 seasons** — **every Cum Bowl is one of them** (`GmC9`), bar the 2025 reconstruction. ⚠️ It read "plus 13 Cum Bowls" until v66 and that double-counted twelve games |
 
 - ⚠️ **There is NO regular-season schedule anywhere in this data.** So nothing
   here is a career head-to-head, however much it looks like one. **If you add a
@@ -1536,6 +1540,104 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v66 — the Cum Bowl was the wrong game, for 65 versions (12 Sep 2026)** —
+  the owner, looking at one storyline card: *"Buley has finished 11th seven
+  times. Is this accurate? Remember cum bowl winner is always 11th place."*
+  - 🚨 **THE COUNT WAS RIGHT AND THE SENTENCE UNDER IT WAS A THREAD.** Seven
+    11ths is what the archive's placings said. But his rule — winner is 11th —
+    is true of `GmC9`, the last game of the consolation ladder, in **12 of the
+    12 seasons with a bracket on file**, and true of the game the app called
+    the Cum Bowl in **3 of 13**. The app held `GmC3`: round ONE of that
+    ladder, the 11-SEED against the 12-SEED. A whole round early, since v1.
+  - 🚨 **AND THE APP HAD BEEN ADMITTING IT, DRESSED AS A FINDING.** The card
+    carried a caption reading *"Winning does not always save you — in 8
+    seasons the Cum Bowl winner still finished 12th, because the consolation
+    bracket keeps running afterwards."* That sentence is the bug describing
+    itself in its own words, printed under the table, for versions. **A rule
+    the data breaks two times in three is not a quirk worth a caption, it is
+    the wrong definition** — and the way to notice is to ask what the league
+    means by the word, which is a question only the owner can answer.
+  - 🚨 **THE LEAD SENTENCE WAS FALSE TWO SEASONS IN THREE, AND THE TABLE
+    NAMED THE WRONG PEOPLE.** *"The loser is the league's worst"* held for 4
+    of the 12 GmC3 games. Meanwhile appearances were credited for being
+    SEEDED badly rather than for finishing badly, so the tab said **McD had
+    played a Cum Bowl** (2021 — he finished 8th) and **Gotch had played two**
+    (2020 and 2023 — 7th both times), while the managers who actually played
+    off for last went uncounted. Buley read **6 played, 4 lost**; he has been
+    in **8** and lost **2**.
+  - 🚨 **EVERY CONSERVATION LAW WAS GREEN THE ENTIRE TIME, AND THAT IS THE
+    LESSON, NOT AN ASIDE.** "24 appearances, 11 losses" balanced perfectly
+    against a hand-typed list of the wrong game — **a count cannot see WHICH
+    game it counted** (v14's rule, a definition drifting under a total, in its
+    purest form yet: here the total was never even wrong). So the new laws are
+    written against the thing that MAKES it the Cum Bowl — the winner finishes
+    11th, the loser 12th, and the winner outscored the loser. Verified by
+    reinstating GmC3: the first reports 9 of 13 seasons and every older law
+    stays ✅.
+  - 🚨 **AND THE GAMES ARE DERIVED FROM THE BRACKET NOW, NOT RE-TYPED.**
+    `PLAYOFF_GAMES` has held every consolation game since v56, so a
+    hand-maintained `CUMBOWL` was a second copy of data the archive already
+    had — which is exactly how it drifted a round away in silence. It is a
+    filter over the bracket plus one entry for 2025, which has no consolation
+    ladder on file.
+  - **2025's bottom two are the owner's, and they moved.** Sleeper never
+    ordered the bottom four, so the season carried two unordered pairs AND a
+    `worst: "buleyn14"` field that flatly contradicted rows putting Slemp
+    last. He settled it: *"It was Buley losing to Christel in 2025. Sleeper
+    didn't match them up so we just took the scores."* Loser is 12th, so
+    Christel is 11th and Buley last, and Hurd and Slemp are the pair left
+    unordered. ⚠️ It also reads better against the records — Christel went
+    **3-11**, the worst in the league, and was being shown 9th or 10th while
+    7-7 Slemp was shown 11th or 12th.
+  - **So the card he asked about reads "six times"**, and its claim survives
+    intact: the next-most-repeated finish in the league is four (McD's four
+    titles), so nobody repeats a finish more often either way.
+  - 🚨 **THE RENDER FOUND A CODE COMMENT PRINTED ON THE PAGE, SHIPPED IN
+    v65.** Four lines of source — *"/* ⚠️ Nothing opens by default any more
+    (v65)…"* — rendered as a paragraph between the Cum Bowl card and the
+    season list, because the comment was written INSIDE the template literal,
+    where it is just text. **v65 verified itself by counting jump chips and
+    measuring tab widths, and every one of those measurements was correct and
+    blind to this.** There is a law for the cheap half now (no view may
+    contain a comment opener), fault-injected; the other half is still reading
+    the page.
+  - ⚠️ **Three knock-ons in the storylines, each a rule rather than a patch:**
+    - **"Also the record" was about to print on five cards.** The loss record
+      is now shared five ways at 2, and that clause was the one place in the
+      feature that never went through `alsoTxt` — the v2 rule (a superlative
+      that fires twice is just wrong) with a gap in it that the old data never
+      exercised. It states the number without the claim when it is shared.
+    - **`cleanFloor` is `own`-flagged**, because the finding got weaker rather
+      than wrong: "never last and never even a bottom-two SEED" was one
+      manager in thirteen years; "never finished 11th or 12th" is two, and it
+      printed **"McD has never finished in the bottom two … with 5 finals and
+      4 titles"** — a card whose own body argues its headline is not the
+      story — in the slot that had held *"McD is the unluckiest team in the
+      league"*.
+    - 🚨 **TWO MANAGERS MADE THE IDENTICAL CLAIM.** The roll-call came out
+      with *"Gotch has 5 final fours, joint 2nd of 12."* directly above the
+      same sentence about Zach. Both true, both correctly saying "joint"
+      (v58), and together they read as a generator repeating itself on the one
+      screen that is meant to be twelve different findings — the `stories()`
+      dedupe fingerprints DECIMALS and cannot see a sentence with none.
+      `pickStories` skips to that manager's next card rather than dropping
+      either, so coverage is untouched, and it is a law.
+  - ⚠️ **And one of my own laws was wrong before it was even new:** the v57
+    "same numeral in heading and body" check split **"53.4%"** into 53 and 4,
+    so Zach's card was reported for printing 4 twice against a body reading
+    "9-4 in 2019". A decimal is one number. Narrowed, and re-verified that it
+    still catches the whole-number collision it was written for.
+  - ⚠️ **The ⚑ key stopped double-counting in the same edit.** It read "209
+    bracket games … plus 13 Cum Bowls" — but a Cum Bowl IS a bracket game, so
+    twelve of the thirteen were already inside the 209. True before v66 too;
+    what changed is that the archive now states the relationship instead of
+    keeping a second list that merely happened to duplicate one.
+  - Verified at 320 and 390px across 30 view-contexts — the five tabs ×
+    {stranger, McD, Buley, Christel, Slemp, Wolff}: no clipped tab label, no
+    horizontal overflow, no tap target under 38px, no template hole, no
+    rendered comment, no page error. `node --check` on every JS file and
+    `node checks.js` green, with each new law fault-injected.
 
 - **v65 — Records splits, and the Cum Bowl swallows Seasons (12 Sep 2026)** —
   the owner, with the Records jump nav on screen and four chips circled in

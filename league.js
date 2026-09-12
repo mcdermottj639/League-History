@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v65';
+  const APP_VERSION = 'v66';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -255,7 +255,7 @@
     you: 'Your thirteen seasons — medals, Cum Bowls, your best and worst years.',
     rec: 'What the archive turns up on its own: the storylines, the record book, the luck index and the rivalries.',
     led: 'The four tables that rank all twelve — all-time standings, how often each of you makes the playoffs, seeds and upsets, and who scores more once the bracket starts.',
-    cb: "The other bracket, and the one that decides the league's worst: the two worst seeds play on the first weekend of the playoffs. Every final standing since 2013 is underneath it.",
+    cb: "The other bracket, and the one that decides the league's worst: the last game of the consolation ladder, where the winner takes 11th and the loser is the worst in the league. Every final standing since 2013 is underneath it.",
   };
 
   function helpTabHTML(label, desc, subs) {
