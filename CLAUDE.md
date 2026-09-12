@@ -234,6 +234,25 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 - `history.js` — **the archive** (~1,130 lines): the curated 13-season data,
   a single-pass stats engine, and every view. Exposes ONE global,
   `window.LeagueHistory`:
+  - 🏈 **`MGR_TEAM` / `mascot(m)` — each manager's NFL team as one emoji**
+    (v48), on the You tab heading and the profile name. Keyed by MANAGER CODE
+    like `MGR_LOGO`, for the same reason: fantasy team names change every
+    September, the twelve people do not.
+    - 🚨 **The fallback is 👤 and must never be a team.** The 🦅 it replaced was
+      the commissioner's own Eagles, hardcoded — so eleven other managers, and
+      every stranger the link reaches, opened the app under his bird. A reader
+      who has picked nobody is not an Eagles fan by default. `checks.js`
+      asserts the stranger case by name.
+    - ⚠️ **Duplicates are CORRECT** — three Jets fans and two Patriots. A
+      mascot says who somebody roots for; it was never meant to be unique, and
+      there is deliberately no uniqueness law.
+    - ⚠️ **The law reads the RENDER, not the map** — the same reason `_stories`
+      gave way to `_cardStories` in v7: a law that agrees with `MGR_TEAM`
+      passes happily over views that have stopped reading it. It asserts the
+      You heading and the profile show the same glyph, per manager.
+    - ⚠️ Ravens (`🐦‍⬛`) is the one ZWJ sequence here and the only glyph that can
+      degrade to a PAIR of marks on a device that predates it (iOS < 16.4).
+      Swap for `🪶` if anyone ever reports two.
   - ⚠️ **Playoff record + Finals reached are in `rec`, not `cb` (v9).** They are
     career résumé — who gets in, who reaches the final — and the Cum Bowl is
     the opposite bracket, for the teams that missed. Filing them there put the
@@ -795,7 +814,10 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   which is exactly why it is asserted. ⚠️ The first law is about `power.html`
   only — `power.css` is legitimately in `index.html`, because the rankings view
   reuses the Lab's row styling so a member reads what the commissioner built. It
-  runs the conservation laws below plus the storyline laws: every manager has
+  runs the mascot law (v48 — every manager's team glyph is read off the
+  RENDERED You heading and profile and must match, and a reader who has picked
+  nobody must get the neutral 👤 rather than any manager's team), the
+  conservation laws below, plus the storyline laws: every manager has
   one **and is on the rendered Storylines card** (v7 — those are different
   assertions; see Storylines), none has a template hole, each reader's own
   storyline is in second person, the card is still ranked by weight, and no
@@ -1257,6 +1279,54 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v48 — everyone gets their own mascot (12 Sep 2026)** — the owner, on the
+  🦅 above his career page: *"Where we have this eagle for me cause I am an
+  eagles fan can we get a different one for each person based on there team.
+  Ask me each and I'll tell u"*.
+  - 🚨 **THE EAGLE WAS NEVER GENERIC AND NOBODY HAD NOTICED.** It was hardcoded
+    in the "Your career" heading from v1, and it is HIS team — so the other
+    eleven managers each opened the one page in the app that is about them,
+    under somebody else's bird, and so did every stranger the link reached.
+    **The app's most personal screen was carrying the commissioner's identity
+    as if it were the app's own.** Same family as the `isMe` trap the season
+    and byline code keep nearly walking into (v33, v39, v42): a fact about one
+    particular person, wearing the costume of a default.
+  - **The teams are the owner's own answers, twelve of them, asked and told** —
+    never inferred, which is this repo's oldest data rule ("Christels Mattress
+    is Will Hurd"; never map a person by name similarity). Guessing a person's
+    NFL team from their fantasy team name would have been that fault exactly.
+  - 🚨 **The fallback is 👤, and choosing it was the only real design decision
+    here.** The obvious fallback is to leave the 🦅 for anyone unrecognised —
+    which quietly re-creates the whole bug for the reader most exposed to it,
+    the stranger who has tapped nothing. `checks.js` asserts the stranger case
+    by name, because the failure is one line and looks like nothing on screen.
+  - ⚠️ **Deliberately NO uniqueness law.** Three of the twelve are Jets fans
+    and two are Patriots fans. A mascot says who you root for; a check that
+    demanded twelve distinct glyphs would have been asserting something the
+    owner's own answers make false.
+  - ⚠️ **The law reads the RENDER, not `MGR_TEAM`** — the v7 lesson, which is
+    exactly what makes it worth writing: a law that agrees with the map passes
+    over views that have stopped reading the map. It pulls the glyph out of the
+    rendered You heading and the rendered profile and requires them to match,
+    per manager. **Verified by reinstating three faults** — a manager dropped
+    from the map, the fallback set back to 🦅, and the profile hardcoded —
+    and each is reported by name.
+  - **It went on the profile too, not just the You tab.** Eleven of the twelve
+    mascots are otherwise invisible to everybody but their owner, and the
+    profile is where you look at somebody else's career — so the mark that
+    says whose page this is belongs on it.
+  - ⚠️ **Ravens is the one glyph with a rendering risk, stated rather than
+    swapped away.** 🐦‍⬛ is a ZWJ sequence; a device older than iOS 16.4 draws
+    it as a bird AND a black square. Every phone in this league is far past
+    that, and the swap is one character (🪶) if it ever shows up.
+  - ⚠️ **And LOOKING at it caught one the measurements could not: `⚡` drew as
+    a thin monochrome TEXT glyph** beside eleven colour ones. U+26A1 needs the
+    variation selector, exactly as `✈️` already carries — every assertion was
+    green over it, because a glyph in the wrong presentation is the right
+    character at the right size in the right place.
+  - Rendered at 390 and 320px for all twelve plus the stranger: one line each,
+    no clipping, no horizontal overflow, no page errors, `checks.js` green.
 
 - **v47 — the tab is spelled "Honors" (12 Sep 2026)** — the owner: *"Spell of
   Honors too"*.

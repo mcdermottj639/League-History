@@ -61,6 +61,33 @@ SEASON.forEach((s) => {
 window.LeagueHistory.setMe(null);
 ALL.forEach((a) => { const p = window.LeagueHistory.profile(a.m);
   if (/undefined|NaN|\[object/.test(p)) { console.log(`  ❌ profile ${a.m} has a template hole`); bad++; } });
+/* 🏈 EVERY MANAGER HAS A MASCOT, AND IT IS THE SAME ONE IN BOTH PLACES (v48).
+   Read off the RENDER rather than out of `MGR_TEAM`, so this cannot pass by
+   agreeing with a map that the views have stopped using — and so checks.js
+   never holds a second copy of who supports whom. A manager added without a
+   team falls through to the 👤 fallback, which is correct behaviour and a
+   silent one: the page still renders, it just quietly stops being about them.
+   ⚠️ Deliberately NO uniqueness law. Three of the twelve are Jets fans. */
+const HEAD_M = (h) => (h.match(/<h2 class="section-title">(\S+) Your career/) || [])[1];
+const PROF_M = (h) => (h.match(/<h3>(\S+) /) || [])[1];
+window.LeagueHistory.setMe(null);
+const strangerM = HEAD_M(window.LeagueHistory.view('you'));
+const seen = [];
+/* 🚨 A reader who has picked nobody must get the neutral mark, never a team.
+   The 🦅 this replaced was the commissioner's own — so eleven other people,
+   and every stranger the link is forwarded to, opened the app under his bird. */
+if (strangerM !== '👤') { console.log(`  ❌ nobody picked: the You heading shows "${strangerM}", not the neutral 👤`); bad++; }
+window.LeagueHistory.roster().forEach((r) => {
+  window.LeagueHistory.setMe(r.m);
+  const mine = HEAD_M(window.LeagueHistory.view('you'));
+  const prof = PROF_M(window.LeagueHistory.profile(r.m));
+  if (!mine || mine === '👤') { console.log(`  ❌ ${r.name} has no mascot on their You page (shows "${mine}")`); bad++; }
+  else if (mine !== prof) { console.log(`  ❌ ${r.name}'s mascot is "${mine}" on the You page but "${prof}" on their profile`); bad++; }
+  else seen.push(mine);
+});
+console.log(`  ${seen.length === 12 ? '✅' : '❌'} mascots: ${new Set(seen).size} teams across ${seen.length} of 12 managers, neutral for a stranger`);
+if (seen.length !== 12) bad++;
+window.LeagueHistory.setMe(null);
 /* 🚨 Every manager must have at least one storyline, in every voice.
    The detectors look for EXTREMES, so a manager who has never been extreme at
    anything gets nothing — and that means someone opens their own You page and
