@@ -1640,6 +1640,34 @@ stale entry written in the present tense reads as current to anyone who greps.
     twelve of the thirteen were already inside the 209. True before v66 too;
     what changed is that the archive now states the relationship instead of
     keeping a second list that merely happened to duplicate one.
+  - 🚨 **AND THEN A SWEEP OF EVERY WORD THE APP RENDERS** (the owner, after
+    catching me calling a round-one game a Cum Bowl in chat: *"Check all the
+    words"*). 262 distinct sentences across five tabs × three readers plus all
+    twelve profiles, every checkable claim re-derived. Two were wrong, and
+    **neither was about the Cum Bowl data — both were prose that outlived its
+    fact**, which is the same shape as the comment above:
+    - **"lives on Playoff appearances under Records"** on the Honors final-four
+      caption — true from v48 to v64, false the moment **v65 moved that card to
+      Leaders**. A cross-reference pointing a reader at the wrong tab, with
+      nothing able to notice. ⚠️ **Fixed by DERIVING it**: `subName('led')`
+      reads the label out of `SUBS`, so it follows a rename the way the ? sheet
+      already does — verified by renaming the tab and watching the sentence
+      follow. Typing a tab's name is the hand-kept-list fault in its smallest
+      possible costume.
+    - 🚨 **"Placement games and the consolation ladder decide nothing"** — in
+      TWO captions, and **v66 made it self-contradicting**: `GmC9` is a
+      consolation game and it is the whole Cum Bowl tab. What the sentence
+      meant is that they produce no W-L on a manager (the v19 rule, still
+      true); what it SAID is that they decide nothing, while the app three
+      taps away is built on what they decide. They decide places rather than
+      records now, and the Cum Bowl is named as the example.
+    - ⚠️ Everything else checked out, re-derived rather than eyeballed: 5 of 12
+      defending champions made the playoffs again, the six ringless managers
+      hold 6 finals and 15 podiums, Christel is the only manager with no top
+      three, Hurd's 3 scoring titles are tied with Wolff, 65 championship
+      games, 28 of 65 won by the better seed. **The numbers were fine. The
+      sentences around them were where both faults lived** — third version
+      running (v58, v59, here).
   - Verified at 320 and 390px across 30 view-contexts — the five tabs ×
     {stranger, McD, Buley, Christel, Slemp, Wolff}: no clipped tab label, no
     horizontal overflow, no tap target under 38px, no template hole, no

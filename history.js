@@ -715,6 +715,17 @@
      this rather than hardcoding one of the two forms. */
   const vb = (m, second, third) => (isMe(m) ? second : third);
 
+  /* 🚨 A TAB NAMED IN PROSE IS DERIVED, NEVER TYPED (v66). A caption on
+     Honors read "lives on Playoff appearances under Records" — true from v48
+     to v64 and false the moment v65 moved that card to Leaders, pointing a
+     reader at the wrong tab with nothing able to notice. It is the ? sheet's
+     rule (its tab list is built from `SUBS`) applied to the one other place
+     the app writes a tab's name down. ⚠️ Safe to call SUBS from a function
+     defined above it: the const is in TDZ only until module init finishes,
+     and every view renders after that — the v37 trap is module-SCOPE reads,
+     not calls made later. */
+  const subName = (k) => (SUBS.find((s) => s[0] === k) || [, k])[1];
+
   /* A season whose rows are ordered by something OTHER than playoff finish
      cannot award places; only its named champion counts. */
   const isFinal = (s) => s.finalOrder !== false;
@@ -1432,7 +1443,7 @@
         <span class="fh-fr-f">${a.f4 ? `${a.f4} final four${a.f4 > 1 ? 's' : ''}` : '<i>no final fours</i>'}${a.fin ? ` · ${a.fin} final${a.fin > 1 ? 's' : ''}` : ''}</span>
         <span class="fh-fr-g">${a.t1 ? `<span class="mono">${a.t1}</span> won` : '<i>none won</i>'}</span>
       </div>`).join('')}
-      <p class="ffp-cap"><b>The final four is places 1-4</b>: the two teams that lose in the final four play each other for 3rd, so the four left after round one <b>are</b> the top four finishers. Verified against every bracket on file — all ${SEASON.length} seasons.<br><br>Six teams make the playoffs, so getting to the last four is the cut that means something. This is a count of <b>finishes</b>, not a record: the championship-bracket <b>win-loss record</b> is a different population and lives on <b>Playoff appearances</b> under Records. Placement games and the consolation ladder decide nothing and are kept as meetings, never as a record.</p>
+      <p class="ffp-cap"><b>The final four is places 1-4</b>: the two teams that lose in the final four play each other for 3rd, so the four left after round one <b>are</b> the top four finishers. Verified against every bracket on file — all ${SEASON.length} seasons.<br><br>Six teams make the playoffs, so getting to the last four is the cut that means something. This is a count of <b>finishes</b>, not a record: the championship-bracket <b>win-loss record</b> is a different population and lives on <b>Playoff appearances</b> under ${subName('led')}. Placement games and the consolation ladder decide places rather than records — that is how the Cum Bowl is settled — and every game in them is kept as a meeting, never totalled into a W-L.</p>
     </div>`;
   }
 
@@ -2194,7 +2205,7 @@
     const never = ALL.filter((a) => !a.cbA);
     return `<h2 class="section-title">🚽 The Cum Bowl ${tag('po')}</h2>
     <div class="ffp-card">
-      <p class="fh-lead">The last two teams standing in the consolation bracket play for 11th. <b>The winner is 11th and the loser is the league's worst.</b></p>
+      <p class="fh-lead">The two teams that lose their way to the bottom of the consolation bracket meet in its last game. <b>The winner is 11th and the loser is the league's worst.</b></p>
       <div class="fh-cbt-h"><span>Record</span><span>PLAYED</span><span>LOST</span></div>
       ${played.map((a) => `<div class="fh-cbt-r${isMe(a.m) ? ' you' : ''}">
         ${tap(a.m, `<b>${esc(a.name)}</b>`)}<span>${a.cbA}</span><span class="${a.cb ? 'neg' : 'pos'}">${a.cb || '0'}</span>
@@ -2289,7 +2300,7 @@
     ${pairs.length ? `<h2 class="section-title">Playoff head-to-head ${tag('po')}</h2>
       <div class="ffp-card">
         ${pairs.map((v) => `<div class="fh-h2h">${tap(v.opp, `<b>${esc(nm(v.opp))}</b>`)}<i>${one(v.pf)}–${one(v.pa)}</i><span class="${v.w > v.l ? 'pos' : v.l > v.w ? 'neg' : ''}">${v.w}-${v.l}</span></div>`).join('')}
-        <p class="ffp-cap">⚠️ <b>Every playoff meeting, not a record.</b> All ${pairs.reduce((n, v) => n + v.n, 0)} games on file — every bracket, including the placement games and the consolation ladder, which decide nothing and are kept as meetings rather than as a record. No regular-season schedule exists in the archive, so this is not a career head-to-head. Points are per-game averages.</p>
+        <p class="ffp-cap">⚠️ <b>Every playoff meeting, not a record.</b> All ${pairs.reduce((n, v) => n + v.n, 0)} games on file — every bracket, including the placement games and the consolation ladder, which decide where everyone below the final four finishes but are kept as meetings rather than totalled into a record. No regular-season schedule exists in the archive, so this is not a career head-to-head. Points are per-game averages.</p>
       </div>` : ''}
       <h2 class="section-title">Franchises</h2>
       <div class="ffp-card"><div class="fh-fr-list">${teams.map((t) => `<span>${esc(t)}</span>`).join('')}</div></div>
