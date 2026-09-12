@@ -243,7 +243,9 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       every stranger the link reaches, opened the app under his bird. A reader
       who has picked nobody is not an Eagles fan by default. `checks.js`
       asserts the stranger case by name.
-    - ⚠️ **Duplicates are CORRECT** — three Jets fans and two Patriots. A
+    - ⚠️ **Duplicates are CORRECT** — three Jets fans share ✈️, and the two
+      Patriots fans share **🍺** (v51, the owner's call — so the glyph is not
+      always the team's own mark, and both managers on a team move together). A
       mascot says who somebody roots for; it was never meant to be unique, and
       there is deliberately no uniqueness law.
     - ⚠️ **The law reads the RENDER, not the map** — the same reason `_stories`
@@ -1303,6 +1305,29 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v51 — the Patriots mascot is a beer (12 Sep 2026)** — the owner: *"Keep that
+  icon but change the pats one to 🍺"*.
+  - **Both Patriots managers change, not one.** A mascot here is per TEAM —
+    three Jets fans share ✈️ — so leaving one of the pair on 🇺🇸 would read as a
+    mis-mapped manager rather than as a joke. `checks.js` still counts **9
+    teams across 12 of 12**, which is the number that would have moved to 10 if
+    only one entry had changed.
+  - ⚠️ **Nothing to guard on this glyph, and it was checked rather than
+    assumed.** U+1F37A is a single codepoint with `Emoji_Presentation=Yes`: no
+    variation selector, unlike ✈️ and ⚡️ in the same map (v49 found ⚡ drawing
+    as a thin monochrome text glyph without one), and no ZWJ sequence to
+    degrade into two marks, unlike 🐦‍⬛. Verified by printing the codepoints of
+    all twelve.
+  - ⚠️ **It IS a version bump, unlike a crest swap.** A crest is its own file,
+    so replacing one is data and rides no `?v=`; a mascot is a line in
+    `history.js`, and a device holding `history.js?v=50` would keep the old
+    glyph for good. **Where the data lives decides whether a data change needs
+    a release.**
+  - Verified on the render as each Patriots manager, as a Jets manager and as a
+    stranger: 🍺 on both their You headings and both their profiles, every other
+    mascot unmoved, the 👤 fallback intact for a stranger, **no 🇺🇸 left in any
+    rendered view**, no overflow, no page errors, checks.js green.
 
 - **v50 — the champion's curse closes Honors (12 Sep 2026)** — the owner: *"Put
   champions curse below that"*.

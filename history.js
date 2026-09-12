@@ -510,8 +510,15 @@
     Riz: '✈️',       // Jets
     Woods: '✈️',     // Jets
     CC: '🐴',        // Colts
-    Christel: '🇺🇸',  // Patriots
-    Hurd: '🇺🇸',      // Patriots
+    /* 🍺 rather than a Patriots mark (v51, owner's call: *"change the pats one
+       to 🍺"*). BOTH Patriots managers change, not one: a mascot is per TEAM
+       here — three Jets fans share ✈️ — so splitting the pair would read as one
+       of them being mis-mapped rather than as a joke. ⚠️ U+1F37A is a single
+       codepoint with Emoji_Presentation=Yes, so unlike ✈️ and ⚡️ above it needs
+       no variation selector, and unlike 🐦‍⬛ it is not a ZWJ sequence that can
+       degrade to two marks. Nothing to guard. */
+    Christel: '🍺',  // Patriots
+    Hurd: '🍺',      // Patriots
     Gotch: '🐻',     // Bears
     /* ⚠️ Ravens is the one ZWJ sequence here (bird + black square), so it is
        the only glyph that can degrade to a PAIR of marks on a device too old
