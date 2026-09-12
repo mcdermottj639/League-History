@@ -624,7 +624,7 @@
   SEASON.forEach((s) => s.rows.forEach((r) => {
     if (!r.mgr) return;
     const a = MGRS[r.mgr] || (MGRS[r.mgr] = { m: r.mgr, logo: MGR_LOGO[r.mgr],
-      seasons: 0, w: 0, l: 0, pf: 0, pa: 0, t1: 0, t2: 0, t3: 0, po: 0, fin: 0, f4: 0, cb: 0, cbA: 0,
+      seasons: 0, w: 0, l: 0, pf: 0, pa: 0, t1: 0, t2: 0, t3: 0, po: 0, fin: 0, f4: 0, bw: 0, bl: 0, cb: 0, cbA: 0,
       yrs: [], allW: 0, allL: 0, pfRankSum: 0, placeSum: 0 });
     a.seasons++; a.w += r.w; a.l += r.l; a.pf += r.pf; a.pa += r.pa;
     a.yrs.push(r);
@@ -703,6 +703,36 @@
     e.games.push({ yr: g.yr, kind: g.kind, rd: g.rd, xs, ys, xt: aIsX ? g.a : g.b, yt: aIsX ? g.b : g.a });
   });
   const PAIRS = Object.values(H2H).sort((p, q) => q.n - p.n || Math.abs(q.aw - q.bw) - Math.abs(p.aw - p.bw));
+
+  /* ══ 🏆 THE CHAMPIONSHIP-BRACKET RECORD (v49, owner's call: "add record
+     into playoff appearances") ═════════════════════════════════════════════
+     🚨 THIS IS THE NUMBER v19 DELETED, AND IT IS BACK UNDER THE ONE CONDITION
+     THAT MADE DELETING IT NECESSARY: exactly one definition, printed with its
+     own denominator every time. v14 found the app showing three different
+     "playoff records" for one person — 11-4 (W+WC), 10-3 (W) and 22 meetings
+     — each computed correctly, and the page still lied because nothing said
+     which population each counted. v19 removed it rather than caption it.
+     So: `W` ONLY. The six-team championship bracket — R1, the final four,
+     the final. NOT the WC placement ladder (games between teams already out
+     of the title race), NOT the C consolation ladder, NOT the Cum Bowl. That
+     is the population v14 settled on and it has not changed.
+     ⚠️ 35 games across 7 of 13 seasons, and THAT IS THE WHOLE RISK. It sits
+     beside an appearance rate covering all 13 — two denominators side by
+     side, which is the v3 fault if they are left to look comparable. Every
+     place it prints carries the ⚑ badge and the card states both spans.
+     ⚠️ Deliberately NOT reconstructed from `s2.final` the way MEET is: that
+     would add a final from seasons with no bracket, so the record would cover
+     more seasons in its last round than in its first. One population.
+     ⚠️ No ties to resolve — verified, zero tied games in all 35. */
+  const BR_YRS = [...new Set(PLAYOFF_GAMES.filter((g) => g.br === 'W').map((g) => g.yr))].sort();
+  PLAYOFF_GAMES.forEach((g) => {
+    if (g.br !== 'W') return;
+    const aWon = g.as > g.bs;
+    [[mgrOf(g.a), aWon], [mgrOf(g.b), !aWon]].forEach(([m, won]) => {
+      const a = m && MGRS[m]; if (!a) return;
+      if (won) a.bw++; else a.bl++;
+    });
+  });
 
 
   /* ══════════════════════════════════════════════════════════════════════════
@@ -990,14 +1020,35 @@
      It matches the career tile, which has read `Playoff apps` since v10. */
   function playoffHTML() {
     const rows = [...ALL].sort((a, b) => b.poRate - a.poRate || b.po - a.po);
-    return `<h2 class="section-title">📊 Playoff appearances ${tag('fin')}</h2>
+    /* 🚨 THE RECORD CARRIES THE ⚑ GLYPH, NOT `dot('po')` — and that was a
+       render finding, not a style preference. `dot()` prints the badge's full
+       uppercase label, because it is built to caveat ONE number somewhere a
+       heading badge cannot reach. Down twelve consecutive rows, "PLAYOFFS
+       ONLY" is louder than the records it is qualifying, and it is the same
+       six words twelve times; it also pushed the reader's own row onto a
+       second line, because `.fh-po.you` is inset 14px each side and so wraps
+       before every other row does. **The one row that looked broken was the
+       reader's own.** The flag alone is the shape the ? sheet already
+       teaches, and the caption carries the sentence once.
+       ⚠️ The stats are on a SECOND LINE, not extra columns (v49). The row was
+       a 96px name against a bar and a percentage, and a fourth column for the
+       record left the name under 80px with most of the league truncated —
+       the v39 standings fault exactly, and its fix is the same: the crest and
+       the numbers have floors, the name is the only thing left to squeeze, so
+       the stats move to a full-width line underneath. */
+    return `<h2 class="section-title">📊 Playoff appearances ${tag('mix')}</h2>
     <div class="ffp-card">
       ${rows.map((a) => `<div class="fh-po${isMe(a.m) ? ' you' : ''}">
-        ${tap(a.m, `<div class="fh-po-n"><b>${esc(a.name)}</b><i>${a.po} of ${a.seasons} seasons</i></div>`)}
-        <div class="fh-po-tr"><span style="width:${(a.poRate * 100).toFixed(1)}%"></span></div>
-        <div class="fh-po-v">${Math.round(a.poRate * 100)}<small>%</small></div>
+        <div class="fh-po-top">
+          ${tap(a.m, `<div class="fh-po-n"><b>${esc(a.name)}</b></div>`)}
+          <div class="fh-po-tr"><span style="width:${(a.poRate * 100).toFixed(1)}%"></span></div>
+          <div class="fh-po-v">${Math.round(a.poRate * 100)}<small>%</small></div>
+        </div>
+        <div class="fh-po-s"><b>${a.po} of ${a.seasons}</b> seasons${a.bw + a.bl
+          ? ` <span class="fh-po-br" title="Playoffs only — championship bracket"><b>${a.bw}-${a.bl}</b></span>`
+          : ' <span class="fh-po-br none" title="Playoffs only — championship bracket">none on file</span>'}</div>
       </div>`).join('')}
-      <p class="ffp-cap">The bar <b>is</b> the rate — a top-6 seed always finishes top 6 in this format, verified on every bracket, so this covers all ${SEASON.length} seasons.</p>
+      <p class="ffp-cap">The bar <b>is</b> the rate — a top-6 seed always finishes top 6 in this format, verified on every bracket, so this covers all ${SEASON.length} seasons.<br><br>🚨 <b>The two numbers on a row have different denominators, and neither is the other's total.</b> The rate is all ${SEASON.length} seasons. The ⚑ record is the <b>championship bracket only</b> — ${PLAYOFF_GAMES.filter((g) => g.br === 'W').length} games across the ${BR_YRS.length} seasons that have a bracket on file (${BR_YRS[0]}-${BR_YRS[BR_YRS.length - 1]}). It does not count the placement ladder, the consolation bracket or the Cum Bowl, so it will never square with the ${MEET.length} meetings on the head-to-head pages.</p>
     </div>
     </div>`;
   }
@@ -1699,7 +1750,7 @@
       return `<h2 class="section-title">${mascot(null)} Your career</h2>
       <div class="ffp-card"><div class="ffp-empty"><b>Tell the app who you are.</b>
       Pick your name and this page becomes your thirteen seasons — every finish, your
-      medals, your playoff record and your Cum Bowls. Everything else on the app starts
+      medals, your final fours and your Cum Bowls. Everything else on the app starts
       calling you <i>you</i> at the same time.</div>
       <button type="button" class="fan-btn" data-pickme="1">👤 Choose my name</button></div>`;
     }

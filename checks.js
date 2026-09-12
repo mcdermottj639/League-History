@@ -25,6 +25,16 @@ const T = [
   ['final fours', ALL.reduce((a, x) => a + x.f4, 0), SEASON.filter((s) => s.fin).length * 4 - exRows.filter((r) => r.place && r.place <= 4).length],
   ['titles', ALL.reduce((a, x) => a + x.t1, 0), SEASON.filter((s) => s.champ && s.champ.mgr).length],
   ['playoff berths', ALL.reduce((a, x) => a + x.po, 0), SEASON.filter((s) => s.fin).length * 6 - exRows.filter((r) => r.place && r.place <= 6).length],
+  /* 🚨 THE BRACKET LAW IS BACK WITH THE NUMBER IT GUARDS (v49). v19 deleted
+     it as "a law over a value nothing displays is testing dead code" — true
+     then, false now that the record is on the Playoff appearances card.
+     ⚠️ And it is written to catch the fault that killed the record in the
+     first place: it counts CHAMPIONSHIP-bracket games only, so the moment
+     `bw`/`bl` start absorbing the placement or consolation ladder again the
+     total overshoots. The v14 drift — `bw` quietly meaning two things in two
+     views — is exactly what a law over the wrong total cannot see. */
+  ['title-bracket slots', ALL.reduce((a, x) => a + x.bw + x.bl, 0), PLAYOFF_GAMES.filter((g) => g.br === 'W').length * 2],
+  ['title-bracket W == L', ALL.reduce((a, x) => a + x.bw, 0), ALL.reduce((a, x) => a + x.bl, 0)],
   ['h2h games == meetings', S.PAIRS.reduce((a, p) => a + p.n, 0), S.MEET.filter((g) => {
     const rr = (t, yr) => (SEASON.find((s) => s.yr === yr) || { rows: [] }).rows.find((x) => x.t === t);
     const a2 = rr(g.a, g.yr), b2 = rr(g.b, g.yr);

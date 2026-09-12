@@ -3290,11 +3290,33 @@ tr.fav td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .fh-cb-x.wl { color: var(--neg); }
 .fh-cb-x.wl b { color: var(--neg); }
 /* ── playoff bars ──────────────────────────────────────────────────────── */
-.fh-po { display: grid; grid-template-columns: 96px 1fr 44px; gap: 9px; align-items: center; padding: 7px 0; }
+/* 🚨 TWO LINES, NOT FOUR COLUMNS (v49). The record joined this row and a
+   fourth column took the name under 80px with most of the league truncated —
+   the v39 standings fault, same fix: the bar and the percentage have floors,
+   the name is the only thing left to squeeze, so the stats go underneath at
+   full width. The row is barely taller; the old name cell was already two
+   lines deep. */
+.fh-po { padding: 7px 0; }
+.fh-po-top { display: grid; grid-template-columns: 96px 1fr 44px; gap: 9px; align-items: center; }
 .fh-po + .fh-po { box-shadow: inset 0 1px 0 var(--l07); }
 .fh-po.you { background: rgba(var(--acRGB), .09); margin: 0 -14px; padding: 7px 14px; border-radius: var(--r1); }
 .fh-po-n b { display: block; font-size: 12.5px; font-weight: 800; color: var(--ink); }
-.fh-po-n i { font: 700 9.5px/1 Archivo, system-ui, sans-serif; color: var(--mu2); font-style: normal; }
+/* ⚠️ flex, not a line of text: it carries a ⚑ badge, and a 9.5px line box
+   cannot contain a 19px inline (the v9 fault, which printed a badge on top of
+   its own heading). Wraps rather than clips at 320px. */
+.fh-po-s { display: flex; align-items: center; flex-wrap: wrap; gap: 0 4px;
+  margin-top: 4px; font: 700 9.5px/1.6 Archivo, system-ui, sans-serif; color: var(--mu2); }
+.fh-po-s b { color: var(--gy); font-weight: 800; }
+/* ⚑ + the record, in the `po` ink. Deliberately NOT `.fh-dot`, whose full
+   uppercase label is for ONE caveated number, not for twelve rows. The flag
+   is the shape half of the signal — the `po` colour alone measures too close
+   to the muted body ink to be spotted mid-page (that is why the key says the
+   badge is never colour-only). */
+.fh-po-br { white-space: nowrap; margin-left: 7px;
+  color: color-mix(in srgb, var(--wm) 62%, var(--ink)); }
+.fh-po-br::before { content: '⚑ '; }
+.fh-po-br b { color: inherit; font-weight: 800; }
+.fh-po-br.none { font-weight: 700; opacity: .8; }
 .fh-po-tr { position: relative; height: 10px; border-radius: var(--rp); background: var(--tr); }
 .fh-po-tr span { position: absolute; inset: 0 auto 0 0; border-radius: var(--rp); background: var(--grad); }
 .fh-po-tr em { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink);

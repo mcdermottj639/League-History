@@ -257,8 +257,8 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     the split is by KIND.** 🎖️ **Final fours** — the funnel, final fours ·
     finals · won — closes **Honors**, because it is an achievement and that is
     the page of achievements. 📊 **Playoff appearances** — how often each
-    manager gets in, as a rate — stays on **Records**, because it is a
-    leaderboard. Neither is on Cum Bowl (v9): that is the opposite bracket, for
+    manager gets in, as a rate, **plus the championship-bracket record**
+    (v50) — stays on **Records**, because it is a leaderboard. Neither is on Cum Bowl (v9): that is the opposite bracket, for
     the teams that missed, and filing the league's best achievement behind the
     tab named for its worst was the original fault.
     - ⚠️ **`playoffHTML` was renamed on screen in the same edit.** It headed
@@ -272,7 +272,28 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       that is also what puts it in the jump nav with no second edit, and what
       side-steps the `.fh-sub` badge trap (a 9.5px line box cannot hold a 19px
       badge; measured here at 26px with the badge inside it).
-  - 🚨 **THE APP KEEPS NO BRACKET WIN-LOSS RECORD (v19, owner's call:
+  - 🚨 **`bw`/`bl` — THE CHAMPIONSHIP-BRACKET RECORD, BACK IN v50** (owner:
+    *"add record into playoff appearances"*). ⚠️ **This SUPERSEDES the v19
+    rule below in one respect only** — that entry's reasoning is why the
+    conditions on it are absolute, so read it first.
+    - **One population: `br === 'W'`.** The six-team championship bracket —
+      R1, the final four, the final. **NOT** the WC placement ladder, **NOT**
+      the C consolation ladder, **NOT** the Cum Bowl. That is the definition
+      v14 settled on; McD reads 10-3, which is the exact figure v14 named.
+    - 🚨 **35 games across 7 of 13 seasons, printed beside a rate covering all
+      13 — that adjacency IS the v3 fault if it is left unlabelled.** So it
+      prints in exactly ONE place, carries the ⚑, and the caption states both
+      spans and says the two will never square with the head-to-head counts.
+    - ⚠️ **Deliberately NOT reconstructed from `s2.final` the way `MEET` is.**
+      That would add a final from seasons with no bracket, so the record would
+      cover more seasons in its last round than in its first.
+    - `checks.js` asserts **70 title-bracket slots** (35 W games × 2) — the
+      law v19 retired, back because there is a displayed value to conserve
+      again. ⚠️ It is written against the *population*: reverted to let the
+      placement ladder in, it reports 112 != 70, while **`W == L` stays
+      green** — which is exactly why a law over the wrong total could not see
+      the v14 drift.
+  - 🚨 **NO OTHER BRACKET W-L EXISTS (v19, owner's call:
     *"Title brackets have to be changed to final 4s everywhere"*).** A
     manager's playoff résumé is **final fours**, then finals, then titles.
     - The data still files three brackets as `br`: **W** the championship
@@ -1298,6 +1319,64 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v50 — the playoff record comes back, on one denominator (12 Sep 2026)** —
+  the owner: *"Yes fix it to final fours and add record into playoff
+  appearances. That was my q and u just moved past it"*.
+  - ⚠️ **HE ASKED TWICE AND I ANSWERED A DIFFERENT QUESTION.** He asked
+    whether a playoff record should be *part of* Playoff appearances; I
+    audited where the record *currently* lives, found it deleted in v19,
+    reported "nothing is orphaned" and closed the question. **"It does not
+    exist" is an answer to "where is it", not to "should we add it."** He had
+    to ask a third time to get the thing he asked for twice.
+  - 🚨 **IT IS THE NUMBER v19 DELETED, AND THE CONDITIONS ON IT ARE THE WHOLE
+    OF THIS VERSION.** v14 found the app printing three different "playoff
+    records" for one person — 11-4 (W+WC), 10-3 (W), 22 meetings — each
+    computed correctly, and the page still lied because nothing said which
+    population each counted. v19 removed it rather than caption it. So it
+    comes back as **`br === 'W'` only** — the six-team championship bracket,
+    not the placement ladder, not the consolation ladder, not the Cum Bowl —
+    and McD reads **10-3**, the exact figure v14 named for that population.
+    One definition, one place it prints, both spans on the card.
+  - 🚨 **The risk it reintroduces is ADJACENCY, not arithmetic.** 35 games
+    across 7 of 13 seasons now sits beside an appearance rate covering all 13
+    — two denominators side by side, which is the v3 fault whenever they are
+    left looking comparable. The row carries the ⚑; the caption says the rate
+    is all thirteen seasons, the record is 35 championship-bracket games from
+    2018-24, and that it will never square with the 126 meetings on the
+    head-to-head pages.
+  - **The conservation law came back with it: 70 title-bracket slots.** v19
+    retired it as "a law over a value nothing displays is testing dead code",
+    which was right then and is wrong now. ⚠️ **It is written against the
+    POPULATION, and that distinction is the point**: reverted to let the
+    placement ladder back in it reports `112 != 70`, while **`W == L` stays
+    green** — a law over a symmetric total cannot see a definition drifting
+    underneath it, which is exactly how v14's bug survived.
+  - 🚨 **TWO LAYOUT FAULTS, BOTH FOUND BY LOOKING AT IT, NEITHER ASSERTABLE:**
+    - **A fourth column was not possible.** The row is a 96px name against a
+      bar and a percentage; adding the record took the name under 80px with
+      most of the league truncated. The v39 standings fix applies unchanged —
+      the bar and the number have floors, the name is the only thing left to
+      squeeze — so the stats moved to a full-width second line.
+    - 🚨 **`dot('po')` PRINTED "PLAYOFFS ONLY" ON ALL TWELVE ROWS, AND THE ROW
+      IT BROKE WAS THE READER'S OWN.** That helper renders the badge's full
+      uppercase label, because it is built to caveat ONE number somewhere a
+      heading badge cannot reach. Twelve times down a card it is louder than
+      the records it qualifies and it is the same six words repeated — and it
+      wrapped `.fh-po.you` onto a second line, because the reader's row is
+      inset 14px each side and therefore runs out of width first. **The only
+      row that looked broken was the one belonging to whoever was holding the
+      phone.** The flag glyph alone carries it (`.fh-po-br`), the caption says
+      the sentence once, and the row went 88px → 73px.
+  - **And the fix he asked for in the same breath:** the You tab's "Tell the
+    app who you are" card promised *"your medals, your playoff record and
+    your Cum Bowls"* — prose that outlived the stat by seven versions, on a
+    stranger's first screen. It reads **final fours** now, which is what that
+    page shows. Asserted: no view and no profile contains the phrase.
+  - Verified at 390 and 320px as the reader, as another manager and as a
+    stranger: twelve rows, no name truncated, no sub-line wrapped, the ⚑
+    inside its own line box, no type under 9px, no overflow, no page errors,
+    and the v49 mascots re-checked unchanged.
 
 - **v49 — everyone gets their own mascot (12 Sep 2026)** — the owner, on the
   🦅 above his career page: *"Where we have this eagle for me cause I am an
