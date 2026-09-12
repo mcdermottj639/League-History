@@ -16,6 +16,7 @@ const exCBloss = CUMBOWL.filter((c) => exYrs.has(c.yr + '\0' + (c.p12 > c.p11 ? 
    left to conserve, and the per-game exclusion it needed goes with it. The
    untracked pair are still excluded from the final-four law below, which is
    now the only one derived from placements. */
+const BR_ON_FILE = new Set(PLAYOFF_GAMES.filter((g) => g.br === 'W').map((g) => g.yr));
 const T = [
   ['seasons counted', ALL.reduce((a, x) => a + x.seasons, 0), rows.length - exRows.length],
   ['cum bowls played', ALL.reduce((a, x) => a + x.cbA, 0), CUMBOWL.length * 2 - exCB],
@@ -35,6 +36,14 @@ const T = [
      views — is exactly what a law over the wrong total cannot see. */
   ['title-bracket slots', ALL.reduce((a, x) => a + x.bw + x.bl, 0), PLAYOFF_GAMES.filter((g) => g.br === 'W').length * 2],
   ['title-bracket W == L', ALL.reduce((a, x) => a + x.bw, 0), ALL.reduce((a, x) => a + x.bl, 0)],
+  /* 🚨 THE OWNER'S OWN ARITHMETIC, AS A LAW (v51). He read his row — 10-3 —
+     and asked why it was not 6, since a bracket is single elimination and he
+     has 10 appearances and 4 titles. He was right about the RULE and the row
+     was silent about its span: the record covers the 5 brackets he is in on
+     file, not his 13-season career. The rule itself is structural and holds
+     per manager over the seasons on file, so it is asserted rather than
+     trusted — it is the one law that can catch a bracket game assigned to the
+     wrong person, which no total can see. */
   ['h2h games == meetings', S.PAIRS.reduce((a, p) => a + p.n, 0), S.MEET.filter((g) => {
     const rr = (t, yr) => (SEASON.find((s) => s.yr === yr) || { rows: [] }).rows.find((x) => x.t === t);
     const a2 = rr(g.a, g.yr), b2 = rr(g.b, g.yr);
@@ -51,6 +60,16 @@ let bad = 0;
 const block = () => { const at = bad; return () => (bad > at ? '❌' : '✅'); };
 T.forEach(([k, got, want]) => { const ok = got === want; if (!ok) bad++;
   console.log(`  ${ok ? '✅' : '❌'} ${k.padEnd(22)} ${String(got).padStart(4)} ${ok ? '==' : '!='} ${want}`); });
+/* ⚠️ PER MANAGER, NOT AS A TOTAL. Summed, it is 35 == 35 and stays green
+   while two managers' games are swapped — the v14 lesson, that a law over a
+   total cannot see a definition drifting underneath it. Per person it is the
+   one check that can catch a bracket game assigned to the wrong manager. */
+ALL.forEach((x) => {
+  const won = x.yrs.filter((r) => r.place === 1 && BR_ON_FILE.has(r.yr)).length;
+  if (x.bl !== x.bA - won) {
+    console.log(`  ❌ ${x.m}: ${x.bl} bracket losses, but ${x.bA} brackets − ${won} title(s) = ${x.bA - won}`); bad++;
+  }
+});
 /* W==L is a LEAGUE-wide law, so it is checked over EVERY row in each season —
    not over the tracked subset, which is missing two managers. */
 SEASON.forEach((s) => {

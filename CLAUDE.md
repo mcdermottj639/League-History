@@ -287,6 +287,21 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     - ⚠️ **Deliberately NOT reconstructed from `s2.final` the way `MEET` is.**
       That would add a final from seasons with no bracket, so the record would
       cover more seasons in its last round than in its first.
+    - 🚨 **`bA` — THE NUMBER OF BRACKETS ON FILE, printed beside the record**
+      (v51). The owner read his row and asked *"Shouldn't I have 6 losses
+      since 10 appearances and 4 titles"* — **and he was right about the
+      rule**: a bracket is single elimination, so over a career losses ARE
+      appearances minus titles. It read 10-3 because the record covers the 5
+      brackets he is in ON FILE, not his 10 appearances. The number was
+      correct and the row was silent about its span — **the v3 fault, found
+      by the owner in ten seconds.** Every row names its own bracket count now
+      (`10-3 from 5 brackets`), so the arithmetic closes on the page.
+    - `checks.js` asserts **losses == brackets − titles, PER MANAGER** (v51) —
+      the owner's own arithmetic as a law. ⚠️ **Per manager, not summed**: as a
+      total it is 35 == 35 and stays green while two managers' games are
+      swapped. Verified by swapping W and L — both totals stay ✅ and this
+      names four managers. It is the only law that can catch a bracket game
+      attributed to the wrong person.
     - `checks.js` asserts **70 title-bracket slots** (35 W games × 2) — the
       law v19 retired, back because there is a displayed value to conserve
       again. ⚠️ It is written against the *population*: reverted to let the
@@ -347,6 +362,12 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       change where the app opens**; that is one line in boot.
   - `view(key)` — `hon` · `you` · `rec` · `cb` · `sea`. **Storylines opens
     `rec`** (v44, owner's call), back where it sat before v13.
+    - ⚠️ **The order WITHIN `rec` is the owner's call too** (v51): Storylines ·
+      the record book · Playoff appearances · the champion's curse · Seeds &
+      upsets · **the luck index · Rivalries last**. It is one expression and
+      nothing else reads it — the jump nav is built from the rendered DOM, so
+      the chips re-order with no second edit (verified on the render, as v44
+      and v13 did before it).
   - `profile(mgr)` — the drill-down every name opens
   - `setMe(mgr)` / `me()` / `name(mgr)` / `roster()` — identity
   - `key()` — the three-badge provenance key, for the ? sheet in `league.js`
@@ -1319,6 +1340,41 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v51 — the owner did the arithmetic and the row was silent (12 Sep 2026)**
+  — the owner, on his own row: *"Then move luck index and rivalries to bottom
+  of records. Are those records correct. Shouldn't I have 6 losses since 10
+  appearances and 4 titles"*.
+  - 🚨 **HE WAS RIGHT ABOUT THE RULE, THE NUMBER WAS RIGHT, AND THE PAGE WAS
+    STILL WRONG.** A championship bracket is single elimination, so across a
+    career losses ARE appearances minus titles: 10 − 4 = 6. It read **10-3**
+    because the record covers the **5 brackets he is in on file**, not his 10
+    appearances — brackets exist for 7 of 13 seasons, and he missed two of
+    those seven. Both numbers correct; the row never said which seasons it
+    counted. **This is the v3 fault in its purest form, and v50 shipped it one
+    version after writing "the risk it reintroduces is adjacency" in its own
+    changelog entry.** A caption at the bottom of the card is not the same as
+    a denominator on the row, and the owner found it in ten seconds.
+  - **Every row names its own bracket count now** — `10-3 from 5 brackets` —
+    so the arithmetic closes without scrolling to the caption, and the caption
+    states the single-elimination rule rather than leaving a reader to
+    rediscover it the way he did.
+  - 🚨 **His question is now a law, and it is PER MANAGER.** `losses ==
+    brackets − titles`, asserted for each of the twelve. ⚠️ **Summed it is
+    35 == 35 and useless**: verified by swapping W and L in the aggregation —
+    `title-bracket slots` stays ✅ at 70, `W == L` stays ✅ at 35, and only the
+    per-manager law speaks, naming four managers. **A law over a total cannot
+    see a definition drifting underneath it** (v14) — and it cannot see a game
+    attributed to the wrong person either, which is what this one is for.
+  - **The reorder is one expression**, and the jump nav followed with no
+    second edit because it is built from the rendered DOM — verified on the
+    render rather than assumed, the same way v44 and v13 checked it. Records
+    now runs findings → the record book → the playoff cards → the two derived
+    cards last.
+  - Verified at 390 and 320px as the reader, another manager and a stranger:
+    twelve rows with no name truncated and no sub-line wrapped, seven jump
+    chips in the new order, no type under 9px, no tap target under 20px, no
+    overflow, no page errors, checks.js green.
 
 - **v50 — the playoff record comes back, on one denominator (12 Sep 2026)** —
   the owner: *"Yes fix it to final fours and add record into playoff

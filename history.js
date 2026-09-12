@@ -624,7 +624,7 @@
   SEASON.forEach((s) => s.rows.forEach((r) => {
     if (!r.mgr) return;
     const a = MGRS[r.mgr] || (MGRS[r.mgr] = { m: r.mgr, logo: MGR_LOGO[r.mgr],
-      seasons: 0, w: 0, l: 0, pf: 0, pa: 0, t1: 0, t2: 0, t3: 0, po: 0, fin: 0, f4: 0, bw: 0, bl: 0, cb: 0, cbA: 0,
+      seasons: 0, w: 0, l: 0, pf: 0, pa: 0, t1: 0, t2: 0, t3: 0, po: 0, fin: 0, f4: 0, bw: 0, bl: 0, bA: 0, cb: 0, cbA: 0,
       yrs: [], allW: 0, allL: 0, pfRankSum: 0, placeSum: 0 });
     a.seasons++; a.w += r.w; a.l += r.l; a.pf += r.pf; a.pa += r.pa;
     a.yrs.push(r);
@@ -725,12 +725,25 @@
      more seasons in its last round than in its first. One population.
      ⚠️ No ties to resolve — verified, zero tied games in all 35. */
   const BR_YRS = [...new Set(PLAYOFF_GAMES.filter((g) => g.br === 'W').map((g) => g.yr))].sort();
+  const BR_SET = new Set(BR_YRS);
+  const brSeen = {};
   PLAYOFF_GAMES.forEach((g) => {
     if (g.br !== 'W') return;
     const aWon = g.as > g.bs;
     [[mgrOf(g.a), aWon], [mgrOf(g.b), !aWon]].forEach(([m, won]) => {
       const a = m && MGRS[m]; if (!a) return;
       if (won) a.bw++; else a.bl++;
+      /* 🚨 `bA` IS THE DENOMINATOR THE RECORD CANNOT BE READ WITHOUT, and it
+         exists because the owner read the row and did the right arithmetic:
+         *"Shouldn't I have 6 losses since 10 appearances and 4 titles"*. He
+         is correct — a championship bracket is single elimination, so across
+         a whole career losses ARE appearances minus titles. It came out 3
+         because the record covers the 5 brackets he is IN ON FILE, not his
+         10 appearances. **The number was right and the row was silent about
+         which seasons it counted, which is the v3 fault exactly** — and it
+         took the owner ten seconds to hit it. So the row prints this too. */
+      const k = m + '|' + g.yr;
+      if (!brSeen[k]) { brSeen[k] = 1; a.bA++; }
     });
   });
 
@@ -1044,11 +1057,11 @@
           <div class="fh-po-tr"><span style="width:${(a.poRate * 100).toFixed(1)}%"></span></div>
           <div class="fh-po-v">${Math.round(a.poRate * 100)}<small>%</small></div>
         </div>
-        <div class="fh-po-s"><b>${a.po} of ${a.seasons}</b> seasons${a.bw + a.bl
-          ? ` <span class="fh-po-br" title="Playoffs only — championship bracket"><b>${a.bw}-${a.bl}</b></span>`
-          : ' <span class="fh-po-br none" title="Playoffs only — championship bracket">none on file</span>'}</div>
+        <div class="fh-po-s"><b>${a.po} of ${a.seasons}</b> seasons${a.bA
+          ? ` <span class="fh-po-br" title="Playoffs only — championship bracket"><b>${a.bw}-${a.bl}</b> from ${a.bA} bracket${a.bA === 1 ? '' : 's'}</span>`
+          : ' <span class="fh-po-br none" title="Playoffs only — championship bracket">no brackets on file</span>'}</div>
       </div>`).join('')}
-      <p class="ffp-cap">The bar <b>is</b> the rate — a top-6 seed always finishes top 6 in this format, verified on every bracket, so this covers all ${SEASON.length} seasons.<br><br>🚨 <b>The two numbers on a row have different denominators, and neither is the other's total.</b> The rate is all ${SEASON.length} seasons. The ⚑ record is the <b>championship bracket only</b> — ${PLAYOFF_GAMES.filter((g) => g.br === 'W').length} games across the ${BR_YRS.length} seasons that have a bracket on file (${BR_YRS[0]}-${BR_YRS[BR_YRS.length - 1]}). It does not count the placement ladder, the consolation bracket or the Cum Bowl, so it will never square with the ${MEET.length} meetings on the head-to-head pages.</p>
+      <p class="ffp-cap">The bar <b>is</b> the rate — a top-6 seed always finishes top 6 in this format, verified on every bracket, so this covers all ${SEASON.length} seasons.<br><br>🚨 <b>The two numbers on a row have different denominators, and neither is the other's total.</b> The rate is all ${SEASON.length} seasons. The ⚑ record is the <b>championship bracket only</b> — ${PLAYOFF_GAMES.filter((g) => g.br === 'W').length} games across the ${BR_YRS.length} seasons that have a bracket on file (${BR_YRS[0]}-${BR_YRS[BR_YRS.length - 1]}), which is why it names its own bracket count. A bracket is single elimination, so <b>losses are brackets minus titles</b> — over a whole career, not over the seasons on file. It does not count the placement ladder, the consolation bracket or the Cum Bowl, so it will never square with the ${MEET.length} meetings on the head-to-head pages.</p>
     </div>
     </div>`;
   }
@@ -1924,7 +1937,12 @@
        Filing them there put the league's best achievement behind the tab
        named for its worst. Ordered baseline-first: who makes the playoffs,
        then the two cards that comment on what happens once you are in. */
-    rec: () => storiesHTML() + recordHTML() + luckHTML() + rivalsHTML() + playoffHTML() + curseHTML() + seedHTML(),
+    /* ⚠️ ORDER IS THE OWNER'S CALL (v51: "move luck index and rivalries to
+       bottom of records"). The page now runs findings → the record book →
+       the playoff cards → the two pairwise/derived cards last. Nothing reads
+       this order but the page itself; the jump nav is built from the rendered
+       DOM, so the chips re-order with no second edit. */
+    rec: () => storiesHTML() + recordHTML() + playoffHTML() + curseHTML() + seedHTML() + luckHTML() + rivalsHTML(),
     cb: () => cumbowlHTML(),
     you: () => youHTML(),
   };
