@@ -1337,7 +1337,6 @@
        w    — how remarkable, 0-100, used only to rank
        src  — 'reg' | 'po' | 'fin' | 'mix', the provenance badge (see SRC)  */
 
-  const PO_YEARS = [...new Set(PLAYOFF_GAMES.map((g) => g.yr))].sort();
   const mgrAt = (yr, t) => { const s = SEASON.find((x) => x.yr === yr); const r = s && s.rows.find((x) => x.t === t); return r && r.mgr; };
   const pl = (n, one, many) => `${n} ${n === 1 ? one : (many || one + 's')}`;
   /* 🚨 TWO NUMERALS MUST NOT TOUCH (v17, owner's call): "finished 11th 7
@@ -1377,10 +1376,21 @@
       const m = mgrAt(c.yr, t); if (m) cbScore.push({ yr: c.yr, m, v }); }));
     /* Regular-season scoring in the SAME seasons the playoff sample covers —
        comparing a 13-year regular-season average against a 7-year playoff one
-       would measure the eras, not the manager. */
+       would measure the eras, not the manager.
+       🚨 PER MANAGER, NOT `PO_YEARS` (v59). `PO_YEARS` is the seasons with
+       ANY bracket on file, which did the filtering while that was 7 of 13.
+       Now it is all 13, so it filters nothing — and 2025 is winner's-bracket
+       only, so the six managers who missed its playoffs had a 2025 regular
+       season in `reg` with no 2025 game opposite it in `po`. Hurd's gap read
+       −9.1 and is −10.1. "Same manager, same seasons" means THAT manager's
+       seasons with a bracket game, which is what this counts; it is also the
+       only reading under which the card's caption is true. */
+    const brYrs = {};
+    PLAYOFF_GAMES.forEach((g) => [g.a, g.b].forEach((t) => {
+      const m = mgrAt(g.yr, t); if (m) (brYrs[m] = brYrs[m] || new Set()).add(g.yr); }));
     const era = {};
     ALL.forEach((a) => {
-      const rs = a.yrs.filter((r) => PO_YEARS.includes(r.yr));
+      const rs = a.yrs.filter((r) => brYrs[a.m] && brYrs[a.m].has(r.yr));
       if (!rs.length || !poScore[a.m]) return;
       const reg = rs.reduce((x, r) => x + r.pf, 0) / rs.reduce((x, r) => x + r.w + r.l, 0);
       era[a.m] = { reg, po: poScore[a.m].s / poScore[a.m].n, n: poScore[a.m].n, d: poScore[a.m].s / poScore[a.m].n - reg };
@@ -1699,6 +1709,18 @@
     };
     const tiedOn = (val) => (m) => { const me = ALL.find((x) => x.m === m);
       return ALL.filter((x) => val(x) === val(me)).length > 1; };
+    /* ⚠️ And the rank FROM THE BOTTOM, for the same reason (v59). v57 says a
+       bottom-three rank from the bottom ("second-worst"), keyed on `N - r`.
+       With competition ranks a tie GROUP at the bottom shares the top of its
+       range — three managers on 3 final fours are all "9th of 12" — so
+       `N - r` is 3 for all of them and none reads as bottom-three, though
+       together they ARE the bottom three. Counted from the bottom they are
+       joint second-worst, which is both true and how a person says it. */
+    const rankBottom = (val, hiGood) => {
+      const worse = (x, y) => (hiGood ? val(x) < val(y) : val(x) > val(y));
+      return (m) => { const me = ALL.find((x) => x.m === m);
+        return 1 + ALL.filter((x) => worse(x, me)).length; };
+    };
     /* 🚨 THE HEADLINE IS THE CLAIM. v7 shipped these as
        "Gotch, in one line." — a label, not a sentence — while the actual
        finding (11-1 in the consolation bracket, the best in the league) sat
@@ -1724,15 +1746,17 @@
     /* ⚠️ "joint" rather than "tied for": it slots in front of the word it
        qualifies without re-ordering the sentence, so every heading that
        already fits keeps fitting. */
-    const bestish = (r, tie) => { const b = r === 1 ? 'best'
-      : WORSTISH[N - r] !== undefined ? WORSTISH[N - r] : `${ord(r)}-best`;
+    /* `rb` is the rank from the bottom; untied it equals `N + 1 - r`, so the
+       wording is unchanged wherever nobody shares a value. */
+    const bestish = (r, tie, rb = N + 1 - r) => { const b = r === 1 ? 'best'
+      : WORSTISH[rb - 1] !== undefined ? WORSTISH[rb - 1] : `${ord(r)}-best`;
       return !tie ? b : r === 1 ? 'joint-best' : `joint ${b}`; };
-    const rk = (r, tie) => (r === 1 ? `the ${tie ? 'joint-' : ''}best in the league`
-      : WORSTISH[N - r] !== undefined ? `the ${tie ? 'joint ' : ''}${WORSTISH[N - r]} in the league`
+    const rk = (r, tie, rb = N + 1 - r) => (r === 1 ? `the ${tie ? 'joint-' : ''}best in the league`
+      : WORSTISH[rb - 1] !== undefined ? `the ${tie ? 'joint ' : ''}${WORSTISH[rb - 1]} in the league`
       : `${tie ? 'joint ' : ''}${ord(r)} of ${N}`);
     const CLAIMS = [
       { t: 'pct', val: (a) => a.pct, hi: true,
-        head: (a, r, tie) => `${nm(a.m)} ${vb(a.m, 'have', 'has')} the ${bestish(r, tie)} win% in the league, ${(a.pct * 100).toFixed(1)}%.`,
+        head: (a, r, tie, rb) => `${nm(a.m)} ${vb(a.m, 'have', 'has')} the ${bestish(r, tie, rb)} win% in the league, ${(a.pct * 100).toFixed(1)}%.`,
         /* 🚨 BEST BY RECORD, NOT `a.best` — which is the best FINISH, and on a
            card about win% "the best of those seasons was 7-7" is simply a
            false sentence. Zach's best finish is 2nd in 2024 at 7-7; his best
@@ -1752,7 +1776,7 @@
          against — the caveat is never dropped, only moved. */
       { t: 'score', val: (a) => relPpg(a), hi: true,
         head: (a) => `${nm(a.m)} ${vb(a.m, 'have', 'has')} ${relPpg(a) >= 0 ? 'outscored' : 'trailed'} the league by ${one(Math.abs(relPpg(a)))} a game.`,
-        note: (a, r, tie) => `Measured against the league in the seasons ${vb(a.m, 'you', nm(a.m))} played, which is ${rk(r, tie)}.` },
+        note: (a, r, tie, rb) => `Measured against the league in the seasons ${vb(a.m, 'you', nm(a.m))} played, which is ${rk(r, tie, rb)}.` },
       /* `seasons: true` = the heading already stated the season count, so the
          body must not state it again. "…in 6 of 9 seasons" over "9 seasons,
          63-59" is one fact printed twice on one card, which is the fault the
@@ -1760,11 +1784,11 @@
          numbers. */
       { t: 'po', val: (a) => a.poRate, hi: true, seasons: true,
         head: (a) => `${nm(a.m)} ${vb(a.m, 'have', 'has')} made the playoffs in ${a.po} of ${a.seasons} seasons.`,
-        note: (a, r, tie) => (r === 1 && !tie ? 'The most reliable rate in the archive.'
-          : r === N && !tie ? 'The least reliable rate in the archive.'
-          : `The ${bestish(r, tie)} rate of the ${N}.`) },
+        note: (a, r, tie, rb) => (r === 1 && !tie ? 'The most reliable rate in the archive.'
+          : rb === 1 && !tie ? 'The least reliable rate in the archive.'
+          : `The ${bestish(r, tie, rb)} rate of the ${N}.`) },
       { t: 'place', val: (a) => a.avgPlace, hi: false,
-        head: (a, r, tie) => `${nm(a.m)} ${vb(a.m, 'have', 'has')} the ${bestish(r, tie)} average finish, ${one(a.avgPlace)}.`,
+        head: (a, r, tie, rb) => `${nm(a.m)} ${vb(a.m, 'have', 'has')} the ${bestish(r, tie, rb)} average finish, ${one(a.avgPlace)}.`,
         note: (a) => (a.best && a.worst
           ? `Best ${ord(a.best.place)} in ${a.best.yr}, worst ${ord(a.worst.place)} in ${a.worst.yr}.` : '') },
       /* 🚨 THE CONSOLATION CLAIM IS GONE (v14, owner's call): "11-1 in the
@@ -1775,8 +1799,8 @@
          its own tab. Final fours replace it: knowable for all 13 seasons
          (places 1-4 ARE the final four in this format) and worth something. */
       { t: 'f4', val: (a) => a.f4, hi: true,
-        head: (a, r, tie) => (a.f4
-          ? `${nm(a.m)} ${vb(a.m, 'have', 'has')} ${pl(a.f4, 'final four')}, ${rk(r, tie)}.`
+        head: (a, r, tie, rb) => (a.f4
+          ? `${nm(a.m)} ${vb(a.m, 'have', 'has')} ${pl(a.f4, 'final four')}, ${rk(r, tie, rb)}.`
           : `${nm(a.m)} ${vb(a.m, 'have', 'has')} never reached the final four.`),
         note: (a) => `From ${pl(a.po, 'playoff appearance')}.` },
     ];
@@ -1811,18 +1835,18 @@
       const ranked = CLAIMS
         .filter((c) => !c.t || !taken.has(c.t))
         .map((c) => { const r = rankOf(c.val, c.hi)(a.m);
-          return { c, r, tie: tiedOn(c.val)(a.m), edge: Math.max(N + 1 - r, r) }; })   // distance from the middle
+          return { c, r, tie: tiedOn(c.val)(a.m), rb: rankBottom(c.val, c.hi)(a.m), edge: Math.max(N + 1 - r, r) }; })   // distance from the middle
         .sort((x, y) => y.edge - x.edge);
       const need = WANT - (held[a.m] ? held[a.m].n : 0);
       ranked.slice(0, need).forEach((b, i) => {
-        const note = b.c.note ? b.c.note(a, b.r, b.tie) : '';
+        const note = b.c.note ? b.c.note(a, b.r, b.tie, b.rb) : '';
         const career = i === 0 ? careerLine(a, b.c, (held[a.m] && held[a.m].txt) || '') : '';
         out.push({ id: i ? 'sig2' : 'sig', t: b.c.t, m: a.m,
           /* Strictly below the first, so a manager's own page opens on
              their better claim and the roll-call is unaffected — every
              real detector starts at 40 and these top out at 32. */
           w: 20 + b.edge - i * 2, src: 'mix',
-          head: b.c.head(a, b.r, b.tie),
+          head: b.c.head(a, b.r, b.tie, b.rb),
           body: `${note ? note + ' ' : ''}${career}`.trim() });
       });
     });

@@ -96,6 +96,17 @@ ALL.forEach((x) => {
     console.log(`  ❌ ${x.m}: ${x.bl} bracket losses, but ${x.bA} brackets − ${won} title(s) = ${x.bA - won}`); bad++;
   }
 });
+/* 🚨 EVERY PLAYOFF APPEARANCE IS A BRACKET ON FILE (v59). The Playoff
+   appearances caption now states, as fact, that the bracket count beside each
+   record IS that manager's appearance count and that losses == appearances −
+   titles. That is true only while EVERY season carries a championship bracket
+   — 2025 very nearly did not — and the day one lands without, the caption
+   goes on saying it, silently. A claim a card makes as fact is a law or it is
+   a liability. Verified by dropping the 2025 W games: names six managers. */
+const apMark = block();
+ALL.forEach((x) => { if (x.bA !== x.po) {
+  console.log(`  ❌ ${x.m}: ${x.bA} brackets on file but ${x.po} playoff appearances — the card's arithmetic claim is false`); bad++; } });
+console.log(`  ${apMark()} brackets == appearances     every playoff berth has its bracket on file`);
 /* W==L is a LEAGUE-wide law, so it is checked over EVERY row in each season —
    not over the tracked subset, which is missing two managers. */
 SEASON.forEach((s) => {

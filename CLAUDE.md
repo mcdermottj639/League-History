@@ -389,6 +389,15 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       manager over the same seasons, so scoring inflation moves the pair
       together and cancels. Only the cross-manager ranking spans eras, so
       **every row names its own game count** (the v51 rule).
+      🚨 **"The same seasons" is PER MANAGER since v59, and v58 shipped it
+      wrong.** `ST.era`'s `reg` filtered a manager's seasons by `PO_YEARS` —
+      seasons with ANY bracket on file — which did real work while that was 7
+      of 13 and filters nothing now that it is all 13. 2025 is winner's-bracket
+      only, so the six managers who missed its playoffs had a 2025 regular
+      season in `reg` with no game opposite it in `po`: Hurd read −9.1 and is
+      −10.1. `reg` now covers exactly the seasons THAT manager played a
+      bracket game in — the only reading under which the caption is true.
+      `PO_YEARS` was left with no reader and is deleted (the v8 `STATS` rule).
     - ⚠️ It reuses `.fh-lx` wholesale — no new CSS — so it wraps exactly as the
       luck index does (checked at 320px: both go to two lines, identically).
   - 🚨 **NO OTHER BRACKET W-L EXISTS (v19, owner's call:
@@ -1059,7 +1068,9 @@ correction, zero unresolved conflicts**.
   finishes · 24 Cum Bowl appearances · 11 losses · 61 title-bracket wins and
   63 losses (counted separately since v56 — see above) · 50 final fours ·
   13 titles · 76 playoff berths · h2h games == meetings · **losses ==
-  brackets − titles per manager** · **every tied rank says "joint"** (v58).
+  brackets − titles per manager** · **every tied rank says "joint"** (v58) ·
+  **brackets on file == playoff appearances, per manager** (v59 — the claim
+  the Playoff appearances caption makes as fact, so it is a law).
   ⚠️ The bracket law counted **every** playoff game until v14 and was green
   the whole time `bw` meant two different things in two different views — a
   law over a total cannot see a definition drift underneath it. Re-run them after ANY
@@ -1210,6 +1221,13 @@ something computed is wrong the first time somebody changes it.
     ⚠️ `checks.js` asserts it **off the RENDERED story, never off the rank
     helper** (the v7 rule) — verified by removing tie-awareness, which names
     CC, Gotch and Zach.
+    ⚠️ **And a bottom-three rank is counted FROM THE BOTTOM (v59).** v57's
+    "second-worst" wording keyed on `N − r`; with competition ranks a tie
+    group at the bottom shares the TOP of its range — three managers on 3
+    final fours are all 9th — so `N − r` said none of them was bottom-three
+    while together they were exactly that. `rankBottom` gives "joint
+    second-worst", which is true and is how a person says it. Untied, the two
+    counts agree and no wording changes.
 - **Facts are deduped across cards** — the zero-podium card folds in whatever
   records that manager holds, which had the Cum Bowl record printed twice on
   one screen as two separate findings.
@@ -1443,6 +1461,51 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
 
+- **v59 — a second look at v58, asked for (12 Sep 2026)** — the owner, after
+  a model switch: *"Anything you'd alter?"* Three things, all in v58's own
+  work, none of them found by the suite.
+  - 🚨 **I WROTE A CAPTION CLAIM WITHOUT CHECKING IT, AND IT WAS FALSE.** The
+    January card's caption said both numbers on a row cover *"the seasons
+    they actually reached the bracket."* `ST.era`'s `reg` filtered by
+    `PO_YEARS` — seasons with ANY bracket on file — which was doing real work
+    while that was 7 of 13 and does nothing now that it is all 13. 2025 is
+    winner's-bracket only, so the **six managers who missed its playoffs had
+    a 2025 regular season in `reg` with nothing opposite it in `po`.** Hurd's
+    gap read **−9.1** on the card, on his own storyline, and in v58's own
+    changelog; it is **−10.1**. **A caption that asserts a property of a
+    computation is a promise the computation has to keep**, and I read the
+    comment above the code instead of the code — the comment was true when
+    written and had gone stale the same way every caption in v58 had.
+    - `reg` is per manager now: exactly the seasons THAT manager played a
+      bracket game in. Both the card and the detector read the same `ST.era`,
+      so they moved together (McD/Hyman/Gotch/Woods/Wolff/Zach unchanged; the
+      six 2025 non-playoff teams moved 0.2-1.0). `PO_YEARS` lost its last
+      reader and is deleted — a computed-and-never-read value is the v8 trap.
+  - 🚨 **THE v58 CAPTION MADE A FACTUAL CLAIM THE SUITE DID NOT GUARD.**
+    "The bracket count beside each record IS that manager's playoff
+    appearances" is true only while every season carries a championship
+    bracket — 2025 very nearly did not. The day one lands without, the card
+    goes on saying it. **A claim a card makes as fact is a law or it is a
+    liability**: `bA === po` per manager is asserted now, and verified by
+    dropping the 2025 W games, which names exactly the six 2025 playoff teams.
+  - ⚠️ **"joint 9th of 12" was true and read like a generator wrote it.**
+    v57's bottom-three wording keys on `N − r`; with competition ranks a tie
+    group at the bottom shares the top of its range, so three managers on 3
+    final fours were all "9th" and none counted as bottom-three while together
+    they were exactly that. Counted from the bottom they are **joint
+    second-worst** — the v57 rule ("said from the bottom, how a person says
+    it") applied to the tie case v58 introduced. Untied ranks are unchanged.
+  - **Verified:** suite green including the new `brackets == appearances` law
+    (fault-injected: six named), the `shared ranks` law still passing under
+    the new wording, Hurd's card reading −10.1 in both voices, and the same
+    50 view-contexts at 320/390px clean.
+  - ⚠️ **The one judgment call left standing, deliberately, and put to the
+    owner rather than decided at 4am:** the Season tab's clipped team names.
+    `.ls-odd` is `18px auto 1fr 40px 36px` — the two percentages ARE the row,
+    so v39's "move the stats to a second line" does not transfer; the name
+    would have to wrap instead, on the live tab, with rows of uneven height.
+    That is a design decision on the page he opens first, not a fix.
+
 - **v58 — the sweep after the data landed (12 Sep 2026)** — the owner, going
   to bed: *"We just got a ton of new playoff data that had to shift and change
   the info all of the app that we missed… make sure we are accurate
@@ -1531,7 +1594,9 @@ stale entry written in the present tense reads as current to anyone who greps.
     twelve now sit more than two points from their regular-season scoring**
     while the card still named two. **The v7 coverage fault in a new costume**,
     landing again on the managers the extreme-hunting detectors have least to
-    say about. Woods **+7.3**, Hurd **−9.1**, six of twelve on the plus side.
+    say about. Woods **+7.3**, Hurd **−9.1** (⚠️ **SUPERSEDED in v59: −10.1**
+    — the v58 number carried a 2025 regular season with no bracket opposite
+    it), six of twelve on the plus side.
     - 🚨 **It reads `ST.era` — the same object the detectors read.** Computing
       the gap a second time, even correctly, would have been the v14 fault
       exactly: one concept, two numbers, each right, and the page lying
