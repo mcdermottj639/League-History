@@ -262,7 +262,9 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       every stranger the link reaches, opened the app under his bird. A reader
       who has picked nobody is not an Eagles fan by default. `checks.js`
       asserts the stranger case by name.
-    - ⚠️ **Duplicates are CORRECT** — three Jets fans and two Patriots. A
+    - ⚠️ **Duplicates are CORRECT** — three Jets fans share ✈️, and the two
+      Patriots fans share **🍺** (v51, the owner's call — so the glyph is not
+      always the team's own mark, and both managers on a team move together). A
       mascot says who somebody roots for; it was never meant to be unique, and
       there is deliberately no uniqueness law.
     - ⚠️ **The law reads the RENDER, not the map** — the same reason `_stories`
@@ -286,6 +288,11 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       **this app deliberately does not keep** (v19) — the v14 fault, a name
       that makes a number sound like another number. It reads **Playoff
       appearances**, matching the career tile's `Playoff apps` since v10.
+    - ⚠️ **Honors closes with 📉 The champion's curse (v50, owner's call),
+      under final fours.** It is about what happens to a CHAMPION, so it sits
+      with the champions rather than among the Records leaderboards. Its mark
+      changed from 👑 to 📉 in the same edit: 👑 is the trophy case, two cards
+      up, and the jump row is read by its mark.
     - ⚠️ **Final fours became a `.section-title`, not a `.fh-sub`.** It was a
       sub-card *inside* Playoff record, so moving it meant promoting it — and
       that is also what puts it in the jump nav with no second edit, and what
@@ -1360,7 +1367,7 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
 
-- **v53 — bigger tab type, and the row did not move (12 Sep 2026)** — the
+- **v55 — bigger tab type, and the row did not move (12 Sep 2026)** — the
   owner: *"these fonts should be larger. Looks like there space to make them
   bigger without shifting anything else lower which is what I want"*.
   - **He was right that the space was there, and it is worth writing down
@@ -1395,11 +1402,11 @@ stale entry written in the present tense reads as current to anyone who greps.
     and the row goes 47px → 48px — which is exactly the "shifting things
     lower" he asked not to have, one pixel at a time. 14px instead.
   - **Proved by diffing against the previous build, not by eyeballing it**: a
-    second copy of the repo at v52 served on its own port, and the top of
+    second copy of the repo at v54 served on its own port, and the top of
     `#lg-body` compared width by width. Identical at 320, 360, 375, 390, 414,
     430 and 900 — under both fonts — with the type larger at every one.
 
-- **v52 — a double tap on a tab zoomed the page in (12 Sep 2026)** — the
+- **v54 — a double tap on a tab zoomed the page in (12 Sep 2026)** — the
   owner: *"if I double click the you tab it zooms in fix that"*.
   - **iOS Safari reads two quick taps in one spot as double-tap-to-zoom**, and
     the tab bar is the one control in this app that genuinely gets tapped in a
@@ -1433,7 +1440,7 @@ stale entry written in the present tense reads as current to anyone who greps.
     confirm**, the same division this repo already draws around the Lab's live
     data path.
 
-- **v51 — the owner did the arithmetic and the row was silent (12 Sep 2026)**
+- **v53 — the owner did the arithmetic and the row was silent (12 Sep 2026)**
   — the owner, on his own row: *"Then move luck index and rivalries to bottom
   of records. Are those records correct. Shouldn't I have 6 losses since 10
   appearances and 4 titles"*.
@@ -1443,7 +1450,7 @@ stale entry written in the present tense reads as current to anyone who greps.
     because the record covers the **5 brackets he is in on file**, not his 10
     appearances — brackets exist for 7 of 13 seasons, and he missed two of
     those seven. Both numbers correct; the row never said which seasons it
-    counted. **This is the v3 fault in its purest form, and v50 shipped it one
+    counted. **This is the v3 fault in its purest form, and v52 shipped it one
     version after writing "the risk it reintroduces is adjacency" in its own
     changelog entry.** A caption at the bottom of the card is not the same as
     a denominator on the row, and the owner found it in ten seconds.
@@ -1468,7 +1475,7 @@ stale entry written in the present tense reads as current to anyone who greps.
     chips in the new order, no type under 9px, no tap target under 20px, no
     overflow, no page errors, checks.js green.
 
-- **v50 — the playoff record comes back, on one denominator (12 Sep 2026)** —
+- **v52 — the playoff record comes back, on one denominator (12 Sep 2026)** —
   the owner: *"Yes fix it to final fours and add record into playoff
   appearances. That was my q and u just moved past it"*.
   - ⚠️ **HE ASKED TWICE AND I ANSWERED A DIFFERENT QUESTION.** He asked
@@ -1526,6 +1533,72 @@ stale entry written in the present tense reads as current to anyone who greps.
     inside its own line box, no type under 9px, no overflow, no page errors,
     and the v49 mascots re-checked unchanged.
 
+
+- **v51 — the Patriots mascot is a beer (12 Sep 2026)** — the owner: *"Keep that
+  icon but change the pats one to 🍺"*.
+  - **Both Patriots managers change, not one.** A mascot here is per TEAM —
+    three Jets fans share ✈️ — so leaving one of the pair on 🇺🇸 would read as a
+    mis-mapped manager rather than as a joke. `checks.js` still counts **9
+    teams across 12 of 12**, which is the number that would have moved to 10 if
+    only one entry had changed.
+  - ⚠️ **Nothing to guard on this glyph, and it was checked rather than
+    assumed.** U+1F37A is a single codepoint with `Emoji_Presentation=Yes`: no
+    variation selector, unlike ✈️ and ⚡️ in the same map (v49 found ⚡ drawing
+    as a thin monochrome text glyph without one), and no ZWJ sequence to
+    degrade into two marks, unlike 🐦‍⬛. Verified by printing the codepoints of
+    all twelve.
+  - ⚠️ **It IS a version bump, unlike a crest swap.** A crest is its own file,
+    so replacing one is data and rides no `?v=`; a mascot is a line in
+    `history.js`, and a device holding `history.js?v=50` would keep the old
+    glyph for good. **Where the data lives decides whether a data change needs
+    a release.**
+  - Verified on the render as each Patriots manager, as a Jets manager and as a
+    stranger: 🍺 on both their You headings and both their profiles, every other
+    mascot unmoved, the 👤 fallback intact for a stranger, **no 🇺🇸 left in any
+    rendered view**, no overflow, no page errors, checks.js green.
+
+- **v50 — the champion's curse closes Honors (12 Sep 2026)** — the owner: *"Put
+  champions curse below that"*.
+  - ⚠️ **Shipped as v49 and renumbered to v50 on the merge.** Another session's
+    mascot work reached `main` first with its own v49 — and because both sides
+    had independently written `'v49'` into `APP_VERSION`, `CACHE` and both
+    pages' `?v=`, **git merged those lines clean**: an identical string is not a
+    conflict, so the collision was invisible to the merge and was caught by
+    reading the version out of the merged tree. The entry below keeps v49,
+    having got there first; this one moves up. **Two sessions in flight cannot
+    both be trusted to pick the next number — read `origin/main` before
+    bumping, and check the version again after any merge.**
+  - **One term out of `rec` and onto the end of `hon`.** The card is
+    self-contained — its copy names no neighbour — so nothing else moved, and
+    Records is now Storylines · the record book · the luck index · rivalries ·
+    playoff appearances · seeds and upsets.
+  - **And it belongs here**: the curse is about what happens to a CHAMPION the
+    year after, so it reads as the last word on a page about champions rather
+    than as one more leaderboard.
+  - 🚨 **THE MOVE CREATED AN ICON CLASH THAT DID NOT EXIST BEFORE.** It was
+    **👑 The champion's curse** — and 👑 is also **The trophy case**, two cards
+    above it on the page it just landed on. Two identical marks on one page,
+    and **two identical chips in the jump row**, which is scanned by its mark:
+    the same argument v48 used to give final fours a 🎖️ of its own. So it is
+    📉 now, which also says what the card found. ⚠️ **A card that was fine
+    where it was can be wrong where it lands** — an icon is only unique
+    relative to its page, so check the destination's marks on any move, not
+    just the card's own copy. Second version running where the knock-on was a
+    NAME rather than a layout (v48 renamed Playoff record).
+  - ⚠️ **And a near-miss worth recording: `ord()` here is the WHOLE ordinal.**
+    The curse rows read `${p.next}: ${ord(p.place)}`, which looks exactly like
+    the v39 fault in `season.js` — where `ord()` is the SUFFIX only and reading
+    it as a whole ordinal printed *"a best finish of st."* Two files, two
+    functions, one name. `history.js`'s returns `n + suffix`, so the rows are
+    correct (verified on the render: **"2025: 3rd 8-6"**). **Checked before
+    "fixing" it** — a repo rule applied to the wrong file would have produced
+    "2025: 33rd".
+  - Verified at 320 and 390px, as a reader and as a stranger: Honors renders
+    **👑 The trophy case · 🏆 Champions · 💔 Still waiting · 🎖️ Final fours ·
+    📉 The champion's curse**, five distinct marks and five distinct chips, the
+    curse last with twelve rows and the reader's own three title years lit;
+    Records renders six sections with no curse rows; both ? sheet sentences
+    follow; no overflow, no type under 9px, no page errors, checks.js green.
 - **v49 — everyone gets their own mascot (12 Sep 2026)** — the owner, on the
   🦅 above his career page: *"Where we have this eagle for me cause I am an
   eagles fan can we get a different one for each person based on there team.
@@ -3244,6 +3317,39 @@ stale entry written in the present tense reads as current to anyone who greps.
   against snapshots the REAL Lab wrote from a live payload capture (preseason
   and a synthetic week 5), so what is untested is only the part this sandbox
   cannot reach: the Lab pulling live data off the Render backend.
+- **🚨 WHY 2013-17 AND 2025 HAVE NO BRACKET GAMES — answered, 12 Sep 2026.**
+  The archive holds 119 bracket games from 7 of 13 seasons and this file used
+  to state that as a limit without a cause. The cause is now known, and it is
+  **not** that the data does not exist:
+  - Every season was built from Safari print-to-PDF captures of ESPN's league
+    history pages. ESPN serves **two different pages per season** — the
+    **Standings** tab and the **Final Playoff Results** tab (the bracket, with
+    every score).
+  - For **2018-24** both tabs were captured. That is exactly the 7 seasons with
+    games, at 17 games each.
+  - For **2013-17** only the **Standings** tab was captured. Those pages carry
+    final standings, records, points for/against and the playoff seed, and no
+    bracket at all — which is why those seasons have complete placings and
+    zero games. **The Final Playoff Results tab for those years was never
+    opened; it is not known to be empty.**
+  - **2025 was never captured at all** and is the one **Sleeper** season
+    (`platform: 'sleeper'`), so it is not on ESPN. Its final score
+    (JMcD6 124.04 - Cheeky_Clapz 107.28) came in by hand.
+  - **To close it:** ESPN league history → each of 2013, 2014, 2015, 2016,
+    2017 → the **Final Playoff Results** tab, plus the 2025 bracket from
+    Sleeper. 17 games a season completes everything; the 5 winner's-bracket
+    games a season completes the title record alone.
+  - ⚠️ **Do NOT derive the missing games from the final placings.** It looks
+    arithmetic — 1st won every game, 2nd lost the final — but the number of
+    games each team played depends on byes, which depend on seeding, and it
+    assumes 2013-17 used the same six-team shape. That is inventing data, which
+    this archive does not do. The `⚑ Playoffs only` badge exists precisely so
+    the seven-season limit is stated rather than papered over.
+  - The shape to add, one object per game, in `PLAYOFF_GAMES`:
+    `{ yr, br: 'W'|'WC'|'C', rd, a, as, b, bs }` — `br` is winner's bracket /
+    winner's consolation ladder / consolation, `rd` is `'R1'|'R2'|'FINAL'` for
+    W and `'GmC1'..'GmC9'` for C, `a`/`b` are TEAM names exactly as that
+    season's standings spell them, `as`/`bs` the scores.
 - **The members' app has no rankings yet** — `rankings/index.json` ships empty
   and the app says so honestly. The publish path has been driven end to end
   against the real files with fixture weeks (v31: publish · unpublish ·

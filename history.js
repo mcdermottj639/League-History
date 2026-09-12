@@ -510,8 +510,15 @@
     Riz: '✈️',       // Jets
     Woods: '✈️',     // Jets
     CC: '🐴',        // Colts
-    Christel: '🇺🇸',  // Patriots
-    Hurd: '🇺🇸',      // Patriots
+    /* 🍺 rather than a Patriots mark (v51, owner's call: *"change the pats one
+       to 🍺"*). BOTH Patriots managers change, not one: a mascot is per TEAM
+       here — three Jets fans share ✈️ — so splitting the pair would read as one
+       of them being mis-mapped rather than as a joke. ⚠️ U+1F37A is a single
+       codepoint with Emoji_Presentation=Yes, so unlike ✈️ and ⚡️ above it needs
+       no variation selector, and unlike 🐦‍⬛ it is not a ZWJ sequence that can
+       degrade to two marks. Nothing to guard. */
+    Christel: '🍺',  // Patriots
+    Hurd: '🍺',      // Patriots
     Gotch: '🐻',     // Bears
     /* ⚠️ Ravens is the one ZWJ sequence here (bird + black square), so it is
        the only glyph that can degrade to a PAIR of marks on a device too old
@@ -675,7 +682,11 @@
   const LEAGUE_PPG = SEASON.reduce((a, s) => a + s.lgPpg, 0) / SEASON.length;
 
   /* ── EVERY RECORDED MEETING ────────────────────────────────────────────────
-     PLAYOFF_GAMES covers 2018-24. The Cum Bowls from 2013-17 and 2025, and the
+     PLAYOFF_GAMES covers 2018-24 — because those are the seasons whose ESPN
+     "Final Playoff Results" tab was captured; 2013-17 only ever had their
+     Standings tab captured and 2025 is the Sleeper season. See CLAUDE.md
+     "Open / next" — the games exist, they were not collected.
+     The Cum Bowls from 2013-17 and 2025, and the
      2025 final, are real head-to-heads that live in other fields — fold them in
      so the h2h pool is everything the archive actually knows.
      🚨 Still PLAYOFF meetings only: there is no regular-season schedule
@@ -979,7 +990,13 @@
     });
     const avg = pairs.reduce((a, p) => a + p.place, 0) / pairs.length;
     const made = pairs.filter((p) => p.place <= 6).length;
-    return `<h2 class="section-title">👑 The champion's curse ${tag('fin')}</h2>
+    /* ⚠️ 📉, NOT 👑 (v50). The curse moved onto Honors, where **👑 is already
+       the trophy case** — two identical marks on one page, and two identical
+       chips in the jump row, which is read by its mark. The clash did not
+       exist while the two cards were on different tabs; it is a consequence of
+       the move, so it is fixed in the same edit. 📉 also says what the card
+       found: the year after you win it, you fall. */
+    return `<h2 class="section-title">📉 The champion's curse ${tag('fin')}</h2>
     <div class="ffp-card">
       <div class="fh-big"><b>${one(avg)}</b><span>average finish the year after winning it</span></div>
       <p class="fh-lead">Only <b>${made} of ${pairs.length}</b> defending champions even made the playoffs again.</p>
@@ -1929,7 +1946,12 @@
        term — but `heroHTML()` stays first: it is the page's standfirst and
        stat strip, not one of the cards, and it carries no heading so it is not
        a jump chip either. */
-    hon: () => heroHTML() + trophyHTML() + champsHTML() + ringlessHTML() + finalFoursHTML(),
+    /* ⚠️ The champion's curse closes the page, UNDER final fours (v50, owner's
+       call: *"Put champions curse below that"*). It belongs with these four
+       rather than among the Records leaderboards: it is about what happens to
+       a CHAMPION, and Honors is where the champions are. Self-contained — its
+       copy names no neighbour — so this is one term moved out of `rec`. */
+    hon: () => heroHTML() + trophyHTML() + champsHTML() + ringlessHTML() + finalFoursHTML() + curseHTML(),
     sea: () => seasonsHTML(),
     /* Playoff record + Finals reached sit HERE, not on Cum Bowl (v9, owner's
        call). They are career résumé — who gets in, who reaches the final —
@@ -1938,11 +1960,15 @@
        named for its worst. Ordered baseline-first: who makes the playoffs,
        then the two cards that comment on what happens once you are in. */
     /* ⚠️ ORDER IS THE OWNER'S CALL (v51: "move luck index and rivalries to
-       bottom of records"). The page now runs findings → the record book →
-       the playoff cards → the two pairwise/derived cards last. Nothing reads
-       this order but the page itself; the jump nav is built from the rendered
-       DOM, so the chips re-order with no second edit. */
-    rec: () => storiesHTML() + recordHTML() + playoffHTML() + curseHTML() + seedHTML() + luckHTML() + rivalsHTML(),
+       bottom of records"). The page runs findings → the record book → the
+       playoff cards → the two pairwise/derived cards last. Nothing reads this
+       order but the page itself; the jump nav is built from the rendered DOM,
+       so the chips re-order with no second edit.
+       ⚠️ `curseHTML()` is NOT here — it closes Honors instead (the owner's
+       other call, landed in parallel). Both moves are his and they compose:
+       this one says where luck and rivalries sit, that one says the curse is
+       an honour. Merged rather than either one winning. */
+    rec: () => storiesHTML() + recordHTML() + playoffHTML() + seedHTML() + luckHTML() + rivalsHTML(),
     cb: () => cumbowlHTML(),
     you: () => youHTML(),
   };
