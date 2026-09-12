@@ -380,9 +380,20 @@
 
 
   /* ── PLAYOFF GAMES ─────────────────────────────────────────────────────────
-     Every game from the four ESPN playoff brackets the owner exported (2021-24).
+     Every game from all 13 seasons, 2013-2025 (2013-17 arrived in v56, 2025
+     from Sleeper in v57 — winner's bracket only for that one).
      br: W = winner's bracket · WC = winner's consolation ladder (places 4-6)
-     C = consolation ladder, GmC1-9 (places 7-12; GmC3 is the Cum Bowl).
+     C = consolation ladder, GmC1-9 (places 7-12).
+     🚨 **`GmC9` IS THE CUM BOWL — the LAST game of the ladder, which decides
+     11th v 12th. `GmC1`-`GmC3` are ROUND ONE and decide nothing final.**
+     ⚠️ This comment said "GmC3 is the Cum Bowl" until v66 fixed the data and
+     missed the sentence describing it — and it then did exactly what v58
+     wrote down as the failure mode: *"a comment that outlives its fact is how
+     the next session reintroduces the bug it describes."* It was read back as
+     fact within the hour and a 2023 round-one game was called a Cum Bowl out
+     loud. **Nothing assertable can see a comment. When the definition moves,
+     the prose describing it moves in the same commit or it becomes the
+     surviving copy of the bug.**
      ⚠️ Names are the FULL names resolved against each season's standings —
      ESPN truncates them with "…" in the bracket view. */
   const PLAYOFF_GAMES = [

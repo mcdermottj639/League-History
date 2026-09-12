@@ -2049,7 +2049,8 @@ stale entry written in the present tense reads as current to anyone who greps.
     of the card became *"what you scored"*. Leads about a whole table are
     impersonal; `vb()` is for sentences about a person.
   - **Verified:** all 209 games re-checked against independent evidence — the
-    five new Cum Bowls (`GmC3`) match the hand-entered `CUMBOWL` array exactly,
+    five new Cum Bowls (`GmC3` — ⚠️ **v66: that is round one, not the Cum
+    Bowl**) match the hand-entered `CUMBOWL` array exactly,
     team and score, and all 13 finals match the recorded 1st/2nd placings.
     `node checks.js` green including the new **shared ranks** law, and the
     per-manager bracket law re-verified by flipping a 2016 result (both
@@ -2128,7 +2129,13 @@ stale entry written in the present tense reads as current to anyone who greps.
     adjacent entries in one column are one game. **Getting this wrong would
     have put the right scores against the wrong people** — silently, and in a
     way no conservation law could see, because the totals would still balance.
-  - 🚨 **AND THE PROOF THAT IT DIDN'T IS THE CUM BOWL.** `GmC3` **is** the Cum
+  - 🚨 **AND THE PROOF THAT IT DIDN'T IS THE CUM BOWL.** ⚠️ **SUPERSEDED in
+    v66: `GmC3` is NOT the Cum Bowl** — it is round one of the consolation
+    ladder, and `GmC9` is the game the league means. The parser validation
+    below still stands exactly as written (the extracted `GmC3` games match
+    what was hand-entered, which is what proved the coordinate parsing); only
+    the NAME for that game was wrong, in this entry and in the code it
+    describes. `GmC3` **is** the Cum
     Bowl, and this archive has had all thirteen Cum Bowls by hand since v1 —
     entered from a different source, years apart. All five extracted GmC3
     games match the stored ones **exactly, team names and scores to the
