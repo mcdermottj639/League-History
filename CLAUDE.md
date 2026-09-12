@@ -1258,6 +1258,41 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
 
+- **v46 — the trophy case leads Honours (12 Sep 2026)** — the owner: *"Make
+  trophy case the top of honours and champions 2nd"*.
+  - **One term in the `hon` view**, and it is clean for a reason worth checking
+    rather than assuming: neither card's copy refers to the other's position,
+    and the jump nav is built from the rendered DOM, so the chips reordered
+    themselves with no second edit. The ? sheet's sentence for the tab is the
+    one thing that does NOT re-derive — it names what a tab opens with, which
+    is exactly what a list built from `SUBS` cannot know — so it moved in the
+    same pass, the same half-edit v44 needed.
+  - ⚠️ **`heroHTML()` stays first and is not a card.** It is the page's
+    standfirst and the six-tile stat strip, it carries no `.section-title`, and
+    so it is not a jump chip either — "the top of Honours" means the first
+    CARD under it, which is what the owner is looking at.
+  - **It also reads better as a ranking.** The trophy case is all twelve
+    managers ordered by what they have won; Champions is thirteen seasons in
+    reverse order. Opening on the league table and then going year by year is
+    the way round a reader already expects — the standings before the results.
+  - ⚠️ **A HARNESS LIMIT FOUND WHILE CHECKING THIS, AND WORTH WRITING DOWN:
+    the jump chips cannot be observed to scroll in headless Chromium under
+    `--virtual-time-budget`.** All three chips left `scrollY` at 0, which looks
+    exactly like the v30 fault (a control that is on screen and silent when
+    tapped). It is the harness: a bare `window.scrollTo({top: 600, behavior:
+    'smooth'})` also leaves `scrollY` at 0 in that mode while an instant
+    `scrollTo(600)` moves, so the smooth-scroll animation never gets frames.
+    **Verified as a harness artefact rather than reported as a bug** — the
+    chips were checked by confirming each resolves the right heading and its
+    offset (520 · 1441 · 2577px), and nothing about this version touches that
+    code. A future session measuring scroll behaviour here needs real frames,
+    not virtual time.
+  - Verified at 320 and 390px, as a reader and as a stranger: Honours renders
+    **👑 The trophy case · 🏆 Champions · 💔 Still waiting** in that order, the
+    jump chips match, the hero strip is still the first child, the reader's own
+    rows stay lit in both cards (1 medal row, 3 champion years for Woods), no
+    horizontal overflow, no type under 9px, no page errors, checks.js green.
+
 - **v45 — You is the first tab (12 Sep 2026)** — the owner: *"Put you as the
   first tab too. Honours 2nd"*.
   - **The reorder is the `SUBS` array and nothing else**, which is what that
@@ -1306,7 +1341,8 @@ stale entry written in the present tense reads as current to anyone who greps.
     to any card on a page. Those were built for other reasons and they retired
     the premise of the move.
   - **What Honours lost by holding it is coherence.** That page is now the
-    Champions list, the trophy case and who is still waiting — three views of
+    Champions list, the trophy case and who is still waiting (⚠️ **v46 swapped
+    the first two**: the trophy case leads) — three views of
     the same trophy — while Records is the page of *derived findings*, which is
     what a storyline is. The strip sits with the record book, the luck index
     and the champion's curse rather than above a list of champions it keeps

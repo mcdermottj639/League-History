@@ -1795,7 +1795,13 @@
        while Records is the page of derived findings, which is what a
        storyline IS. ⚠️ It is ONE TERM, moved: nothing else about the feature
        changes, and `LH.SUBS` order is untouched. */
-    hon: () => heroHTML() + champsHTML() + trophyHTML() + ringlessHTML(),
+    /* ⚠️ Card order on Honours is this line (v46, owner's call: the trophy
+       case first, Champions second). Neither card's copy refers to the other's
+       position and the jump nav reads the rendered DOM, so a swap is this one
+       term — but `heroHTML()` stays first: it is the page's standfirst and
+       stat strip, not one of the cards, and it carries no heading so it is not
+       a jump chip either. */
+    hon: () => heroHTML() + trophyHTML() + champsHTML() + ringlessHTML(),
     sea: () => seasonsHTML(),
     /* Playoff record + Finals reached sit HERE, not on Cum Bowl (v9, owner's
        call). They are career résumé — who gets in, who reaches the final —
