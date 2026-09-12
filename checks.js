@@ -134,6 +134,53 @@ const apMark = block();
 ALL.forEach((x) => { if (x.bA !== x.po) {
   console.log(`  ❌ ${x.m}: ${x.bA} brackets on file but ${x.po} playoff appearances — the card's arithmetic claim is false`); bad++; } });
 console.log(`  ${apMark()} brackets == appearances     every playoff berth has its bracket on file`);
+/* 🚨 THE BRACKET MUST RESOLVE THE STANDINGS, EVERY SEASON (v66 audit — the
+   owner: "Verify all the info for cum bowl and season stats"). The season
+   tables and the bracket games came from DIFFERENT captures (ESPN's Standings
+   tab vs its Final Playoff Results tab; v56's coordinate parser for the games),
+   so each is independent evidence about the other. In this format every
+   placing is decided by a game: the final → 1st/2nd, the semi-final losers →
+   3rd/4th, the R1 losers → 5th/6th (⚠️ that pair plays TWICE on ESPN and the
+   LAST game decides), the six consolation teams are exactly places 7-12, and
+   GmC7/GmC8/GmC9 decide 7-8, 9-10 and 11-12. And the regular season is a
+   closed league: every point scored was scored against somebody, so a season's
+   points-for must equal its points-against — one mistyped digit anywhere in a
+   season breaks it — and wins must equal losses. Verified by swapping two
+   2019 placings: three lines name the season. */
+{
+  const brMark = block();
+  const P = (s, t) => { const r = s.rows.find((x) => x.t === t); return r ? r.place : null; };
+  const W = (g) => (g.as > g.bs ? g.a : g.b), Lo = (g) => (g.as > g.bs ? g.b : g.a);
+  SEASON.forEach((s) => {
+    const yr = s.yr, gs = PLAYOFF_GAMES.filter((g) => g.yr === yr);
+    const f = (msg) => { console.log(`  ❌ ${yr}: ${msg}`); bad++; };
+    const w = s.rows.reduce((a, r) => a + r.w, 0), l = s.rows.reduce((a, r) => a + r.l, 0);
+    if (w !== l) f(`regular-season wins ${w} != losses ${l}`);
+    const pf = s.rows.reduce((a, r) => a + r.pf, 0), pa = s.rows.reduce((a, r) => a + r.pa, 0);
+    if (Math.abs(pf - pa) > 0.05) f(`points for ${pf.toFixed(1)} != points against ${pa.toFixed(1)}`);
+    if (new Set(s.rows.map((r) => r.w + r.l)).size !== 1) f('teams played different numbers of games');
+    if (s.rows.length !== 12) f(`${s.rows.length} rows`);
+    const fin = gs.find((g) => g.rd === 'FINAL');
+    if (fin && (P(s, W(fin)) !== 1 || P(s, Lo(fin)) !== 2)) f('the final does not decide 1st and 2nd');
+    const r2 = gs.filter((g) => g.br === 'W' && g.rd === 'R2');
+    if (r2.length === 2 && r2.map(Lo).map((t) => P(s, t)).sort().join() !== '3,4') f('semi-final losers are not 3rd and 4th');
+    const r1 = gs.filter((g) => g.br === 'W' && g.rd === 'R1');
+    if (r1.length === 2 && r1.map(Lo).map((t) => P(s, t)).sort().join() !== '5,6') f('round-1 losers are not 5th and 6th');
+    const last = {}; gs.filter((g) => g.br === 'WC').forEach((g) => { last[[g.a, g.b].sort().join('|')] = g; });
+    Object.values(last).forEach((g) => { if (P(s, W(g)) !== P(s, Lo(g)) - 1) f(`placement game ${W(g)} v ${Lo(g)} does not decide adjacent places`); });
+    const c = gs.filter((g) => g.br === 'C');
+    if (c.length) {
+      const teams = new Set(c.flatMap((g) => [g.a, g.b]));
+      if (teams.size !== 6 || [...teams].some((t) => !(P(s, t) >= 7))) f('consolation teams are not exactly places 7-12');
+      [['GmC7', 7], ['GmC8', 9], ['GmC9', 11]].forEach(([rd, p]) => { const g = c.find((x) => x.rd === rd);
+        if (g && (P(s, W(g)) !== p || P(s, Lo(g)) !== p + 1)) f(`${rd} does not decide ${p}th/${p + 1}th`); });
+    }
+    gs.forEach((g) => { if (!s.rows.find((r) => r.t === g.a) || !s.rows.find((r) => r.t === g.b)) f(`${g.rd} names a team not in the standings`);
+      if (g.a === g.b || g.as === g.bs || !(g.as > 0 && g.bs > 0)) f(`${g.rd} is not a valid game`); });
+  });
+  console.log(`  ${brMark()} bracket == standings: every placing decided by its game, PF == PA and W == L in all ${SEASON.length} seasons`);
+}
+
 /* 🚨 THE SEEDS MUST AGREE WITH THE BRACKET'S OWN SHAPE (v62). ESPN's seeding
    for 2013-2017 was transcribed by hand off four screenshots, and a hand-typed
    number is exactly the kind of thing that lands on the wrong row silently.

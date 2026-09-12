@@ -1150,7 +1150,14 @@ correction, zero unresolved conflicts**.
   (v61, now that the all-time standings display them) · **the seeds agree with
   the bracket's own shape** — byes are 1 and 2, round 1 is 3v6 and 4v5 (v62,
   over two independent sources) · **no two roll-call cards make the same
-  claim** and **a decimal is one number** (v66).
+  claim** and **a decimal is one number** (v66) · **the bracket resolves the
+  standings** — the final decides 1st/2nd, the semi-final losers are 3rd/4th,
+  the R1 losers 5th/6th (their pair plays TWICE on ESPN and the last game
+  decides), the consolation six are exactly 7-12 and GmC7/8/9 decide 7-8,
+  9-10, 11-12 — plus **PF == PA and W == L in every season** (v66 audit,
+  owner's ask). ⚠️ That checksum closes to **0.00 in all 13 seasons**, so its
+  tolerance is float rounding only: one wrong digit anywhere in a season
+  trips it, verified.
   ⚠️ The bracket law counted **every** playoff game until v14 and was green
   the whole time `bw` meant two different things in two different views — a
   law over a total cannot see a definition drift underneath it. Re-run them after ANY
