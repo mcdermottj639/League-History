@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v64';
+  const APP_VERSION = 'v65';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -253,9 +253,9 @@
     rank: "The commissioner's weekly power rankings — every team in order, with a take on each. Only during the season, and only once he publishes a set.",
     hon: 'The trophy case, the champions, who is still waiting, every final four, and the champion\'s curse.',
     you: 'Your thirteen seasons — medals, Cum Bowls, your best and worst years.',
-    rec: 'Opens with the storylines the archive throws up, then every leaderboard: the record book, the luck index, rivalries, playoff appearances, seeds and upsets.',
-    cb: "The other bracket. The two worst seeds play on the first weekend of the playoffs, and the loser is the league's worst.",
-    sea: 'All thirteen final standings, newest first.',
+    rec: 'What the archive turns up on its own: the storylines, the record book, the luck index and the rivalries.',
+    led: 'The four tables that rank all twelve — all-time standings, how often each of you makes the playoffs, seeds and upsets, and who scores more once the bracket starts.',
+    cb: "The other bracket, and the one that decides the league's worst: the two worst seeds play on the first weekend of the playoffs. Every final standing since 2013 is underneath it.",
   };
 
   function helpTabHTML(label, desc, subs) {

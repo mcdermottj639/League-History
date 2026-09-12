@@ -2050,7 +2050,11 @@
   /* ══ 📖 SEASON BY SEASON — all 13, newest first ═══════════════════════ */
   function seasonsHTML() {
     return `<h2 class="section-title">📖 Season by season ${tag('fin')}</h2>
-    ${SEASON.map((s, i) => `<details class="ffp-card fh-det"${i === 0 ? ' open' : ''}>
+    /* ⚠️ Nothing opens by default any more (v65). The newest season used to
+       be expanded, which was right when this was a tab of its own and wrong
+       underneath the Cum Bowl — "offered but out of the way" is a compact list
+       of thirteen years, not a standings table pushing the page down. */
+    ${SEASON.map((s) => `<details class="ffp-card fh-det">
       <summary><b>${s.yr}</b><span>${esc(nm(s.champ.mgr) || s.champ.t)} 🏆</span>${s.platform === 'sleeper' ? '<em class="fh-plat">SLEEPER</em>' : ''}<i>▾</i></summary>
       <div class="fh-tbl-h s4"><span>#</span><span>TEAM</span><span>REC</span><span>PF</span></div>
       <p class="fh-tbl-k"><b>#</b> = playoff finish · <b>REC</b> and <b>PF</b> = regular season</p>
@@ -2260,7 +2264,7 @@
      sub-tab bar and the ? sheet's tab list all read it from here.
      ⚠️ Older comments and changelog entries say "Honors": same tab. */
   const SUBS = [['you', 'You'], ['hon', 'Honors'], ['rec', 'Records'],
-                ['cb', 'Cum Bowl'], ['sea', 'Seasons']];
+                ['led', 'Leaders'], ['cb', 'Cum Bowl']];
   const VIEWS = {
     /* 🚨 Storylines opens RECORDS (v44, owner's call), back where it lived
        before v13. v13 moved it to Honors on the reasoning that it was the
@@ -2284,7 +2288,6 @@
        a CHAMPION, and Honors is where the champions are. Self-contained — its
        copy names no neighbour — so this is one term moved out of `rec`. */
     hon: () => heroHTML() + trophyHTML() + champsHTML() + ringlessHTML() + finalFoursHTML() + curseHTML(),
-    sea: () => seasonsHTML(),
     /* Playoff record + Finals reached sit HERE, not on Cum Bowl (v9, owner's
        call). They are career résumé — who gets in, who reaches the final —
        and the Cum Bowl is the opposite bracket, for the teams that missed.
@@ -2300,8 +2303,25 @@
        other call, landed in parallel). Both moves are his and they compose:
        this one says where luck and rivalries sit, that one says the curse is
        an honour. Merged rather than either one winning. */
-    rec: () => storiesHTML() + standingsHTML() + recordHTML() + playoffHTML() + seedHTML() + januaryHTML() + luckHTML() + rivalsHTML(),
-    cb: () => cumbowlHTML(),
+    rec: () => storiesHTML() + recordHTML() + luckHTML() + rivalsHTML(),
+    /* 🏅 LEADERS — the four ranked tables, split off Records (v65, owner's
+       call, four cards circled on a screenshot): all-time standings, playoff
+       appearances, seeds & upsets, who shows up in January. Records had eight
+       cards and was two pages of scrolling; what it keeps is the FINDINGS —
+       the storylines, the record book, the luck index and rivalries — and
+       what leaves is every card that is simply all twelve managers ranked.
+       ⚠️ The tab count is still five. Cum Bowl and Seasons merged to pay for
+       this one, which is what keeps the bar off the v55 clipping ceiling. */
+    led: () => standingsHTML() + playoffHTML() + seedHTML() + januaryHTML(),
+    /* 🚽 CUM BOWL, WITH THE SEASONS UNDER IT (v65, owner: *"Cum bowl is the
+       prize of those tab. When I click it I want cum bowl. Then seasons can
+       be offered but out of the way"*). The Cum Bowl leads; the thirteen
+       season tables follow, all collapsed, so the page is one card and then a
+       tidy list of years rather than a wall of standings.
+       ⚠️ The `sea` key is gone and that is safe: `S.sub` lives in memory and
+       boot only ever sets it to `you` or `hon`, so no device can be holding
+       a pointer at a view that no longer exists. */
+    cb: () => cumbowlHTML() + seasonsHTML(),
     you: () => youHTML(),
   };
   window.LeagueHistory = {

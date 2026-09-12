@@ -292,7 +292,9 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     finals · won — closes **Honors**, because it is an achievement and that is
     the page of achievements. 📊 **Playoff appearances** — how often each
     manager gets in, as a rate, **plus the championship-bracket record**
-    (v50) — stays on **Records**, because it is a leaderboard. Neither is on Cum Bowl (v9): that is the opposite bracket, for
+    (v50) — is on **Leaders** since v65, because it is a leaderboard and that
+    is now the page of leaderboards (it sat on Records from v48 to v64).
+    Neither is on Cum Bowl (v9): that is the opposite bracket, for
     the teams that missed, and filing the league's best achievement behind the
     tab named for its worst was the original fault.
     - ⚠️ **`playoffHTML` was renamed on screen in the same edit.** It headed
@@ -494,10 +496,18 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     non-breaking space, because a provenance flag alone on a line reads as a
     stray mark rather than a badge.
   - `SUBS` — the five history sub-tabs, **in display order**: You · Honors ·
-    Records · Cum Bowl · Seasons (v45 — "You" was fifth, then second from v6,
-    and is first now; the owner's call each time). Reordering is that array
-    alone; `VIEWS` is a map and `league.js` just walks `SUBS`, and so do the
-    sub-tab bar, the ? sheet's tab list and `checks.js`.
+    Records · **Leaders · Cum Bowl** (v65 — Leaders is new and Cum Bowl
+    absorbed Seasons; "You" was fifth, then second from v6, and is first since
+    v45; the owner's call each time).
+    - 🚨 **IT STAYS AT FIVE, AND THAT IS THE CONSTRAINT, NOT A COINCIDENCE.**
+      v55 measured this bar clipping silently at 320px and had to move to
+      `flex: 1 1 auto` to fit the labels it already had. So v65 paid for the
+      new tab by MERGING two: Seasons went under Cum Bowl. **A sixth tab is
+      not a free action here** — measure `scrollWidth` against `clientWidth`
+      on every button at 320px before adding one.
+    - Reordering is that array alone; `VIEWS` is a map and `league.js` just
+      walks `SUBS`, and so do the sub-tab bar, the ? sheet's tab list and
+      `checks.js`.
     - 🚨 **The FIRST tab is not the LANDING tab, deliberately (v45).** `you`
       with nobody picked is an invitation card and a "Choose my name" button —
       right as a destination, wrong as a front door, because a stranger would
@@ -505,18 +515,26 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       a reader who HAS picked on `you` (the v1 rule, which `choose()` already
       followed) and everybody else on `hon`. **Reordering `SUBS` does not
       change where the app opens**; that is one line in boot.
-  - `view(key)` — `hon` · `you` · `rec` · `cb` · `sea`. **Storylines opens
-    `rec`** (v44, owner's call), back where it sat before v13.
-    - ⚠️ **The order WITHIN `rec` is the owner's call too** (v51): Storylines ·
-      🏅 All-time standings (v61) · the record book · Playoff appearances ·
-      Seeds & upsets · 🔥 Who shows up in January (v58) ·
-      **the luck index · Rivalries last**.
-      ⚠️ The champion's curse left for Honors in v50. The new card went in
-      ABOVE the luck index precisely to keep *"luck index and rivalries to
-      bottom of records"* (v53, his words) true. It is one expression and
-      nothing else reads it — the jump nav is built from the rendered DOM, so
-      the chips re-order with no second edit (verified on the render, as v44
-      and v13 did before it).
+  - `view(key)` — `hon` · `you` · `rec` · `led` · `cb`. **Storylines opens
+    `rec`** (v44, owner's call), back where it sat before v13. ⚠️ **`sea` is
+    gone** (v65): the seasons render under `cb`. Safe to delete because `S.sub`
+    lives in memory and boot only ever sets it to `you` or `hon`, so no device
+    can hold a pointer at a view that no longer exists.
+    - 🚨 **RECORDS IS THE FINDINGS, LEADERS IS THE TABLES (v65, owner's call —
+      he circled four cards on a screenshot).** Records had grown to eight
+      cards. It keeps what the archive turns UP — Storylines · the record book
+      · **the luck index · Rivalries last** (v53, his words, still true) — and
+      the four that simply rank all twelve moved out: 🏅 All-time standings ·
+      📊 Playoff appearances · 🎯 Seeds & upsets · 🔥 Who shows up in January.
+    - 🚽 **`cb` LEADS WITH THE CUM BOWL AND THE SEASONS FOLLOW** (v65, owner:
+      *"Cum bowl is the prize of those tab. When I click it I want cum bowl.
+      Then seasons can be offered but out of the way"*). Nothing auto-expands
+      any more, so the page is one card and then a tidy list of thirteen years.
+      ⚠️ **This cost the year chips and that was the trade.** `buildJump` uses
+      `.section-title` when a page has two or more and only falls back to
+      `<details>` summaries otherwise — so a second heading on that page turns
+      13 year chips into 2 section chips. The years are still one tap each in
+      the list; jumping straight to 2019 from the chip row is gone.
   - `profile(mgr)` — the drill-down every name opens
   - `setMe(mgr)` / `me()` / `name(mgr)` / `roster()` — identity
   - `key()` — the three-badge provenance key, for the ? sheet in `league.js`
@@ -1518,6 +1536,67 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v65 — Records splits, and the Cum Bowl swallows Seasons (12 Sep 2026)** —
+  the owner, with the Records jump nav on screen and four chips circled in
+  red: *"I want cum bowl added to seasons as two sub tabs but call it cum bowl
+  and then the 4 I drew on here slice off and make there own page"*.
+  - 🚨 **RECORDS HAD GROWN TO EIGHT CARDS AND WAS TWO PAGES PRETENDING TO BE
+    ONE.** The four he circled — 🏅 All-time standings · 📊 Playoff appearances
+    · 🎯 Seeds & upsets · 🔥 Who shows up in January — are all the same SHAPE:
+    twelve rows, one per manager, ranked. The four left behind are what the
+    archive turns UP: storylines it detected, the record book, the luck index,
+    the rivalries. **He filed them by kind and it is the same split v48 made
+    between Honors and Records**, one level down. Records is the findings;
+    **Leaders** (his name for it) is the tables.
+  - 🚨 **THE NEW TAB HAD TO BE PAID FOR, AND THAT IS WHY THE MERGE IS IN THE
+    SAME VERSION.** v55 measured this bar clipping **silently** at 320px with
+    five tabs and had to move to `flex: 1 1 auto` to fit the labels it already
+    had. A sixth would have gone back over that ceiling with nothing on screen
+    admitting it. So Seasons went under Cum Bowl and the count stayed at five:
+    measured at 320px, `You 32 · Honors 53 · Records 59 · Leaders 58 ·
+    Cum Bowl 70`, every button's `scrollWidth` inside its `clientWidth`.
+    **Five is a constraint here, not a coincidence**, and it is written into
+    the `SUBS` bullet above rather than left to be rediscovered.
+  - 🚽 **The Cum Bowl leads its own tab**, per his follow-up: *"Cum bowl is the
+    prize of those tab. When I click it I want cum bowl. Then seasons can be
+    offered but out of the way."* So the card renders first and the thirteen
+    seasons sit underneath it as a collapsed list — **and nothing auto-expands
+    any more**, which is what makes "out of the way" true rather than "also
+    on the page".
+  - ⚠️ **THE HONEST TRADE: the merge cost the year chips, and no code chose
+    that.** `buildJump` uses `.section-title` headings when a page has two or
+    more and only falls back to `<details>` summaries otherwise — so the moment
+    Seasons stopped being the only heading on its page, **13 year chips became
+    2 section chips**. The years are still one tap each in the list; jumping
+    straight to 2019 from the chip row is gone. Worth stating plainly because
+    it is a real loss, it is a side effect of a layout rule rather than a
+    decision, and a future session reading "the nav is built from the DOM"
+    will not predict it.
+  - ⚠️ **`sea` is deleted rather than left as an alias, and it is safe for a
+    checkable reason**: `S.sub` lives in memory only — there is no
+    localStorage key for the sub-tab and boot sets it to `you` or `hon` — so
+    no device can come back holding a pointer at a view that no longer exists.
+    A dead key kept "just in case" would be the v8 `STATS` trap: a value
+    nothing reads and no test can see.
+  - ⚠️ **The ? sheet needed its two sentences rewritten and nothing else.**
+    The tab LIST is built from `SUBS`, so it picked up Leaders and dropped
+    Seasons with no edit — fourth version running that this is the only
+    hand-edit a tab change needs, which is the standing argument for keeping
+    every other list derived.
+  - ⚠️ **One stale current-state line found while documenting this**, and it
+    is the reason this file's standing rule exists: the `playoffHTML` bullet
+    still said that card *"stays on Records, because it is a leaderboard"* —
+    true from v48 to v64 and false the moment Leaders existed, **with its own
+    reasoning now arguing for the opposite tab**. Corrected in place; the v48
+    changelog entry keeps its wording and the current-state section does not.
+  - Verified at 320 and 390px across **50 view-contexts** — the new five tabs
+    × {stranger, McD, Hurd, CC, Woods}: no clipped tab label, no horizontal
+    overflow, no type under 9px, no tap target under 38px, no template hole,
+    no page error. Records renders 4 chips, Leaders 4, Cum Bowl 2
+    (🚽 The Cum Bowl · 📖 Season by season) with zero open `<details>`.
+    `node --check` on every JS file and `node checks.js` green, including the
+    laws that walk `SUBS`.
 
 - **v64 — the career strip fits the career (12 Sep 2026)** — the owner, with
   his own You page open: *"Fix this view for Hyman since he's got less total
