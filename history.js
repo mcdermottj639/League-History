@@ -149,12 +149,12 @@
       { t: "Whipits Rule", w: 4, l: 9, pf: 1233.4, pa: 1463.6, seed: 11 },
     ]},
     { yr: 2017, games: 13, rows: [
-      { t: "Morning Woods", w: 8, l: 5, pf: 1422.1, pa: 1153.3 },
-      { t: "My Knee Grows", w: 9, l: 4, pf: 1343.5, pa: 1214.7 },
-      { t: "Shady (ACL) Crack Cooks", w: 7, l: 6, pf: 1235, pa: 1320.9 },
-      { t: "What Can Browns Do For Jews", w: 8, l: 5, pf: 1286.6, pa: 1267.4 },
-      { t: "Pepperoni TD's", w: 8, l: 5, pf: 1399.6, pa: 1288.7 },
-      { t: "The Great Wentz", w: 7, l: 6, pf: 1352.7, pa: 1282.2 },
+      { t: "Morning Woods", w: 8, l: 5, pf: 1422.1, pa: 1153.3, seed: 2 },
+      { t: "My Knee Grows", w: 9, l: 4, pf: 1343.5, pa: 1214.7, seed: 1 },
+      { t: "Shady (ACL) Crack Cooks", w: 7, l: 6, pf: 1235, pa: 1320.9, seed: 6 },
+      { t: "What Can Browns Do For Jews", w: 8, l: 5, pf: 1286.6, pa: 1267.4, seed: 4 },
+      { t: "Pepperoni TD's", w: 8, l: 5, pf: 1399.6, pa: 1288.7, seed: 3 },
+      { t: "The Great Wentz", w: 7, l: 6, pf: 1352.7, pa: 1282.2, seed: 5 },
       { t: "Greg's Father", w: 6, l: 7, pf: 1300.2, pa: 1279.9 },
       { t: "Smoke a Bowe, Drink a Forte", w: 6, l: 7, pf: 1258.9, pa: 1341 },
       { t: "Billy Breathes", w: 5, l: 8, pf: 1252, pa: 1291.5 },
@@ -163,12 +163,12 @@
       { t: "Mortal Wombats", w: 5, l: 8, pf: 1232.5, pa: 1411.7 },
     ]},
     { yr: 2016, games: 13, rows: [
-      { t: "Air Cunt", w: 8, l: 5, pf: 1323.5, pa: 1097.4 },
-      { t: "Greg's Father", w: 9, l: 4, pf: 1110.1, pa: 1111.6 },
-      { t: "I Had a Dog His Name Was Jimmy", w: 11, l: 2, pf: 1403.1, pa: 1166.7 },
-      { t: "Smoke a Bowe, Drink a Forte", w: 10, l: 3, pf: 1234.7, pa: 1177.3 },
-      { t: "My Knee Grows", w: 7, l: 6, pf: 1199.3, pa: 1170.9 },
-      { t: "Frank's Whores", w: 7, l: 6, pf: 1192.3, pa: 1135 },
+      { t: "Air Cunt", w: 8, l: 5, pf: 1323.5, pa: 1097.4, seed: 2 },
+      { t: "Greg's Father", w: 9, l: 4, pf: 1110.1, pa: 1111.6, seed: 4 },
+      { t: "I Had a Dog His Name Was Jimmy", w: 11, l: 2, pf: 1403.1, pa: 1166.7, seed: 1 },
+      { t: "Smoke a Bowe, Drink a Forte", w: 10, l: 3, pf: 1234.7, pa: 1177.3, seed: 3 },
+      { t: "My Knee Grows", w: 7, l: 6, pf: 1199.3, pa: 1170.9, seed: 5 },
+      { t: "Frank's Whores", w: 7, l: 6, pf: 1192.3, pa: 1135, seed: 6 },
       { t: "Slob on my Cobb", w: 6, l: 7, pf: 1181.7, pa: 1145.7 },
       { t: "Mortal Wombats", w: 3, l: 10, pf: 1070.3, pa: 1274.8 },
       { t: "Jim Crow All-Stars", w: 5, l: 8, pf: 1142.2, pa: 1220.9 },
@@ -177,12 +177,12 @@
       { t: "What Can Browns Do For Jews", w: 6, l: 7, pf: 1186.8, pa: 1243.3 },
     ]},
     { yr: 2015, games: 13, rows: [
-      { t: "Jim Crow All-Stars", w: 8, l: 5, pf: 1117.3, pa: 1157.4 },
-      { t: "Furher Goodell", w: 9, l: 4, pf: 1199, pa: 1105.7 },
-      { t: "My Knee Grows", w: 8, l: 5, pf: 1299.1, pa: 1147.9 },
-      { t: "The Bash Brothers", w: 9, l: 4, pf: 1357.1, pa: 1124 },
-      { t: "Mr. Flee Flee Fleeeeener", w: 7, l: 6, pf: 1113.1, pa: 1226.8 },
-      { t: "Gregs Morning Dew Dew", w: 8, l: 5, pf: 1237.8, pa: 1260.6 },
+      { t: "Jim Crow All-Stars", w: 8, l: 5, pf: 1117.3, pa: 1157.4, seed: 5 },
+      { t: "Furher Goodell", w: 9, l: 4, pf: 1199, pa: 1105.7, seed: 2 },
+      { t: "My Knee Grows", w: 8, l: 5, pf: 1299.1, pa: 1147.9, seed: 3 },
+      { t: "The Bash Brothers", w: 9, l: 4, pf: 1357.1, pa: 1124, seed: 1 },
+      { t: "Mr. Flee Flee Fleeeeener", w: 7, l: 6, pf: 1113.1, pa: 1226.8, seed: 6 },
+      { t: "Gregs Morning Dew Dew", w: 8, l: 5, pf: 1237.8, pa: 1260.6, seed: 4 },
       { t: "Tucker Right In The Pussy", w: 5, l: 8, pf: 1172.2, pa: 1352 },
       { t: "Smoke a Bowe, Drink a Forte", w: 5, l: 8, pf: 1188.9, pa: 1213.1 },
       { t: "Slob on my Cobb", w: 5, l: 8, pf: 1172.1, pa: 1212.8 },
@@ -191,12 +191,12 @@
       { t: "Greg's Father", w: 5, l: 8, pf: 1134.8, pa: 1093.2 },
     ]},
     { yr: 2014, games: 13, rows: [
-      { t: "Slob on my Cobb", w: 7, l: 6, pf: 1232.5, pa: 1194.4 },
-      { t: "Mike Hunthurts hunthurts", w: 7, l: 6, pf: 1146.5, pa: 1105.1 },
-      { t: "wreck it Ray", w: 11, l: 2, pf: 1386.1, pa: 1183.4 },
-      { t: "My Knee Grows", w: 9, l: 4, pf: 1225, pa: 1167.5 },
-      { t: "Buley is Greek", w: 7, l: 6, pf: 1232.9, pa: 1295 },
-      { t: "Hoyer... Fornicator", w: 7, l: 6, pf: 1285, pa: 1226.8 },
+      { t: "Slob on my Cobb", w: 7, l: 6, pf: 1232.5, pa: 1194.4, seed: 5 },
+      { t: "Mike Hunthurts hunthurts", w: 7, l: 6, pf: 1146.5, pa: 1105.1, seed: 6 },
+      { t: "wreck it Ray", w: 11, l: 2, pf: 1386.1, pa: 1183.4, seed: 1 },
+      { t: "My Knee Grows", w: 9, l: 4, pf: 1225, pa: 1167.5, seed: 2 },
+      { t: "Buley is Greek", w: 7, l: 6, pf: 1232.9, pa: 1295, seed: 4 },
+      { t: "Hoyer... Fornicator", w: 7, l: 6, pf: 1285, pa: 1226.8, seed: 3 },
       { t: "Weggie Rayne", w: 6, l: 7, pf: 1255.5, pa: 1217.4 },
       { t: "BALTIMORE STAND UP", w: 6, l: 7, pf: 1136.5, pa: 1259.7 },
       { t: "Hugh Junions", w: 5, l: 8, pf: 1201.3, pa: 1181.3 },
@@ -205,12 +205,12 @@
       { t: "Dez-ed and Confused", w: 3, l: 10, pf: 991.8, pa: 1239.4 },
     ]},
     { yr: 2013, games: 13, rows: [
-      { t: "Slob on my Cobb", w: 7, l: 6, pf: 1246.2, pa: 1211.4 },
-      { t: "Mike Hawksuge hawksuge", w: 7, l: 6, pf: 1197.4, pa: 1157.6 },
-      { t: "Weggie Rayne", w: 9, l: 4, pf: 1224.2, pa: 1097 },
-      { t: "Jamm Boys", w: 11, l: 2, pf: 1348.7, pa: 944.6 },
-      { t: "Cutty-Marshall ALLDAYBABY", w: 7, l: 6, pf: 1284.5, pa: 1206.8 },
-      { t: "Christels Mattress", w: 9, l: 4, pf: 1385.6, pa: 1192.8 },
+      { t: "Slob on my Cobb", w: 7, l: 6, pf: 1246.2, pa: 1211.4, seed: 5 },
+      { t: "Mike Hawksuge hawksuge", w: 7, l: 6, pf: 1197.4, pa: 1157.6, seed: 6 },
+      { t: "Weggie Rayne", w: 9, l: 4, pf: 1224.2, pa: 1097, seed: 2 },
+      { t: "Jamm Boys", w: 11, l: 2, pf: 1348.7, pa: 944.6, seed: 1 },
+      { t: "Cutty-Marshall ALLDAYBABY", w: 7, l: 6, pf: 1284.5, pa: 1206.8, seed: 4 },
+      { t: "Christels Mattress", w: 9, l: 4, pf: 1385.6, pa: 1192.8, seed: 3 },
       { t: "Dow Jones", w: 4, l: 9, pf: 1007.3, pa: 1311.1 },
       { t: "Slemp The Man Whore", w: 5, l: 8, pf: 1049.6, pa: 1255.8 },
       { t: "Kitchen Sink", w: 7, l: 6, pf: 1177.5, pa: 1127.8 },
@@ -696,30 +696,21 @@
     const byPF = [...rows].sort((a, b) => b.pf - a.pf);
     byPF.forEach((r, i) => { r.pfRank = i + 1; });
     /* Real seed where known; else wins, then points — never array order. */
+    /* 🚨 A MISSING SEED SORTS LAST, IT DOES NOT SORT "EQUAL" (v62). This read
+       `a.seed && b.seed ? a.seed - b.seed : 0`, which returns 0 for a seeded
+       row against an unseeded one — a comparator that stops being transitive
+       the moment a season is PARTLY seeded, which is exactly what 2013-2017
+       are now (ESPN publishes seeds for the bracket six; 7-12 never appear). */
     const bySeed = [...rows].sort((a, b) =>
-      (a.seed && b.seed ? a.seed - b.seed : 0) || b.pct - a.pct || b.pf - a.pf);
-    /* 🚨 `calcSeed` IS A FALLBACK FOR ORDERING ROWS AND IS **NOT** A SEED.
-       NOTHING READS IT AND NOTHING SHOULD (v58). Where the archive holds a
-       seed it simply echoes it; where it does not — 2013-2017 — it guesses
-       from win% then points, and **that guess is measurably wrong**.
-       ⚠️ **v60 CORRECTION: this block used to say ESPN "gave no seed" for
-       those years. FALSE — the owner sent the 2017 bracket and the seeds are
-       printed right on it (#1..#6 beside each team).** They were never
-       missing from ESPN; they were never transcribed, which is the v56 lesson
-       exactly, repeated one layer down and in the same file that states it.
-       The reason not to compute them is unchanged and is now better
-       evidenced, below. Checked against the only independent evidence the
-       archive has, the bracket's own shape (byes go to seeds 1 and 2, round 1
-       is 3v6 and 4v5): it reproduces all 8 seasons that carry a real seed and
-       2014/2015/2017, and it FAILS 2013 (the bye went to a 9-4 team with
-       FEWER points than the 9-4 team this ranks above it) and 2016 (the bye
-       went to an 8-5 team over a 10-3 team). ESPN broke those ties on
-       something this archive does not hold.
-       ⚠️ So `Seeds & upsets` is restricted to seasons with a REAL seed and
-       says so on the card. Wiring this up to "cover all 13 seasons" would
-       invent two seasons of seeding and fabricate upsets that never happened
-       — the one thing this archive does not do. */
-    bySeed.forEach((r, i) => { r.calcSeed = r.seed || i + 1; });
+      ((a.seed || 99) - (b.seed || 99)) || b.pct - a.pct || b.pf - a.pf);
+    /* ⚠️ `calcSeed` IS GONE (v62). It guessed a seed from win% then points for
+       the seasons that had none, nothing ever read it, and v58 wrapped it in a
+       warning never to wire it up. The warning is moot: ESPN's real seeds for
+       2013-2017 are transcribed now, and the guess is *proven* wrong — **the
+       league ran two divisions through 2016 and the winners took the top two
+       seeds**, which no arithmetic on records or points recovers. A computed
+       value nothing reads is the v8 `STATS` trap; one whose premise has been
+       disproved is worse. */
     return { ...s, rows, byPF, bySeed, fin: isFinal(s),
       champ: rows.find((r) => r.t === (champRow(s) || {}).t),
       top: bySeed[0], lgPpg: rows.reduce((a, r) => a + r.ppg, 0) / rows.length };
@@ -1237,7 +1228,13 @@
   /* ══ 🎯 SEEDS & UPSETS ════════════════════════════════════════════════ */
   function seedHTML() {
     const LOW_SEED = PO_CUT;
-    const seeded = SEASON.filter((s) => s.rows.every((r) => r.seed));
+    /* ⚠️ The condition is what the CARD needs — a seed on both sides of every
+       championship-bracket game — not "all twelve rows seeded". 2013-2017
+       publish seeds for the bracket six only, and 7-12 are never read here. */
+    const seeded = SEASON.filter((s) => {
+      const w = PLAYOFF_GAMES.filter((g) => g.yr === s.yr && g.br === 'W');
+      return w.length && w.every((g) => [g.a, g.b].every((t) => (s.rows.find((r) => r.t === t) || {}).seed));
+    });
     const wb = PLAYOFF_GAMES.filter((g) => g.br === 'W');
     const seedOf = (yr, t) => { const s = SEASON.find((x) => x.yr === yr); const r = s && s.rows.find((x) => x.t === t); return r && r.seed; };
     let better = 0, total = 0; const ups = [];
@@ -1248,8 +1245,6 @@
       if (wS < lS) better++; else ups.push({ yr: g.yr, rd: g.rd, w: wT, wS, lS, sc: `${Math.max(g.as, g.bs)}–${Math.min(g.as, g.bs)}`,
         l: g.as > g.bs ? g.b : g.a, gap: wS - lS });
     });
-    const bySeed = {};
-    seeded.forEach((s) => s.rows.forEach((r) => { if (r.place) (bySeed[r.seed] = bySeed[r.seed] || []).push(r.place); }));
     const champSeeds = seeded.map((s) => s.champ && s.champ.seed).filter(Boolean);
     const cnt = {}; champSeeds.forEach((x) => { cnt[x] = (cnt[x] || 0) + 1; });
     /* 🚨 DERIVED, never typed. This read "Two #6 seeds have won the whole
@@ -1264,11 +1259,38 @@
        a range running backwards. Sorted explicitly rather than trusting
        array order, which is the same rule `byPF`/`bySeed` follow above. */
     const sdYrs = seeded.map((s) => s.yr).sort((a, b) => a - b);
+    /* 🚨 DERIVED: a season where a LOWER seed holds a BETTER record than a
+       higher one cannot have been seeded on record, and the owner's bracket
+       captures name the reason outright — two divisions, Nectars and Bologna,
+       whose winners took the top two seeds.
+       ⚠️ It finds ONE season, not the four that had divisions, and that is
+       correct rather than a miss: a division winner only shows up here when
+       its record is strictly worse. In 2013 the division winner was 9-4
+       against a 9-4, which is invisible to this test. So the sentence reports
+       the inversion it can see, never a division SPAN it cannot. */
+    const oddSeed = [];
+    seeded.forEach((s2) => { const top = s2.rows.filter((r) => r.seed).sort((a, b) => a.seed - b.seed);
+      top.forEach((r, i2) => top.slice(i2 + 1).forEach((o) => { if (o.w > r.w) oddSeed.push({ yr: s2.yr, hi: r, lo: o }); })); });
     const sixes = seeded.filter((s) => s.champ && s.champ.seed === LOW_SEED);
     const sixBeat1 = sixes.filter((s) => {
       const f = wb.find((g) => g.yr === s.yr && g.rd === 'FINAL'); if (!f) return false;
       return seedOf(s.yr, f.as > f.bs ? f.b : f.a) === 1;
     });
+    /* 🚨 THE HEADLINE MOVED WHEN THE DATA LANDED, AND IT IS DERIVED SO IT
+       COULD (v62). With 8 seeded seasons the only thing worth saying was the
+       two ${'#'}6 champions; with all 13 the ${'#'}5 seed leads outright and two
+       seeds have never won at all. Neither sentence names a seed in its
+       source — both read `cnt`, so the next title re-writes them. */
+    const byTitles = Object.keys(cnt).map((k) => ({ sd: +k, n: cnt[k] }))
+      .sort((a, b) => b.n - a.n || a.sd - b.sd);
+    const winner = byTitles[0];
+    const never = [];
+    for (let sd = 1; sd <= LOW_SEED; sd++) if (!cnt[sd]) never.push(`${'#'}${sd}`);
+    /* ⚠️ The count is SPELLED — "#5 seed has won 5" is two numerals a reader
+       has to pull apart, the v17 fault. */
+    const topLine = !winner || winner.n < 2 ? '' :
+      ` The <b>${'#'}${winner.sd} seed has won more of them than any other — ${plWord(winner.n, 'title')}</b>${never.length
+        ? `, while the ${never.join(' and ')} seeds have never won one` : ''}.`;
     const sixLine = !sixes.length ? '' :
       ` <b>${cap(plWord(sixes.length, `${'#'}${LOW_SEED} seed`))} ${sixes.length === 1 ? 'has' : 'have'} won the whole thing</b>` +
       (sixBeat1.length === sixes.length
@@ -1285,7 +1307,7 @@
         <span class="fh-up-y">${u.yr}</span>
         <div class="fh-up-t"><b>#${u.wS} ${esc(nm(mgrOf(u.w)) || u.w)}</b> beat <b>#${u.lS} ${esc(nm(mgrOf(u.l)) || u.l)}</b><i>${u.rd === 'FINAL' ? '🏆 championship' : u.rd === 'R2' ? 'semi-final' : 'round 1'} · ${u.sc}</i></div>
       </div>`).join('')}
-      <p class="ffp-cap">🚨 <b>This is the one card that does not cover every season — yet.</b> The archive holds a seeding for ${seeded.length} of the ${SEASON.length} (${sdYrs[0]}-${sdYrs[sdYrs.length - 1]}), so this counts <b>${total}</b> championship-bracket games rather than the ${PLAYOFF_GAMES.length} the ⚑ badge covers. ⚠️ <b>The other ${SEASON.length - seeded.length} seasons are seeded on ESPN's own bracket page</b> — those numbers just have not been copied across yet. Until they are, this card leaves them out instead of guessing: in one of them an <b>8-5 team was seeded second, above a 10-3 team</b>, so no arithmetic on records gets them back.<br><br>The better seed wins just <b>${better} of those ${total}</b> — a better seed is barely better than a coin toss here.${sixLine}</p>
+      <p class="ffp-cap"><b>All ${SEASON.length} seasons</b> — ${total} championship-bracket games, ${sdYrs[0]}-${sdYrs[sdYrs.length - 1]}, seeded from ESPN's own bracket page rather than worked out from the standings.<br><br>The better seed wins just <b>${better} of ${total}</b> — barely better than a coin toss.${topLine}${sixLine}${oddSeed.length ? `<br><br>⚠️ <b>And the seeding does not always follow the record.</b> In ${oddSeed[0].yr} the ${'#'}${oddSeed[0].hi.seed} seed went <b>${oddSeed[0].hi.w}-${oddSeed[0].hi.l}</b> while the ${'#'}${oddSeed[0].lo.seed} went <b>${oddSeed[0].lo.w}-${oddSeed[0].lo.l}</b>: the league ran <b>two divisions</b> in those years — Nectars and Bologna — and the winners took the top two seeds. That is exactly why these had to be read off the bracket instead of derived.` : ''}</p>
     </div>`;
   }
 

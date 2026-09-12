@@ -118,6 +118,32 @@ const apMark = block();
 ALL.forEach((x) => { if (x.bA !== x.po) {
   console.log(`  ❌ ${x.m}: ${x.bA} brackets on file but ${x.po} playoff appearances — the card's arithmetic claim is false`); bad++; } });
 console.log(`  ${apMark()} brackets == appearances     every playoff berth has its bracket on file`);
+/* 🚨 THE SEEDS MUST AGREE WITH THE BRACKET'S OWN SHAPE (v62). ESPN's seeding
+   for 2013-2017 was transcribed by hand off four screenshots, and a hand-typed
+   number is exactly the kind of thing that lands on the wrong row silently.
+   This is the check that proved them: in a six-team bracket the byes go to
+   seeds 1 and 2 and round 1 is 3v6 and 4v5 — and the BRACKET GAMES came from a
+   completely different extraction (v56's coordinate parser) than the seeds, so
+   agreement between them is real evidence rather than a restatement.
+   ⚠️ It is also what caught the guess: `calcSeed` reproduced this in 11 of 13
+   seasons and failed 2013 and 2016, which is how the divisions were found.
+   Verified by transposing two seeds in one season: it names that season. */
+const seedMark = block();
+SEASON.forEach((s) => {
+  const w = PLAYOFF_GAMES.filter((g) => g.yr === s.yr && g.br === 'W');
+  if (!w.length) return;
+  const sd = (t) => (s.rows.find((r) => r.t === t) || {}).seed;
+  if (!w.every((g) => sd(g.a) && sd(g.b))) return;          // unseeded season, not this law's business
+  const r1 = w.filter((g) => g.rd === 'R1'), r2 = w.filter((g) => g.rd === 'R2');
+  const inR1 = new Set(r1.flatMap((g) => [g.a, g.b]));
+  const byes = [...new Set(r2.flatMap((g) => [g.a, g.b]))].filter((t) => !inR1.has(t));
+  const b = byes.map(sd).sort((x, y) => x - y).join(',');
+  const pairs = r1.map((g) => [sd(g.a), sd(g.b)].sort((x, y) => x - y).join('v')).sort().join(' ');
+  if (b !== '1,2') { console.log(`  ❌ ${s.yr}: byes went to seeds ${b}, not 1,2 — a seed is on the wrong row`); bad++; }
+  if (pairs !== '3v6 4v5') { console.log(`  ❌ ${s.yr}: round 1 paired ${pairs}, not 3v6 4v5 — a seed is on the wrong row`); bad++; }
+});
+console.log(`  ${seedMark()} seeds vs bracket        byes are 1 and 2, round 1 is 3v6 and 4v5, every seeded season`);
+
 /* W==L is a LEAGUE-wide law, so it is checked over EVERY row in each season —
    not over the tracked subset, which is missing two managers. */
 SEASON.forEach((s) => {

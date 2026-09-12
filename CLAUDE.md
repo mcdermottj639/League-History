@@ -350,34 +350,34 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       stronger — they catch an outcome flipped in one direction, which a
       symmetric total never could. Both are still written against the
       *population*, so letting the placement ladder back in overshoots.
-  - 🎯 **`seedHTML` — SEEDS & UPSETS IS THE ONE CARD THAT DOES NOT COVER ALL
-    13 SEASONS, and v58 is where it finally says so.** ⚠️ **v60 CORRECTION,
-    the owner's: "Seeds are right there u said they weren't before."** He is
-    right. The archive has a `seed` for 2018-2025 only, but **ESPN prints the
-    seeding on the Final Playoff Results page for every season** — it is on
-    the 2017 capture he already sent, `#1`-`#6` beside each team. The seeds
-    were never missing from ESPN; they were never transcribed. **That is the
-    v56 lesson, one layer down, in the file that states it in capitals.**
-    What follows is still true of the DATA, and the case against computing
-    them is now stronger, not weaker. So the card
-    counts 40 championship-bracket games from 8 seasons — while `PO_NOTE`,
-    printed directly above it, claimed 209 games across 13. **Two denominators
-    adjacent and unlabelled is the v3 fault**, and v56/v57 created it: before
-    the new brackets landed the two spans were near enough to hide it.
-    - 🚨 **`calcSeed` (history.js) IS NOT A SEED AND MUST NEVER BE WIRED UP.**
-      It is a row-ordering fallback, nothing reads it, and where ESPN gave no
-      seed it guesses from win% then points — **a guess that is measurably
-      wrong**. Checked against the bracket's own shape (byes go to 1 and 2,
-      R1 is 3v6 and 4v5) it reproduces all 8 real-seed seasons plus
-      2014/2015/2017, and **FAILS 2013** (the bye went to a 9-4 team with
-      fewer points than the 9-4 team it ranks above) **and 2016** (the bye
-      went to an 8-5 team over a 10-3 team). ESPN broke those ties on
-      something this archive does not hold. Using it to "cover all 13 seasons"
-      would invent seeding and fabricate upsets. The warning is written at its
-      definition, because the temptation is obvious and the failure is silent.
-    - ⚠️ The `#6`-seed claim in that caption is **derived** now, not typed. It
-      read "Two #6 seeds have won the whole thing" as prose — true by luck,
-      and it would have gone on saying "two" through any new seeded season.
+  - 🎯 **`seedHTML` — SEEDS & UPSETS COVERS ALL 13 SEASONS (v62).** ⚠️ It
+    covered 8 until the owner sent the four remaining brackets; the whole
+    "one card that does not cover every season" story is v58-v60 history now.
+    - 🚨 **ESPN'S SEEDS ARE TRANSCRIBED, NEVER COMPUTED — AND THE REASON IS
+      DIVISIONS.** `calcSeed` guessed from win% then points and got 11 of 13
+      seasons; it failed 2013 and 2016 because **the league ran two divisions,
+      Nectars and Bologna, and the winners took the top two seeds.** In 2016
+      that put an **8-5 team at ${'#'}2 above a 10-3 team**. No arithmetic on
+      records or points recovers that, which is why the numbers had to come off
+      the bracket page. `calcSeed` is deleted (v62) — dead code whose premise
+      was disproved.
+    - 🚨 **`checks.js` CONSERVES THE SEEDS AGAINST THE BRACKET'S OWN SHAPE.**
+      Byes go to 1 and 2, round 1 is 3v6 and 4v5, every seeded season. **The
+      bracket games came from v56's coordinate parser and the seeds from four
+      screenshots** — two independent sources — so agreement is evidence, not
+      a restatement. Verified by transposing two 2016 seeds: it names the year
+      and both symptoms.
+    - ⚠️ **2013-2017 seed the bracket SIX only** (7-12 are not on the page), so
+      the card's gate is "every championship-bracket game has a seed on both
+      sides", not "all twelve rows seeded". ⚠️ And `bySeed`'s comparator was
+      fixed in the same edit: `a.seed && b.seed ? … : 0` stops being transitive
+      the moment a season is partly seeded, so a missing seed sorts LAST rather
+      than "equal".
+    - ⚠️ **Both headline sentences are DERIVED from the title counts**, so the
+      card re-writes itself as seasons land — which it already did: with 8
+      seasons the only line worth printing was the two ${'#'}6 champions; with
+      13 the **${'#'}5 seed leads outright on titles and ${'#'}3 and ${'#'}4
+      have never won one.**
   - 🏅 **`standingsHTML` — ALL-TIME STANDINGS (v61, owner's ask: *"Lifetime
     standings like w-l and pts for all should be in here somewhere"*).**
     Thirteen regular seasons added up: W-L, win%, points for, points a game.
@@ -1104,7 +1104,9 @@ correction, zero unresolved conflicts**.
   **brackets on file == playoff appearances, per manager** (v59 — the claim
   the Playoff appearances caption makes as fact, so it is a law) · **career
   wins, losses and points-for == the season rows they were summed from**
-  (v61, now that the all-time standings display them).
+  (v61, now that the all-time standings display them) · **the seeds agree with
+  the bracket's own shape** — byes are 1 and 2, round 1 is 3v6 and 4v5 (v62,
+  over two independent sources).
   ⚠️ The bracket law counted **every** playoff game until v14 and was green
   the whole time `bw` meant two different things in two different views — a
   law over a total cannot see a definition drift underneath it. Re-run them after ANY
@@ -1495,6 +1497,61 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
 
+- **v62 — the last four brackets, and why the guess was wrong (12 Sep 2026)**
+  — the owner sent the 2013, 2014, 2015 and 2016 winner's brackets, the four
+  v60 asked for.
+  - **Seeds & upsets covers all 13 seasons now**, 65 championship-bracket
+    games, with ESPN's own seeding rather than a derivation.
+  - 🚨 **AND THE SCREENSHOTS ANSWERED THE QUESTION v58 COULD NOT: DIVISIONS.**
+    Every row on these four pages reads *"(8-5-0, 1st in Bologna Division)"* —
+    **the league ran two divisions, Nectars and Bologna, and the winners took
+    the top two seeds.** That is why an 8-5 team was seeded second above a
+    10-3 team in 2016, and why 9-4 Weggie Rayne outranked 9-4 Christels in
+    2013. ⚠️ **The 2017 page carries no division labels**, which is exactly
+    why `calcSeed` reproduced 2017 and failed those two. The anomaly was never
+    a data error; it was a league rule the archive did not know about.
+  - 🚨 **VERIFIED BEFORE A SINGLE SEED WAS TYPED.** Each screenshot was matched
+    to its season on evidence it could not have been fitted to: team names,
+    records, final placings and **all eight round-1 scores** agree with the
+    archive exactly (2013's 130.5/112.1 and 119.2/102.2, 2016's 76.9/102.3 and
+    63.9/110.1, and so on).
+  - 🚨 **THEN CHECKED AGAINST A SECOND, INDEPENDENT SOURCE — AND THIS IS THE
+    ONE THAT MATTERS.** In a six-team bracket the byes go to seeds 1 and 2 and
+    round 1 is 3v6 and 4v5. The bracket GAMES came from v56's coordinate
+    parser; the SEEDS came from four phone screenshots. They agree in **13 of
+    13 seasons**. That is now a conservation law, verified by transposing two
+    2016 seeds, because a hand-typed number landing on the wrong row is
+    precisely the failure no other check could see.
+  - 🚨 **THE CARD'S HEADLINE MOVED, AND IT MOVED BY ITSELF.** With 8 seeded
+    seasons the only line worth printing was the two ${'#'}6 champions. With 13,
+    **the ${'#'}5 seed has won more titles than any other — five — while the
+    ${'#'}3 and ${'#'}4 seeds have never won one.** Both sentences read the
+    title counts rather than naming a seed, so the new data rewrote the card
+    with no edit. That is the derivation rule paying out for the fourth time in
+    five versions. ⚠️ The better seed still wins only **28 of 65**.
+  - ⚠️ **`calcSeed` is DELETED.** Nothing read it, v58 wrapped it in a warning
+    never to wire it up, and its premise is now disproved rather than merely
+    unproven. A computed value nothing reads is the v8 `STATS` trap; keeping
+    one whose rationale has been refuted is worse.
+  - ⚠️ **Two faults of my own, both caught by running it rather than reading
+    it:** I replaced the `sdYrs` definition instead of inserting beside it (the
+    render threw `ReferenceError` on the first paint), and my first derivation
+    of the division span was wrong — it looks for a lower seed with a BETTER
+    record, which finds only 2016, because 2013's division winner was 9-4
+    against a 9-4 and is invisible to that test. **The card reports the
+    inversion it can actually see and never claims a division span it cannot**,
+    which is the honest version of a derived sentence.
+  - ⚠️ **`bySeed`'s comparator was not transitive for a partly-seeded season.**
+    2013-2017 publish seeds for the bracket six only, and
+    `a.seed && b.seed ? a.seed - b.seed : 0` returns 0 for a seeded row against
+    an unseeded one. A missing seed sorts LAST now. Also checked what depends
+    on it: `s.top` feeds "how often the top seed wins" in the hero strip, and
+    it is **unchanged at 3 of 13** — the divisions disagreed at ${'#'}2 versus
+    ${'#'}3, never at the top, so that stat was coincidentally right and is now
+    actually right.
+  - Verified: checks green including the new seed law, and 50 view-contexts at
+    320/390px clean.
+
 - **v61 — the lifetime table the archive never had (12 Sep 2026)** — the
   owner: *"Lifetime standings like w-l and pts for all should be in here
   somewhere."*
@@ -1560,8 +1617,9 @@ stale entry written in the present tense reads as current to anyone who greps.
   - The caption now says the other five seasons **are** seeded on ESPN and the
     gap is transcription, with the 8-5-over-10-3 fact as the reason the card
     will not guess. No data change; the card still covers 8 of 13 and now says
-    why. ⚠️ **Open: the four remaining brackets** (2013-2016) — same screenshot
-    he already took once, and the card goes to 13 of 13.
+    why. ✅ **CLOSED in v62** — he sent the four brackets within the hour and
+    the card covers 13 of 13. The 8-5-over-10-3 anomaly turned out to be
+    **divisions**, named right on the pages he sent.
 
 - **v59 — a second look at v58, asked for (12 Sep 2026)** — the owner, after
   a model switch: *"Anything you'd alter?"* Three things, all in v58's own
