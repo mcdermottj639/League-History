@@ -204,7 +204,7 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     tabs would drift the first time one is renamed, the same way a hand-kept
     jump-nav manifest would.
   - ⚠️ **The badge key inside it comes from `LH.key()`, not from prose here.**
-    It quotes "204 bracket games from 12 of 13 seasons" — counts that must
+    It quotes "209 bracket games from 13 of 13 seasons" — counts that must
     re-derive, so they stay in `history.js` where the data is. ⚠️ **v56 is the
     proof this rule was worth it**: five seasons of brackets landed and that
     sentence, the Playoff appearances caption and the record's own span all
@@ -1022,7 +1022,7 @@ untrustworthy. Every view carries a badge saying which it is.
 |---|---|
 | **Final placing** | The rank in every table — where you finished after the playoffs |
 | **Regular season** | Every W-L and points total. ESPN's standings are regular-season standings |
-| **⚑ Playoffs only** | 204 bracket games from **12 of 13 seasons** (all but 2025), plus 13 Cum Bowls |
+| **⚑ Playoffs only** | 209 bracket games from **all 13 seasons**, plus 13 Cum Bowls. ⚠️ 2025 is winner's-bracket only — no placement or consolation games |
 
 - ⚠️ **There is NO regular-season schedule anywhere in this data.** So nothing
   here is a career head-to-head, however much it looks like one. **If you add a
@@ -1375,6 +1375,47 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v57 — the last bracket, and a rank that reads like a person wrote it
+  (12 Sep 2026)** — the owner sent the 2025 Sleeper bracket.
+  - **13 of 13 seasons.** Five winner's-bracket games, and **his own
+    arithmetic now closes on the full career**: 10 playoff appearances, 4
+    titles, **14-6** — the six losses he predicted three exchanges ago, from
+    the data rather than from the rule.
+  - 🚨 **SLEEPER PRINTS TWO NUMBERS PER TEAM and one of them is a
+    PROJECTION.** Bold actual, grey projected, stacked. Reading the wrong one
+    would have produced a complete, plausible, entirely fictional bracket —
+    and no conservation law could tell, because a fiction balances just as
+    well as a fact. **The check is the final**: 124.04-107.28 is what
+    `SEASON[2025].final` has held by hand since v1, and the bold numbers match
+    it exactly.
+  - ⚠️ **The 2025 final is now in `PLAYOFF_GAMES`, so the `s2.final`
+    reconstruction stops firing for it.** `seen` is keyed on year + pair and
+    that dedupe is the only thing standing between one game and two; verified
+    by counting FINAL rows in `MEET` (one).
+  - ⚠️ **Winner's bracket only** — the placement and consolation games were
+    below the fold. Written down rather than left to be inferred from a
+    thinner head-to-head count later.
+  - 🚨 **AND THE NEW DATA BROKE A STORYLINE, WHICH IS THE POINT OF THAT
+    CHECK.** Riz's card came out "made the playoffs in 4 of **11** seasons"
+    over "The **11th**-best rate of the 12" — two different elevens, a season
+    count and a rank, colliding on one card. `checks.js` caught it (a numeral
+    ≥3 in heading and body) the moment the 2025 games shifted the rankings.
+    **Nobody wrote that sentence; the data moved underneath it**, which is
+    exactly the failure the detectors exist to survive and the check exists to
+    catch.
+    - **Fixed in the two rank HELPERS, not in the card that failed.** Every
+      claim reads a rank through `rk`/`bestish`, so the collision was
+      available to all of them — the v16 rule, fix the rule not the instance.
+      A rank in the bottom three is now said from the bottom: "the
+      second-worst rate of the 12", which is also simply how a person says it.
+  - **A new league record appeared on its own**: Hyman's 193.5 in the 2025
+    first round is the highest playoff score ever recorded, displacing
+    Christel's 183.3 — detected, not typed, with no edit to any card.
+  - Verified: 209 games, all 13 seasons, every conservation law green
+    including the per-manager `losses == brackets − titles`, and the playoff
+    card, storylines, mascots, Records order and both tab bars re-rendered at
+    390 and 320px.
 
 - **v56 — the five missing brackets, from the owner's own captures (12 Sep
   2026)** — the owner, on being told 6 of 13 seasons had no bracket games:
@@ -3393,12 +3434,14 @@ stale entry written in the present tense reads as current to anyone who greps.
   and a synthetic week 5), so what is untested is only the part this sandbox
   cannot reach: the Lab pulling live data off the Render backend.
 - **🚨 WHY 2013-17 AND 2025 HAVE NO BRACKET GAMES — answered, 12 Sep 2026.**
-  ⚠️ **MOSTLY CLOSED IN v56: 2013-17 ARE IN.** The owner opened the five
-  "Final Playoff Results" tabs named below and the archive now holds **204
-  games from 12 of 13 seasons**. Only **2025** is still missing, and only
-  because it is the Sleeper season — everything below about ESPN's two tabs
-  stands, and is why the gap existed at all. The instructions are kept because
-  the 2025 bracket is still to come and the shape is the same.
+  ⚠️ **CLOSED. v56 added 2013-17 and v57 added 2025** — the archive holds
+  **209 games across all 13 seasons**. Everything below about ESPN's two tabs
+  is kept because it is WHY the gap existed and how to spot the same shape
+  again, not because anything is outstanding. ⚠️ **One real remainder: 2025 is
+  winner's-bracket ONLY** — its placement and consolation games were below the
+  fold of the Sleeper capture, so that season has no `WC` or `C` rows and its
+  head-to-head counts are correspondingly thin. The five games it does have
+  are the ones the title record needs.
   The archive used to hold 119 bracket games from 7 of 13 seasons and this file
   stated that as a limit without a cause. The cause is now known, and it was
   **not** that the data did not exist:

@@ -353,6 +353,23 @@
      ⚠️ Names are the FULL names resolved against each season's standings —
      ESPN truncates them with "…" in the bracket view. */
   const PLAYOFF_GAMES = [
+    /* ── 2025, the Sleeper season (v57) ────────────────────────────────
+       From the owner's own Sleeper bracket. ⚠️ Sleeper shows TWO numbers per
+       team — the actual score in bold and its PROJECTION in grey under it.
+       These are the actual ones, and the check that says so is the final:
+       124.04-107.28 is what `SEASON[2025].final` has held by hand since v1.
+       ⚠️ WINNER'S BRACKET ONLY. The 3rd- and 5th-place games were below the
+       fold of the capture and the consolation ladder is not on that screen at
+       all, so 2025 has no `WC` or `C` games. That is why `MEET` is smaller
+       here than for an ESPN season — stated rather than papered over.
+       ⚠️ The 2025 FINAL now lives here, so the `s2.final` reconstruction
+       below no longer fires for it: `seen` is keyed on year + the pair, and
+       that dedupe is what stops one game being counted twice. */
+    { yr: 2025, br: "W", rd: "R1", a: "Morning_Woods", as: 132, b: "wolffj10", bs: 104 },
+    { yr: 2025, br: "W", rd: "R1", a: "Cheeky_Clapz", as: 193.48, b: "BonJiles", bs: 68.26 },
+    { yr: 2025, br: "W", rd: "R2", a: "JMcD6", as: 96.5, b: "Morning_Woods", bs: 96.2 },
+    { yr: 2025, br: "W", rd: "R2", a: "Gotch118", as: 100.4, b: "Cheeky_Clapz", bs: 108.68 },
+    { yr: 2025, br: "W", rd: "FINAL", a: "JMcD6", as: 124.04, b: "Cheeky_Clapz", bs: 107.28 },
     { yr: 2024, br: "W", rd: "R1", a: "Pepperoni TDs", as: 95.8, b: "Death Dont Hurts Very Long", bs: 98.3 },
     { yr: 2024, br: "W", rd: "R1", a: "Jared Goff Hits Women", as: 131.4, b: "Morning Woods", bs: 109.4 },
     { yr: 2024, br: "W", rd: "R2", a: "Death Dont Hurts Very Long", as: 133.9, b: "Thurgood Marshall", bs: 135.5 },
@@ -1579,8 +1596,23 @@
        **A card whose heading does not carry its finding is a card the reader
        skips.** So each claim writes its own heading, and the body is career
        context only — never a second copy of the number above it. */
-    const rk = (r) => (r === 1 ? 'the best in the league' : r === N ? 'the worst in the league' : `${ord(r)} of ${N}`);
-    const bestish = (r) => (r === 1 ? 'best' : r === N ? 'worst' : `${ord(r)}-best`);
+    /* 🚨 A RANK NEAR THE BOTTOM IS SAID FROM THE BOTTOM (v57). "The 11th-best
+       rate of the 12" is how a generator talks and "second-worst" is how a
+       person does — and the clumsy form is what produced a real fault: Riz's
+       card read "made the playoffs in 4 of 11 seasons" over "The 11th-best
+       rate of the 12", **two different elevens, a season count and a rank,
+       colliding on one card**. `checks.js` caught it (a numeral ≥3 in both
+       heading and body) the moment the 2025 bracket shifted the rankings.
+       ⚠️ Fixed in the two rank HELPERS, not in the card that failed — every
+       claim's heading and note reads a rank through these, so the same
+       collision was available to all of them. The v16 rule: fix the rule, not
+       the instance. It is the v17 fault in a new costume too — two numerals
+       that must not be read as one. */
+    const WORSTISH = { 0: 'worst', 1: 'second-worst', 2: 'third-worst' };
+    const bestish = (r) => (r === 1 ? 'best' : WORSTISH[N - r] !== undefined ? WORSTISH[N - r] : `${ord(r)}-best`);
+    const rk = (r) => (r === 1 ? 'the best in the league'
+      : WORSTISH[N - r] !== undefined ? `the ${WORSTISH[N - r]} in the league`
+      : `${ord(r)} of ${N}`);
     const CLAIMS = [
       { t: 'pct', val: (a) => a.pct, hi: true,
         head: (a, r) => `${nm(a.m)} ${vb(a.m, 'have', 'has')} the ${bestish(r)} win% in the league, ${(a.pct * 100).toFixed(1)}%.`,
@@ -1613,7 +1645,7 @@
         head: (a) => `${nm(a.m)} ${vb(a.m, 'have', 'has')} made the playoffs in ${a.po} of ${a.seasons} seasons.`,
         note: (a, r) => (r === 1 ? 'The most reliable rate in the archive.'
           : r === N ? 'The least reliable rate in the archive.'
-          : `The ${ord(r)}-best rate of the ${N}.`) },
+          : `The ${bestish(r)} rate of the ${N}.`) },
       { t: 'place', val: (a) => a.avgPlace, hi: false,
         head: (a, r) => `${nm(a.m)} ${vb(a.m, 'have', 'has')} the ${bestish(r)} average finish, ${one(a.avgPlace)}.`,
         note: (a) => (a.best && a.worst
