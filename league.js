@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v46';
+  const APP_VERSION = 'v47';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -235,7 +235,7 @@
      what the app previously said in the wrong place or not at all: what each
      tab is for, how to get around, and what the three provenance badges mean.
 
-     🚨 That badge key was a card at the top of Honours (v13 moved it), which
+     🚨 That badge key was a card at the top of Honors (v13 moved it), which
      meant a ⚑ badge on the Cum Bowl table sat four taps from its own
      explanation. A reference is needed wherever the thing it explains appears,
      so it belongs behind a control that is always on screen — not above the
@@ -706,7 +706,7 @@
        on a nag with no archive behind it. The hard rule is that picking is an
        invitation and never a gate, so: a reader who has picked lands on their
        own thirteen seasons (the v1 rule, which already lands `choose()` there),
-       and everybody else lands on Honours. */
+       and everybody else lands on Honors. */
     if (me) { LH.setMe(me); S.sub = 'you'; }
     /* First ever open with nobody picked → the picker IS the front door.
        After that it never asks again, even with no name chosen, because a

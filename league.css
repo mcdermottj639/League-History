@@ -36,7 +36,7 @@
    `:root[data-palette] .ai-sub { display: flex }` in styles.css is (0,2,1) and
    the UA's `[hidden] { display: none }` is (0,1,0), so the palette layer wins.
    The history sub-tabs stayed on screen over the Power Rankings with
-   "Honours" still lit — a nav highlighting a page you are not on, which is
+   "Honors" still lit — a nav highlighting a page you are not on, which is
    the exact thing hiding it was meant to prevent.
    ⚠️ `#lg-sub` (level 1) is also `.ai-sub` and is never hidden, so this rule
    only ever fires for `#lg-sub2`. Hide by property, add a `[hidden]` rule at
@@ -252,7 +252,7 @@
 
 /* ── the ? button and its sheet ───────────────────────────────────────────
    Always in the header, so the badge key it holds is reachable from the page
-   the badge is ON — it used to be a card at the top of Honours, four taps
+   the badge is ON — it used to be a card at the top of Honors, four taps
    from the ⚑ on the Cum Bowl table. */
 :root[data-palette] .lg-hd-r { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 :root[data-palette] .lg-help {

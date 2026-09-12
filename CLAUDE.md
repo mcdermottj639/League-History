@@ -278,7 +278,7 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     out 55px against row 1's 46px) and the ⚑ is bound to "record" with a
     non-breaking space, because a provenance flag alone on a line reads as a
     stray mark rather than a badge.
-  - `SUBS` — the five history sub-tabs, **in display order**: You · Honours ·
+  - `SUBS` — the five history sub-tabs, **in display order**: You · Honors ·
     Records · Cum Bowl · Seasons (v45 — "You" was fifth, then second from v6,
     and is first now; the owner's call each time). Reordering is that array
     alone; `VIEWS` is a map and `league.js` just walks `SUBS`, and so do the
@@ -440,7 +440,7 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   `el.hidden = true` paints nothing but a no-op. It hit `.lg-jump` (v9),
   was pre-empted for `.lg-sheet` (v13), and was found in `.ai-sub` in v21
   after shipping since v4 — the history sub-tabs stayed on screen over the
-  Power Rankings with "Honours" still lit. **Hide by property AND add a
+  Power Rankings with "Honors" still lit. **Hide by property AND add a
   `[hidden]` rule at your own specificity. Every time, in the same edit as
   the markup.** No assertion can see this; only a render can.
 - ⚠️ **Two render faults the v9 move exposed, both pre-existing and both
@@ -922,7 +922,7 @@ untrustworthy. Every view carries a badge saying which it is.
 ## 📌 Storylines — detected, never written
 
 The cards at the top of Records, on the You page and on every profile (v44 —
-they opened Honours from v13 until then) started life as
+they opened Honors from v13 until then) started life as
 paragraphs typed into a chat. **They are not typed in now, and that is the
 whole point:** a sentence like "Buley has finished 11th seven times" is wrong
 the moment a season lands. A detector looks for a SHAPE in the data and fills
@@ -1257,6 +1257,31 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v47 — the tab is spelled "Honors" (12 Sep 2026)** — the owner: *"Spell of
+  Honors too"*.
+  - **One string: the `SUBS` label.** Everything that prints that word derives
+    it from there — the sub-tab bar, the ? sheet's tab list, `checks.js` — so
+    the render was checked rather than the code trusted, and nothing else on
+    screen carried the spelling.
+  - ⚠️ **The KEY stays `hon`.** Renaming it would touch `VIEWS`, `HELP`,
+    `S.sub`'s default and every comment that names a view, to change a word a
+    reader sees. A label is what the reader reads; a key is plumbing, and
+    they are allowed to disagree.
+  - ⚠️ **Code comments were updated, the CHANGELOG deliberately was not.**
+    Comments are current-state documentation and a grep for the on-screen label
+    should find the code that renders it, so the 14 in `history.js`,
+    `league.js`, `league.css` and `index.html` now read "Honors". The entries
+    below are a record of decisions and are not rewritten — **23 of them say
+    "Honours" and it is the same tab.** Same for the current-state sections
+    above, which were updated, which is the split this file's standing rule
+    asks for.
+  - Verified at 320 and 390px, as a reader and as a stranger: the bar reads
+    **You · Honors · Records · Cum Bowl · Seasons**, the ? sheet lists the same
+    five with no edit, the lit state follows the tab, every tab is 87×38px with
+    nothing clipped, the v30 back-out from a profile via the lit tab still
+    restores the bar with Honors lit, no page errors, checks.js green. No
+    "Honours" left anywhere in the code.
 
 - **v46 — the trophy case leads Honours (12 Sep 2026)** — the owner: *"Make
   trophy case the top of honours and champions 2nd"*.

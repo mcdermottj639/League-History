@@ -696,7 +696,7 @@
   const PO_YRS = new Set(PLAYOFF_GAMES.map((g) => g.yr)).size;
   const PO_NOTE = `⚠️ <b>Playoff games only.</b> The archive has final standings and playoff brackets — <b>no regular-season schedule</b> — so this covers the ${PLAYOFF_GAMES.length} bracket games across ${PO_YRS} seasons, plus the ${CUMBOWL.length} Cum Bowls. It is not a career record.`;
 
-  /* What the three badges mean. It was a card at the top of Honours; from v13
+  /* What the three badges mean. It was a card at the top of Honors; from v13
      it lives in the ? sheet in the header, where it is reachable from EVERY
      page instead of only the one the reader happened to open on — a badge on
      the Cum Bowl table was four taps from its own key.
@@ -736,7 +736,7 @@
   /* Every name is a door to that manager's profile. */
   const tap = (m, inner) => (m ? `<button type="button" class="fh-tap" data-mgr="${m}">${inner}</button>` : inner);
 
-  /* ══ 🏆 HONOURS ═══════════════════════════════════════════════════════ */
+  /* ══ 🏆 HONORS ═══════════════════════════════════════════════════════ */
   function heroHTML() {
     const names = new Set(); SEASON.forEach((s) => s.rows.forEach((r) => names.add(r.t)));
     const champMgrs = new Set(SEASON.map((s) => s.champ && s.champ.mgr).filter(Boolean));
@@ -1145,7 +1145,7 @@
            them what it said (v14, owner's call). The shape here is a scorer
            who cannot convert, so the heading says that and the numbers stay
            in the body. */
-        /* `own` (v18, owner's call): the scoring card is Hurd's Honours card
+        /* `own` (v18, owner's call): the scoring card is Hurd's Honors card
            now — *"Use this one for Hurd's honors page."* Both cards make the
            same case about the same person (scores like a champion, wins
            nothing) and the roll-call gives everyone exactly one, so this is
@@ -1195,9 +1195,9 @@
          this feature turning back into a hand-written page. A tie has to read
          differently: "is the GOAT discussion" is a claim about one person, so
          when it is shared the sentence says shared. */
-      /* `own` (v16, owner's call): this one is a career card, not a Honours
+      /* `own` (v16, owner's call): this one is a career card, not a Honors
          card — and the reason is the page it was sitting on. The Storylines
-         strip opens Honours, and directly below it are the Champions card and
+         strip opens Honors, and directly below it are the Champions card and
          the trophy case, which ARE the title count, ranked. So "4 titles" as a
          storyline told a reader something the next two screens tell them
          better, and it spent the title-holder's one slot doing it. It stays on
@@ -1776,26 +1776,32 @@
   }
   /* ── The public surface. app.js knows these five keys and nothing else. ── */
   /* ⚠️ DISPLAY ORDER, and it is this array alone (v45, owner's call: You
-     first, Honours second). `VIEWS` is a map and `league.js` just walks this,
+     first, Honors second). `VIEWS` is a map and `league.js` just walks this,
      so a reorder needs no other edit — the sub-tab bar, the ? sheet's tab list
      and `checks.js` all read it. ⚠️ What a reorder does NOT decide is which
      tab the app LANDS on: `league.js` lands a reader who has picked on `you`
      and everybody else on `hon`, because the You page with nobody picked is an
      invitation card and a stranger must get a whole app. */
-  const SUBS = [['you', 'You'], ['hon', 'Honours'], ['rec', 'Records'],
+  /* ⚠️ The LABEL is "Honors" (v47, owner's call) and the KEY stays `hon`.
+     Renaming the key would have been a second edit in `VIEWS`, in `HELP`, in
+     `S.sub`'s default and in every comment that names a view — for a word on
+     screen. The label is the only thing a reader sees, and `checks.js`, the
+     sub-tab bar and the ? sheet's tab list all read it from here.
+     ⚠️ Older comments and changelog entries say "Honors": same tab. */
+  const SUBS = [['you', 'You'], ['hon', 'Honors'], ['rec', 'Records'],
                 ['cb', 'Cum Bowl'], ['sea', 'Seasons']];
   const VIEWS = {
     /* 🚨 Storylines opens RECORDS (v44, owner's call), back where it lived
-       before v13. v13 moved it to Honours on the reasoning that it was the
+       before v13. v13 moved it to Honors on the reasoning that it was the
        best thing the archive produces and was buried third-of-five — that
        argument was about REACH, and reach is no longer the problem: the ?
        sheet names it and the jump nav on Records chips straight to it. What
-       Honours lost by holding it is that the page is now the champions, the
+       Honors lost by holding it is that the page is now the champions, the
        trophy case and who is waiting — three views of the same trophy —
        while Records is the page of derived findings, which is what a
        storyline IS. ⚠️ It is ONE TERM, moved: nothing else about the feature
        changes, and `LH.SUBS` order is untouched. */
-    /* ⚠️ Card order on Honours is this line (v46, owner's call: the trophy
+    /* ⚠️ Card order on Honors is this line (v46, owner's call: the trophy
        case first, Champions second). Neither card's copy refers to the other's
        position and the jump nav reads the rendered DOM, so a swap is this one
        term — but `heroHTML()` stays first: it is the page's standfirst and
