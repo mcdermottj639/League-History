@@ -496,3 +496,26 @@
 /* The freshness line: which of the three sources you are looking at (v42). */
 :root[data-palette] .ls-fresh {
   margin: 8px 0 0; font-size: 11.5px; line-height: 1.4; color: var(--mu); }
+
+/* 🚨 A DOUBLE TAP ON A TAB ZOOMED THE PAGE IN (v52, owner: "if I double click
+   the you tab it zooms in"). iOS Safari reads two quick taps in the same spot
+   as double-tap-to-zoom — and the tab bar is the one control in this app that
+   genuinely gets tapped in a rhythm, because switching views and switching
+   back is two taps on two buttons 90px apart, and changing your mind is two
+   taps on ONE. There is then no way back out except pinching, on a page whose
+   whole job is to be handed to someone who will not debug it.
+   ⚠️ `manipulation` is the accessible fix and `user-scalable=no` is NOT:
+   `manipulation` means "everything except double-tap zoom", so panning and
+   PINCH ZOOM both survive. Killing the viewport's scalability would fix the
+   symptom by taking zoom away from anyone who needs it to read.
+   ⚠️ Set on the shell AND on the controls, deliberately. A UA resolves
+   `touch-action` up the ancestor chain only as far as the nearest SCROLLING
+   ancestor, so the shell rule alone would stop working the first time a card
+   or a sheet becomes scrollable — which `.lg-sheet` already is.
+   ⚠️ The Lab has had this since v1 (`power.css`, the same comment); the
+   members' app never got it. Fixing only the page someone pointed at while
+   the identical fault sits one file over is the v3 lesson, so this was
+   checked in both rather than assumed. */
+.lg-body { touch-action: manipulation; }
+.lg-body button, .lg-body a, .lg-body summary, .lg-body label,
+.lg-body input, .lg-body select, .lg-body textarea { touch-action: manipulation; }

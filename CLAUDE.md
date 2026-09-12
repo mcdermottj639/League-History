@@ -231,6 +231,16 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       getting lost in a group chat is a real way this app goes unread, and any
       of the twelve re-sending it is a feature.
 - `league.css` — the `.lg-` layer. Loaded LAST, so it wins ties.
+  - ⚠️ **`touch-action: manipulation` on the shell AND on every control**
+    (v52). Two quick taps on a tab were reading as iOS double-tap-to-zoom, and
+    the tab bar is the one thing here that gets tapped in a rhythm. It is set
+    twice on purpose: a UA resolves `touch-action` up the ancestor chain only
+    as far as the nearest SCROLLING ancestor, so the shell rule alone stops
+    working the moment a card or the sheet scrolls. 🚨 **Never
+    `user-scalable=no`** — `manipulation` keeps pinch zoom, which somebody
+    needs to read this; the viewport meta stays scalable and `checks` for it
+    are in the render harness, not the suite (nothing assertable can see a
+    gesture).
 - `history.js` — **the archive** (~1,130 lines): the curated 13-season data,
   a single-pass stats engine, and every view. Exposes ONE global,
   `window.LeagueHistory`:
@@ -1340,6 +1350,40 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v52 — a double tap on a tab zoomed the page in (12 Sep 2026)** — the
+  owner: *"if I double click the you tab it zooms in fix that"*.
+  - **iOS Safari reads two quick taps in one spot as double-tap-to-zoom**, and
+    the tab bar is the one control in this app that genuinely gets tapped in a
+    rhythm — switching view and back is two taps 90px apart, and changing your
+    mind is two taps on ONE button. There is no way back out except pinching,
+    on a page whose whole job is to be handed to eleven people who will not
+    debug it.
+  - 🚨 **`user-scalable=no` is NOT the fix, and it is the one that suggests
+    itself.** It removes the symptom by removing zoom from anyone who needs it
+    to read. `touch-action: manipulation` means "everything except double-tap
+    zoom" — panning and pinch both survive, and the render check asserts the
+    viewport meta is still scalable so a later session cannot quietly trade
+    one for the other.
+  - ⚠️ **Set on the shell AND on the controls.** A UA resolves `touch-action`
+    up the ancestor chain only as far as the nearest SCROLLING ancestor, so
+    the shell rule alone would stop working the first time something between
+    it and a button scrolls — and `.lg-sheet` already does.
+  - 🚨 **THE LAB HAS HAD THIS SINCE v1 AND THE MEMBERS' APP NEVER GOT IT.**
+    `power.css` carries the same rule with the same comment. The app that was
+    missing it is the one that goes to eleven other people. Fixing only the
+    page someone points at while the identical fault sits one file over is the
+    v3 lesson — so both were checked rather than assumed, and the Lab's is
+    confirmed live.
+  - ⚠️ **What this sandbox CANNOT verify: the gesture.** Double-tap zoom is a
+    Safari behaviour and headless Chromium does not reproduce it. What is
+    verified is that every control on every screen computes
+    `touch-action: manipulation` — the picker, the ? sheet, the tab bars, the
+    jump chips, the name taps, storyline cards, the profile back button, and
+    a Lab button — including the screens built after boot, since the views are
+    re-rendered wholesale. **The gesture itself is the owner's phone to
+    confirm**, the same division this repo already draws around the Lab's live
+    data path.
 
 - **v51 — the owner did the arithmetic and the row was silent (12 Sep 2026)**
   — the owner, on his own row: *"Then move luck index and rivalries to bottom
