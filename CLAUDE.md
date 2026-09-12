@@ -351,8 +351,15 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       symmetric total never could. Both are still written against the
       *population*, so letting the placement ladder back in overshoots.
   - 🎯 **`seedHTML` — SEEDS & UPSETS IS THE ONE CARD THAT DOES NOT COVER ALL
-    13 SEASONS, and v58 is where it finally says so.** ESPN published a `seed`
-    for 2018-2025 only; **2013-2017 have no seed field at all**. So the card
+    13 SEASONS, and v58 is where it finally says so.** ⚠️ **v60 CORRECTION,
+    the owner's: "Seeds are right there u said they weren't before."** He is
+    right. The archive has a `seed` for 2018-2025 only, but **ESPN prints the
+    seeding on the Final Playoff Results page for every season** — it is on
+    the 2017 capture he already sent, `#1`-`#6` beside each team. The seeds
+    were never missing from ESPN; they were never transcribed. **That is the
+    v56 lesson, one layer down, in the file that states it in capitals.**
+    What follows is still true of the DATA, and the case against computing
+    them is now stronger, not weaker. So the card
     counts 40 championship-bracket games from 8 seasons — while `PO_NOTE`,
     printed directly above it, claimed 209 games across 13. **Two denominators
     adjacent and unlabelled is the v3 fault**, and v56/v57 created it: before

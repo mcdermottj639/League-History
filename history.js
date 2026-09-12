@@ -699,10 +699,16 @@
     const bySeed = [...rows].sort((a, b) =>
       (a.seed && b.seed ? a.seed - b.seed : 0) || b.pct - a.pct || b.pf - a.pf);
     /* 🚨 `calcSeed` IS A FALLBACK FOR ORDERING ROWS AND IS **NOT** A SEED.
-       NOTHING READS IT AND NOTHING SHOULD (v58). Where ESPN published a seed
-       it simply echoes it; where it did not — 2013-2017, which have no `seed`
-       field at all — it guesses from win% then points, and **that guess is
-       measurably wrong**. Checked against the only independent evidence the
+       NOTHING READS IT AND NOTHING SHOULD (v58). Where the archive holds a
+       seed it simply echoes it; where it does not — 2013-2017 — it guesses
+       from win% then points, and **that guess is measurably wrong**.
+       ⚠️ **v60 CORRECTION: this block used to say ESPN "gave no seed" for
+       those years. FALSE — the owner sent the 2017 bracket and the seeds are
+       printed right on it (#1..#6 beside each team).** They were never
+       missing from ESPN; they were never transcribed, which is the v56 lesson
+       exactly, repeated one layer down and in the same file that states it.
+       The reason not to compute them is unchanged and is now better
+       evidenced, below. Checked against the only independent evidence the
        archive has, the bracket's own shape (byes go to seeds 1 and 2, round 1
        is 3v6 and 4v5): it reproduces all 8 seasons that carry a real seed and
        2014/2015/2017, and it FAILS 2013 (the bye went to a 9-4 team with
@@ -1236,7 +1242,7 @@
         <span class="fh-up-y">${u.yr}</span>
         <div class="fh-up-t"><b>#${u.wS} ${esc(nm(mgrOf(u.w)) || u.w)}</b> beat <b>#${u.lS} ${esc(nm(mgrOf(u.l)) || u.l)}</b><i>${u.rd === 'FINAL' ? '🏆 championship' : u.rd === 'R2' ? 'semi-final' : 'round 1'} · ${u.sc}</i></div>
       </div>`).join('')}
-      <p class="ffp-cap">🚨 <b>This is the one card that does not cover every season.</b> ESPN published a seeding for ${seeded.length} of the ${SEASON.length} (${sdYrs[0]}-${sdYrs[sdYrs.length - 1]}), so this counts <b>${total}</b> championship-bracket games — not the ${PLAYOFF_GAMES.length} the ⚑ badge covers, and not the ${SEASON.length - seeded.length} earlier seasons. Their brackets are on file; their seed order is not, and the archive will not guess one.<br><br>The better seed wins just <b>${better} of those ${total}</b> — a better seed is barely better than a coin toss here.${sixLine}</p>
+      <p class="ffp-cap">🚨 <b>This is the one card that does not cover every season — yet.</b> The archive holds a seeding for ${seeded.length} of the ${SEASON.length} (${sdYrs[0]}-${sdYrs[sdYrs.length - 1]}), so this counts <b>${total}</b> championship-bracket games rather than the ${PLAYOFF_GAMES.length} the ⚑ badge covers. ⚠️ <b>The other ${SEASON.length - seeded.length} seasons are seeded on ESPN's own bracket page</b> — those numbers just have not been copied across yet. Until they are, this card leaves them out instead of guessing: in one of them an <b>8-5 team was seeded second, above a 10-3 team</b>, so no arithmetic on records gets them back.<br><br>The better seed wins just <b>${better} of those ${total}</b> — a better seed is barely better than a coin toss here.${sixLine}</p>
     </div>`;
   }
 
