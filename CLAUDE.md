@@ -807,7 +807,11 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 - `rankings/` — published weeks. `index.json` lists them; one JSON file each.
 - `logos/` — the league's own twelve crests, keyed by manager.
 - `sw.js` — network-first service worker. Bump `CACHE` on every release.
-- `checks.js` — **run `node checks.js` after ANY data or detector change.** It
+- `checks.js` — **run `node checks.js` after ANY data or detector change.**
+  ⚠️ **A summary line reports ITS OWN block — use `block()`** (v48). Three of
+  them read the running `bad` counter, so any failure above turned them ❌
+  about a subject that was fine. Only the total at the bottom reads the global.
+  It
   also holds the **gate laws** (v21): `index.html` must not name `power.html`,
   `owner.js` must hold a 64-hex hash rather than a phrase, and the phrase must
   not be one of sixteen obvious guesses. None of that is visible in a render,
@@ -1327,6 +1331,17 @@ stale entry written in the present tense reads as current to anyone who greps.
     character at the right size in the right place.
   - Rendered at 390 and 320px for all twelve plus the stranger: one line each,
     no clipping, no horizontal overflow, no page errors, `checks.js` green.
+  - 🚨 **AND THE FAULT INJECTION EXPOSED A LIAR IN THE SUITE ITSELF.** Dropping
+    one manager from the mascot map turned **`❌ own-page stories`** red too —
+    a subject the injected fault does not touch. Three summary lines printed
+    `${bad ? '❌' : '✅'}`, the RUNNING TOTAL, so any failure anywhere above
+    them reported itself again under two or three unrelated headings. **The one
+    moment a suite is read most carefully is the moment it was most
+    misleading**, and it would have sent a session debugging one real failure
+    straight into three innocent blocks. `block()` snapshots the counter and
+    answers for what happened since; the total at the bottom stays global,
+    because the total is what it reports. Verified both ways — an unrelated
+    fault leaves the other three ✅, and each still goes ❌ for its own.
 
 - **v47 — the tab is spelled "Honors" (12 Sep 2026)** — the owner: *"Spell of
   Honors too"*.
