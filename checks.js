@@ -11,14 +11,15 @@ const exRows = rows.filter((r) => !r.mgr);          // the two untracked manager
 const exYrs = new Set(exRows.map((r) => r.yr + '\0' + r.t));
 const exCB = CUMBOWL.filter((c) => [c.s11, c.s12].some((t) => exYrs.has(c.yr + '\0' + t))).length;
 const exCBloss = CUMBOWL.filter((c) => exYrs.has(c.yr + '\0' + (c.p12 > c.p11 ? c.s11 : c.s12))).length;
-/* ⚠️ No bracket W-L is kept on a manager any more (v19) — final fours are the
-   whole playoff résumé — so the law that totalled bracket slots has nothing
-   left to conserve, and the per-game exclusion it needed goes with it. The
-   untracked pair are still excluded from the final-four law below, which is
-   now the only one derived from placements. */
+/* ⚠️ A bracket W-L IS kept on a manager again (v50/v52 — `bw`/`bl`/`bA`),
+   which is why the directional title-bracket laws below exist. This comment
+   said the opposite until v58: it was written when v19 deleted the record and
+   was never reconciled when the record came back, so the file's own rationale
+   contradicted the laws three lines under it. The untracked pair are excluded
+   here exactly as `exRows` excludes them everywhere else. */
 const BR_ON_FILE = new Set(PLAYOFF_GAMES.filter((g) => g.br === 'W').map((g) => g.yr));
 /* 🚨 THE UNTRACKED PAIR REACH THE FINAL, so the title-bracket laws need the
-   same exclusion `exRows` makes everywhere else — v54 added 2013-17 and
+   same exclusion `exRows` makes everywhere else — v56 added 2013-17 and
    Ebzery is the 2013 AND 2014 runner-up, six winner's-bracket slots that
    belong to nobody with a career. ⚠️ It also retires `W == L`: over the
    TRACKED subset that symmetry is legitimately false (Ebzery went 4-2 across
@@ -80,10 +81,15 @@ let bad = 0;
 const block = () => { const at = bad; return () => (bad > at ? '❌' : '✅'); };
 T.forEach(([k, got, want]) => { const ok = got === want; if (!ok) bad++;
   console.log(`  ${ok ? '✅' : '❌'} ${k.padEnd(22)} ${String(got).padStart(4)} ${ok ? '==' : '!='} ${want}`); });
-/* ⚠️ PER MANAGER, NOT AS A TOTAL. Summed, it is 35 == 35 and stays green
-   while two managers' games are swapped — the v14 lesson, that a law over a
-   total cannot see a definition drifting underneath it. Per person it is the
-   one check that can catch a bracket game assigned to the wrong manager. */
+/* ⚠️ PER MANAGER, NOT AS A TOTAL. A total stays green while two managers'
+   games are swapped — the v14 lesson, that a law over a total cannot see a
+   definition drifting underneath it. Per person it is the one check that can
+   catch a bracket game assigned to the wrong manager. ⚠️ Verified in v58 by
+   flipping one 2016 championship-bracket result: the two directional totals
+   above stay ✅ and this names the two managers affected.
+   ⚠️ Since v57 every season has a bracket, so `bA` is now each manager's
+   playoff-appearance count and this law is the owner's own arithmetic in
+   full — losses == appearances − titles, for all twelve. */
 ALL.forEach((x) => {
   const won = x.yrs.filter((r) => r.place === 1 && BR_ON_FILE.has(r.yr)).length;
   if (x.bl !== x.bA - won) {
@@ -297,6 +303,37 @@ const cardMark = block();
    card into a flat roll-call would have fixed one thing by breaking another. */
 if (card.length > 1 && card[0].w < card[card.length - 1].w) { console.log('  ❌ Storylines card is not ranked by weight'); bad++; }
 console.log(`  ${cardMark()} storylines: ${window.LeagueHistory._stories().length} found, ${card.length} on the card, covering ${onCard.size} of ${window.LeagueHistory.roster().length} managers`);
+
+/* ══ 🚨 A SHARED RANK MUST SAY IT IS SHARED (v58) ═══════════════════════
+   The `signature` backstop ranked managers with `findIndex` on a sorted
+   array — pure ARRAY POSITION — so four managers on 5 final fours were
+   handed 2nd, 3rd, 4th and 5th, and the card printed "2nd of 12" as sole
+   possession. The app's oldest storyline rule is that **a superlative which
+   fires twice is just wrong** (v2); every real detector honours it through
+   `leaders()`/`alsoTxt()` and these ordinals never did.
+   ⚠️ THE NEW BRACKET DATA IS WHAT MADE IT VISIBLE: `f4` moved for eight
+   managers in v56/v57 and created three fresh multi-way ties, exactly at the
+   ranks this backstop fills.
+   ⚠️ It reads the RENDERED story, not the rank helper — a law that agrees
+   with the helper passes happily over a card that has stopped using it (v7).
+   Verified by reverting `rankOf` to `findIndex`: this names Gotch and CC. */
+const RANK_STAT = { pct: (a) => a.pct, f4: (a) => a.f4, po: (a) => a.poRate, place: (a) => a.avgPlace };
+const RANKY = /\b(\d+(?:st|nd|rd|th) of \d+|[a-z]+-best|best in the league|worst in the league)\b/;
+const tieMark = block();
+window.LeagueHistory.roster().forEach((r) => {
+  window.LeagueHistory.setMe(null);
+  window.LeagueHistory._stories().filter((st) => st.m === r.m).forEach((st) => {
+    const val = RANK_STAT[st.t]; if (!val) return;
+    const me = ALL.find((x) => x.m === r.m);
+    const shared = ALL.filter((x) => val(x) === val(me)).length > 1;
+    const txt = `${st.head} ${st.body}`;
+    if (shared && RANKY.test(txt) && !/joint/.test(txt)) {
+      console.log(`  ❌ ${r.m}: claims a sole rank on "${st.t}" but is tied — ${st.head}`); bad++;
+    }
+  });
+});
+window.LeagueHistory.setMe(null);
+console.log(`  ${tieMark()} shared ranks: every tied rank on the rendered cards says "joint"`);
 
 /* ══ 🔒 THE GATE ═══════════════════════════════════════════════════════════
    The link goes to eleven other people. Two things have to stay true about

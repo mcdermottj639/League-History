@@ -311,14 +311,17 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       the C consolation ladder, **NOT** the Cum Bowl. That is the definition
       v14 settled on. ⚠️ McD read **10-3** on the 7 seasons then on file —
       the exact figure v14 named, which is how the definition was confirmed —
-      and reads **12-6** now that 2013-17 are in.
-    - 🚨 **60 games across 12 of 13 seasons** (35 across 7 until v56),
-      **printed beside a rate covering all 13 — that adjacency IS the v3 fault
-      if it is left unlabelled.** So it prints in exactly ONE place, carries
-      the ⚑, and the caption states both spans and says the two will never
-      square with the head-to-head counts. ⚠️ **A one-season gap is easier to
-      forget than a six-season one, not safer**: 2025 is still missing and the
-      labelling matters exactly as much.
+      and reads **14-6** now that every season is in.
+    - 🚨 **65 games across ALL 13 seasons** (35 across 7 until v56, 60 across
+      12 until v57). 🚨 **THE v3 ADJACENCY RISK THIS RULE WAS WRITTEN AGAINST
+      IS GONE, and v58 says so on the card rather than leaving the old warning
+      up.** With a bracket on file for every season, **`bA === po` for all
+      twelve managers** — verified — so the record and the appearance rate
+      beside it now genuinely share a denominator instead of merely looking as
+      though they might. The caption states that the arithmetic closes rather
+      than warning about a mismatch that no longer exists. It still prints in
+      exactly ONE place and still carries the ⚑, because the *population*
+      (championship bracket only) is still narrower than the meetings pool.
     - ⚠️ **Deliberately NOT reconstructed from `s2.final` the way `MEET` is.**
       That would add a final from seasons with no bracket, so the record would
       cover more seasons in its last round than in its first.
@@ -332,17 +335,62 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       by the owner in ten seconds.** Every row names its own bracket count now
       (`10-3 from 5 brackets`), so the arithmetic closes on the page.
     - `checks.js` asserts **losses == brackets − titles, PER MANAGER** (v51) —
-      the owner's own arithmetic as a law. ⚠️ **Per manager, not summed**: as a
-      total it is 35 == 35 and stays green while two managers' games are
-      swapped. Verified by swapping W and L — both totals stay ✅ and this
-      names four managers. It is the only law that can catch a bracket game
-      attributed to the wrong person.
-    - `checks.js` asserts **70 title-bracket slots** (35 W games × 2) — the
-      law v19 retired, back because there is a displayed value to conserve
-      again. ⚠️ It is written against the *population*: reverted to let the
-      placement ladder in, it reports 112 != 70, while **`W == L` stays
-      green** — which is exactly why a law over the wrong total could not see
-      the v14 drift.
+      the owner's own arithmetic as a law, and **since v57 it is his whole
+      career**: every season has a bracket, so `bA` IS the appearance count.
+      ⚠️ **Per manager, not summed**: a total stays green while two managers'
+      games are swapped. **Re-verified in v58 by flipping one 2016
+      championship-bracket result** — both directional totals stay ✅ and only
+      this law speaks, naming the two managers affected. It is the only law
+      that can catch a bracket game attributed to the wrong person.
+    - `checks.js` asserts **title-bracket wins (61) and losses (63)
+      SEPARATELY**. ⚠️ **SUPERSEDED the single "70 slots" law in v56**: the
+      untracked Ebzery reached the 2013 AND 2014 finals, so over the tracked
+      subset `W == L` is legitimately false and a symmetric total was a law
+      that merely happened to hold. Two directional totals are strictly
+      stronger — they catch an outcome flipped in one direction, which a
+      symmetric total never could. Both are still written against the
+      *population*, so letting the placement ladder back in overshoots.
+  - 🎯 **`seedHTML` — SEEDS & UPSETS IS THE ONE CARD THAT DOES NOT COVER ALL
+    13 SEASONS, and v58 is where it finally says so.** ESPN published a `seed`
+    for 2018-2025 only; **2013-2017 have no seed field at all**. So the card
+    counts 40 championship-bracket games from 8 seasons — while `PO_NOTE`,
+    printed directly above it, claimed 209 games across 13. **Two denominators
+    adjacent and unlabelled is the v3 fault**, and v56/v57 created it: before
+    the new brackets landed the two spans were near enough to hide it.
+    - 🚨 **`calcSeed` (history.js) IS NOT A SEED AND MUST NEVER BE WIRED UP.**
+      It is a row-ordering fallback, nothing reads it, and where ESPN gave no
+      seed it guesses from win% then points — **a guess that is measurably
+      wrong**. Checked against the bracket's own shape (byes go to 1 and 2,
+      R1 is 3v6 and 4v5) it reproduces all 8 real-seed seasons plus
+      2014/2015/2017, and **FAILS 2013** (the bye went to a 9-4 team with
+      fewer points than the 9-4 team it ranks above) **and 2016** (the bye
+      went to an 8-5 team over a 10-3 team). ESPN broke those ties on
+      something this archive does not hold. Using it to "cover all 13 seasons"
+      would invent seeding and fabricate upsets. The warning is written at its
+      definition, because the temptation is obvious and the failure is silent.
+    - ⚠️ The `#6`-seed claim in that caption is **derived** now, not typed. It
+      read "Two #6 seeds have won the whole thing" as prose — true by luck,
+      and it would have gone on saying "two" through any new seeded season.
+  - 🔥 **`januaryHTML` — WHO SHOWS UP IN JANUARY (v58).** Every manager's
+    regular-season ppg against their own playoff ppg, over the same seasons.
+    - 🚨 **It reads `ST.era`, the SAME object the storyline detectors read,
+      and that is the whole of why it is safe.** `januaryGap()` has computed
+      this for every manager since v2 and only ever printed the biggest faller
+      and the biggest riser. Computing it again here — even correctly — would
+      be the v14 fault exactly: one concept, two numbers, each right, and the
+      page lying because nothing says which is which.
+    - ⚠️ **Why it earns a card now:** the ±5/±4 gate was written when brackets
+      existed for 7 seasons. Over 13 the spread widened and **ten of twelve
+      managers now sit more than two points from their regular-season
+      scoring** while the card still named two. The v7 coverage fault in a new
+      costume, landing again on the managers the extreme-hunting detectors
+      have least to say about.
+    - ⚠️ **No denominator trap, which is rare here:** both numbers are the same
+      manager over the same seasons, so scoring inflation moves the pair
+      together and cancels. Only the cross-manager ranking spans eras, so
+      **every row names its own game count** (the v51 rule).
+    - ⚠️ It reuses `.fh-lx` wholesale — no new CSS — so it wraps exactly as the
+      luck index does (checked at 320px: both go to two lines, identically).
   - 🚨 **NO OTHER BRACKET W-L EXISTS (v19, owner's call:
     *"Title brackets have to be changed to final 4s everywhere"*).** A
     manager's playoff résumé is **final fours**, then finals, then titles.
@@ -398,8 +446,11 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   - `view(key)` — `hon` · `you` · `rec` · `cb` · `sea`. **Storylines opens
     `rec`** (v44, owner's call), back where it sat before v13.
     - ⚠️ **The order WITHIN `rec` is the owner's call too** (v51): Storylines ·
-      the record book · Playoff appearances · the champion's curse · Seeds &
-      upsets · **the luck index · Rivalries last**. It is one expression and
+      the record book · Playoff appearances · Seeds & upsets ·
+      🔥 Who shows up in January (v58) · **the luck index · Rivalries last**.
+      ⚠️ The champion's curse left for Honors in v50. The new card went in
+      ABOVE the luck index precisely to keep *"luck index and rivalries to
+      bottom of records"* (v53, his words) true. It is one expression and
       nothing else reads it — the jump nav is built from the rendered DOM, so
       the chips re-order with no second edit (verified on the render, as v44
       and v13 did before it).
@@ -1005,8 +1056,10 @@ correction, zero unresolved conflicts**.
   who was on it. `mgrRaw` knows them; only `mgrOf` deliberately does not, and
   every stat goes through `mgrOf`.
 - **Conservation laws** are the guard against double-counting: 150 season
-  finishes · 24 Cum Bowl appearances · 11 losses · 70 title-bracket slots ·
-  50 final fours · 13 titles · 76 playoff berths · h2h games == meetings.
+  finishes · 24 Cum Bowl appearances · 11 losses · 61 title-bracket wins and
+  63 losses (counted separately since v56 — see above) · 50 final fours ·
+  13 titles · 76 playoff berths · h2h games == meetings · **losses ==
+  brackets − titles per manager** · **every tied rank says "joint"** (v58).
   ⚠️ The bracket law counted **every** playoff game until v14 and was green
   the whole time `bw` meant two different things in two different views — a
   law over a total cannot see a definition drift underneath it. Re-run them after ANY
@@ -1143,6 +1196,20 @@ something computed is wrong the first time somebody changes it.
   returned every manager with a 4+ repeated finish, so two of them claimed the
   record on one screen. Use `leaders()` and `alsoTxt()`, which say "tied with"
   rather than pretending.
+  - 🚨 **AND THAT RULE NOW COVERS ORDINAL RANKS TOO (v58), WHICH IT NEVER DID.**
+    `signature`'s `rankOf` was `findIndex` on a sorted array — pure ARRAY
+    POSITION — so four managers on 5 final fours were handed 2nd, 3rd, 4th and
+    5th in `ALL` order and the card printed **"2nd of 12"** as sole
+    possession. The same value produced a different sentence depending on who
+    was reading. Rank is `1 + how many are strictly better` now, and `tiedOn`
+    makes the wording say **"joint"**.
+    ⚠️ **The new bracket data is what exposed it**: `f4` moved for eight
+    managers in v56/v57 and created three fresh multi-way ties, exactly at the
+    ranks this backstop fills. It was latent and wrong before; it became
+    visible and wrong.
+    ⚠️ `checks.js` asserts it **off the RENDERED story, never off the rank
+    helper** (the v7 rule) — verified by removing tie-awareness, which names
+    CC, Gotch and Zach.
 - **Facts are deduped across cards** — the zero-podium card folds in whatever
   records that manager holds, which had the Cum Bowl record printed twice on
   one screen as two separate findings.
@@ -1376,6 +1443,136 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
 
+- **v58 — the sweep after the data landed (12 Sep 2026)** — the owner, going
+  to bed: *"We just got a ton of new playoff data that had to shift and change
+  the info all of the app that we missed… make sure we are accurate
+  entertaining and informative with this wealth of information."*
+  - 🚨 **THE DATA WAS RIGHT AND THE SENTENCES AROUND IT HAD GONE WRONG.**
+    v56/v57 took the archive from 119 bracket games over 7 seasons to 209 over
+    13, and every count in the app re-derived correctly — that is the
+    derivation rule paying out exactly as v13 promised. What did **not**
+    re-derive was the PROSE built to explain a gap that no longer exists.
+    Three captions collapsed into nonsense the moment `PO_YRS` reached
+    `SEASON.length`:
+    - Honors rendered *"it covers all 13 seasons rather than the 13 with a
+      bracket on file"* — a contrast between 13 and 13.
+    - The You tab and **every profile** rendered *"knowable for every season,
+      not just the 13 with a bracket on file"*.
+    - The record book rendered *"209 games across 13 of 13 seasons, because
+      only those seasons have a bracket on file"*.
+    **A sentence whose job is to excuse a gap becomes gibberish when the gap
+    closes, and nothing fails when it does.** Numbers re-derive; the argument
+    around them does not.
+  - 🚨 **AND ONE OF THEM WAS FLATLY FALSE, TWO TABS FROM ITS OWN
+    CONTRADICTION.** That same Honors caption said **"The app keeps no bracket
+    win-loss record"** — true when v19 wrote it, false since v50 put
+    `14-6 from 10 brackets` on Records. The identical claim sat in a
+    `history.js` comment and in `checks.js`. **A comment that outlives its
+    fact is how the next session reintroduces the bug it describes**, so all
+    three were fixed together, not just the one on screen.
+  - 🚨 **THE DENOMINATOR WARNING HAD INVERTED, AND THAT IS THE HAPPIEST FIND
+    HERE.** Playoff appearances shouted *"the two numbers on a row have
+    different denominators"* — written when the record covered 7 seasons and
+    the rate covered 13. With a bracket on file for every season, **`bA === po`
+    for all twelve managers**: a manager's bracket count IS their playoff
+    appearances. So the owner's own question from v51 — *"Shouldn't I have 6
+    losses since 10 appearances and 4 titles"* — now closes on his real
+    career, **14-6 from 10 brackets**, and the card says the arithmetic works
+    instead of warning about a mismatch the data removed.
+  - 🚨 **SEEDS & UPSETS IS THE ONE CARD THAT STILL DOES NOT COVER EVERY
+    SEASON, AND IT WAS THE ONLY ONE NOT SAYING SO.** 2013-2017 arrived with
+    brackets but **no seeds** — ESPN never published them. The card computes
+    over 40 games from 8 seasons while `PO_NOTE`, printed directly above it,
+    claimed 209 games across 13. **Two denominators adjacent and unlabelled is
+    this app's oldest fault (v3), and the new data is what created it**: the
+    two spans used to be close enough to hide.
+    - ⚠️ **`calcSeed` looked like the fix and is a trap.** It already computes
+      a fallback seed and nothing reads it. Tested against the only
+      independent evidence the archive has — the bracket's own shape, byes to
+      seeds 1 and 2, R1 as 3v6 and 4v5 — it reproduces all 8 real-seed seasons
+      and 2014/2015/2017, then **fails 2013 and 2016**: in 2013 the bye went
+      to a 9-4 team with *fewer* points than the 9-4 team it ranks above, and
+      in 2016 to an 8-5 team over a 10-3 team. Wiring it up would have
+      invented two seasons of seeding and fabricated upsets that never
+      happened. **The conservative card was right; it just needed to say its
+      span.** The warning is written at `calcSeed` itself, because the
+      temptation is obvious and the failure would be silent.
+  - 🚨 **A RANK THAT FOUR PEOPLE SHARE WAS PRINTED AS SOLE POSSESSION.**
+    `signature`'s `rankOf` was `findIndex` on a sorted array — pure array
+    position — so the four managers on 5 final fours got 2nd, 3rd, 4th and 5th
+    in `ALL` order, and Gotch's card read **"5 final fours, 2nd of 12."** The
+    same value produced a different sentence depending on who was reading; on
+    win%, McD and Zach are identical at 93-81 and Zach was labelled "4th-best".
+    **The app's oldest storyline rule is that a superlative firing twice is
+    just wrong** (v2) — every real detector honours it through
+    `leaders()`/`alsoTxt()`, and these ordinals never did.
+    - **Fixed in the two rank HELPERS, not the cards** (the v16 rule): rank is
+      `1 + how many are strictly better`, and `tiedOn` makes it read
+      **"joint 2nd of 12"**.
+    - ⚠️ **The new data is what exposed it**: `f4` moved for eight managers and
+      created three fresh multi-way ties, exactly at the ranks this backstop
+      fills. Latent and wrong before; visible and wrong after.
+    - 🚨 **AND WRITING THE LAW FOR IT REPRODUCED THE v39 BUG VERBATIM.** The
+      first cut called a `fail` defined in another function, so the failure
+      path threw `ReferenceError` instead of reporting — *"a check whose
+      failure path has never run is not a check"*, in the file that says so.
+      **Only fault injection found it**, because the success path never runs
+      the failure path. Rewired to the suite's own `block()` + `bad++`.
+    - ⚠️ **And the law's first home made an innocent block go red** — it sat
+      inside the `storylines` summary's `block()` window, which is the exact
+      v49 fault (a summary reporting the running counter). Moved below it, and
+      verified both ways: injected, it names CC, Gotch and Zach while
+      `storylines` stays ✅.
+  - 🔥 **THE ONE ADDITION: "Who shows up in January".** Every manager's
+    regular-season ppg against their own playoff ppg. The gap has been
+    computed for all twelve since v2 and the app only ever printed the biggest
+    faller and the biggest riser, gated at −5/+4 — thresholds set when
+    brackets existed for 7 seasons. Over 13 the spread widened and **ten of
+    twelve now sit more than two points from their regular-season scoring**
+    while the card still named two. **The v7 coverage fault in a new costume**,
+    landing again on the managers the extreme-hunting detectors have least to
+    say about. Woods **+7.3**, Hurd **−9.1**, six of twelve on the plus side.
+    - 🚨 **It reads `ST.era` — the same object the detectors read.** Computing
+      the gap a second time, even correctly, would have been the v14 fault
+      exactly: one concept, two numbers, each right, and the page lying
+      because nothing says which is which.
+    - ⚠️ **No denominator trap, which is rare in this app:** both numbers are
+      the same manager over the same seasons, so scoring inflation moves the
+      pair together and cancels out. Only the cross-manager ranking spans
+      eras, so every row names its own game count (the v51 rule).
+    - ⚠️ It reuses `.fh-lx` wholesale, so it needed **no new CSS** and wraps
+      exactly as the luck index does — checked at 320px, where both go to two
+      lines identically, rather than assumed.
+  - ⚠️ **Two faults in my OWN new copy, both caught by reading the render:** a
+    spelled-out number opening a sentence in lowercase (*"…−9.1. six managers
+    of the 12…"*) — the v39 fault, in the same session that fixed the rest of
+    v39's family — and a year range printed **backwards** (*"2018-2025"* came
+    out *"2025-2018"*, because `SEASON` is stored newest-first and I trusted
+    array order, which is the thing `byPF`/`bySeed` exist to refuse). There is
+    a `cap()` beside `plWord` now, and the range is sorted explicitly.
+  - ⚠️ **A voice bug of my own, too:** the new card's lead picked its pronoun
+    from the top-ranked manager, so with Woods reading, a general description
+    of the card became *"what you scored"*. Leads about a whole table are
+    impersonal; `vb()` is for sentences about a person.
+  - **Verified:** all 209 games re-checked against independent evidence — the
+    five new Cum Bowls (`GmC3`) match the hand-entered `CUMBOWL` array exactly,
+    team and score, and all 13 finals match the recorded 1st/2nd placings.
+    `node checks.js` green including the new **shared ranks** law, and the
+    per-manager bracket law re-verified by flipping a 2016 result (both
+    directional totals stay ✅; only it speaks). Rendered in headless Chromium
+    over HTTP at 320 and 390px across **50 view-contexts** — five tabs ×
+    {stranger, McD, Hurd, CC, Woods} — with no horizontal overflow, no clipped
+    tab label, no type under 9px, no tap target under 38px, no template hole
+    and no page error.
+  - 🚨 **FOUND AND DELIBERATELY NOT FIXED: the Season tab clips team names at
+    both phone widths, including the reader's own** (`.ls-odd-t`, `.ls-sw-n`,
+    `.ls-sc-n`). 17 clipped cells at 320px, two at 390px for every persona.
+    **v39 fixed exactly this for the standings table and the three lists added
+    after it never got the fix.** It is pre-existing, unrelated to the playoff
+    data, and wants its own pass with a render at both widths — so it is in
+    Open / next with its measurements rather than bolted onto a release about
+    the archive.
+
 - **v57 — the last bracket, and a rank that reads like a person wrote it
   (12 Sep 2026)** — the owner sent the 2025 Sleeper bracket.
   - **13 of 13 seasons.** Five winner's-bracket games, and **his own
@@ -1465,7 +1662,9 @@ stale entry written in the present tense reads as current to anyone who greps.
       symmetric total never could.
   - **The owner's own arithmetic closes.** He asked why he had 3 losses when
     10 appearances and 4 titles should mean 6. With the brackets in he reads
-    **12-6 from 9 brackets** — 9 − 3 titles on file = 6, and the per-manager
+    **12-6 from 9 brackets** (⚠️ **SUPERSEDED in v57**, which added 2025:
+    **14-6 from 10 brackets**, and 10 brackets is now his whole playoff
+    career) — 9 − 3 titles on file = 6, and the per-manager
     law asserts it for all twelve.
   - ⚠️ **Nothing user-facing had to be edited, and that is the derivation rule
     paying out.** The ⚑ key re-read itself to "204 bracket games from 12 of 13
@@ -1473,7 +1672,8 @@ stale entry written in the present tense reads as current to anyone who greps.
     seasons (2013-2024)", every row to its own new bracket count. A hand-typed
     count would have been the one thing in the app that lied the day the data
     landed — which is exactly what v13 said when it refused to type one.
-  - Verified: 204 games, 12 of 13 seasons, all conservation laws green, and
+  - Verified: 204 games, 12 of 13 seasons (⚠️ **SUPERSEDED in v57**: 209
+    games, 13 of 13), all conservation laws green, and
     the playoff card, the mascots and the Records order all re-rendered at 390
     and 320px as the reader, another manager and a stranger.
 
@@ -1614,7 +1814,10 @@ stale entry written in the present tense reads as current to anyone who greps.
     is all thirteen seasons, the record is 35 championship-bracket games from
     2018-24, and that it will never square with the 126 meetings on the
     head-to-head pages.
-  - **The conservation law came back with it: 70 title-bracket slots.** v19
+  - **The conservation law came back with it: 70 title-bracket slots.**
+    ⚠️ **SUPERSEDED in v56**: the single symmetric law was retired for two
+    directional totals (61 wins, 63 losses) once the untracked Ebzery's two
+    finals made `W == L` legitimately false over the tracked subset. v19
     retired it as "a law over a value nothing displays is testing dead code",
     which was right then and is wrong now. ⚠️ **It is written against the
     POPULATION, and that distinction is the point**: reverted to let the
@@ -3164,7 +3367,8 @@ stale entry written in the present tense reads as current to anyone who greps.
   - The lead paragraph above the cards is gone, per the owner. What it said
     lives in the ? sheet.
   - Two new conservation laws, because the old one could not have caught any
-    of this: **70 title-bracket slots** (35 W games × 2) and **50 final
+    of this: **70 title-bracket slots** (35 W games × 2 — ⚠️ **SUPERSEDED in
+    v56**, now two directional totals, 61 wins and 63 losses) and **50 final
     fours** (13 seasons × 4, less the two untracked). The old law totalled
     every playoff game and stayed green while `bw` meant two things.
 
@@ -3464,8 +3668,12 @@ stale entry written in the present tense reads as current to anyone who greps.
     Sleeper. 17 games a season completes everything; the 5 winner's-bracket
     games a season completes the title record alone.
     ✅ **The five ESPN seasons were done in v56** — 85 games, 17 each,
-    exactly this shape. **What remains is 2025 from Sleeper**, and it is the
-    one season this route cannot reach.
+    exactly this shape. ✅ **And 2025 came in from Sleeper in v57, which
+    closed this item completely** — 5 winner's-bracket games, the only part
+    of that season Sleeper showed above the fold. **Nothing remains.** The one
+    standing consequence is that 2025 has no `WC` or `C` rows, so placement
+    and consolation stats cover 12 of the 13 while the championship-bracket
+    record and the ⚑ badge cover all 13.
   - ⚠️ **Do NOT derive the missing games from the final placings.** It looks
     arithmetic — 1st won every game, 2nd lost the final — but the number of
     games each team played depends on byes, which depend on seeding, and it
@@ -3519,6 +3727,23 @@ stale entry written in the present tense reads as current to anyone who greps.
   changes HANDS (a new person on an old `teamId`), the learned binding is wrong
   until that person's new name is added to `MANAGERS`, which overrides it — so
   the name map is still authoritative when a name is known.
+- 🚨 **THE SEASON TAB SILENTLY CLIPS TEAM NAMES AT 320px AND 390px, INCLUDING
+  THE READER'S OWN** — found in the v58 render sweep, **pre-existing and not
+  caused by the playoff data**, so it was recorded rather than fixed in a
+  release about the archive. `.ls-odd-t` (playoff odds), `.ls-sw-n` ("what
+  yours hinges on") and `.ls-sc-n` (your schedule) are all
+  `overflow:hidden; text-overflow:ellipsis` in narrow grid columns. Measured
+  against the real 2026 names: at 320px, **17 clipped cells** for a signed-in
+  reader — five of them in the odds table, including
+  `"Death Dont Hurts Very Long YOU"` at `scrollWidth 228 / clientWidth 128`.
+  At 390px two still clip **for every persona, a stranger included**. Nothing
+  overflows the page, so it is invisible to a scroll-width check and shows
+  only as "…".
+  ⚠️ **v39 already fixed exactly this for the standings table** (`.ls-tr`) by
+  moving the stats to a second line — and that fix was never applied to the
+  three lists added after it in v40/v42/v43. The fix is the same shape; it
+  wants its own pass with a render at both widths, which is why it is here
+  and not in v58.
 - **Not built:** any way for a member to write anything back (a reaction, a
   pick, a comment). That needs a backend and is a real product decision, not a
   missing feature.

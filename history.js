@@ -659,7 +659,7 @@
   const mgrRaw = (t) => HIST_MGR[norm(t)] || '';
   const mgrOf = (t) => { const m = mgrRaw(t); return EXCLUDE.has(m) ? '' : m; };
   const untracked = (t) => !mgrOf(t) && EXCLUDE.has(mgrRaw(t));
-  const PO_CUT = 6;                       // top-6 seed always finishes top 6 — verified on all 7 brackets
+  const PO_CUT = 6;                       // top-6 seed always finishes top 6 — verified on all 13 brackets
   /* 🚨 The ONE place second person is decided. Everything downstream — every
      table row, every rivalry line, every caption — reads names through this,
      so pointing it at a different manager re-voices the entire archive with
@@ -698,6 +698,21 @@
     /* Real seed where known; else wins, then points — never array order. */
     const bySeed = [...rows].sort((a, b) =>
       (a.seed && b.seed ? a.seed - b.seed : 0) || b.pct - a.pct || b.pf - a.pf);
+    /* 🚨 `calcSeed` IS A FALLBACK FOR ORDERING ROWS AND IS **NOT** A SEED.
+       NOTHING READS IT AND NOTHING SHOULD (v58). Where ESPN published a seed
+       it simply echoes it; where it did not — 2013-2017, which have no `seed`
+       field at all — it guesses from win% then points, and **that guess is
+       measurably wrong**. Checked against the only independent evidence the
+       archive has, the bracket's own shape (byes go to seeds 1 and 2, round 1
+       is 3v6 and 4v5): it reproduces all 8 seasons that carry a real seed and
+       2014/2015/2017, and it FAILS 2013 (the bye went to a 9-4 team with
+       FEWER points than the 9-4 team this ranks above it) and 2016 (the bye
+       went to an 8-5 team over a 10-3 team). ESPN broke those ties on
+       something this archive does not hold.
+       ⚠️ So `Seeds & upsets` is restricted to seasons with a REAL seed and
+       says so on the card. Wiring this up to "cover all 13 seasons" would
+       invent two seasons of seeding and fabricate upsets that never happened
+       — the one thing this archive does not do. */
     bySeed.forEach((r, i) => { r.calcSeed = r.seed || i + 1; });
     return { ...s, rows, byPF, bySeed, fin: isFinal(s),
       champ: rows.find((r) => r.t === (champRow(s) || {}).t),
@@ -708,9 +723,15 @@
   /* 🚨 Keyed by YEAR+TEAM. Keying on the team name alone and adding it once per
      season row makes a long-lived franchise re-count itself every year. */
   const key = (yr, t) => yr + '\u0000' + t;
-  /* 🚨 THE APP KEEPS NO BRACKET WIN-LOSS RECORD AT ALL (v19, owner's call:
-     *"Title brackets have to be changed to final 4s everywhere"*). What a
-     manager did in the playoffs is stated as FINAL FOURS — `f4`, below.
+  /* 🚨 THE BRACKET WIN-LOSS RECORD IS BACK, UNDER ONE DEFINITION (v50/v52).
+     ⚠️ This block said "THE APP KEEPS NO BRACKET WIN-LOSS RECORD AT ALL"
+     until v58 — true when v19 wrote it, false from v50, and the same stale
+     claim was ALSO rendering on the Honors tab where a reader could see it
+     contradict the Records tab one swipe away. A comment that outlives its
+     fact is how the next session reintroduces the bug it describes.
+     A manager's playoff résumé is FINAL FOURS (`f4`) *and* the championship-
+     bracket record (`bw`/`bl`/`bA`) — two different populations, each stating
+     its own, never added together.
 
      Three brackets run every December and the data files them as `br`:
        W   the championship bracket — six teams: round 1, the final four, the
@@ -718,17 +739,18 @@
        WC  the placement ladder below it, for teams knocked out of W (3rd, 5th)
        C   the consolation ladder for the six that missed, GmC1-9 (GmC3 = the
            Cum Bowl)
-     None of them produces a W-L on a manager any more, and the reason is two
-     versions of the same fault. v14 found the app printing three different
-     "playoff records" for one person (11-4 for W+WC, 10-3 for W, 22 meetings
-     for everything) and fixed it by picking one. That left a record covering
-     7 of 13 seasons sitting beside stats covering all 13 — and a 6-team
-     bracket carrying a name that made it sound like the final four.
-     **Final fours are knowable for every season and need no caveat**, so they
-     are the whole story now. ⚠️ Deliberately NOT a final-four W-L either: "8
-     final fours" over "5-3 in the final four" is two denominators side by
-     side inviting the reader to add them up, which is the v3 fault wearing
-     the new name.
+     🚨 ONLY `W` PRODUCES A W-L. The placement and consolation ladders never
+     do, and that is the v14 lesson holding: it found the app printing three
+     different "playoff records" for one person (11-4 for W+WC, 10-3 for W, 22
+     meetings for everything), each computed correctly, and the page still lied
+     because nothing said which population each counted.
+     ⚠️ What v19 could not fix by captioning — a record covering 7 of 13
+     seasons sitting beside stats covering all 13 — **the DATA fixed in
+     v56/v57**: every season has a bracket now, so the record's span and the
+     appearance rate's span are the same 13. That is why it could come back.
+     ⚠️ Still deliberately NOT a final-four W-L: "8 final fours" over "5-3 in
+     the final four" is two denominators side by side inviting the reader to
+     add them up, which is the v3 fault wearing a new name.
      The games themselves are still used — head-to-heads, playoff scores, the
      regular-season-to-playoff scoring gap — as MEETINGS and SCORES, never
      totalled into a record. */
@@ -755,7 +777,7 @@
       /* 🚨 The final four IS places 1-4, and that is a structural fact, not a
          guess: the two teams that lose the semi-final play each other for 3rd,
          so the four survivors of round 1 are exactly the top four finishers.
-         Verified against the R2 pairings of all 7 brackets on file — which is
+         Verified against the R2 pairings of all 13 brackets on file — which is
          what makes final fours knowable for all 13 seasons, the same shape as
          "a top-6 seed always finishes top 6". */
       if (r.place <= 4) a.f4++;
@@ -791,14 +813,16 @@
   const LEAGUE_PPG = SEASON.reduce((a, s) => a + s.lgPpg, 0) / SEASON.length;
 
   /* ── EVERY RECORDED MEETING ────────────────────────────────────────────────
-     PLAYOFF_GAMES covers 2013-24 — every season but 2025. ⚠️ It covered only
+     PLAYOFF_GAMES covers ALL 13 SEASONS, 2013-2025. ⚠️ It covered only
      2018-24 until v56: the gap was never missing data, it was five seasons
      whose ESPN "Final Playoff Results" tab had not been captured, and the
-     owner opened all five. 2025 remains uncovered because it is the one
-     Sleeper season; only its final score is on file.
-     The Cum Bowls from 2013-17 and 2025, and the
-     2025 final, are real head-to-heads that live in other fields — fold them in
-     so the h2h pool is everything the archive actually knows.
+     owner opened all five; v57 then added 2025 from the Sleeper bracket.
+     ⚠️ **2025 is the championship bracket ONLY** — Sleeper published no
+     placement or consolation games — so it contributes 5 games where a full
+     season contributes 17, and any placement or consolation stat covers 12 of
+     the 13. The 2025 Cum Bowl is reconstructed from the two worst seeds'
+     real week-15 scores and is a real head-to-head that lives in another
+     field — fold it in so the h2h pool is everything the archive knows.
      🚨 Still PLAYOFF meetings only: there is no regular-season schedule
      anywhere in this data, and every view must say so. */
   const seen = new Set(PLAYOFF_GAMES.map((g) => g.yr + '|' + [g.a, g.b].sort().join('|')));
@@ -837,18 +861,20 @@
      the final. NOT the WC placement ladder (games between teams already out
      of the title race), NOT the C consolation ladder, NOT the Cum Bowl. That
      is the population v14 settled on and it has not changed.
-     ⚠️ 60 games across 12 of 13 seasons — every year but 2025 (v56, when the
-     owner supplied the five missing brackets). **The adjacency is still the
-     risk**: it sits beside an appearance rate covering all 13, two
-     denominators side by side, which is the v3 fault if they are left to look
-     comparable. The gap is one season now rather than six, which makes it
-     easier to forget rather than safe to. Every place it prints carries the
-     ⚑ badge, the row names its own bracket count, and the card states both
-     spans.
+     ⚠️ 65 games across ALL 13 seasons (v57 closed the last gap). 🚨 **The
+     v3 adjacency risk this was written against is GONE, and that is worth
+     stating rather than leaving the old warning up**: with a bracket on file
+     for every season, a manager's bracket count IS their playoff appearance
+     count — verified, `bA === po` for all twelve — so the record and the rate
+     beside it now share a denominator instead of merely looking as though
+     they do. The owner's own arithmetic closes on every row: losses ==
+     appearances − titles. Every place it prints still carries the ⚑ badge and
+     still names its own bracket count, because the population (championship
+     bracket only) is still narrower than the meetings pool.
      ⚠️ Deliberately NOT reconstructed from `s2.final` the way MEET is: that
      would add a final from seasons with no bracket, so the record would cover
      more seasons in its last round than in its first. One population.
-     ⚠️ No ties to resolve — verified, zero tied games in all 35. */
+     ⚠️ No ties to resolve — verified, zero tied games in all 65. */
   const BR_YRS = [...new Set(PLAYOFF_GAMES.filter((g) => g.br === 'W').map((g) => g.yr))].sort();
   const BR_SET = new Set(BR_YRS);
   const brSeen = {};
@@ -1062,6 +1088,43 @@
     </div>`;
   }
 
+  /* ══ 🔥 WHO SHOWS UP IN JANUARY ═══════════════════════════════════════
+     🚨 READS `ST.era`, THE SAME OBJECT THE STORYLINE DETECTORS READ, AND
+     THAT IS THE WHOLE OF WHY THIS IS SAFE TO ADD. `januaryGap()` has
+     computed this gap for every manager since v2 and only ever printed the
+     single biggest faller and the single biggest riser, gated at −5 and +4.
+     Computing it a second time here — even "correctly" — would be the v14
+     fault exactly: one concept, two numbers, each right, and the page lying
+     because nothing says which is which. One source, two presentations.
+     ⚠️ WHY IT EARNS A CARD NOW: the gate was written when brackets existed
+     for 7 seasons. Over 13 the spread widened and **ten of the twelve now
+     sit more than two points from where they score in the regular season**,
+     while the card still named two of them. That is the v7 coverage fault in
+     a different costume — and, as in v7, it lands hardest on the managers the
+     extreme-hunting detectors have least to say about.
+     ⚠️ NO DENOMINATOR TRAP HERE, WHICH IS RARE FOR THIS APP: both numbers are
+     the SAME manager over the SAME seasons, so scoring inflation moves both
+     together and no era adjustment is needed. The cross-manager ranking is
+     the only comparison that spans eras, so each row names its own sample. */
+  function januaryHTML() {
+    const rows = ALL.map((a) => ({ a, e: ST.era[a.m] })).filter((x) => x.e && x.e.n)
+      .sort((x, y) => y.e.d - x.e.d);
+    if (rows.length < 2) return '';
+    const mx = Math.max(...rows.map((x) => Math.abs(x.e.d)));
+    const up = rows.filter((x) => x.e.d > 0), top = rows[0], low = rows[rows.length - 1];
+    return `<h2 class="section-title">🔥 Who shows up in January ${tag('po')}</h2>
+    <div class="ffp-card">
+      <p class="fh-lead">One manager, one set of seasons, two different months: regular-season scoring against the same manager's scoring once the bracket started.<br><br>
+      <b>The number on the right is the difference, in points a game.</b> A plus means they raise it when it counts; a minus means the scoring came before the games that mattered.</p>
+      ${rows.map(({ a, e }) => `<div class="fh-lx${isMe(a.m) ? ' you' : ''}">
+        ${tap(a.m, `<div class="fh-lx-n"><b>${esc(a.name)}</b><i>${one(e.reg)} → ${one(e.po)} ppg · ${e.n} games</i></div>`)}
+        <div class="fh-lx-bar"><span class="${lkCls(e.d)}" style="width:${(Math.abs(e.d) / mx) * 50}%;${e.d < 0 ? 'right' : 'left'}:50%"></span><em></em></div>
+        <div class="fh-lx-v ${lkCls(e.d)}">${sgn(e.d)}</div>
+      </div>`).join('')}
+      <p class="ffp-cap"><b>${esc(top.a.name)}</b> ${vb(top.a.m, 'gain', 'gains')} the most — ${sgn(top.e.d)} a game — and <b>${esc(low.a.name)}</b> ${vb(low.a.m, 'lose', 'loses')} the most, ${sgn(low.e.d)}. ${cap(plWord(up.length, 'manager'))} of the ${rows.length} score more in the playoffs than out of them.<br><br>⚠️ <b>Both numbers on a row are that manager's own, over the seasons they actually reached the bracket</b> — so scoring inflation across the years moves the pair together and cancels out. That is what makes the gap fair; it is also why the rows count different numbers of games, and each says how many.<br><br>⚠️ The playoff half counts <b>every bracket game</b> — championship, placement and consolation alike — because it is a question about scoring, not about stakes. It is not a record and it is not a win rate.</p>
+    </div>`;
+  }
+
   /* ══ 📕 THE RECORD BOOK ═══════════════════════════════════════════════ */
   function recordHTML() {
     const pick = (arr, f, d) => [...arr].sort((a, b) => d * (f(a) - f(b)))[0];
@@ -1089,7 +1152,7 @@
       ${row('Biggest blowout', one(blow.marg), `${blow.yr} · ${esc(gName(blow.as > blow.bs ? blow.a : blow.b))} ${Math.max(blow.as, blow.bs)} – ${Math.min(blow.as, blow.bs)}`, 'po')}
       ${row('Best game score', one(hiG.hi), `${esc(gName(hiG.as > hiG.bs ? hiG.a : hiG.b))} · ${hiG.yr}`, 'po')}
       ${row('Worst game score', one(loG.lo), `${esc(gName(loG.as < loG.bs ? loG.a : loG.b))} · ${loG.yr}`, 'po')}
-      <p class="ffp-cap">The four <b>playoff</b> rows come from a different pool to the five regular-season ones — ${PLAYOFF_GAMES.length} games across ${PO_YRS} of ${SEASON.length} seasons, because only those seasons have a bracket on file. Scoring records are <b>per game</b> — seasons were 13 games until 2021 and 14 since, so raw totals would not compare.</p>
+      <p class="ffp-cap">The four <b>playoff</b> rows come from a different pool to the five regular-season ones — ${PLAYOFF_GAMES.length} bracket games across all ${SEASON.length} seasons. ⚠️ 2025 is the championship bracket only — Sleeper published no placement or consolation games, so it contributes 5 games where a full season contributes 17. Scoring records are <b>per game</b> — seasons were 13 games until 2021 and 14 since, so raw totals would not compare.</p>
     </div>`;
   }
 
@@ -1124,6 +1187,7 @@
 
   /* ══ 🎯 SEEDS & UPSETS ════════════════════════════════════════════════ */
   function seedHTML() {
+    const LOW_SEED = PO_CUT;
     const seeded = SEASON.filter((s) => s.rows.every((r) => r.seed));
     const wb = PLAYOFF_GAMES.filter((g) => g.br === 'W');
     const seedOf = (yr, t) => { const s = SEASON.find((x) => x.yr === yr); const r = s && s.rows.find((x) => x.t === t); return r && r.seed; };
@@ -1139,6 +1203,28 @@
     seeded.forEach((s) => s.rows.forEach((r) => { if (r.place) (bySeed[r.seed] = bySeed[r.seed] || []).push(r.place); }));
     const champSeeds = seeded.map((s) => s.champ && s.champ.seed).filter(Boolean);
     const cnt = {}; champSeeds.forEach((x) => { cnt[x] = (cnt[x] || 0) + 1; });
+    /* 🚨 DERIVED, never typed. This read "Two #6 seeds have won the whole
+       thing — and both beat the #1 seed in the final" as hard-coded prose. It
+       is true today (2018 and 2023) and was true only by luck: it would have
+       gone on asserting "two" through any new seeded season. A sentence about
+       a count that the data can produce is a sentence the data should produce.
+       ⚠️ The count is SPELLED beside "#6" — "2 #6 seeds" is two numerals
+       touching, the v17 fault. */
+    /* 🚨 `SEASON` IS STORED NEWEST FIRST, so `seeded[0]` is the most RECENT
+       season — printing `seeded[0].yr`-`seeded[last].yr` gave "2025-2018",
+       a range running backwards. Sorted explicitly rather than trusting
+       array order, which is the same rule `byPF`/`bySeed` follow above. */
+    const sdYrs = seeded.map((s) => s.yr).sort((a, b) => a - b);
+    const sixes = seeded.filter((s) => s.champ && s.champ.seed === LOW_SEED);
+    const sixBeat1 = sixes.filter((s) => {
+      const f = wb.find((g) => g.yr === s.yr && g.rd === 'FINAL'); if (!f) return false;
+      return seedOf(s.yr, f.as > f.bs ? f.b : f.a) === 1;
+    });
+    const sixLine = !sixes.length ? '' :
+      ` <b>${cap(plWord(sixes.length, `${'#'}${LOW_SEED} seed`))} ${sixes.length === 1 ? 'has' : 'have'} won the whole thing</b>` +
+      (sixBeat1.length === sixes.length
+        ? ` — and ${sixes.length === 1 ? 'beat' : sixes.length === 2 ? 'both beat' : 'every one beat'} the ${'#'}1 seed in the final.`
+        : `, ${plWord(sixBeat1.length, 'of them')} over the ${'#'}1 seed.`);
     return `<h2 class="section-title">🎯 Seeds &amp; upsets ${tag('po')}</h2>
     <div class="ffp-card">
       <div class="fh-big"><b>${Math.round((better / total) * 100)}%</b><span>how often the better seed wins a playoff game</span></div>
@@ -1150,18 +1236,20 @@
         <span class="fh-up-y">${u.yr}</span>
         <div class="fh-up-t"><b>#${u.wS} ${esc(nm(mgrOf(u.w)) || u.w)}</b> beat <b>#${u.lS} ${esc(nm(mgrOf(u.l)) || u.l)}</b><i>${u.rd === 'FINAL' ? '🏆 championship' : u.rd === 'R2' ? 'semi-final' : 'round 1'} · ${u.sc}</i></div>
       </div>`).join('')}
-      <p class="ffp-cap">${PO_NOTE}<br><br>The better seed wins <b>${better} of ${total}</b> winner's-bracket games. <b>Two ${'#'}6 seeds have won the whole thing</b> — and both beat the ${'#'}1 seed in the final.</p>
+      <p class="ffp-cap">🚨 <b>This is the one card that does not cover every season.</b> ESPN published a seeding for ${seeded.length} of the ${SEASON.length} (${sdYrs[0]}-${sdYrs[sdYrs.length - 1]}), so this counts <b>${total}</b> championship-bracket games — not the ${PLAYOFF_GAMES.length} the ⚑ badge covers, and not the ${SEASON.length - seeded.length} earlier seasons. Their brackets are on file; their seed order is not, and the archive will not guess one.<br><br>The better seed wins just <b>${better} of those ${total}</b> — a better seed is barely better than a coin toss here.${sixLine}</p>
     </div>`;
   }
 
   /* ══ 📊 PLAYOFF APPEARANCES ═══════════════════════════════════════════
      ⚠️ RENAMED FROM "Playoff record" IN v48, because the card under it
      changed. It used to head two cards — this rate AND the final-four funnel
-     — so "record" covered the whole résumé. Alone, it heads a card that is
-     only how often you get in, and **this app keeps no bracket win-loss
-     record at all** (v19): a heading promising one over a card that has none
-     is the v14 fault, a name that makes a number sound like something else.
-     It matches the career tile, which has read `Playoff apps` since v10. */
+     — so "record" covered the whole résumé. Alone, it heads a card whose
+     headline is how often you get in, so a heading promising a *record* would
+     be the v14 fault: a name that makes a number sound like another number.
+     It matches the career tile, which has read `Playoff apps` since v10.
+     ⚠️ This said "**this app keeps no bracket win-loss record at all** (v19)"
+     until v58 — false since v50 put `bw`/`bl` on this very card, one function
+     below. The record is here; the *heading* still is not about it. */
   function playoffHTML() {
     const rows = [...ALL].sort((a, b) => b.poRate - a.poRate || b.po - a.po);
     /* 🚨 THE RECORD CARRIES THE ⚑ GLYPH, NOT `dot('po')` — and that was a
@@ -1192,7 +1280,7 @@
           ? ` <span class="fh-po-br" title="Playoffs only — championship bracket"><b>${a.bw}-${a.bl}</b> from ${a.bA} bracket${a.bA === 1 ? '' : 's'}</span>`
           : ' <span class="fh-po-br none" title="Playoffs only — championship bracket">no brackets on file</span>'}</div>
       </div>`).join('')}
-      <p class="ffp-cap">The bar <b>is</b> the rate — a top-6 seed always finishes top 6 in this format, verified on every bracket, so this covers all ${SEASON.length} seasons.<br><br>🚨 <b>The two numbers on a row have different denominators, and neither is the other's total.</b> The rate is all ${SEASON.length} seasons. The ⚑ record is the <b>championship bracket only</b> — ${PLAYOFF_GAMES.filter((g) => g.br === 'W').length} games across the ${BR_YRS.length} seasons that have a bracket on file (${BR_YRS[0]}-${BR_YRS[BR_YRS.length - 1]}), which is why it names its own bracket count. A bracket is single elimination, so <b>losses are brackets minus titles</b> — over a whole career, not over the seasons on file. It does not count the placement ladder, the consolation bracket or the Cum Bowl, so it will never square with the ${MEET.length} meetings on the head-to-head pages.</p>
+      <p class="ffp-cap">The bar <b>is</b> the rate — a top-6 seed always finishes top 6 in this format, verified on every bracket, so this covers all ${SEASON.length} seasons.<br><br>✅ <b>Every season has a bracket on file now, so the arithmetic closes on every row.</b> A bracket is single elimination, so <b>losses are appearances minus titles</b> — and with no season missing, the bracket count beside each record <b>is</b> that manager's playoff appearances. Check any row: it works.<br><br>The ⚑ record counts the <b>championship bracket only</b> — ${PLAYOFF_GAMES.filter((g) => g.br === 'W').length} games, ${BR_YRS[0]}-${BR_YRS[BR_YRS.length - 1]} — never the placement ladder, the consolation bracket or the Cum Bowl. That is why it will never square with the ${MEET.length} meetings on the head-to-head pages.</p>
     </div>
     </div>`;
   }
@@ -1218,7 +1306,7 @@
         <span class="fh-fr-f">${a.f4 ? `${a.f4} final four${a.f4 > 1 ? 's' : ''}` : '<i>no final fours</i>'}${a.fin ? ` · ${a.fin} final${a.fin > 1 ? 's' : ''}` : ''}</span>
         <span class="fh-fr-g">${a.t1 ? `<span class="mono">${a.t1}</span> won` : '<i>none won</i>'}</span>
       </div>`).join('')}
-      <p class="ffp-cap"><b>The final four is places 1-4</b>, and it covers all ${SEASON.length} seasons rather than the ${PO_YRS} with a bracket on file: the two teams that lose in the final four play each other for 3rd, so the four left after round one <b>are</b> the top four finishers. Verified against every bracket on file.<br><br>Six teams make the playoffs, so getting to the last four is the cut that means something. The app keeps <b>no bracket win-loss record</b> — placement games and the consolation ladder decide nothing, and a record from the ${PO_YRS} seasons with a bracket on file would sit beside these ${SEASON.length}-season numbers pretending to be comparable.</p>
+      <p class="ffp-cap"><b>The final four is places 1-4</b>: the two teams that lose in the final four play each other for 3rd, so the four left after round one <b>are</b> the top four finishers. Verified against every bracket on file — all ${SEASON.length} seasons.<br><br>Six teams make the playoffs, so getting to the last four is the cut that means something. This is a count of <b>finishes</b>, not a record: the championship-bracket <b>win-loss record</b> is a different population and lives on <b>Playoff appearances</b> under Records. Placement games and the consolation ladder decide nothing and are kept as meetings, never as a record.</p>
     </div>`;
   }
 
@@ -1261,6 +1349,11 @@
   const WORD = ['zero', 'one', 'two', 'three', 'four', 'five', 'six',
     'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
   const plWord = (n, one, many) => `${WORD[n] || n} ${n === 1 ? one : (many || one + 's')}`;
+  /* ⚠️ `plWord` is lowercase, so it cannot open a sentence unaided — v39 shipped
+     "six of twelve teams make it" mid-paragraph, twice, and it reads as a typo
+     rather than as a number. Anything spelled that starts a sentence goes
+     through this. */
+  const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
   /* "a 11-1 record" is the kind of thing only a generator writes. */
   const an = (n) => (/^(8|11|18|8\d|11\d)/.test(String(n)) ? 'an' : 'a');
 
@@ -1497,7 +1590,7 @@
        WAS FALSE (v14). Brackets existed for only 7 of 13 seasons then, and
        Wolff — the manager it fires for — reached the final four in 2017 and
        2014, which the archive could not see, so it counted six missing
-       seasons as losses. ⚠️ Twelve of thirteen are on file since v56 and the
+       seasons as losses. ⚠️ All thirteen are on file since v57 and the
        claim would now be checkable; it is still stated as final fours,
        because that is the number that needs no caveat at all.
        v14 scoped it to the seasons on file; v19 removed the underlying stat
@@ -1585,8 +1678,27 @@
     const N = ALL.length;
     /* Ranked on each stat; the manager's best claim is wherever they sit
        furthest from the middle of the twelve. */
-    const rankOf = (val, hiGood) => { const s2 = [...ALL].sort((x, y) => (hiGood ? val(y) - val(x) : val(x) - val(y)));
-      return (m) => s2.findIndex((x) => x.m === m) + 1; };
+    /* 🚨 COMPETITION RANK, AND IT MUST KNOW ABOUT TIES (v58). This was
+       `findIndex` on a sorted array, which is pure ARRAY POSITION: four
+       managers on 5 final fours got 2nd, 3rd, 4th and 5th handed out in
+       `ALL` order, and the card printed "2nd of 12" as sole possession. The
+       same value produced a different sentence depending on who was reading.
+       **The app's oldest storyline rule is that a superlative which fires
+       twice is just wrong** (v2, which is why every real detector goes
+       through `leaders()`/`alsoTxt()`) — the ordinals in this backstop were
+       the one place it was never enforced.
+       ⚠️ THE NEW BRACKET DATA IS WHAT EXPOSED IT: `f4` moved for eight
+       managers in v56/v57 and created three fresh multi-way ties, exactly at
+       the ranks this backstop fills. It was latent and wrong before; it is
+       visible and wrong now. Rank is `1 + how many are strictly better`, so
+       a tie shares the better rank, and `tiedOn` says whether to admit it. */
+    const rankOf = (val, hiGood) => {
+      const better = (x, y) => (hiGood ? val(x) > val(y) : val(x) < val(y));
+      return (m) => { const me = ALL.find((x) => x.m === m);
+        return 1 + ALL.filter((x) => better(x, me)).length; };
+    };
+    const tiedOn = (val) => (m) => { const me = ALL.find((x) => x.m === m);
+      return ALL.filter((x) => val(x) === val(me)).length > 1; };
     /* 🚨 THE HEADLINE IS THE CLAIM. v7 shipped these as
        "Gotch, in one line." — a label, not a sentence — while the actual
        finding (11-1 in the consolation bracket, the best in the league) sat
@@ -1609,13 +1721,18 @@
        the instance. It is the v17 fault in a new costume too — two numerals
        that must not be read as one. */
     const WORSTISH = { 0: 'worst', 1: 'second-worst', 2: 'third-worst' };
-    const bestish = (r) => (r === 1 ? 'best' : WORSTISH[N - r] !== undefined ? WORSTISH[N - r] : `${ord(r)}-best`);
-    const rk = (r) => (r === 1 ? 'the best in the league'
-      : WORSTISH[N - r] !== undefined ? `the ${WORSTISH[N - r]} in the league`
-      : `${ord(r)} of ${N}`);
+    /* ⚠️ "joint" rather than "tied for": it slots in front of the word it
+       qualifies without re-ordering the sentence, so every heading that
+       already fits keeps fitting. */
+    const bestish = (r, tie) => { const b = r === 1 ? 'best'
+      : WORSTISH[N - r] !== undefined ? WORSTISH[N - r] : `${ord(r)}-best`;
+      return !tie ? b : r === 1 ? 'joint-best' : `joint ${b}`; };
+    const rk = (r, tie) => (r === 1 ? `the ${tie ? 'joint-' : ''}best in the league`
+      : WORSTISH[N - r] !== undefined ? `the ${tie ? 'joint ' : ''}${WORSTISH[N - r]} in the league`
+      : `${tie ? 'joint ' : ''}${ord(r)} of ${N}`);
     const CLAIMS = [
       { t: 'pct', val: (a) => a.pct, hi: true,
-        head: (a, r) => `${nm(a.m)} ${vb(a.m, 'have', 'has')} the ${bestish(r)} win% in the league, ${(a.pct * 100).toFixed(1)}%.`,
+        head: (a, r, tie) => `${nm(a.m)} ${vb(a.m, 'have', 'has')} the ${bestish(r, tie)} win% in the league, ${(a.pct * 100).toFixed(1)}%.`,
         /* 🚨 BEST BY RECORD, NOT `a.best` — which is the best FINISH, and on a
            card about win% "the best of those seasons was 7-7" is simply a
            false sentence. Zach's best finish is 2nd in 2024 at 7-7; his best
@@ -1635,7 +1752,7 @@
          against — the caveat is never dropped, only moved. */
       { t: 'score', val: (a) => relPpg(a), hi: true,
         head: (a) => `${nm(a.m)} ${vb(a.m, 'have', 'has')} ${relPpg(a) >= 0 ? 'outscored' : 'trailed'} the league by ${one(Math.abs(relPpg(a)))} a game.`,
-        note: (a, r) => `Measured against the league in the seasons ${vb(a.m, 'you', nm(a.m))} played, which is ${rk(r)}.` },
+        note: (a, r, tie) => `Measured against the league in the seasons ${vb(a.m, 'you', nm(a.m))} played, which is ${rk(r, tie)}.` },
       /* `seasons: true` = the heading already stated the season count, so the
          body must not state it again. "…in 6 of 9 seasons" over "9 seasons,
          63-59" is one fact printed twice on one card, which is the fault the
@@ -1643,11 +1760,11 @@
          numbers. */
       { t: 'po', val: (a) => a.poRate, hi: true, seasons: true,
         head: (a) => `${nm(a.m)} ${vb(a.m, 'have', 'has')} made the playoffs in ${a.po} of ${a.seasons} seasons.`,
-        note: (a, r) => (r === 1 ? 'The most reliable rate in the archive.'
-          : r === N ? 'The least reliable rate in the archive.'
-          : `The ${bestish(r)} rate of the ${N}.`) },
+        note: (a, r, tie) => (r === 1 && !tie ? 'The most reliable rate in the archive.'
+          : r === N && !tie ? 'The least reliable rate in the archive.'
+          : `The ${bestish(r, tie)} rate of the ${N}.`) },
       { t: 'place', val: (a) => a.avgPlace, hi: false,
-        head: (a, r) => `${nm(a.m)} ${vb(a.m, 'have', 'has')} the ${bestish(r)} average finish, ${one(a.avgPlace)}.`,
+        head: (a, r, tie) => `${nm(a.m)} ${vb(a.m, 'have', 'has')} the ${bestish(r, tie)} average finish, ${one(a.avgPlace)}.`,
         note: (a) => (a.best && a.worst
           ? `Best ${ord(a.best.place)} in ${a.best.yr}, worst ${ord(a.worst.place)} in ${a.worst.yr}.` : '') },
       /* 🚨 THE CONSOLATION CLAIM IS GONE (v14, owner's call): "11-1 in the
@@ -1658,8 +1775,8 @@
          its own tab. Final fours replace it: knowable for all 13 seasons
          (places 1-4 ARE the final four in this format) and worth something. */
       { t: 'f4', val: (a) => a.f4, hi: true,
-        head: (a, r) => (a.f4
-          ? `${nm(a.m)} ${vb(a.m, 'have', 'has')} ${pl(a.f4, 'final four')}, ${rk(r)}.`
+        head: (a, r, tie) => (a.f4
+          ? `${nm(a.m)} ${vb(a.m, 'have', 'has')} ${pl(a.f4, 'final four')}, ${rk(r, tie)}.`
           : `${nm(a.m)} ${vb(a.m, 'have', 'has')} never reached the final four.`),
         note: (a) => `From ${pl(a.po, 'playoff appearance')}.` },
     ];
@@ -1694,18 +1811,18 @@
       const ranked = CLAIMS
         .filter((c) => !c.t || !taken.has(c.t))
         .map((c) => { const r = rankOf(c.val, c.hi)(a.m);
-          return { c, r, edge: Math.max(N + 1 - r, r) }; })   // distance from the middle
+          return { c, r, tie: tiedOn(c.val)(a.m), edge: Math.max(N + 1 - r, r) }; })   // distance from the middle
         .sort((x, y) => y.edge - x.edge);
       const need = WANT - (held[a.m] ? held[a.m].n : 0);
       ranked.slice(0, need).forEach((b, i) => {
-        const note = b.c.note ? b.c.note(a, b.r) : '';
+        const note = b.c.note ? b.c.note(a, b.r, b.tie) : '';
         const career = i === 0 ? careerLine(a, b.c, (held[a.m] && held[a.m].txt) || '') : '';
         out.push({ id: i ? 'sig2' : 'sig', t: b.c.t, m: a.m,
           /* Strictly below the first, so a manager's own page opens on
              their better claim and the roll-call is unaffected — every
              real detector starts at 40 and these top out at 32. */
           w: 20 + b.edge - i * 2, src: 'mix',
-          head: b.c.head(a, b.r),
+          head: b.c.head(a, b.r, b.tie),
           body: `${note ? note + ' ' : ''}${career}`.trim() });
       });
     });
@@ -1947,7 +2064,7 @@
            ['vs league', sgn(a.ppg - LEAGUE_PPG)], ['Final fours', `${a.f4}/${a.seasons}`], ['Luck', sgn(a.luck)]]
           .map(([k, v]) => `<div class="fh-you-t"><b>${v}</b><i>${k}</i></div>`).join('')}
       </div>` : ''}
-      ${full ? '<p class="ffp-cap">Squares are the <b>playoff finish</b>; the totals under them are the <b>regular season</b>. <b>Final fours</b> is places 1-4 — the four teams left after round one, which is knowable for every season, not just the ' + PO_YRS + ' with a bracket on file.</p>' : ''}
+      ${full ? '<p class="ffp-cap">Squares are the <b>playoff finish</b>; the totals under them are the <b>regular season</b>. <b>Final fours</b> is places 1-4 — the four teams left after round one, which the final placings give for every season.</p>' : ''}
       <div class="fh-car-f">
         <span><b>Best</b> ${bestPf.yr} · ${one(bestPf.ppg)} per game · finished ${bestPf.place ? ord(bestPf.place) : '?'}</span>
         <span><b>Worst</b> ${a.worst.yr} · ${ord(a.worst.place)} · ${rec(a.worst)}</span>
@@ -2023,7 +2140,7 @@
           <div class="fh-rv-n">${tap(w, `<b class="up">${esc(nm(w))}</b>`)}<span>owns</span>${tap(l, `<b>${esc(nm(l))}</b>`)}</div>
           <div class="fh-rv-s"><b class="pos">${n}–0</b><i>${fins ? `${fins} of them a final` : `${n} meetings`}</i></div>
         </div>`; }).join('')}` : ''}
-      <p class="ffp-cap">⚠️ <b>Every playoff meeting.</b> The archive has final standings and playoff brackets — <b>no regular-season schedule</b> — so these are championship, placement, consolation and Cum Bowl games, not career head-to-head. Sample sizes are 1–5 games: read them as stories, not settled arguments.</p>
+      <p class="ffp-cap">⚠️ <b>Every playoff meeting.</b> The archive has final standings and playoff brackets — <b>no regular-season schedule</b> — so these are championship, placement, consolation and Cum Bowl games, not career head-to-head. Sample sizes are ${Math.min(...PAIRS.map((p) => p.n))}–${Math.max(...PAIRS.map((p) => p.n))} games: read them as stories, not settled arguments.</p>
     </div>
     <details class="ffp-card fh-det">
       <summary><b>The full grid</b><span>every pair</span><i>▾</i></summary>
@@ -2033,7 +2150,7 @@
     </details>`;
   }
 
-  /* the profile's h2h, now over the full 126-meeting pool */
+  /* the profile's h2h, over the full meeting pool — 210 since v57 */
   function h2hFor(m) {
     const out = [];
     Object.values(H2H).forEach((e) => {
@@ -2100,7 +2217,7 @@
        other call, landed in parallel). Both moves are his and they compose:
        this one says where luck and rivalries sit, that one says the curse is
        an honour. Merged rather than either one winning. */
-    rec: () => storiesHTML() + recordHTML() + playoffHTML() + seedHTML() + luckHTML() + rivalsHTML(),
+    rec: () => storiesHTML() + recordHTML() + playoffHTML() + seedHTML() + januaryHTML() + luckHTML() + rivalsHTML(),
     cb: () => cumbowlHTML(),
     you: () => youHTML(),
   };
