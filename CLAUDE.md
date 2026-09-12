@@ -278,10 +278,18 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     out 55px against row 1's 46px) and the ⚑ is bound to "record" with a
     non-breaking space, because a provenance flag alone on a line reads as a
     stray mark rather than a badge.
-  - `SUBS` — the five history sub-tabs, **in display order**: Honours · You ·
-    Records · Cum Bowl · Seasons (v6 — "You" was fifth and is second now; the
-    owner's call). Reordering is that array alone; `VIEWS` is a map and
-    `league.js` just walks `SUBS`.
+  - `SUBS` — the five history sub-tabs, **in display order**: You · Honours ·
+    Records · Cum Bowl · Seasons (v45 — "You" was fifth, then second from v6,
+    and is first now; the owner's call each time). Reordering is that array
+    alone; `VIEWS` is a map and `league.js` just walks `SUBS`, and so do the
+    sub-tab bar, the ? sheet's tab list and `checks.js`.
+    - 🚨 **The FIRST tab is not the LANDING tab, deliberately (v45).** `you`
+      with nobody picked is an invitation card and a "Choose my name" button —
+      right as a destination, wrong as a front door, because a stranger would
+      open the app on a nag with no archive behind it. `league.js`'s boot lands
+      a reader who HAS picked on `you` (the v1 rule, which `choose()` already
+      followed) and everybody else on `hon`. **Reordering `SUBS` does not
+      change where the app opens**; that is one line in boot.
   - `view(key)` — `hon` · `you` · `rec` · `cb` · `sea`. **Storylines opens
     `rec`** (v44, owner's call), back where it sat before v13.
   - `profile(mgr)` — the drill-down every name opens
@@ -1249,6 +1257,40 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v45 — You is the first tab (12 Sep 2026)** — the owner: *"Put you as the
+  first tab too. Honours 2nd"*.
+  - **The reorder is the `SUBS` array and nothing else**, which is what that
+    array is for: the sub-tab bar, the ? sheet's tab list and `checks.js` all
+    walk it, so the sheet picked the new order up with no edit — verified on
+    the render rather than assumed, same as v13's rename did.
+  - 🚨 **BUT THE FIRST TAB CANNOT BE THE LANDING TAB, AND THIS IS THE WHOLE
+    CARE IN THIS VERSION.** `youHTML()` with `ME === null` is deliberately an
+    invitation card and a "Choose my name" button — correct for a destination,
+    and **exactly what must never be a front door**: the app's hard rule is
+    that nothing may render blank, nag, or gate content behind picking, and
+    landing a stranger on that screen is all three. So boot lands a reader who
+    has picked on `you` and everybody else on `hon`. One line, and it keeps
+    "You first" meaning something for the twelve people the app is for without
+    spending the stranger's first screen on a request.
+  - ⚠️ **It is the v1 rule, extended rather than invented.** `choose()` has
+    always landed a tap on the You page — *"it is a question about yourself;
+    the answer should be the page about you"* — so a returning reader opening
+    on their own thirteen seasons is the same rule applied to the same person
+    one visit later.
+  - ⚠️ **And it means a reorder of `SUBS` no longer implies where the app
+    opens.** Written into the `SUBS` bullet above, because the next session to
+    reorder those tabs will reasonably assume the array decides both, and the
+    failure mode if it did is a stranger's first screen.
+  - Verified in headless Chromium at 320 and 390px across three devices: a
+    reader who has picked (tabs read **You · Honours · Records · Cum Bowl ·
+    Seasons**, lands on You with `aria-selected` on it and "🦅 Your career" as
+    the first heading), a stranger who tapped "I'm just looking" (same tab
+    order, lands on **Honours**, 4,023 characters of archive rather than an
+    invitation), and a first-ever open (the picker is still the front door).
+    Storylines still opens Records with twelve cards and the You page still
+    carries its own; no clipped tab label at 320px with the labels reordered,
+    no tab under 38px, no horizontal overflow, no page errors, checks.js green.
 
 - **v44 — Storylines goes back to the top of Records (12 Sep 2026)** — the
   owner: *"Move storylines back to the top of records tab instead"*.

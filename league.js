@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v44';
+  const APP_VERSION = 'v45';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -699,7 +699,15 @@
     $('#lg-body').innerHTML = '<div class="ffp-card"><div class="ffp-empty"><b>The archive didn\'t load.</b>Reload the page — history.js ships as its own file and the browser didn\'t get it.</div></div>';
   } else {
     const me = readMe();
-    if (me) LH.setMe(me);
+    /* 🚨 THE LANDING TAB IS NOT THE FIRST TAB, AND THAT IS DELIBERATE (v45).
+       `SUBS` puts You first, which is right for the twelve people this app is
+       for — but `youHTML()` with nobody picked is an invitation card and a
+       "Choose my name" button, so landing a stranger there would open the app
+       on a nag with no archive behind it. The hard rule is that picking is an
+       invitation and never a gate, so: a reader who has picked lands on their
+       own thirteen seasons (the v1 rule, which already lands `choose()` there),
+       and everybody else lands on Honours. */
+    if (me) { LH.setMe(me); S.sub = 'you'; }
     /* First ever open with nobody picked → the picker IS the front door.
        After that it never asks again, even with no name chosen, because a
        prompt that returns every visit is a nag rather than an invitation. */

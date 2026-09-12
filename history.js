@@ -1775,7 +1775,14 @@
     return out.sort((a, b) => b.n - a.n || (b.w - b.l) - (a.w - a.l));
   }
   /* ── The public surface. app.js knows these five keys and nothing else. ── */
-  const SUBS = [['hon', 'Honours'], ['you', 'You'], ['rec', 'Records'],
+  /* ⚠️ DISPLAY ORDER, and it is this array alone (v45, owner's call: You
+     first, Honours second). `VIEWS` is a map and `league.js` just walks this,
+     so a reorder needs no other edit — the sub-tab bar, the ? sheet's tab list
+     and `checks.js` all read it. ⚠️ What a reorder does NOT decide is which
+     tab the app LANDS on: `league.js` lands a reader who has picked on `you`
+     and everybody else on `hon`, because the You page with nobody picked is an
+     invitation card and a stranger must get a whole app. */
+  const SUBS = [['you', 'You'], ['hon', 'Honours'], ['rec', 'Records'],
                 ['cb', 'Cum Bowl'], ['sea', 'Seasons']];
   const VIEWS = {
     /* 🚨 Storylines opens RECORDS (v44, owner's call), back where it lived
