@@ -719,18 +719,23 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     and turns it into a line for the group chat; whoever is placing the bet
     pastes the chat into the collector, which finds every pick in it and
     assembles the ticket.
-    - 🚨 **THERE IS NOWHERE TO WRITE, SO THE CHAT IS THE TRANSPORT.** This is
+    - 🚨 **THERE IS NOWHERE TO WRITE, SO THE CHAT IS THE TRANSPORT.**
+      ⚠️ **SUPERSEDED in v73 when `sync` is set** — there is somewhere to write
+      now, and it is the reader's own Firebase store rather than anything in
+      this repo. With `sync` blank, which is how the file ships, every word
+      below is still exactly what happens. This is
       a set of static files with no account and no server — the one hard
       constraint the app has never bent. A pick therefore travels the way the
       Lab's shared rankings already travel, as a payload in a link
       (`index.html#p=…`), except pointed the other way: the Lab sends one
       payload to twelve people and this collects twelve into one.
-    - ⚠️ **BE HONEST ABOUT WHAT THAT DOES NOT BUY, AND THE CARD IS.** Everyone
+    - ⚠️ **BE HONEST ABOUT WHAT THAT DOES NOT BUY, AND THE CARD IS.**
+      ⚠️ **SUPERSEDED in v73 when `sync` is set**, which is the version that
+      spent what Open / next had costed. Everyone
       sees every pick *in the chat* as it is made, and everyone sees the
       finished ticket in the app. What it cannot do is show the other eleven
       picks INSIDE the app before the ticket is assembled. Saying so beats
-      implying a sync that is not there — see Open / next for what a real one
-      would cost.
+      implying a sync that is not there.
     - 🚨 **A PICK IS NOT A CREDENTIAL.** The payload carries a manager code, so
       anybody could craft one in somebody else's name — the same bar the
       published passphrase hash sets, against the same eleven relatives. What
@@ -772,6 +777,65 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       first cut picked one by position and happened to be right — a thing
       that works by accident stops working the day a fourth field is added,
       silently, by sending the wrong text.
+  - 👥 **THE PICKS CAN LAND IN EVERYBODY'S APP (v73, owner: *"That apps don't
+    get stored and saved through the app? Why not"*, having asked three
+    times).** With `sync` set in `parlay/current.json`, saving a pick writes
+    it to a Firebase Realtime Database and the tab grows a **👥 who is in**
+    card showing all twelve as they come in. With `sync` blank — how it ships
+    — every line of it is dead and the tab is exactly the v72 app.
+    - 🚨 **THE ANSWER TO "WHY NOT" WAS THAT THERE WAS NOWHERE TO WRITE, AND
+      THAT IS A FACT ABOUT HOSTING, NOT A DESIGN PREFERENCE.** GitHub Pages
+      hands files out; nothing in this project accepts anything back. The
+      three honest routes were his Render backend (a different repo, a
+      free-tier cold start, and **unreachable from this sandbox**, so
+      untestable here), a keyless third party, or nothing. He picked
+      Firebase. **The hard constraint survives intact**, because the store is
+      an upgrade over the chat path and never a dependency of it — the v42
+      doctrine, pointed at a WRITE for the first time.
+    - 🚨 **EVERY ROW IS UNTRUSTED INPUT AND GOES THROUGH THE SAME `checkPick`
+      A PASTED LINK GOES THROUGH.** The repo is public, so the URL is public,
+      so the store is world-writable by design: a row can name somebody who
+      is not in the league, carry a price that is not a number, be an empty
+      string or not be an object at all. `rowsToLegs` drops each and COUNTS
+      it, and the card says how many it dropped. ⚠️ **One validator, not two**
+      — two would eventually disagree about what a leg is, which is the v14
+      fault.
+    - 🚨 **A SYNCED PICK IS STILL NOT A CREDENTIAL, AND THE CARD SAYS SO IN
+      THOSE WORDS.** There is nothing to sign in to; anybody who reads
+      `parlay.js` could write a row under any name — the same bar the
+      published passphrase hash sets, against the same eleven relatives. What
+      protects the ticket is unchanged: a person reads twelve legs with twelve
+      names on them before it goes to a book. A law asserts the sentence,
+      because a shared list that *looked* authenticated would be worse than no
+      shared list.
+    - 🚨 **ONE RESOLVER FOR THREE ROUTES.** A leg now arrives by pasted chat,
+      by tapped link and by the shared list, and all three end in `takeLeg` —
+      `takeOne` is only the decoding step in front of it. A second copy of
+      "later wins" would eventually disagree about which of two picks is on
+      the ticket. A law asserts the store and the chat produce a
+      byte-identical leg from the same pick.
+    - ⚠️ **THE STORE IS A MIRROR, NEVER THE SOURCE OF YOUR OWN PICK.**
+      `lh:pick` is written first and cannot fail; the `PUT` happens after. So
+      a dead store costs the other eleven a live view and costs the picker
+      nothing — their leg is saved and their chat line is on screen
+      underneath it. Four states, four sentences (checking · this many in ·
+      the last list that came through · could not reach it).
+    - ⚠️ **Pulling the list into the ticket is a TAP with a count on it**, not
+      a silent merge: it changes what somebody is about to put money on, and
+      it reports what it did — including duplicates, which are still reported
+      rather than resolved quietly (the v70 rule).
+    - ⚠️ **Nothing is ever deleted from the store**, because the rules grant
+      write only at the leaf and a delete has no `newData`. Changing your mind
+      overwrites. So "Change my pick" says out loud that the others are still
+      looking at the old one until the new one is saved.
+    - ⚠️ **It asks again when the app becomes visible**, not on a timer — that
+      is the moment somebody wants to know who has picked, and a poll running
+      all Sunday would spend a battery on a list that changes twelve times a
+      week. Plus a Refresh button that says *"Checking…"* first, because a
+      repaint of identical rows reads as a control that does nothing (v30).
+    - ⚠️ **👥 is its own mark**, and a law refuses the five that are already
+      headings on this page — the v50 clash arrives here the same way it did
+      there, as a knock-on of a new card appearing.
   - 🏈 **THE WEEK'S BOARD IS TAPPED, NOT TYPED (v71, owner: *"Each week every
     game ML, spread and total are available or a person can fill in a prop bet
     for a game… Why can we have pick selections like by tapping not
@@ -858,6 +922,24 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   and the price either way. Every market is optional and a missing one simply
   renders no buttons. ⚠️ It is the FLOOR: the app fetches ESPN's public
   scoreboard over the top of it.
+  - 🚨 **`sync` IS THE WHOLE SHARED-PICKS FEATURE, AND IT SHIPS BLANK** (v73)
+    — a Firebase Realtime Database URL (https, no path, no trailing slash).
+    Fill it in and every pick writes to the store and the tab grows a
+    **👥 who is in** card; leave it blank and the tab is byte-for-byte the app
+    v72 shipped, picks travelling through the group chat. **So turning the
+    feature on and off is this one line and NO version bump** — `parlay/` is
+    data outside the versioned JS and is fetched `no-store`.
+    ⚠️ `checks.js` asserts it ships BLANK: an opt-in that arrives on is not
+    opt-in, and the shared list is an upgrade over the chat path rather than a
+    dependency of it.
+    ⚠️ 🚨 **IT IS NOT A CREDENTIAL AND MUST NEVER BE TREATED AS ONE.** The repo
+    is public, so the URL is public, and anybody who reads `parlay.js` could
+    write a row under any name — the same bar the published passphrase hash
+    already sets, against the same eleven relatives. Every row is untrusted
+    input; see `parlay.js` below. **Never put a Firebase API key, a database
+    secret, or any other token in this file** — the whole design is that there
+    is nothing here worth stealing. The setup steps and the exact security
+    rules are under "🔗 Turning the shared picks on" below.
 - `espn.js` — **the manager map and the ESPN transform**, loaded by BOTH pages
   (v42), `window.LeagueESPN`.
   - 🚨 **IT EXISTS BECAUSE THE ALTERNATIVE WAS TWO COPIES.** When the Season
@@ -1313,7 +1395,7 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 
 ## localStorage keys
 
-The members' app writes **eight keys**, and only two of them are ever written
+The members' app writes **nine keys**, and only two of them are ever written
 by anybody but the reader themselves. Everything else here belongs to the Lab,
 which only the commissioner opens. ⚠️ This heading said "three keys and no
 more" until v70 and had been wrong since v33 — `lh:season` and `lh:guest`
@@ -1355,6 +1437,13 @@ is a hand-kept copy of that list, and it drifts.
   Per device, refreshed at most every 15 minutes, and only ever an upgrade on
   the board committed in `parlay/current.json` — a blocked or dead call costs
   freshness and nothing else.
+- `lh:picks` — **the last copy of the SHARED pick list** (v73): `{k, rows, at}`,
+  where `rows` is the store's own object keyed by manager code. Written only
+  when `sync` is configured; it is a cache of somebody else's data, so it is
+  the one key here that is not about this device at all. ⚠️ **It is never the
+  source of the reader's OWN pick** — that is `lh:pick`, which is written
+  first and cannot fail, so a dead store costs the other eleven a live view
+  and costs the picker nothing.
 - `powerlab:draft` — the Power Rankings Lab's week in progress
   (`{key, order, comments, at}`, autosaved on every edit). `key` = weeks
   played, so it is restored only for the week it belongs to — a new week's
@@ -1431,7 +1520,12 @@ correction, zero unresolved conflicts**.
   version stays green through a swap) · **the parlay's price is the product of
   its legs, a push leaves the price and does not kill the ticket, and every
   manager's leg record is the legs from their own rows, PER MANAGER** (v69 —
-  the third outing for the per-manager rule, because a swap conserves a sum) · **the bracket resolves the
+  the third outing for the per-manager rule, because a swap conserves a sum) ·
+  **the shared pick store ships OFF, a nearly-right URL is refused, every row
+  from it goes through the same `checkPick` a pasted link does, and a leg made
+  from the store is byte-identical to the same leg made from the chat** (v73 —
+  one resolver, or two would eventually disagree about which pick is on the
+  ticket) · **the bracket resolves the
   standings** — the final decides 1st/2nd, the semi-final losers are 3rd/4th,
   the R1 losers 5th/6th (their pair plays TWICE on ESPN and the last game
   decides), the consolation six are exactly 7-12 and GmC7/8/9 decide 7-8,
@@ -1729,6 +1823,11 @@ whole design:
 > the picks gets a block out of the collector card that is already exactly the
 > object below — if what he sends looks like that, write it in verbatim and
 > skip to step 4. The rest of this is for a slip typed out by hand.
+> 👥 **And since v73, IF `sync` is set**, the collector fills itself: whoever
+> is placing the bet taps "Pull in the N picks" and the block is ready with no
+> chat to paste. Nothing about the steps below changes — the ticket still
+> reaches the league as a commit to this file, because a placed bet is a
+> record of something that happened and not a live feed.
 > 1. **Append an object to `weeks`**: `k` the NFL week (UNIQUE), `l` its label,
 >    `d` the date it went on, `stake` the total in dollars and `book` where it
 >    was placed (both optional), and `legs` — one per manager: `m` the manager
@@ -1754,6 +1853,49 @@ whole design:
 >    data outside the versioned JS and the app fetches it `no-store`. (Contrast
 >    v68 — data that lives INSIDE `history.js` does need a bump, because a
 >    device holding the old `?v=` keeps the old data for good.)
+
+> ### 🔗 TURNING THE SHARED PICKS ON — the owner's five minutes, then one line
+> Built in v73 and **shipped off**: `parlay/current.json` carries `"sync": ""`.
+> Everything below is what turns it on. It is his account and his five
+> minutes; no session can do it, which is the only reason it is a procedure
+> and not a commit.
+> 1. **He creates the store.** console.firebase.google.com → Add project (no
+>    Analytics needed) → Build → **Realtime Database** → Create → any location
+>    → **Start in locked mode**. It hands back a URL like
+>    `https://nectars-default-rtdb.firebaseio.com/`.
+> 2. **He pastes the rules** (Realtime Database → Rules → Publish):
+>    ```json
+>    {
+>      "rules": {
+>        "picks": {
+>          ".read": true,
+>          "$week": {
+>            "$mgr": {
+>              ".write": "newData.hasChildren(['p','o','t'])",
+>              ".validate": "newData.child('p').isString() && newData.child('p').val().length <= 120 && newData.child('o').isNumber() && newData.child('t').isNumber()"
+>            }
+>          }
+>        }
+>      }
+>    }
+>    ```
+>    🚨 **`.write` IS GRANTED AT THE LEAF AND NOWHERE ABOVE IT, AND THAT IS THE
+>    ONE THING NOT TO "TIDY".** Hoisting it to `picks` or to the root would let
+>    a single request replace or empty the whole tree; at the leaf, the worst
+>    anybody can do is overwrite one pick — which is what changing your mind
+>    does anyway, and it is visible on the card with a name on it. There is no
+>    `.read`/`.write` at the root, so nothing else in that database is
+>    reachable at all.
+> 3. **He sends the URL; a session sets `"sync"` to it** (https, no path, no
+>    trailing slash — `syncBase` refuses anything else, and there are laws for
+>    each of those shapes). ⚠️ **No version bump**: `parlay/` is data.
+> 4. ⚠️ **Never add anything else from that console.** No API key, no
+>    `databaseSecret`, no service account, no config object — none of it is
+>    needed and **this repo is PUBLIC**. The design is that the one thing in
+>    here is a URL that grants exactly what the rules above grant.
+> 5. **To turn it off**: set `"sync"` back to `""` and commit. The tab reverts
+>    to the chat path with nothing else changed, which is what the first law
+>    in the shared-picks block asserts.
 
 Why not have the app compute it live: members have no ESPN cookies and no
 backend, and **a ranking is an opinion column that must not silently re-derive
@@ -1873,6 +2015,136 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v73 — the picks can land in everybody's app (13 Sep 2026)** — the owner,
+  with the "picks travel through the group chat" card on screen: *"That apps
+  don't get stored and saved through the app? Why not"*.
+  - **He had now asked three times** — v70's *"it saves for all the be seen on
+    parlay tab"*, v71's follow-up, and this. The first two got a mechanism
+    that was honest and was not what he asked for. ⚠️ **Repeating the
+    constraint a third time would have been the wrong answer**: the right one
+    was to say plainly *why* there is nowhere to write, put the three real
+    routes to him with what each costs, and let him pick. He picked Firebase
+    in one word.
+  - 🚨 **THE "WHY NOT" IS A FACT ABOUT HOSTING AND NOT A DESIGN PREFERENCE,
+    AND THAT DISTINCTION IS WHAT MADE IT ANSWERABLE.** GitHub Pages hands
+    files out; nothing in this project accepts anything back. So the question
+    was never "should the app store picks" — it was "who owns the thing that
+    takes a write", and the only three answers were his Render backend (a
+    different repo, a free-tier cold start, and **unreachable from this
+    sandbox**), a keyless third party, or nothing.
+  - **`sync` in `parlay/current.json`, and it ships BLANK.** Fill it in and
+    every saved pick writes to a Firebase Realtime Database and the tab grows
+    a **👥 who is in** card. Leave it blank and the tab is byte-for-byte the
+    v72 app. 🚨 **So the feature is complete and OFF, turning on is one line
+    of DATA with no version bump, and the first law asserts it ships off** —
+    an opt-in that arrives on is not an opt-in.
+  - 🚨 **THE HARD CONSTRAINT SURVIVES, AND IT IS THE SAME ARGUMENT v42 MADE
+    ABOUT READS, POINTED AT A WRITE.** `lh:pick` is written first and cannot
+    fail; the `PUT` happens after. A dead store costs the other eleven a live
+    view and costs the picker nothing — their leg is saved and their chat line
+    is on screen underneath it. **The store is an upgrade over the chat path,
+    never a dependency of it**, which is the only footing on which a members'
+    app is allowed to write anywhere at all.
+  - 🚨 **EVERY ROW OUT OF IT IS UNTRUSTED INPUT, BECAUSE THE URL IS PUBLIC AND
+    THE REPO IS PUBLIC.** The store is world-writable by design: a row can
+    name somebody not in the league, carry a price that is not a number, be
+    an empty string, or not be an object at all. `rowsToLegs` puts every one
+    through **the same `checkPick` a pasted link goes through** — one
+    validator, not two, because two would eventually disagree about what a leg
+    is (the v14 fault) — and drops what fails while COUNTING it, so the card
+    says how many it left out rather than quietly showing eleven of twelve.
+  - 🚨 **AND A SYNCED PICK IS STILL NOT A CREDENTIAL, WHICH IS THE SENTENCE
+    MOST WORTH GETTING RIGHT ON THAT CARD.** There is nothing to sign in to;
+    anybody who reads `parlay.js` could write a row under any name — the same
+    bar the published passphrase hash already sets, against the same eleven
+    relatives. What protects the ticket is unchanged: a person reads twelve
+    legs with twelve names on them before it goes to a book. **A shared list
+    that LOOKED authenticated would be worse than no shared list**, so the
+    card says "a shared list, not a login" and there is a law on that clause.
+  - 🚨 **ONE RESOLVER FOR THREE ROUTES, AND THE SPLIT IS THE WHOLE OF WHY IT
+    IS SAFE.** A leg now arrives by pasted chat, by tapped link and by the
+    shared list. `takeOne` became the decoding step in front of `takeLeg`, and
+    all three end there — a second copy of "later wins" would eventually
+    disagree with the first about which of two picks is on a ticket somebody
+    has paid for. The law asserts the store and the chat produce a
+    **byte-identical leg** from the same pick, and it is fault-injected.
+  - 🚨 **THE SECURITY RULES GRANT WRITE AT THE LEAF AND NOWHERE ABOVE IT**,
+    and that is the one thing in the setup not to "tidy". At
+    `picks/$week/$mgr` the worst anybody can do is overwrite one pick — which
+    is what changing your mind does anyway, and it is on screen with a name
+    beside it. Hoisted to `picks` or the root, a single request empties the
+    tree. They are in CLAUDE.md ready to paste, with nothing else in that
+    database readable or writable at all. ⚠️ **No API key, no database secret,
+    no config object goes in this repo** — the design is that the one thing
+    committed is a URL that grants exactly what those rules grant.
+  - ⚠️ **Nothing is ever deleted from the store** (a delete has no `newData`,
+    so the rules refuse it), so "Change my pick" now says out loud that the
+    other eleven are still looking at the old bet until the new one is saved.
+    A thing the reader would otherwise assume either way.
+  - ⚠️ **Pulling the list into the ticket is a TAP with a count on it.** It
+    changes what somebody is about to put money on, so it reports what it did
+    — duplicates included, still reported rather than resolved quietly (v70).
+    And it has **its own sentence**: "nothing in that paste looked like a
+    pick" is true of a paste and nonsense about a list nobody pasted.
+  - ⚠️ **It asks again when the app becomes VISIBLE, not on a timer.** That is
+    the moment somebody wants to know who has picked; a poll running all
+    Sunday would spend a battery on a list that changes twelve times a week.
+    ⚠️ And the Refresh button says **"Checking…"** before it goes, because the
+    answer is usually the same list and a repaint of identical rows reads as a
+    control that does nothing — the v30 fault, which is about silence rather
+    than about being wrong.
+  - ⚠️ **👥 is its own mark and a law refuses the five already on that page.**
+    The v50 icon clash arrives here exactly the way it did there — as a
+    knock-on of a new card appearing next to old ones — and the jump row is
+    read by its mark.
+  - 🚨 **UNTESTED AGAINST A REAL FIREBASE, AND THAT IS SAID HERE RATHER THAN
+    IMPLIED.** This sandbox cannot reach `*.firebaseio.com`. What IS verified
+    is every branch with the network intercepted at the browser — the store
+    answering, the store dead, and the store absent — driven through the real
+    `index.html` over HTTP. **The one thing his phone has to confirm is that
+    saving a pick reads back "Saved — the others can see it on their Parlay
+    tab"** rather than "the shared list couldn't be reached". Same division
+    this repo already draws around the Lab and around ESPN.
+  - 🚨 **AND READING THE FLOW — NOT MEASURING IT — FOUND A CONTROL THAT WOULD
+    HAVE LIED.** A tap focuses the button, and `quietRender` skips a repaint
+    while a button has focus (so an unprompted refresh cannot move a control
+    under a thumb). Route an explicit Refresh through that and **"Checking…"
+    stays on screen for ever with the fresh list already in hand** — a button
+    reporting the opposite of what it just did, which is worse than the v30
+    silence it was written to avoid. An answer the reader ASKED for repaints
+    regardless. There is an interaction test for it in the sweep now: click
+    Refresh, wait, assert no status line still says "Checking".
+  - 🚨 **THE FIRST TWO SWEEPS WERE WORTHLESS AND SAID SO ONLY WHEN ASKED TO
+    PROVE THEMSELVES.** The **service worker answered `parlay/current.json`
+    before Playwright's route interception saw it**, so every "store on"
+    context was silently measuring the shipped blank file — the who card was
+    absent and the harness dutifully reported it absent. `serviceWorkers:
+    'block'`, plus an assertion that the intercepted `sync` actually arrived
+    in the page, which is the v67 rule one turn further on: **a sweep must
+    prove its own setup landed, not just that it reached the right tab.**
+  - 🚨 **ONE COLOUR OF MINE FAILED ITS OWN MEASUREMENT, AND FIXING IT MEANT
+    FIXING THREE CARDS I HAD NOT TOUCHED.** `.lp-leg-p b` is `--mu`, which is
+    **3.81:1 at 11.5px on white and 3.5:1 on the reader's own tinted row** —
+    the exact tone v69 moved every other muted string off. It slipped that
+    sweep because its four callers are a closed `<details>` (the collector),
+    two ticket lists, and a card that did not exist yet. Fixed in the RULE
+    rather than on the new card: fixing the one you happen to be looking at
+    while the same fault sits alongside is the v3 lesson.
+  - ⚠️ **The sweep blocks Google Fonts on purpose**, which is both faster
+    (13s a page load through the proxy became under a second) and the correct
+    measurement: the fallback is what a phone that cannot reach Google
+    renders, it is wider than Archivo, and so it is the number that has to fit
+    (v55).
+  - Verified across **18 view-contexts** — {store on · store dead · store
+    absent} × {320, 390} × {a stranger, the reader, another manager}, driven
+    through the real `index.html` over HTTP with the store intercepted at the
+    browser: no horizontal overflow, no clipped text, no type under 9px, no
+    tap target under 38px, no template hole, no rendered comment, no page
+    error, and every colour over 4.5:1 **except the pre-existing `▾` on every
+    `<details>`**, which is in Open / next with its measurements and is
+    confirmed unchanged from v72. `node --check` on every JS file and
+    `node checks.js` green, with all seven new laws fault-injected.
 
 - **v72 — the board comes from ESPN (13 Sep 2026)** — the owner pasted the
   live scoreboard payload after being told it was the one thing missing.
@@ -5079,6 +5351,22 @@ stale entry written in the present tense reads as current to anyone who greps.
   three lists added after it in v40/v42/v43. The fix is the same shape; it
   wants its own pass with a render at both widths, which is why it is here
   and not in v58.
+- ⚠️ **THE `▾` ON EVERY `<summary>` MEASURES 2.56:1 AND IS THE ONLY "THIS
+  OPENS" AFFORDANCE ON THOSE CARDS** — found in the v73 sweep, pre-existing
+  since v69, unrelated to the shared picks, and therefore recorded rather than
+  drive-by fixed. It is `--mu2`, which **v69 itself measured at 2.56:1 and
+  moved every piece of TEXT off** — the chevrons kept it because they are not
+  text. WCAG wants 3:1 for a control's affordance, so it misses even the
+  looser bar, on the parlay's collector and prop cards and on the Lab's "How
+  the model ranks". Eight instances at 320 and 390px, at 12 and 12.5px.
+  ⚠️ **It is one token** (`--mu2` → `--gy`, 6.6:1) **in two rules —
+  `.lp-prop > summary i` (league.css) and `.fh-det summary i` (styles.css) —
+  but between them those cover every `<details>` in the app**, so it wants its
+  own pass with a render of all five history views plus the parlay and the
+  Lab, which is the same reason the Season tab's clipped names are still
+  sitting here. ⚠️ **Confirmed pre-existing rather than assumed**: neither rule
+  differs from v72. A colour is invisible to every assertion in this repo;
+  only computing it off the render finds one.
 - **The Cum Bowl LOST column emits `.neg` and nothing styles it** (found while
   measuring v67's new column). `#fantasy-history .neg` is (1,1,0) but needs an
   id this app does not carry, and `.fh-prof .neg` never wraps `.fh-cbt-r` —
@@ -5105,11 +5393,27 @@ stale entry written in the present tense reads as current to anyone who greps.
   the tab keeps working and the note reads "Lines as published with the app"
   instead of "Lines from ESPN". That is the one line to check on his phone,
   and it is why the floor exists rather than being an afterthought.
-- 🚨 **THE PICKS DO NOT SYNC, AND THAT IS THE ONE THING v70 COULD NOT BUILD.**
-  Everybody sees every pick in the group chat and everybody sees the finished
-  ticket in the app, but nobody sees the other eleven picks *inside* the app
-  before the ticket is assembled. Closing that needs somewhere to write, and
-  there are only two honest routes:
+- ✅ **THE PICKS CAN SYNC — BUILT in v73, and it is waiting on ONE LINE.** The
+  owner asked a third time (*"That apps don't get stored and saved through the
+  app? Why not"*) and picked Firebase off the costed list below. The code
+  shipped with `"sync": ""`, so **the feature is complete and off**; it turns
+  on the moment he creates the database and a session fills that line in. See
+  "🔗 TURNING THE SHARED PICKS ON" above for his five minutes and the exact
+  security rules.
+  - 🚨 **UNTESTED AGAINST A REAL FIREBASE, AND THAT IS THE HONEST GAP.** This
+    sandbox cannot reach `*.firebaseio.com`, so what is verified is every
+    branch with the network intercepted at the browser: the store answering,
+    the store dead, and the store absent. **The single thing his phone has to
+    confirm is that saving a pick turns the line under it into "Saved — the
+    others can see it on their Parlay tab"** rather than "the shared list
+    couldn't be reached". Same division this repo already draws around the Lab
+    and around ESPN.
+  - ⚠️ **What it still does not buy:** nothing pushes. A reader sees new picks
+    when they open or return to the app, or tap Refresh — not while staring at
+    the page. A live socket is what would change that and it is not worth a
+    dependency for twelve people picking once a week.
+  The two routes NOT taken, kept because they are the alternatives if Firebase
+  ever has to go:
   - **His own Render backend**, which already exists for the Lab's ESPN data.
     A write endpoint plus a per-league secret would do it. ⚠️ Three real
     costs: **this sandbox cannot reach that service**, so no session can build
@@ -5122,9 +5426,10 @@ stale entry written in the present tense reads as current to anyone who greps.
     in a form rather than in the app, which is most of what he asked for; and
     it puts a dependency in the members' app that **cannot be verified in
     this sandbox**, which today verifies fully.
-  A write key committed to a PUBLIC repo is not on the list, and neither is
-  anything that needs a build step. Until one of those is chosen the chat is
-  the transport and the app says so.
+  A write key committed to a PUBLIC repo was never on the list, and neither
+  was anything that needs a build step. The Firebase route avoids both: what
+  goes in the repo is a URL, and the security rules rather than a secret are
+  what bound it.
 - ⚠️ **`season.js`'s paint call is unguarded and `parlay.js`'s is not** (v69).
   `window.LeagueSeason.paint(...)` throws out of the click handler rather than
   out of a promise if that script fails to load, leaving the previous view on
@@ -5138,8 +5443,8 @@ stale entry written in the present tense reads as current to anyone who greps.
   only to record that a second render sweep found the same thing rather than
   it having quietly fixed itself.
 - **Not built:** any way for a member to write anything back that ANOTHER
-  member's app can read (a reaction, a comment, a live pick). ⚠️ **v70
-  narrowed this rather than closing it**: a member can now enter a pick, and
-  it reaches the others through the group chat and then through a published
-  file — never through the app. The item above says what a real write path
-  would cost.
+  member's app can read, OTHER than a parlay pick. ⚠️ **v70 narrowed this and
+  v73 closed it for one thing only** — a pick reaches the others through the
+  shared store once `sync` is set. A reaction, a comment or anything else
+  would ride the same store and the same rules, and each one is its own
+  decision about what twelve relatives can write into a page the others read.

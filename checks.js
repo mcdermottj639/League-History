@@ -1359,6 +1359,152 @@ function parlayLaws() {
     if (/undefined|NaN|\[object/.test(h)) fail(`the ${what} has a template hole`);
     if (/\/\*|\*\//.test(h)) fail(`the ${what} renders a code comment`);
   });
+
+  /* ── 👥 THE SHARED PICKS ────────────────────────────────────────────────
+     🚨 THE FIRST WRITE THIS APP HAS EVER DONE, SO THE FIRST LAW IS THAT IT
+     IS OFF. `sync` ships blank; with it blank the tab must be byte-for-byte
+     the app it was before the feature existed, because that is the whole
+     safety argument — the store is an upgrade over the chat path and never a
+     dependency of it. */
+  if (String(shipped.sync || '').trim()) {
+    fail('parlay/current.json ships with a live `sync` URL — the shared store must be opt-in, and turning it on is a deliberate data commit');
+  }
+  LP._reset();
+  LP._file(shipped);
+  if (LP._syncBase(shipped)) fail('the shipped file resolves to a store URL when it should resolve to none');
+  if (LP._whoHTML({ k: 4, l: 'Week 4' }) !== '') fail('the "who is in" card renders with no store configured');
+  if (!/travel through the group chat/.test(LP._howto())) fail('with no store the tab does not say picks travel through the chat');
+  if (/data-lp="pull"/.test(LP._collectHTML({ k: 4, l: 'Week 4' }))) fail('the collector offers to pull from a store that is not configured');
+
+  /* ⚠️ A URL that is nearly right is the same fact as no URL, and it must not
+     produce something the app then fetches forever. */
+  [['', 'blank'], ['   ', 'whitespace'], ['http://x.firebaseio.com', 'plain http'],
+    ['https://x.firebaseio.com/picks', 'a path'], ['ftp://x', 'a wrong scheme'],
+    ['x.firebaseio.com', 'no scheme'], [null, 'null'], [{}, 'an object'],
+  ].forEach(([v, what]) => {
+    if (LP._syncBase({ sync: v })) fail(`${what} was accepted as a store URL`);
+  });
+  ['https://x-default-rtdb.firebaseio.com', 'https://x-default-rtdb.firebaseio.com/',
+    'https://x-default-rtdb.europe-west1.firebasedatabase.app',
+  ].forEach((v) => {
+    const b = LP._syncBase({ sync: v });
+    if (b !== v.replace(/\/+$/, '')) fail(`a real store URL was refused or mangled: ${v} → ${b}`);
+    if (/\/$/.test(b)) fail('a trailing slash survived, so every path would be doubled');
+  });
+
+  const SB = 'https://lh-test-default-rtdb.firebaseio.com';
+  LP._file({ weeks: [], open: { k: 4, l: 'Week 4' }, sync: SB });
+
+  /* 🚨 EVERY ROW IS UNTRUSTED INPUT AND GOES THROUGH THE SAME `checkPick` A
+     PASTED LINK GOES THROUGH. The store is world-writable by design — the
+     URL is in a public repo — so a row can be anything at all, and a junk one
+     must be dropped and counted rather than rendered, thrown over, or quietly
+     put on a ticket somebody is about to pay for. */
+  const ROWS = {
+    Buley: { p: 'Bills -7', o: -110, t: 10 },
+    Wolff: { p: 'Over 47.5', o: -115, t: 20 },
+    Nobody: { p: 'Jets ML', o: 250, t: 30 },
+    Hurd: { p: 'Chiefs -3', o: 'nonsense', t: 40 },
+    Gotch: { p: '   ', o: -110, t: 50 },
+    Zach: 'not even an object',
+    Riz: { p: 'Under 44', o: -105 },
+  };
+  const got = LP._rows(4, ROWS);
+  if (got.legs.length !== 3) fail(`the store's rows produced ${got.legs.length} legs, not the 3 that are actually bets`);
+  if (got.legs.some((g) => g.m === 'Nobody')) fail('a store row naming somebody not in the league became a leg');
+  if (got.bad.length !== 4) fail(`${got.bad.length} bad rows were reported, not 4`);
+  if (!got.bad.some((b) => b.m === 'Nobody' && b.why === 'who')) fail('an unknown manager was not reported as unknown');
+  if (!got.bad.some((b) => b.m === 'Hurd' && b.why === 'odds')) fail('a row with no usable price was not reported as such');
+  if (!got.bad.some((b) => b.m === 'Gotch' && b.why === 'empty')) fail('a row with no bet on it was not reported as empty');
+  if (LP._rows(4, null).legs.length || LP._rows(4, 'nope').legs.length) fail('a store answer that is not an object produced legs');
+  /* ⚠️ A row with no `t` is still a bet — it just sorts as the oldest. Losing
+     it would drop a real leg over a missing field the app itself supplies. */
+  if (!got.legs.some((g) => g.m === 'Riz' && g.t === 0)) fail('a row with no timestamp was dropped rather than treated as the oldest');
+
+  /* 🚨 ONE RESOLVER FOR THREE ROUTES. A leg arrives by paste, by tapped link
+     and now by the shared list, and a second copy of "later wins" would
+     eventually disagree with this one about which pick is on the ticket —
+     the v14 fault. So the store path must go through `takeLeg` and produce
+     exactly what the chat path produces. */
+  localStorage.removeItem('lh:tick');
+  const early = { k: 4, m: 'CC', p: 'Ravens -6', o: -120, t: 100 };
+  const later = { k: 4, m: 'CC', p: 'Ravens -6.5', o: -105, t: 200 };
+  if (LP._takeLeg(early, 4) !== 'ok') fail('a first store leg did not go on');
+  if (LP._takeLeg(later, 4) !== 'dupe') fail('a second pick from one manager was not REPORTED as a duplicate');
+  const box2 = JSON.parse(localStorage.getItem('lh:tick'));
+  if (box2.legs.length !== 1) fail(`one manager left ${box2.legs.length} legs on the ticket`);
+  if (box2.legs[0].p !== 'Ravens -6.5') fail('the later pick did not win');
+  if (LP._takeLeg(early, 4) !== 'dupe' || JSON.parse(localStorage.getItem('lh:tick')).legs[0].p !== 'Ravens -6.5') {
+    fail('an OLDER pick overwrote a newer one');
+  }
+  /* And the store cannot smuggle in a leg for a week that is not open. */
+  if (LP._takeLeg({ k: 9, m: 'Woods', p: 'Jets ML', o: 200, t: 1 }, 4) !== 'week') {
+    fail("a store row for another week went onto this week's ticket");
+  }
+  /* The two routes agree, which is the point of there being one resolver. */
+  localStorage.removeItem('lh:tick');
+  LP._takeAll([{ k: 4, m: 'Buley', p: 'Bills -7', o: -110, t: 10 }], 4);
+  const viaStore = JSON.parse(localStorage.getItem('lh:tick'));
+  localStorage.removeItem('lh:tick');
+  LP._takeOne(LP._enc64({ v: 1, k: 4, m: 'Buley', p: 'Bills -7', o: -110, t: 10 }), 4);
+  const viaChat = JSON.parse(localStorage.getItem('lh:tick'));
+  if (JSON.stringify(viaStore) !== JSON.stringify(viaChat)) {
+    fail(`the same pick makes a different leg by store than by chat:\n      store ${JSON.stringify(viaStore)}\n      chat  ${JSON.stringify(viaChat)}`);
+  }
+  const pulled = LP._takeAll(LP._rows(4, ROWS).legs, 4);
+  if (pulled.ok + pulled.dupe !== 3) fail(`pulling the shared list added ${pulled.ok + pulled.dupe} of its 3 real legs`);
+  if (pulled.who || pulled.odds || pulled.empty || pulled.bad) fail('a junk row reached the resolver, which means it was not filtered on the way out of the store');
+
+  /* ── and what it renders ────────────────────────────────────────────── */
+  LP._picks({ k: 4, rows: ROWS, at: Date.now() });
+  LHIST.setMe('Buley');
+  const who = LP._whoHTML({ k: 4, l: 'Week 4' });
+  if (!who) fail('with a store configured there is no "who is in" card');
+  if (!/section-title/.test(who)) fail('the "who is in" card is not a section, so the jump nav cannot reach it');
+  /* ⚠️ 👥 rather than 📝 or 🎯 — both are already headings on this page and
+     the jump row is scanned by its mark (the v50 clash). */
+  if (!/👥/.test(who)) fail('the "who is in" card has no mark of its own');
+  ['📝', '🎯', '🎲', '📋', '📖'].forEach((g) => {
+    if (who.includes(g)) fail(`the "who is in" heading reuses ${g}, which is already another card's mark on this page`);
+  });
+  if (!/Bills -7/.test(who) || !/Over 47\.5/.test(who)) fail('the shared picks are not on screen');
+  if (/Nobody|nonsense|not even an object/.test(who)) fail('a junk row was rendered');
+  if (!/lp-leg you/.test(who)) fail("the reader's own row is not marked as theirs");
+  if (!/lg-you/.test(who)) fail("the reader's own row carries no YOU badge");
+  if (!/3 of 12 picks are in/.test(who)) fail('the card does not say how many of the twelve are in');
+  /* Nine names still to pick, and the card has to say who — that is the
+     thing somebody chasing the ticket actually needs. */
+  if (!/Still to pick/.test(who)) fail('the card does not name who has still to pick');
+  if (!/would not read as a bet/.test(who)) fail('rows that were dropped are dropped in silence');
+  if (/undefined|NaN|\[object/.test(who)) fail('the "who is in" card has a template hole');
+  if (/\/\*|\*\//.test(who)) fail('the "who is in" card renders a code comment');
+
+  /* 🚨 A SYNCED PICK MUST NOT LOOK AUTHENTICATED. There is nothing to sign in
+     to, the URL is public, and anybody who reads the JS could write a row
+     under any name — exactly the bar the published passphrase hash sets.
+     Saying so is the difference between a shared list and a claim about who
+     wrote what, and it is one sentence away from being wrong. */
+  const howto = LP._howto();
+  if (!/not a login/i.test(howto)) fail('with a store on, the tab does not say that a pick is not proof of who made it');
+  if (!/before it goes to a book/i.test(howto)) fail('the tab does not say a person still reads every leg before the bet is placed');
+  if (/nowhere for twelve phones to write to/.test(howto)) fail('with a store on, the tab still says there is nowhere to write');
+
+  /* Four states, four sentences — never one shown for another. */
+  LP._reset(); LP._file({ weeks: [], sync: SB });
+  if (!/Checking who is in/.test(LP._whoHTML({ k: 4, l: 'Week 4' }))) fail('before the store has answered, the card does not say it is checking');
+  LP._picks({ k: 4, rows: {}, at: Date.now() });
+  if (!/Nobody has picked yet/.test(LP._whoHTML({ k: 4, l: 'Week 4' }))) fail('an empty week does not read as an empty week');
+  if (/Checking who is in/.test(LP._whoHTML({ k: 4, l: 'Week 4' }))) fail('an answered-and-empty store still reads as "checking"');
+  if (!/data-lp="sync"/.test(LP._whoHTML({ k: 4, l: 'Week 4' }))) fail('there is no way to ask the store again');
+
+  /* And the collector offers the list once it has one. */
+  LP._picks({ k: 4, rows: ROWS, at: Date.now() });
+  const col2 = LP._collectHTML({ k: 4, l: 'Week 4' });
+  if (!/data-lp="pull"/.test(col2)) fail('with picks in the shared list the collector does not offer to pull them');
+  if (!/Pull in the 3 picks/.test(col2)) fail('the pull button does not say how many it would add');
+  LP._reset();
+  LP._file(shipped);
+  LHIST.setMe(null);
   LHIST.setMe(null);
   console.log(`  ${mark()} the parlay: price is the product, a push is not a loss, every record is per manager`);
 }
