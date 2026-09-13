@@ -615,7 +615,17 @@
 /* 41px = the 32px crest plus its 9px gap, so the pick lines up under the name
    it belongs to instead of under the logo. */
 .lp-leg-p { margin-top: 3px; padding-left: 41px; font: 600 11.5px/1.45 Archivo, system-ui, sans-serif; color: var(--gy); }
-.lp-leg-p b { margin-left: 6px; color: var(--mu); font-weight: 800; font-variant-numeric: tabular-nums; }
+/* 🚨 `--gy`, NOT `--mu`, AND THE RENDER IS WHAT SAID SO. Measured on the page
+   at 11.5px: `--mu` is 3.81:1 on white and 3.5:1 on the reader's own tinted
+   row, both under the 4.5 small text needs — the exact tone v69 moved every
+   other muted string off, missed here because the four cards that use this
+   rule are a closed `<details>` (the collector) and a card that did not exist
+   yet. ⚠️ Fixed in the RULE rather than on the new card: three of the four
+   callers are pre-existing, and fixing the one you happen to be looking at
+   while the same fault sits alongside is the v3 lesson. The price is still
+   set apart by weight 800 and tabular figures, which is what v67 settled on
+   for the same problem. */
+.lp-leg-p b { margin-left: 6px; color: var(--gy); font-weight: 800; font-variant-numeric: tabular-nums; }
 .lp-r { flex: none; font: 900 9.5px/1 Archivo, system-ui, sans-serif; letter-spacing: .07em; }
 /* ⚠️ 9.5px, not the 8.5px this shipped at in the first cut. This app has a
    9px type floor and the render sweep caught it on every one of the 40

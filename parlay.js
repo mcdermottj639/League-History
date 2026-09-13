@@ -673,6 +673,176 @@
     return `<p class="lp-note">Lines from <b>ESPN</b>${mins > 0 ? `, ${mins === 1 ? 'a minute' : `${mins} minutes`} ago` : ', just now'}. They move — what you save is the price at the moment you tap it.</p>`;
   }
 
+
+  /* ══ 👥 THE SHARED PICKS ═══════════════════════════════════════════════
+     🚨 THE FIRST TIME THIS APP HAS WRITTEN ANYTHING ANYWHERE, AND IT IS
+     OPTIONAL BY CONSTRUCTION. `sync` in `parlay/current.json` is a Firebase
+     Realtime Database URL. With it absent — which is how the file ships —
+     every line below is dead and the tab behaves exactly as v72 did, picks
+     travelling through the group chat. That is the v42 doctrine extended to
+     a WRITE: the app may reach the network, it must never depend on it. So
+     turning this on is a DATA edit with no version bump, and turning it off
+     again is deleting one line.
+
+     🚨 AND IT IS NOT A LOGIN. The URL sits in a PUBLIC repo, so anybody who
+     opens this file could write a pick under any name — the same bar the
+     published passphrase hash sets, against the same eleven relatives.
+     Nothing here is treated as proof of anything: every row goes through the
+     SAME `checkPick` a pasted link goes through, and the ticket is still
+     assembled by a person looking at twelve legs with twelve names on them
+     before it reaches a book. The card says that out loud rather than
+     letting a synced pick look authenticated.
+
+     ⚠️ THE STORE IS A MIRROR, NEVER THE SOURCE OF YOUR OWN PICK. `lh:pick`
+     stays authoritative on the phone that made it, so a failed write costs
+     the other eleven a live view and costs the picker nothing — their leg is
+     saved and their chat line is still on screen underneath it.
+
+     ⚠️ THE RULES THAT GO WITH IT ARE LEAF-ONLY ON PURPOSE (they are in
+     CLAUDE.md, ready to paste). `.write` is granted at `picks/$week/$mgr`
+     and nowhere above it, so a single request cannot replace or empty the
+     tree — the worst anybody can do is overwrite one pick, which is exactly
+     what changing your mind does anyway, and it is visible on the card. */
+  const SYNC_KEY = 'lh:picks';
+  const SYNC_TTL = 30 * 1000;
+
+  /* ⚠️ Refused unless it is plain https with no path. A blank, a mistyped
+     scheme and a stray trailing slash are all the same fact — no store — and
+     none of them may produce a URL the app then fetches forever. */
+  function syncBase(file) {
+    const raw = String((file && file.sync) || '').trim().replace(/\/+$/, '');
+    return /^https:\/\/[A-Za-z0-9.-]+$/.test(raw) ? raw : '';
+  }
+  const syncOn = () => !!syncBase(P.file);
+  const weekPath = (base, k) => `${base}/picks/w${k}.json`;
+  const pickPath = (base, k, m) => `${base}/picks/w${k}/${encodeURIComponent(m)}.json`;
+
+  /* 🚨 EVERY ROW GOES THROUGH THE SAME `checkPick` A PASTED LINK GOES
+     THROUGH. The store is world-writable, so a row can be anything at all: a
+     manager who is not in the league, a price that is not a number, an empty
+     bet, or a string where an object should be. ONE validator rather than
+     two — two would eventually disagree about what a leg is, which is the
+     v14 fault — and a junk row is dropped and counted rather than rendered
+     or thrown over. */
+  function rowsToLegs(k, obj) {
+    const legs = [], bad = [];
+    if (!obj || typeof obj !== 'object') return { legs, bad };
+    Object.keys(obj).forEach((m) => {
+      const r = (obj[m] && typeof obj[m] === 'object') ? obj[m] : {};
+      const p = { k, m, p: String(r.p == null ? '' : r.p).slice(0, PICK_MAX),
+        o: Number(r.o), t: Number(r.t) || 0 };
+      const why = checkPick(p);
+      if (why === 'ok') legs.push(p); else bad.push({ m, why });
+    });
+    legs.sort((a, b) => rnm(a.m).localeCompare(rnm(b.m)));
+    return { legs, bad };
+  }
+
+  const syncLegs = (ow) => rowsToLegs(ow.k,
+    (P.picks && Number(P.picks.k) === ow.k) ? P.picks.rows : null);
+
+  async function getPicks(base, k) {
+    const r = await fetch(weekPath(base, k), { cache: 'no-store' });
+    if (!r.ok) throw new Error('http ' + r.status);
+    return await r.json();
+  }
+
+  async function putPick(base, k, m, p, o, t) {
+    const r = await fetch(pickPath(base, k, m), {
+      method: 'PUT', cache: 'no-store',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p, o, t }),
+    });
+    if (!r.ok) throw new Error('http ' + r.status);
+    return true;
+  }
+
+  /* ⚠️ Cache first, then revalidate — the v25/v42 shape, for the same reason:
+     the list has to be on screen before the network is asked, so a slow or
+     dead store costs freshness and never a blank card. */
+  function refreshPicks(ow, force) {
+    const base = syncBase(P.file);
+    if (!base || !ow || typeof fetch !== 'function') return;
+    const c = read(SYNC_KEY);
+    if (c && Number(c.k) === ow.k) {
+      P.picks = c;
+      if (!force && Date.now() - (Number(c.at) || 0) < SYNC_TTL) return;
+    }
+    if (P.busy) return;
+    P.busy = true;
+    /* 🚨 AN ANSWER THE READER ASKED FOR REPAINTS EVEN IF THE BUTTON THEY
+       TAPPED STILL HAS FOCUS. `quietRender` exists to stop an UNPROMPTED
+       refresh moving a control under a thumb — and a tap focuses the button,
+       so routing an explicit Refresh through it would have left "Checking…"
+       on screen for ever with the fresh list already in hand. A button that
+       reports the opposite of what it just did is worse than one that
+       reports nothing (v30). Found by reading the flow, not by measuring. */
+    const done = () => (force ? render() : quietRender());
+    getPicks(base, ow.k).then((obj) => {
+      P.busy = false; P.syncErr = false;
+      if (P.where === 'who') say('', 'who');
+      P.picks = { k: ow.k, rows: (obj && typeof obj === 'object') ? obj : {}, at: Date.now() };
+      write(SYNC_KEY, P.picks);
+      done();
+    }).catch((e) => {
+      P.busy = false; P.syncErr = true;
+      if (P.where === 'who') say('', 'who');
+      console.warn('[parlay] the shared picks did not answer', e);
+      done();
+    });
+  }
+
+  /* ⚠️ A repaint while somebody is typing or mid-tap moves the control under
+     their thumb — the Lab's v25 rule, and it bites harder here than on the
+     board: these land unprompted, seconds apart, while eleven other people
+     are picking. */
+  function quietRender() {
+    if (typeof document === 'undefined' || !P.host) return;
+    const el = document.activeElement;
+    if (el && /^(INPUT|TEXTAREA|BUTTON|SUMMARY)$/.test(el.tagName || '')) return;
+    render();
+  }
+
+  const agoTxt = (at) => {
+    const mins = Math.round((Date.now() - (Number(at) || 0)) / 60000);
+    return mins <= 0 ? 'just now' : mins === 1 ? 'a minute ago' : `${mins} minutes ago`;
+  };
+
+  function whoHTML(ow) {
+    if (!syncOn()) return '';
+    const me = LH ? LH.me() : null;
+    const { legs, bad } = syncLegs(ow);
+    const all = LH ? LH.roster().map((r) => r.m) : [];
+    const missing = all.filter((m) => !legs.some((x) => x.m === m));
+    const seen = P.picks && Number(P.picks.k) === ow.k;
+    /* Four states, four sentences — the rule this app keeps: "nobody has
+       picked yet" and "we could not reach the list" are opposite facts and
+       one line must never be shown for the other. */
+    const line = P.syncErr && !seen
+      ? "<p class=\"lp-note\">Couldn't reach the shared list just now. Your own pick is safe on this phone, and the chat still works.</p>"
+      : !seen ? '<p class="lp-note">Checking who is in…</p>'
+        : P.syncErr ? `<p class="lp-note">Showing the last list that came through, ${esc(agoTxt(P.picks.at))} — the store did not answer just now.</p>`
+          : `<p class="lp-note">Updated ${esc(agoTxt(P.picks.at))}.</p>`;
+    const rows = legs.map((g) => {
+      const mine = !!me && g.m === me;
+      return `<div class="lp-leg${mine ? ' you' : ''}">
+        <div class="lp-leg-t">${P.cr ? P.cr(g.m, 32) : ''}<span class="lp-leg-n">${esc(rnm(g.m))}${mine ? ' <span class="lg-you">YOU</span>' : ''}</span></div>
+        <div class="lp-leg-p">${esc(g.p)}<b>${esc(oddsTxt(g.o))}</b></div>
+      </div>`;
+    }).join('');
+    const none = `<div class="ffp-empty"><b>Nobody has picked yet.</b>The first leg of ${esc(ow.l)} is going spare.</div>`;
+    return `<h2 class="section-title">👥 ${esc(ow.l)} — who is in</h2>
+      <div class="ffp-card">
+        <p class="fh-lead"><b>${legs.length} of ${all.length} picks are in.</b> Everybody's leg lands here as they save it, so the twelve of you are looking at the same board.</p>
+        ${legs.length ? `<div class="lp-legs">${rows}</div>` : none}
+        ${missing.length ? `<p class="lp-note">Still to pick: <b>${missing.map((m) => esc(rnm(m))).join(', ')}</b>.</p>` : legs.length ? '<p class="lp-note">That is everybody — the ticket can go on.</p>' : ''}
+        ${bad.length ? `<p class="lp-note">⚠️ ${bad.length === 1 ? 'One row' : `${bad.length} rows`} in the list would not read as a bet and ${bad.length === 1 ? 'was' : 'were'} left out.</p>` : ''}
+        ${line}
+        ${noteFor('who')}
+        <div class="lp-btns"><button type="button" class="lp-alt" data-lp="sync">Refresh</button></div>
+      </div>`;
+  }
+
   /* ══ 🎯 YOUR PICK ══════════════════════════════════════════════════════ */
   /* 🚨 A STATUS LINE BELONGS TO ONE CARD. `note` was a single string rendered
      into every `.lp-say` on the page, so "Saved. Send it to the chat" printed
@@ -731,7 +901,9 @@
             <span class="lp-mine-p">${esc(mine.p)}</span>
             <span class="lp-mine-o">${esc(oddsTxt(mine.o))}</span>
           </div>
-          <p class="lp-note">Saved on this phone. It is not on the ticket until somebody collects it, so send it to the chat.</p>
+          <p class="lp-note">${syncOn()
+            ? 'Up on the shared list, so the other eleven can see it. Sending it to the chat as well does no harm.'
+            : 'Saved on this phone. It is not on the ticket until somebody collects it, so send it to the chat.'}</p>
           <textarea class="lp-out" data-lp-t="pick" readonly rows="3" aria-label="Your pick, ready to send">${esc(pickText(ow, LH.me(), mine.p, mine.o))}</textarea>
           <div class="lp-btns">
             <button type="button" class="lg-sheet-go" data-lp="send" data-lp-for="pick">${navigator.share ? '📤 Send it to the chat' : '📋 Copy it for the chat'}</button>
@@ -782,11 +954,13 @@
   /* ══ 🧾 COLLECTING THE TICKET ══════════════════════════════════════════ */
   const collected = () => { const j = read(TICK_KEY); return (j && Array.isArray(j.legs)) ? j : { k: null, legs: [] }; };
 
-  /* One payload in. Returns why it did not go on, so the card can say which
-     of the four things went wrong rather than "that didn't work". */
-  function takeOne(payload, wantK) {
-    let p;
-    try { p = b64dec(payload); } catch (_) { return 'bad'; }
+  /* 🚨 ONE RESOLVER, AND THAT IS WHY IT IS SPLIT IN TWO. A leg now arrives by
+     three routes — a pasted chat, a tapped link, and the shared list — and
+     each of them ends here. A second copy of "later wins" would eventually
+     disagree with this one about which of two picks is on the ticket, which
+     is the v14 fault (one concept, two implementations, each right, the page
+     lying). `takeOne` is only the decoding step in front of it. */
+  function takeLeg(p, wantK) {
     const why = checkPick(p);
     if (why !== 'ok') return why;
     if (wantK != null && Number(p.k) !== wantK) return 'week';
@@ -807,6 +981,27 @@
     return out;
   }
 
+  /* One payload in. Returns why it did not go on, so the card can say which
+     of the four things went wrong rather than "that didn't work". */
+  function takeOne(payload, wantK) {
+    let p;
+    try { p = b64dec(payload); } catch (_) { return 'bad'; }
+    return takeLeg(p, wantK);
+  }
+
+  const emptyTally = () => ({ ok: 0, dupe: 0, bad: 0, who: 0, odds: 0,
+    empty: 0, week: 0, none: false });
+
+  /* The shared list, merged in through the SAME resolver a paste goes
+     through — so a manager who is in both is one leg and is reported as a
+     duplicate, and the later of the two wins whichever route it came by. */
+  function takeAll(legs, wantK) {
+    const tally = emptyTally();
+    tally.none = !legs.length;
+    legs.forEach((p) => { tally[takeLeg(p, wantK)]++; });
+    return tally;
+  }
+
   /* Pull every payload out of whatever got pasted — the whole chat, one
      message, or a bare code. Anything that is not a payload is ignored
      rather than reported, because a paste of a chat is mostly not payloads. */
@@ -817,7 +1012,8 @@
       const bare = String(text || '').trim();
       if (/^[A-Za-z0-9\-_]{16,}$/.test(bare)) codes = [bare];
     }
-    const tally = { ok: 0, dupe: 0, bad: 0, who: 0, odds: 0, empty: 0, week: 0, none: !codes.length };
+    const tally = emptyTally();
+    tally.none = !codes.length;
     codes.forEach((c) => { tally[takeOne(c, wantK)]++; });
     return tally;
   }
@@ -834,10 +1030,32 @@
     return bits.join(' · ') || 'Nothing new in that one.';
   }
 
+  /* ⚠️ Its own sentence, not `tallyLine`'s. "Nothing in that paste looked
+     like a pick" is true of a paste and nonsense about a list nobody pasted
+     — the same rule that keeps four empty states apart. */
+  function pullLine(t) {
+    if (t.none) return 'Nobody has put a pick in the shared list yet.';
+    const bits = [];
+    if (t.ok) bits.push(`<b>${t.ok} added</b>`);
+    if (t.dupe) bits.push(`${t.dupe} already had a pick — kept the later one`);
+    if (t.week) bits.push(`${t.week} for a different week, left out`);
+    if (t.who + t.odds + t.empty + t.bad) bits.push(`${t.who + t.odds + t.empty + t.bad} would not read as a bet`);
+    return bits.join(' · ') || 'Nothing new — the ticket already has all of those.';
+  }
+
   const today = () => new Date().toISOString().slice(0, 10);
 
   function collectHTML(ow) {
     const box = collected();
+    /* ⚠️ Offered rather than done for you, and the count is on the button.
+       Merging the shared list into the ticket mutates what somebody is about
+       to put money on, so it is a tap with a number on it and a line
+       afterwards saying what it did — never a silent sync. */
+    const shared = syncOn() ? syncLegs(ow).legs : [];
+    const pull = shared.length
+      ? `<p class="lp-note">Everybody's picks are in the shared list — pull them straight in.</p>
+      <div class="lp-btns"><button type="button" class="lg-sheet-go" data-lp="pull">Pull in the ${shared.length === 1 ? 'one pick' : `${shared.length} picks`}</button></div>`
+      : '';
     const legs = box.legs.slice().sort((a, b) => rnm(a.m).localeCompare(rnm(b.m)));
     const t = legs.length ? ticketOf({ k: box.k, l: ow.l, legs }) : null;
     const missing = LH ? LH.roster().map((r) => r.m).filter((m) => !legs.some((x) => x.m === m)) : [];
@@ -850,7 +1068,8 @@
       + legs.map((x) => `${x.p}  ${oddsTxt(x.o)}   [${rnm(x.m)}]`).join('\n') : '';
     return `<details class="ffp-card fh-det lp-col"${P.det ? ' open' : ''} data-lp-det="1">
       <summary><b>🧾 Putting the ticket on?</b><span>${legs.length ? `${legs.length} in` : ''}</span><i>▾</i></summary>
-      <p class="lp-note">Paste the picks out of the group chat — all of them at once is fine, it finds every one. Tapping somebody's link adds it too.</p>
+      ${pull}
+      <p class="lp-note">${pull ? 'Or paste' : 'Paste'} the picks out of the group chat — all of them at once is fine, it finds every one. Tapping somebody's link adds it too.</p>
       <textarea class="lp-in lp-paste" id="lp-paste" rows="3" placeholder="Paste the chat here"></textarea>
       <div class="lp-btns">
         <button type="button" class="lg-sheet-go" data-lp="add">Add the picks</button>
@@ -880,9 +1099,15 @@
     </details>`;
   }
 
-  /* ⚠️ Said plainly rather than left for somebody to discover: the picks are
-     shared through the chat because there is nowhere to write them. */
-  const HOWTO = `<div class="ffp-card"><p class="ffp-cap">🔗 <b>Picks travel through the group chat, not through the app.</b> This app is a set of static files with nothing behind it — no account, no server, nowhere for twelve phones to write to. So your pick is saved on your phone and turned into a line you send; whoever is placing the bet collects the twelve and publishes the ticket, and from then on everybody sees it here.</p></div>`;
+  /* ⚠️ Two sentences for two different apps, and the app has to say which one
+     it is. With a store wired up the picks genuinely do reach everybody; with
+     none they genuinely do not, and v72 shipped the second sentence because
+     it was the only true one. Printing either while the other is the case
+     would be the worst copy on the page — a reader would check it, and it is
+     one line of data apart from being wrong. */
+  const howtoHTML = () => (syncOn()
+    ? `<div class="ffp-card"><p class="ffp-cap">👥 <b>Everybody's picks land in the app as they are made.</b> Save yours and it is on the other eleven phones within seconds — no chat step needed, though the line is still there if you want to send it. ⚠️ <b>It is a shared list, not a login:</b> there is nothing to sign in to here, so a pick is only as good as the name on it, and whoever puts the bet on still reads all twelve legs before it goes to a book.</p></div>`
+    : `<div class="ffp-card"><p class="ffp-cap">🔗 <b>Picks travel through the group chat, not through the app.</b> This app is a set of static files with nothing behind it — no account, no server, nowhere for twelve phones to write to. So your pick is saved on your phone and turned into a line you send; whoever is placing the bet collects the twelve and publishes the ticket, and from then on everybody sees it here.</p></div>`);
 
   /* ⚠️ Said once, at the bottom, and it is the honest half of this tab: the
      legs are transcribed and everything with a number in it is not. */
@@ -941,7 +1166,7 @@
     if (!ow && !has) { host.innerHTML = emptyHTML('none'); return; }
     try {
       let out = '';
-      if (ow) out += pickHTML(ow) + collectHTML(ow) + HOWTO;
+      if (ow) out += pickHTML(ow) + whoHTML(ow) + collectHTML(ow) + howtoHTML();
       if (has) out += ticketHTML(s2.ts[0], P.cr, !!ow) + tallyHTML(s2) + boardHTML(s2) + pastHTML(s2, P.cr);
       /* The bar is pinned to the viewport, so the page needs room under it or
          it covers whatever the reader has scrolled to the bottom of. */
@@ -988,15 +1213,38 @@
       if (!p) { say('Write the bet first — however the book writes it.', 'pick'); return render(); }
       if (!okOdds(o)) { say('The price needs to be a number like -110 or +150.', 'pick'); return render(); }
       if (!ow || !LH.me()) { say('Picks are not open right now.', 'pick'); return render(); }
-      write(PICK_KEY, { k: ow.k, p, o, at: Date.now() });
+      /* 🚨 LOCAL FIRST, ALWAYS, AND THE STORE AFTERWARDS. The write that
+         cannot fail happens before the one that can, so a dead store costs
+         the other eleven a live view and costs the picker nothing — their
+         leg is saved and their chat line is on screen underneath it. The
+         v42 doctrine, pointed at a write. */
+      const at = Date.now();
+      write(PICK_KEY, { k: ow.k, p, o, at });
       P.draftP = ''; P.draftO = ''; P.sel = null;
-      say('Saved. Send it to the chat so it makes the ticket.', 'pick');
-      return render();
+      const base = syncBase(P.file);
+      if (!base) { say('Saved. Send it to the chat so it makes the ticket.', 'pick'); return render(); }
+      say('Saved. Putting it up for the others…', 'pick');
+      render();
+      putPick(base, ow.k, LH.me(), p, o, at).then(() => {
+        say('Saved — the others can see it on their Parlay tab.', 'pick');
+        P.picks = null; refreshPicks(ow, true); render();
+      }).catch((e) => {
+        console.warn('[parlay] that pick did not reach the shared list', e);
+        say("Saved on this phone, but the shared list couldn't be reached. Send it to the chat instead.", 'pick');
+        render();
+      });
+      return;
     }
     if (act === 'edit') {
       const mine = ow ? myPick(ow.k) : null;
       if (mine) { P.draftP = mine.p; P.draftO = String(mine.o); }
-      write(PICK_KEY, null); say('', 'pick'); return render();
+      write(PICK_KEY, null);
+      /* ⚠️ Said rather than left to be discovered: clearing it here does not
+         clear it for the others. Nothing is deleted from the shared list —
+         saving the new one writes over the old one — so between the two taps
+         the other eleven are still looking at the old bet. */
+      say(syncOn() ? 'The others still see your old pick until you save the new one.' : '', 'pick');
+      return render();
     }
     if (act === 'add') {
       const t = takeMany(val('lp-paste'), ow ? ow.k : null);
@@ -1005,6 +1253,17 @@
       return render();
     }
     if (act === 'clear') { write(TICK_KEY, null); say('Cleared.', 'col'); P.det = true; return render(); }
+    /* ⚠️ It says "checking" before it goes, because the answer is usually the
+       same list and a Refresh that repaints identical rows reads as a button
+       that does nothing — the v30 fault, which is about a control being
+       silent rather than about it being wrong. */
+    if (act === 'sync') { say('Checking…', 'who'); refreshPicks(ow, true); return render(); }
+    if (act === 'pull') {
+      const t = takeAll(syncLegs(ow).legs, ow ? ow.k : null);
+      P.det = true;
+      say(pullLine(t).replace(/<[^>]+>/g, ''), 'col');
+      return render();
+    }
     if (act === 'send') {
       /* ⚠️ The button NAMES the box it sends, rather than counting boxes in
          the card. The first cut picked one by position and happened to be
@@ -1038,6 +1297,13 @@
   document.addEventListener('change', (e) => {
     if (e.target && e.target.id === 'lp-stake') { P.det = true; render(); }
   });
+  /* ⚠️ Coming back to the app IS the moment somebody wants to know who has
+     picked, so that is when it asks — rather than a timer running down a
+     battery all Sunday for a list that changes twelve times a week. */
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && P.host) refreshPicks(curOpen(), true);
+  });
+
   /* `toggle` does not bubble, so it is caught on the way down. */
   document.addEventListener('toggle', (e) => {
     if (e.target && e.target.matches && e.target.matches('[data-lp-det]')) P.det = !!e.target.open;
@@ -1069,8 +1335,10 @@
     const got = await load();
     if (got.why) { P.err = got.why; P.file = null; } else { P.err = null; P.file = got.file; }
     render();
-    /* Behind the reader, deliberately not awaited. */
+    /* Both behind the reader, deliberately not awaited: the page is already
+       on screen from the file and the cache before either is asked. */
     refreshBoard(curOpen());
+    refreshPicks(curOpen(), false);
   }
 
   window.LeagueParlay = {
@@ -1094,5 +1362,10 @@
     _live: (v) => { P.live = v; },
     _sel: (v) => { P.sel = v; },
     _collectHTML: (ow) => collectHTML(ow),
+    _syncBase: syncBase, _rows: rowsToLegs, _takeLeg: takeLeg, _takeAll: takeAll,
+    _whoHTML: (ow) => whoHTML(ow), _howto: () => howtoHTML(),
+    _file: (v) => { P.file = v; }, _picks: (v) => { P.picks = v; P.syncErr = false; },
+    _reset: () => { P.picks = null; P.syncErr = false; P.file = null;
+      P.note = ''; P.where = ''; P.sel = null; P.live = null; },
   };
 })();
