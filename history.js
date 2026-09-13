@@ -1687,7 +1687,7 @@
         if (prev && prev.place && prev.place >= cut) (by[n.champ.mgr] = by[n.champ.mgr] || []).push({ from: prev.place, a: s.yr, b: n.yr });
       });
       /* 🚨 "AS A PARTY TRICK" IS A CLAIM ABOUT REPETITION, AND IT HAS TO
-         COUNT (v80). It was written for two worst-to-first titles and shipped
+         COUNT (v81). It was written for two worst-to-first titles and shipped
          as the only wording this detector had — so when v79's Cum Bowl
          placings left every manager on exactly ONE run, the card went on
          calling a single off-season a habit, over a body listing one line.
@@ -1723,7 +1723,7 @@
          cut returned every manager with a 4+ repeat, so Buley (11th x7) and
          the champion (1st x4) BOTH claimed the record on the same page. A
          superlative that fires more than once is just wrong. */
-      /* 🚨 FIRST PLACE IS NOT A RUT, AND IT BELONGS TO `dynasty` (v80).
+      /* 🚨 FIRST PLACE IS NOT A RUT, AND IT BELONGS TO `dynasty` (v81).
          The comment above has always named the risk — "Buley (11th x7) and
          the champion (1st x4)" — and only `leaders()` kept the champion off
          the page, because 7 beat 4. v79's Cum Bowl placings took Buley to 4,
@@ -2231,7 +2231,7 @@
   }
   const storiesFor = (m) => stories().filter((x) => x.m === m);
 
-  /* 🚨 THE DEDUPE KEY MUST NOT DEPEND ON WHO IS READING (v80).
+  /* 🚨 THE DEDUPE KEY MUST NOT DEPEND ON WHO IS READING (v81).
      `pickStories` skips a manager whose claim another manager has already
      made, and it keyed on the head with the NAME taken out — which is only
      ONE of the two things the voice changes. The other is the VERB: *"You do

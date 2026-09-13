@@ -1086,6 +1086,25 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       button with no price behind it. A board arrives half-posted all the
       time — a total up before a spread — and half a game is still worth
       showing. A one-sided moneyline renders neither side.
+    - 🚨 **AND A BOARD IS GAMES YOU CAN BET, NOT GAMES ESPN KNOWS ABOUT
+      (v80, `playable()`).** ESPN lists a week's fixtures as soon as the
+      schedule exists and prices them only when the books do — so **every
+      week has a window, days long, where the payload is all games and no
+      markets**, and it is the window the tab sits in for most of the week.
+      Every gate counted GAMES, so the card said *"Tap a line below"* over an
+      empty board with the write-it-in field **folded shut**: a control named
+      in a sentence and absent from the page, which is the v30 fault.
+      Reproduced on the render before it was fixed.
+      ⚠️ **ONE helper and four gates read it** — the lead sentence, the board,
+      the note, and whether the prop field opens. Four gates asking one
+      question four ways is how three agree and one does not.
+      🚨 **The buttons stay keyed by their index into the WHOLE week, never
+      into the priced subset.** A pick travels as `{g, id}` and `selPick`
+      resolves it back through `gamesOf`, so renumbering around an unpriced
+      fixture would point a saved tap at a **different game** — silently, and
+      only in the half-priced state, which is every week for a day or two.
+      There is a law that reads the rendered buttons back against the week
+      they came from, on a board with the gaps deliberately at 0 and 2.
     - 🚨 **SAVE SITS WHERE THE CHOOSING HAPPENS.** The first cut put it above
       the board, which on a sixteen-game slate (~90 buttons) means tapping a
       line and scrolling back to the top to confirm it. The chosen line rides
@@ -1601,7 +1620,7 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   which is exactly why it is asserted. ⚠️ The first law is about `power.html`
   only — `power.css` is legitimately in `index.html`, because the rankings view
   reuses the Lab's row styling so a member reads what the commissioner built. It
-  holds the **storyline voice laws** (v80 — the roll-call is the same twelve
+  holds the **storyline voice laws** (v81 — the roll-call is the same twelve
   findings for every reader as for a stranger, because a duplicate that exists
   only in second person is invisible to a law that runs as nobody; a head
   claiming a habit has more than one instance in its body; and no `stuckAt`
@@ -1767,7 +1786,12 @@ correction, zero unresolved conflicts**.
   rankings copy names who publishes a set, none of it carries a pronoun for
   one, and the empty card still promises that a set is coming** (v77 — the
   last clause because copy that named nobody by saying nothing would pass the
-  first two) · **every manager in the roster has a row on the rendered season
+  first two) · **a week whose games carry no odds is not a board — no option
+  buttons, no empty container, no note claiming a source, the prop field open
+  and the card saying why — and an option's `data-g` indexes the WHOLE week
+  rather than the priced subset, so a tap cannot land on a different game**
+  (v80 — the second clause because renumbering is the obvious fix and it is
+  the silent one) · **every manager in the roster has a row on the rendered season
   record, a row with no legs prints no record rather than 0-0, twelve unrated
   rows sort to name order, and a stated `open` behind or on the newest ticket
   neither opens a played week nor carries that week's board forward** (v78 —
@@ -1975,7 +1999,7 @@ something computed is wrong the first time somebody changes it.
   first; fixing that instance produced the second.** Fix the rule, not the
   instance. `checks.js` fails if any manager holds two slots.
 - 🚨 **TWO MANAGERS MUST NOT MAKE THE SAME CLAIM, AND THE GUARD FOR IT COULD
-  NOT SEE THE READER (v80).** `pickStories()` skips a manager whose claim
+  NOT SEE THE READER (v81).** `pickStories()` skips a manager whose claim
   another manager has already made (v66), keyed on the head with the NAME
   stripped — which is only ONE of the two things the voice changes. The other
   is the VERB: *"You do worst-to-first as a party trick"* and *"Woods does
@@ -1997,7 +2021,7 @@ something computed is wrong the first time somebody changes it.
     roll-call is the same twelve findings — same manager, same detector — for
     all twelve readers as for a stranger.** Fault-injected back to v79's
     keying, it names McD, Woods and Gotch.
-- 🚨 **A HEAD THAT CLAIMS A HABIT MUST HAVE THE INSTANCES BEHIND IT (v80).**
+- 🚨 **A HEAD THAT CLAIMS A HABIT MUST HAVE THE INSTANCES BEHIND IT (v81).**
   `worstToFirst` had exactly one wording — *"does worst-to-first as a party
   trick"* — written when one manager had done it twice. v79's Cum Bowl
   placings left **three** managers on exactly ONE run each, and the card went
@@ -2014,7 +2038,7 @@ something computed is wrong the first time somebody changes it.
   *"with 4 titles"* on his own page — one fact on two adjacent cards, which
   the `stories()` dedupe fingerprints DECIMALS and cannot see.
 - 🚨 **A REPEATED FIRST PLACE IS THE TITLE COUNT, AND THAT CARD IS `dynasty`
-  (v80).** `stuckAt` is about a finish a manager cannot escape; a championship
+  (v81).** `stuckAt` is about a finish a manager cannot escape; a championship
   is not one. Its own comment has named the risk since v2 — *"Buley (11th x7)
   and the champion (1st x4)"* — and only `leaders()` kept the champion off the
   page, because 7 beat 4. v79's placings took Buley to 4, the tie surfaced,
@@ -2351,11 +2375,22 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
 
-- **v80 — the roll-call said the same thing twice, and only the reader could
+- **v81 — the roll-call said the same thing twice, and only the reader could
   see it (13 Sep 2026)** — the owner, with the Records storylines on screen:
   *"Remove the fact that I have the party trick line and woods does in the
   main storylines in record. Mine was unluckiest which was fine I never asked
   u to change those."*
+  - ⚠️ **Built as v80 and renumbered to v81 on the merge — the v50 collision,
+    exactly, and the second time two sessions in flight have both taken the
+    next number.** The board work below got to `main` first and keeps v80.
+    🚨 **And it is invisible to git for the same reason it was in v50: both
+    sides had independently written `'v80'` into `APP_VERSION`, `CACHE` and
+    both pages' `?v=`, so those lines merged CLEAN** — an identical string is
+    not a conflict. Only `CLAUDE.md`'s changelog collided, because two entries
+    cannot occupy one spot; had this version touched no prose it would have
+    merged silently and shipped two different builds under one number.
+    **Read `origin/main` before bumping, and read the version again out of
+    the merged tree.**
   - 🚨 **HE IS RIGHT ON BOTH HALVES, AND v79 CAUSED BOTH — AS A KNOCK-ON OF
     THE PLACINGS, NOT OF ANYTHING ANYBODY EDITED.** Moving the Cum Bowl back
     to `GmC3` re-placed 41 finishes across 9 seasons, and two detectors read
@@ -2432,6 +2467,65 @@ stale entry written in the present tense reads as current to anyone who greps.
     on its own port**, where it reports the duplicate for McD, Woods and Gotch
     and nothing for a stranger — which is both the proof it can fail and the
     measurement of the bug.
+
+- **v80 — a board is games you can BET (13 Sep 2026)** — the owner, on the
+  week 2 board: *"What time will we get the week 2 odds shown"*.
+  - **The question has no time in the answer, and checking that is what found
+    the bug.** Nothing here is scheduled: the board is pulled from ESPN by
+    the reader's phone when the tab paints, cached 15 minutes, so the lines
+    appear on the first open more than fifteen minutes after ESPN carries
+    them. What that exposed is **what the tab does in the meantime**.
+  - 🚨 **ESPN LISTS A WEEK'S FIXTURES LONG BEFORE THE BOOKS PRICE THEM, AND
+    EVERY GATE ON THIS CARD COUNTED GAMES.** So in the window between the
+    two — days long, every week, and exactly where week 2 sits today — the
+    payload came back with sixteen games and no markets, and the card
+    rendered: *"Tap a line below, or write your own prop"*, **no lines**, a
+    `.lp-board` container with nothing in it, *"Lines as published with the
+    app"* under it, and the write-it-in field **collapsed**, because three
+    games looked like a board. **A control named in a sentence and absent
+    from the page is the v30 fault**, and this is it in the state the tab
+    spends most of the week in. Reproduced on the render first.
+  - ⚠️ **The distinction the code was missing is one word**: a board is games
+    you can BET, not games ESPN knows about. `playable()` is that question
+    asked once, and the lead sentence, the board, the note and the prop
+    field's own `open` all read it. **Four gates asking one question four
+    ways is how three of them agree and one does not** — which is what had
+    already happened here, since `gameBoardHTML` filtered per game correctly
+    and then rendered its wrapper anyway.
+  - 🚨 **THE REAL RISK WAS NOT THE EMPTY BOX, IT WAS RENUMBERING.** The
+    obvious fix is to render the filtered list — and a pick travels as
+    `{g, id}` with `selPick` resolving it back through `gamesOf`, so the
+    moment one unpriced fixture sat above a priced one, **a saved tap would
+    point at a different game**. Silently, and only in the half-priced state,
+    which is every week for a day or two. The buttons keep their index into
+    the whole week; a law reads the rendered buttons back against the week
+    they came from, with the gaps deliberately at 0 and 2, and it names the
+    wrong game when injected.
+  - ⚠️ **The copy says why, and that it fixes itself.** "The week's board is
+    not in yet" now covers two different situations (no fixtures, or no
+    prices), so it reads *"The week's lines are not posted yet… Tappable
+    lines turn up here on their own once they are"* — nobody has to be told
+    to come back, and nobody files it as broken.
+  - 🚨 **ANOTHER SESSION TOOK v79 WHILE THIS WAS BEING BUILT, WHICH IS THE
+    v50 COLLISION ARRIVING EXACTLY AS PREDICTED.** v50 shipped as v49 because
+    two sessions independently wrote the same string into `APP_VERSION`,
+    `CACHE` and both pages, and **git merges an identical line clean** — so
+    the clash is invisible to the merge. The rule it wrote down is read
+    `origin/main` before bumping and re-read after merging; what this version
+    adds is the practical half: **do the bump LAST**. The work was committed
+    with no version in it, `origin/main` was re-read (it had moved to v79),
+    their commit was merged with no conflict, and only then was the number
+    taken — so there was never a moment when two commits claimed one version.
+  - Verified on the merged tree, both sessions' work together: `node --check`
+    on every JS file, `node checks.js` green including v79's new Cum Bowl
+    laws and v80's five, each of mine fault-injected and naming its own
+    fault. Rendered across **96 view-contexts** — four tabs × four personas ×
+    {320, 390} × {the shipped file, a week of fixtures with no odds, a
+    half-priced week}: no overflow, no clipped text, no template hole, no
+    page error, and every clip reported is the Season tab's team names, which
+    are pre-existing and in Open / next. Plus the tap driven through the real
+    page on a half-priced board — `data-g` 1 and 3 with the gaps at 0 and 2,
+    and the last game's moneyline saving as **TEN ML vs LAR +145**.
 
 - **v79 — the Cum Bowl is round one, and it decides last place (13 Sep 2026)**
   — the owner, with the whole 2022 consolation bracket on screen beside the
@@ -2524,12 +2618,12 @@ stale entry written in the present tense reads as current to anyone who greps.
     reported failures, every one about the harness. It re-queries now. **A
     sweep is only as trustworthy as its own setup**, which is v67's lesson and
     the third version running it has had something to say.
-  - ⚠️ **KNOCK-ONS IN THE STORYLINES, FOUND IN v80 AND NOT HERE.** Re-placing
+  - ⚠️ **KNOCK-ONS IN THE STORYLINES, FOUND IN v81 AND NOT HERE.** Re-placing
     41 finishes moved two detectors that read placings — `worstToFirst` gained
     two managers and lost one of Woods's runs, `stuckAt` surfaced a tie — and
     the roll-call started printing one claim twice. **Every law and every
     sweep in this version was green over it, because all of them read the app
-    as a stranger and the duplicate only existed in second person.** See v80.
+    as a stranger and the duplicate only existed in second person.** See v81.
   - **Verified:** 24 Cum Bowl appearances and 11 losses (the v1-v65 figures,
     which the file header comment has said all along and which v66 silently
     contradicted at 25/13); `node --check` on every JS file; `node checks.js`

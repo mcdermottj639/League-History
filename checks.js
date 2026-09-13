@@ -461,7 +461,7 @@ window.LeagueHistory.roster().forEach((r) => {
   console.log(`  ${dupMark()} roll-call: ${card.length} cards, ${seen.size} distinct claims`);
 }
 
-/* 🚨 THE ROLL-CALL IS THE SAME TWELVE FINDINGS WHOEVER IS READING (v80),
+/* 🚨 THE ROLL-CALL IS THE SAME TWELVE FINDINGS WHOEVER IS READING (v81),
    AND THE LAW ABOVE COULD NOT SEE THAT IT WASN'T. It runs as a STRANGER, like
    every render sweep this card has ever had, and it compares heads with only
    the NAME stripped — so a duplicate that exists only in second person was
@@ -493,7 +493,7 @@ window.LeagueHistory.roster().forEach((r) => {
   console.log(`  ${voiceMark()} roll-call: the same ${asStranger.length} findings for every reader, voice aside`);
 }
 
-/* 🚨 A HEAD THAT CLAIMS A HABIT MUST HAVE THE INSTANCES BEHIND IT (v80).
+/* 🚨 A HEAD THAT CLAIMS A HABIT MUST HAVE THE INSTANCES BEHIND IT (v81).
    "does worst-to-first as a party trick" was the only wording this detector
    had, written when one manager had done it twice. v79's Cum Bowl placings
    left three managers on exactly ONE run each, and the card went on calling a
@@ -513,7 +513,7 @@ window.LeagueHistory.roster().forEach((r) => {
 }
 
 /* 🚨 A REPEATED FIRST PLACE IS THE TITLE COUNT, AND THAT CARD IS
-   `dynasty` (v80). `stuckAt` is about a finish a manager cannot escape; a
+   `dynasty` (v81). `stuckAt` is about a finish a manager cannot escape; a
    championship is not one. Its own comment has always named the risk — "Buley
    (11th x7) and the champion (1st x4)" — and only `leaders()` kept the
    champion off, because 7 beat 4. v79 took Buley to 4, the tie surfaced, and
@@ -1574,6 +1574,59 @@ function parlayLaws() {
   if (!/id="lp-bet"/.test(noBoard)) fail('with no board there is no way to enter a pick at all');
   if (!/<details class="lp-prop" open/.test(noBoard)) fail('with no board the prop field is closed, so the only way in is hidden');
   if (/data-lp="opt"/.test(noBoard)) fail('a board with no games still rendered option buttons');
+
+  /* 🚨 A BOARD IS GAMES YOU CAN BET, NOT GAMES ESPN KNOWS ABOUT (v79).
+     ESPN lists a week's fixtures as soon as the schedule exists and prices
+     them only when the books do, so every week has a window — days long —
+     where the payload is all games and no markets. Every gate counted GAMES,
+     so the card said "Tap a line below" over an empty board with the
+     write-it-in field folded shut: a control named in a sentence and absent
+     from the page (the v30 fault), in the state the tab sits in most of the
+     week. This is the same law as the one above, for the case that is not
+     "no games" and is not "a board" either. */
+  const UNPRICED = { k: 4, l: 'Week 4', games: [
+    { a: 'WSH', h: 'GB', kick: '2026-09-20T17:00Z' },
+    { a: 'NYG', h: 'DAL', kick: '2026-09-20T17:00Z' }] };
+  const dry = LP._pickHTML(UNPRICED);
+  if (/data-lp="opt"/.test(dry)) fail('a week whose games carry no odds rendered option buttons');
+  if (/class="lp-board"/.test(dry)) fail('an unpriced week still rendered a board container — an empty box with no explanation');
+  if (/Tap a line below/.test(dry)) fail('the card says "Tap a line below" with no line on the page to tap');
+  if (!/<details class="lp-prop" open/.test(dry)) fail('an unpriced week leaves the prop field shut — the only way in is hidden');
+  if (/Lines as published|Lines from/.test(dry)) fail('an unpriced week claims a source for lines it has not got');
+  if (!/lines are not posted yet/.test(dry)) fail('an unpriced week does not say why there is nothing to tap');
+  /* ⚠️ AND THE NOTE IS GATED THE SAME WAY, asserted through its own helper —
+     four gates asking one question four ways is how three agree and one
+     does not. */
+  if (LP._note(UNPRICED) !== '') fail('the board note speaks for a week with no lines in it');
+
+  /* 🚨 AN OPTION IS KEYED BY ITS INDEX INTO THE WHOLE WEEK, NEVER INTO
+     THE PRICED SUBSET. A pick travels as `{g, id}` and resolves back through
+     `gamesOf`, so renumbering around an unpriced fixture would point a saved
+     tap at a DIFFERENT GAME — silently, and only for the weeks where some
+     games are priced and some are not, which is every week for a day or two.
+     Asserted by reading the rendered buttons back against the week they came
+     from, on a board deliberately built with the gaps at 0 and 2. */
+  const MIXED = { k: 4, l: 'Week 4', games: [
+    { a: 'WSH', h: 'GB', kick: '2026-09-20T17:00Z' },
+    { a: 'NYG', h: 'DAL', kick: '2026-09-20T17:00Z', sp: { h: -3.5, hp: -118, a: 3.5, ap: -102 } },
+    { a: 'SEA', h: 'PIT', kick: '2026-09-20T17:05Z' },
+    { a: 'LAR', h: 'TEN', kick: '2026-09-20T20:25Z', ml: { h: 145, a: -175 } }] };
+  const mixHTML = LP._pickHTML(MIXED);
+  const optBtns = mixHTML.match(/data-g="(\d+)" data-o="([a-z]+)"/g) || [];
+  if (optBtns.length !== 4) fail(`a half-priced week rendered ${optBtns.length} lines against the 4 its two priced games carry`);
+  optBtns.forEach((b) => {
+    const m = b.match(/data-g="(\d+)" data-o="([a-z]+)"/);
+    const g = MIXED.games[Number(m[1])];
+    if (!g) return fail(`an option points at game ${m[1]}, which is not in the week`);
+    if (!LP._options(g).some((o) => o.id === m[2])) {
+      fail(`an option says ${m[2]} on game ${m[1]} (${g.a} @ ${g.h}), which does not offer it — the buttons are renumbered around the unpriced games`);
+    }
+  });
+  /* And the tap resolves to the line the button names, on the HIGH index —
+     the one an off-by-n would move. */
+  LP._sel({ g: 3, id: 'mh' });
+  if (!/TEN ML vs LAR/.test(LP._pickHTML(MIXED))) fail('a tap on the last priced game does not resolve to its own line');
+  LP._sel(null);
 
   /* 🚨 AND THE PAGE STILL CARRIES THE CARDS IT ALREADY HAD. A second function
      declaration of the same name silently WINS in the same scope, which is
