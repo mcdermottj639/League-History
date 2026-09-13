@@ -495,8 +495,9 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     - The data still files three brackets as `br`: **W** the championship
       bracket (six teams — round 1, the final four, the final), **WC** the
       placement ladder below it, **C** the consolation ladder for the six that
-      missed (GmC1-9, of which **GmC9 is the Cum Bowl** — ⚠️ **it said GmC3
-      until v66, and that was the bug**; see the Cum Bowl section below).
+      missed (GmC1-9, of which **GmC3 is the Cum Bowl** — round one, the 11
+      seed against the 12. ⚠️ **v66 moved it to `GmC9` and v79 moved it back
+      on the owner's word**; see the Cum Bowl section below).
       None of them produces a W-L on a manager.
     - **Why it went, in two steps.** v14 found the app printing three different
       "playoff records" for one person — 11-4 (W+WC) on the career tile, 10-3
@@ -583,6 +584,46 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       `<details>` summaries otherwise — so a second heading on that page turns
       13 year chips into 2 section chips. The years are still one tap each in
       the list; jumping straight to 2019 from the chip row is gone.
+    - 🚽 **THE CUM BOWL IS `GmC3` — THE 11-SEED v 12-SEED GAME, ROUND ONE OF
+      THE CONSOLATION LADDER, AND IT DECIDES 11th AND 12th (v79, owner: *"The
+      cum bowl is 1st round of playoffs between the 11th and 12th ranked team
+      immediately following the regular season"* and *"losing the cum bowl
+      does make u finish last… we don't give a shit about the losers
+      bracket"*).**
+      - ⚠️ **v66 moved it to `GmC9` and every number on the tab was wrong for
+        thirteen versions.** The 2022 card read *Slemp 91.5 · Hurd 72.0* where
+        the league means *Slemp 108.9 · CC 92.6*. He found it by opening the
+        2022 loser bracket and reading it against the tab.
+      - 🚨 **THE PLACINGS ARE THE LEAGUE'S RULE OVERRIDING ESPN'S, IN 9 OF 13
+        SEASONS, AND HE WAS SHOWN THE COLLISION BEFORE A ROW MOVED.** ESPN
+        settles 11th/12th with `GmC9`, so its pages have Hurd last in 2022
+        while the Cum Bowl loser is CC. `cbPlaced` applies the league's rule
+        at the SEASON build — **the transcribed rows are untouched**, so the
+        evidence the archive was built from survives and one `return` undoes
+        it. 41 placings moved across 9 seasons.
+      - ⚠️ **The sharp edge, stated rather than discovered later:** the Cum
+        Bowl WINNER is 11th even when they went on to win the whole ladder.
+        Gotch won the 2023 Cum Bowl and then two more games — ESPN scores him
+        7th, this scores him 11th. Same for McD in 2021 (ESPN 8th) and Gotch
+        again in 2020. That is what "11th and 12th are decided in the cum
+        bowl" means; softening it is one line.
+      - ⚠️ **`s11`/`s12` are the SEEDS and the winner is read off the SCORES**
+        — two facts stored apart, because they disagree: in 2022 the 12 seed
+        won it and is 11th while the 11 seed lost it and is last. v66 made
+        them one field, which is how both went wrong together.
+      - ⚠️ **The 11/12 seeds are transcribed where ESPN published them
+        (2018-24) and derived where it did not** (2013-17 seed the bracket six
+        only). The derivation — win% then points inside the consolation six —
+        reproduces the real seed in **all 7 seeded seasons** and matches the
+        11/12 assignment hand-typed back in v65 in **all 5 unseeded ones**.
+        Two independent sources, 12 of 12, and `checks.js` holds both.
+      - 🚨 **AND v66 LEFT A SECOND DEFINITION BEHIND IT.** `MEET` has tagged
+        `GmC3` as `kind: 'cb'` since v1 and v66 never touched it, so from v66
+        to v78 a head-to-head row called 2022's *Slob on my Cobb v London
+        Silly Willies* a Cum Bowl while the tab showed a different game. **One
+        file, two answers, thirteen versions, every law green** — because
+        every law was over TOTALS, which cannot see which game they counted.
+        `checks.js` ties the two together now.
     - 🚽 **The Cum Bowl table is FOUR columns since v67** — played · lost ·
       **PTS/G** (owner: *"Add points per game in the cum bowl for this
       sections. Feels info light"*). `cbPF` is summed in the same walk of
@@ -1679,9 +1720,17 @@ correction, zero unresolved conflicts**.
   who was on it. `mgrRaw` knows them; only `mgrOf` deliberately does not, and
   every stat goes through `mgrOf`.
 - **Conservation laws** are the guard against double-counting: 150 season
-  finishes · 25 Cum Bowl appearances · 13 losses · **one Cum Bowl per season,
-  its winner 11th and its loser 12th, the winner outscoring the loser** (v66 —
-  the three that would have caught the wrong game) · 61 title-bracket wins and
+  finishes · 24 Cum Bowl appearances · 11 losses · **one Cum Bowl per season,
+  and it PAIRS THE BOTTOM TWO SEEDS — ESPN's own 11 and 12 where it published
+  them, the worst two of the consolation six by record where it did not, and
+  the two sources must agree** (v79). ⚠️ **This replaces v66's three laws
+  (winner 11th · loser 12th · winner outscored loser), and they are the
+  cautionary tale**: they restated v66's own definition rather than testing
+  it, so they were true of any reading that pointed at `GmC9` and could not
+  fail for the only reason that mattered. **A law derived from the definition
+  it is checking is not a law.** Plus **the Cum Bowl is ONE game, not two
+  definitions** — `MEET`'s `kind: 'cb'` must name the same game `CUMBOWL`
+  does, which from v66 to v78 it did not · 61 title-bracket wins and
   63 losses (counted separately since v56 — see above) · 50 final fours ·
   13 titles · 76 playoff berths · h2h games == meetings · **losses ==
   brackets − titles per manager** · **every tied rank says "joint"** (v58) ·
@@ -1724,7 +1773,10 @@ correction, zero unresolved conflicts**.
   standings** — the final decides 1st/2nd, the semi-final losers are 3rd/4th,
   the R1 losers 5th/6th (their pair plays TWICE on ESPN and the last game
   decides), the consolation six are exactly 7-12 and GmC7/8/9 decide 7-8,
-  9-10, 11-12 — plus **PF == PA and W == L in every season** (v66 audit,
+  9-10 — ⚠️ **and 11th/12th are the CUM BOWL's since v79, not GmC9's**, which
+  is the league's own rule overriding ESPN's ladder in 9 of 13 seasons; the
+  ladder half of the law survives only where neither of a game's teams is in
+  the Cum Bowl — plus **PF == PA and W == L in every season** (v66 audit,
   owner's ask). ⚠️ That checksum closes to **0.00 in all 13 seasons**, so its
   tolerance is float rounding only: one wrong digit anywhere in a season
   trips it, verified.
@@ -1743,7 +1795,7 @@ untrustworthy. Every view carries a badge saying which it is.
 |---|---|
 | **Final placing** | The rank in every table — where you finished after the playoffs |
 | **Regular season** | Every W-L and points total. ESPN's standings are regular-season standings |
-| **⚑ Playoffs only** | 209 bracket games from **all 13 seasons** — **every Cum Bowl is one of them** (`GmC9`), bar the 2025 reconstruction. ⚠️ It read "plus 13 Cum Bowls" until v66 and that double-counted twelve games |
+| **⚑ Playoffs only** | 209 bracket games from **all 13 seasons** — **every Cum Bowl is one of them** (`GmC3`), bar the 2025 reconstruction. ⚠️ It read "plus 13 Cum Bowls" until v66 and that double-counted twelve games — true under both definitions, which is why moving the game (v66) and moving it back (v79) neither caused nor cured it |
 
 - 🚨 **THE PARLAY TAB IS A FOURTH KIND OF FACT AND WEARS NONE OF THESE THREE
   BADGES** (v69). Its picks and results are transcribed from a betting slip,
@@ -2245,6 +2297,107 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v79 — the Cum Bowl is round one, and it decides last place (13 Sep 2026)**
+  — the owner, with the whole 2022 consolation bracket on screen beside the
+  app: *"Pic 2 is the actual cum bowl. U have it as the 3rd of consolidation
+  bracket. That is so wrong… The cum bowl is 1st round of playoffs between the
+  11th and 12th ranked team immediately following the regular season."* Then,
+  on the first fix: *"losing the cum bowl does make u finish last. We DO NOT
+  CARE about any consolidation bracket games besides the cum bowl."*
+  - 🚨 **v66 MOVED THE CUM BOWL TO `GmC9` AND IT WAS WRONG FOR THIRTEEN
+    VERSIONS.** The 2022 card read *Slemp 91.5 · Hurd 72.0*; the league means
+    *Slemp 108.9 · CC 92.6*. He found it by reading the bracket against the
+    tab — the same way he found v66's bug, off one card.
+  - 🚨 **THE STRUCTURE WAS CHECKABLE AND NOBODY HAD CHECKED IT.** Round one of
+    the consolation ladder pairs 7v8, 9v10 and 11v12, so `GmC3` is the 11 seed
+    against the 12 — verified in **all 12 seasons with a ladder**, two ways:
+    ESPN's own published seeds say 11 and 12 in the 7 seeded seasons, and in
+    the 5 unseeded ones (2013-17 seed the bracket six only) the pair is the
+    bottom two of the consolation six by record. ⚠️ **That derivation also
+    matches the 11/12 assignment hand-typed in v65, off the ESPN pages, years
+    earlier** — so the seeds now rest on two independent sources, 12 of 12.
+  - 🚨 **v66's LAWS WERE THE REASON IT FELT SAFE TO MOVE, AND THEY COULD NOT
+    HAVE CAUGHT THE MOVE BEING WRONG. THIS IS THE VERSION'S REAL LESSON.**
+    They asserted that the winner finished 11th and the loser 12th — which is
+    a restatement of v66's own definition, not a test of it: `GmC9` decides
+    11th/12th *by construction*, so the law was true of any reading pointing
+    at `GmC9` and said nothing about whether `GmC9` was the right game. **A
+    law derived from the definition it is checking cannot fail for the only
+    reason that matters.** It is the v14 rule one level up: the totals could
+    not see which game they counted, and the laws written to fix that could
+    not see which game they described. The replacement is external — a fact
+    about the FORMAT (round one pairs the bottom two seeds), taken from the
+    bracket's own shape. Pointed back at `GmC9` it reports 9 of 12 seasons
+    wrong while every total stays green.
+  - 🚨 **AND v66 LEFT A SECOND DEFINITION STANDING IN THE SAME FILE.** `MEET`
+    has tagged `GmC3` as `kind: 'cb'` since v1 and v66 never touched it — so
+    from v66 to v78 a head-to-head row called 2022's *Slob on my Cobb v London
+    Silly Willies* a Cum Bowl while the Cum Bowl tab showed a different game.
+    **One file, two answers, thirteen versions, every law green**, because
+    both feed the same totals. ⚠️ **The half nobody edited was the right
+    half.** A law ties them together now. ⚠️ My first comment about this
+    asserted a duplicated row as well; the data said otherwise and the comment
+    was corrected before it shipped — **a claim about a bug is a claim, and it
+    gets checked like one.**
+  - 🚨 **THE PLACINGS: THE LEAGUE'S RULE BEATS ESPN'S, IN 9 OF 13 SEASONS, AND
+    THAT WAS PUT TO HIM BEFORE A ROW MOVED.** My first cut wrote *"Losing it
+    does not make you the league's worst"* — derived, honestly, from ESPN's
+    standings, where the GmC3 loser finished last only 5 times in 13. He said
+    that is not how the league works. ⚠️ **So the question went back to him
+    with the collision named in his own season** — ESPN has Hurd last in 2022,
+    the Cum Bowl loser is CC — because 41 placings across 9 seasons is not a
+    call to make on an inference. He chose the Cum Bowl.
+    - **`cbPlaced` applies it at the SEASON build and the transcribed rows are
+      untouched.** ESPN's pages are the evidence the whole archive rests on;
+      hand-editing thirteen row arrays to record a convention would have
+      destroyed the evidence to store the conclusion. One `return` undoes it.
+    - ⚠️ **The sharp edge is stated on the card and here rather than left to
+      be discovered:** the Cum Bowl WINNER is 11th even when they went on to
+      win the whole ladder. Gotch won the 2023 Cum Bowl and two more games —
+      ESPN scores him 7th, this scores him 11th; same for McD in 2021 and
+      Gotch again in 2020. That is what the rule says, and it is the owner's
+      to soften.
+    - 🚨 **THE STANDINGS LAW WENT RED IN 9 SEASONS AND WAS REWRITTEN, NOT
+      RELAXED — the v42 trap, arriving exactly when it is easiest to "fix" a
+      law without thinking.** It had encoded ESPN's ladder (GmC7/8/9 decide
+      7-8, 9-10, 11-12). Now 11th and 12th are pinned to the Cum Bowl
+      directly, and GmC7/GmC8 are still held to deciding adjacent places
+      **whenever neither of their teams is in the Cum Bowl** — the whole of
+      ESPN's ladder that survives, and it still catches a mistyped result.
+      Fault-injected both ways.
+  - ⚠️ **The one v66 flag that came off is the one v66 argued from data.**
+    `cleanFloor` was made own-page-only because the redefinition weakened it
+    to "never finished 11th or 12th", which three managers cleared. Back at
+    `GmC3` it is "never last AND never once a bottom-two seed", which exactly
+    one manager in the league clears — Zach — so it is a league card again.
+    **The other three `own` flags are the owner's calls between two cards and
+    are untouched**: a flag that exists because of a fact goes when the fact
+    does; a flag that exists because somebody chose does not.
+  - ⚠️ **Three of my own sentences were wrong before the code was, and the
+    render is what showed it.** The card's *"Nobody scores in these"* was true
+    of `GmC9` (13.5 under the league, two spent teams in week 17) and false of
+    round one (3.1 under) — so the headline is now **picked by the numbers**,
+    between the low-scoring reading and the blowout reading, and cannot outlive
+    its data. I also wrote "nine games later" where it is two rounds, and
+    seeded the new comparator as `(a) || (b) >= 0`, where `>=` binds tighter
+    than `||` — it asked whether the POINTS gap was positive and used win% as
+    a truthiness test. The `bySeed` family (v62), caught by reading it back.
+  - ⚠️ **And the render harness lied first, again.** The sub-tab bar is
+    rewritten by `innerHTML` on every view change, so the button the sweep had
+    just clicked was DETACHED and its `aria-selected` still read `false` — 50
+    reported failures, every one about the harness. It re-queries now. **A
+    sweep is only as trustworthy as its own setup**, which is v67's lesson and
+    the third version running it has had something to say.
+  - **Verified:** 24 Cum Bowl appearances and 11 losses (the v1-v65 figures,
+    which the file header comment has said all along and which v66 silently
+    contradicted at 25/13); `node --check` on every JS file; `node checks.js`
+    green with all six new laws fault-injected and each naming its own fault;
+    a sentence-level diff of **every rendered view** against v78 across five
+    readers; and a render sweep of 2 widths × 6 readers × 5 tabs with every
+    `<details>` forced open — no overflow, no clipped text, no type under 9px,
+    no tap target under 38px, no template hole, no rendered comment, no page
+    error — with the sweep itself fault-injected to prove it can fail.
 
 - **v78 — the parlay's running record covers all twelve, and a stale open week
   stops offering played games (13 Sep 2026)** — the owner: *"Make sure for the
@@ -3158,12 +3311,25 @@ stale entry written in the present tense reads as current to anyone who greps.
       to reach its subject is not a sweep** — the v39 rule about a check whose
       failure path has never run, one level up in the harness.
 
-- **v66 — the Cum Bowl was the wrong game, for 65 versions (12 Sep 2026)** —
+- **v66 — the Cum Bowl was the wrong game, for 65 versions (12 Sep 2026)**
+  ⚠️ **SUPERSEDED IN v79, AND ALMOST ENTIRELY: this entry moved the Cum Bowl
+  to `GmC9` and the owner says it is `GmC3` — round one, the 11 seed against
+  the 12 — exactly where it sat from v1 to v65.** The reasoning is kept in
+  full because it is this repo's best record of how a definition drifts, and
+  because v79 had to work out which half of it survived: the *mechanism* (the
+  games are derived from the bracket, never hand-typed) is right and stayed;
+  the *conclusion about the game* was wrong; and its central evidence — that
+  "the loser is the league's worst" held only 4 times in 12 — was measuring
+  ESPN's ladder, which this league does not use below 10th. Nothing below is
+  current. —
   the owner, looking at one storyline card: *"Buley has finished 11th seven
   times. Is this accurate? Remember cum bowl winner is always 11th place."*
   - 🚨 **THE COUNT WAS RIGHT AND THE SENTENCE UNDER IT WAS A THREAD.** Seven
     11ths is what the archive's placings said. But his rule — winner is 11th —
-    is true of `GmC9`, the last game of the consolation ladder, in **12 of the
+    is true — ⚠️ **of the CUM BOWL, which is where v79 lands it: the league
+    settles 11th/12th with this game and ignores the rest of the ladder. The
+    inference below, that his rule must therefore point at `GmC9`, is the
+    whole error of this version** — is true of `GmC9`, the last game of the consolation ladder, in **12 of the
     12 seasons with a bracket on file**, and true of the game the app called
     the Cum Bowl in **3 of 13**. The app held `GmC3`: round ONE of that
     ladder, the 11-SEED against the 12-SEED. A whole round early, since v1.
@@ -3176,12 +3342,22 @@ stale entry written in the present tense reads as current to anyone who greps.
     the wrong definition** — and the way to notice is to ask what the league
     means by the word, which is a question only the owner can answer.
   - 🚨 **THE LEAD SENTENCE WAS FALSE TWO SEASONS IN THREE, AND THE TABLE
-    NAMED THE WRONG PEOPLE.** *"The loser is the league's worst"* held for 4
+    NAMED THE WRONG PEOPLE.** ⚠️ **SUPERSEDED in v79: the lead was TRUE and
+    the standings it was measured against were the wrong authority.** The
+    league's own rule is that the Cum Bowl decides last place, so counting it
+    against ESPN's ladder ordering — which is all "4 of 12" ever was — tested
+    the sentence against a tiebreak nobody in this league reads. *"The loser
+    is the league's worst"* held for 4
     of the 12 GmC3 games. Meanwhile appearances were credited for being
     SEEDED badly rather than for finishing badly, so the tab said **McD had
     played a Cum Bowl** (2021 — he finished 8th) and **Gotch had played two**
     (2020 and 2023 — 7th both times), while the managers who actually played
-    off for last went uncounted. Buley read **6 played, 4 lost**; he has been
+    off for last went uncounted. ⚠️ **SUPERSEDED in v79, and this is the
+    sharpest illustration of the error**: those appearances were correct —
+    being a bottom-two SEED is exactly what playing a Cum Bowl means — and
+    under v79 all three of those seasons place McD and Gotch **11th**, because
+    they won the game. The finishes cited here as proof of a bug were ESPN's
+    ordering, not the league's. Buley read **6 played, 4 lost**; he has been
     in **8** and lost **2**.
   - 🚨 **EVERY CONSERVATION LAW WAS GREEN THE ENTIRE TIME, AND THAT IS THE
     LESSON, NOT AN ASIDE.** "24 appearances, 11 losses" balanced perfectly
@@ -3689,8 +3865,9 @@ stale entry written in the present tense reads as current to anyone who greps.
     of the card became *"what you scored"*. Leads about a whole table are
     impersonal; `vb()` is for sentences about a person.
   - **Verified:** all 209 games re-checked against independent evidence — the
-    five new Cum Bowls (`GmC3` — ⚠️ **v66: that is round one, not the Cum
-    Bowl**) match the hand-entered `CUMBOWL` array exactly,
+    five new Cum Bowls (`GmC3` — ⚠️ **v66 said that was round one and not the
+    Cum Bowl; v79 confirms it IS the Cum Bowl, so this line was right as
+    written**) match the hand-entered `CUMBOWL` array exactly,
     team and score, and all 13 finals match the recorded 1st/2nd placings.
     `node checks.js` green including the new **shared ranks** law, and the
     per-manager bracket law re-verified by flipping a 2016 result (both
@@ -3769,13 +3946,12 @@ stale entry written in the present tense reads as current to anyone who greps.
     adjacent entries in one column are one game. **Getting this wrong would
     have put the right scores against the wrong people** — silently, and in a
     way no conservation law could see, because the totals would still balance.
-  - 🚨 **AND THE PROOF THAT IT DIDN'T IS THE CUM BOWL.** ⚠️ **SUPERSEDED in
-    v66: `GmC3` is NOT the Cum Bowl** — it is round one of the consolation
-    ladder, and `GmC9` is the game the league means. The parser validation
-    below still stands exactly as written (the extracted `GmC3` games match
-    what was hand-entered, which is what proved the coordinate parsing); only
-    the NAME for that game was wrong, in this entry and in the code it
-    describes. `GmC3` **is** the Cum
+  - 🚨 **AND THE PROOF THAT IT DIDN'T IS THE CUM BOWL.** ⚠️ **v66 marked this
+    paragraph superseded, claiming `GmC3` is not the Cum Bowl; v79 reinstates
+    it on the owner's word, so this entry was correct as originally written
+    and the v66 marker is the thing that was wrong.** Left visible rather than
+    deleted: a marker that turns out to be the error is worth more as a
+    warning than as a clean page. `GmC3` **is** the Cum
     Bowl, and this archive has had all thirteen Cum Bowls by hand since v1 —
     entered from a different source, years apart. All five extracted GmC3
     games match the stored ones **exactly, team names and scores to the
