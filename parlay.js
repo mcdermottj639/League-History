@@ -159,25 +159,51 @@
   }
 
   /* 🚨 THE OPEN WEEK IS DERIVED WHEREVER IT CAN BE, AND STATED ONLY ONCE.
-     `open` in the file wins when it is there; otherwise picks are for the
-     week after the newest ticket, which is knowable and cannot drift. So the
-     first week of a season needs one line in the file and every week after
-     it needs nothing — and a week that already HAS a ticket is closed,
-     because the bet has been placed and a pick would be a pick at a game
-     that has kicked off. */
+     `open` in the file names the week picks are being taken for; otherwise
+     picks are for the week after the newest ticket, which is knowable and
+     cannot drift. So the first week of a season needs one line in the file
+     and every week after it needs nothing — and a week that already HAS a
+     ticket is closed, because the bet has been placed and a pick would be a
+     pick at a game that has kicked off.
+
+     🚨 A STATED `open` IS ONLY HONOURED WHILE IT IS AHEAD OF THE SEASON,
+     AND THAT CLAUSE IS THE WHOLE OF v78's FIX. `open` is the one hand-kept
+     field on this tab, so it is the one that goes stale — and it went stale
+     in two directions, both silent:
+       • Sitting ON the week just published, the old code returned null and
+         the pick card simply VANISHED. CLAUDE.md documented that symptom as
+         something to remember to edit around, which is a hand-kept fix for a
+         hand-kept field.
+       • Sitting BEHIND the season — which is what a week that never gets a
+         ticket leaves behind, and week 1 of this season is exactly that — it
+         went on offering picks, with that week's board, for games played a
+         month ago, while the ticket above it read Week 5. Reproduced on the
+         render before it was fixed.
+     Either way the answer is the same and it is derived: the newest ticket
+     decides, and the stated week only wins while it is in front of it. A
+     week that never gets a ticket therefore costs one edit ONCE, and the
+     first published ticket heals it for the rest of the season. */
   function openWeekOf(file, weeks) {
     const ks = (weeks || []).map((w) => Number(w.k)).filter((n) => isFinite(n));
+    const newest = ks.length ? Math.max.apply(null, ks) : null;
     let k = null, l = null;
     if (file && file.open && isFinite(Number(file.open.k))) {
       k = Number(file.open.k); l = String(file.open.l || `Week ${k}`);
-    } else if (ks.length) { k = Math.max.apply(null, ks) + 1; l = `Week ${k}`; }
-    if (k == null || ks.indexOf(k) !== -1) return null;
+    }
+    if (newest != null && (k == null || k <= newest)) { k = newest + 1; l = `Week ${k}`; }
+    if (k == null) return null;
     /* ⚠️ THE BOARD TRAVELS WITH THE WEEK. The first cut returned `{k, l}` and
        dropped `games` on the floor, so every option button silently stopped
        rendering — the page still looked complete, just with a text field
        where the board should be, which is precisely the state this version
        exists to end. A law asserts the board survives the trip. */
-    const games = (file && file.open && Array.isArray(file.open.games)) ? file.open.games : [];
+    /* ⚠️ AND THE BOARD ONLY TRAVELS WITH THE WEEK IT WAS WRITTEN FOR. Once
+       the stated week is overtaken, its games belong to a week that has been
+       played — handing them to the next week would put last month's fixtures
+       under this week's heading, which is worse than no board at all (a
+       missing board renders the prop field and says so). */
+    const stated = !!(file && file.open && Number(file.open.k) === k);
+    const games = (stated && Array.isArray(file.open.games)) ? file.open.games : [];
     return { k, l, games };
   }
 
@@ -235,6 +261,24 @@
         if (solo && g.m === solo) a.solo++;
       });
     });
+    /* 🚨 ALL TWELVE ARE ON THE TABLE, WHETHER OR NOT THEY HAVE HAD A LEG
+       ON (v78, the owner's ask: *"each persons w-l record for the year"*).
+       Built from the legs alone, this table was a list of whoever had
+       happened to pick — so a manager who sat the season out was simply
+       ABSENT from the one card that is the league's running record, and
+       nothing on screen said whether they were missing or had no legs. That
+       is the v7 coverage fault in a new costume, and it lands hardest on
+       exactly the person it is least fair to: somebody who has not been
+       putting a leg in is the one thing this card could usefully show, and
+       it showed it by saying nothing.
+       ⚠️ It seeds from `LH.roster()`, the app's own source of truth for who
+       the league is — never a list typed out here, which would drift the
+       first time the league changed size. A manager with no legs is REAL and
+       is not a fabricated 0-0: the row says so in words and prints no
+       record, which is the Lab's rule (v1) rather than an exception to it. */
+    (LH ? LH.roster().map((r) => r.m) : []).forEach((m) => {
+      if (!by[m]) by[m] = { m, legs: 0, w: 0, l: 0, p: 0, open: 0, solo: 0 };
+    });
     /* ⚠️ The rate's denominator is settled, non-push legs — a pending leg is
        not a miss and a push is neither. Every row prints that count beside
        the rate, because a manager who sat a week out has a smaller one and
@@ -242,8 +286,16 @@
     const rows = Object.values(by).map((a) => {
       const dcd = a.w + a.l;
       return Object.assign(a, { dcd, rate: dcd ? a.w / dcd : null });
-    }).sort((x, y) => (y.rate == null ? -1 : x.rate == null ? 1 : y.rate - x.rate)
-      || y.w - x.w || rnm(x.m).localeCompare(rnm(y.m)));
+    }).sort((x, y) => {
+      /* 🚨 THE OLD COMPARATOR WAS NOT TRANSITIVE, AND THE ROSTER ROWS ARE
+         WHAT MADE IT REACHABLE. It read `y.rate == null ? -1 : …`, so for two
+         managers who BOTH have nothing settled it answered −1 whichever way
+         round it was asked — the `bySeed` fault v62 fixed, in the one card
+         where week 1 of a season puts twelve unrated rows side by side. */
+      if ((x.rate == null) !== (y.rate == null)) return x.rate == null ? 1 : -1;
+      if (x.rate != null && y.rate !== x.rate) return y.rate - x.rate;
+      return y.w - x.w || y.legs - x.legs || rnm(x.m).localeCompare(rnm(y.m));
+    });
     /* 🚨 COMPETITION RANK, AND THE WORDING HAS TO SAY "JOINT" (v58). Rank is
        one plus how many are strictly better, never the array position — the
        same value must not produce a different sentence depending on where a
@@ -407,17 +459,26 @@
     const me = LH ? LH.me() : null;
     const rows = s.rows.map((a) => {
       const mine = !!me && a.m === me;
+      /* Three states and three sentences, which is the distinction the roster
+         rows made necessary: no leg all season, legs in with nothing settled,
+         and a real record. Folding the first two together would tell somebody
+         who has never picked that their results are pending. */
       const bits = [];
       if (a.dcd) bits.push(`<b>${pc0(a.rate)}</b> of ${spell(a.dcd)} settled`);
+      else if (!a.legs) bits.push(`${vb(a.m, 'have', 'has')} not had a leg on yet`);
       else bits.push('nothing settled yet');
       if (a.p) bits.push(`${spell(a.p)} push${a.p === 1 ? '' : 'es'}`);
       if (a.open) bits.push(`${spell(a.open)} still running`);
       if (a.solo) bits.push(`<b>killed the ticket on ${vb(a.m, 'your', 'their')} own ${times(a.solo)}</b>`);
+      /* ⚠️ NO RECORD RATHER THAN 0-0. A manager with no legs has no W-L, and
+         printing one would be the Lab's oldest rule broken on a new card —
+         *a fabricated 0-0 beside a name is a lie* (v1). The sentence
+         underneath says what is true instead. */
       return `<div class="lp-ld${mine ? ' you' : ''}">
         <div class="lp-ld-t">
           <span class="lp-ld-r">${a.rank ? `${a.tied ? '=' : ''}${a.rank}` : '—'}</span>
           <span class="lp-ld-n">${esc(rnm(a.m))}${mine ? ' <span class="lg-you">YOU</span>' : ''}</span>
-          <span class="lp-ld-w">${a.w}-${a.l}${a.p ? `-${a.p}` : ''}</span>
+          <span class="lp-ld-w">${a.legs ? `${a.w}-${a.l}${a.p ? `-${a.p}` : ''}` : '—'}</span>
         </div>
         <div class="lp-ld-s">${bits.join(' · ')}</div>
       </div>`;
@@ -428,7 +489,7 @@
       ? ` With ${spell(s.decided.length)} ticket${s.decided.length === 1 ? '' : 's'} settled this is a tally, not a record.`
       : '';
     return `<h2 class="section-title">🎯 Who carries the ticket</h2>
-      <div class="fh-lead"><p>Ranked by how often each leg lands. <b>An = means joint</b>, and every row names how many settled legs that rate is over — somebody who sat a week out has fewer, and two rates over two different denominators is not a comparison. A push counts as neither.${thin}</p></div>
+      <div class="fh-lead"><p>Every leg anybody has had on this season, ranked by how often it lands. <b>All twelve are here</b> whether or not they have put one in. <b>An = means joint</b>, and every row names how many settled legs that rate is over — somebody who sat a week out has fewer, and two rates over two different denominators is not a comparison. A push counts as neither.${thin}</p></div>
       <div class="ffp-card">${rows}</div>`;
   }
 

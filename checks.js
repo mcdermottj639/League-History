@@ -1120,6 +1120,89 @@ function parlayLaws() {
   if (/Buley's is the only one/.test(mine)) fail('the reader is addressed by name where the app should say "you"');
   LHIST.setMe(null);
 
+  /* 🚨 ALL TWELVE ARE ON THE RUNNING RECORD, WHETHER OR NOT THEY HAVE
+     PICKED (v78). Built from the legs alone, this table listed whoever had
+     happened to put one in — so somebody sitting the season out was simply
+     ABSENT from the one card that is the league's year, and nothing on
+     screen distinguished "no legs" from "not in the league". That is the v7
+     coverage fault, so it gets v7's law: asserted off the RENDERED card, per
+     manager BY NAME, never off `_season` — a law that agreed with the
+     derivation would go on passing over a view that had stopped reading it. */
+  const THIN = [{ k: 1, l: 'Week 1', d: '2026-09-10', stake: 60,
+    legs: ['McD', 'CC', 'Woods'].map((m, i) => leg(m, -110, i ? 'W' : 'L')) }];
+  const thinHTML = LP._html(THIN);
+  R.forEach((m) => {
+    if (thinHTML.indexOf(`>${LHIST.name(m)}<`) === -1) {
+      fail(`${m} is not on the rendered season record — a manager with no legs must still have a row`);
+    }
+  });
+  /* ⚠️ AND A ROW WITH NO LEGS PRINTS NO RECORD. "0-0" beside a name is the
+     Lab's oldest rule broken on a new card (v1: a fabricated 0-0 is a lie),
+     and it would read as a settled nought-and-nought rather than as somebody
+     who has not been in. The sentence underneath says which. */
+  if (!/has not had a leg on yet/.test(thinHTML)) {
+    fail('a manager with no legs does not say so — the row is silent about why it is empty');
+  }
+  if (/>0-0</.test(thinHTML)) fail('a manager with no legs is printed as 0-0 — that is a record they have not got');
+  /* ⚠️ THE ROW ORDER MUST BE TOTAL, AND THE ROSTER ROWS ARE WHAT MADE THAT
+     REACHABLE. Week 1 of a season puts twelve UNRATED rows side by side, and
+     the old comparator answered −1 whichever way round it was asked for two
+     of them — the non-transitive `bySeed` fault (v62). A sort that is not a
+     sort is silent: it simply comes out in an order that depends on the
+     engine — and measured, the old one simply REVERSED the roster and never
+     reached its own tiebreak at all, so the first week of a season would have
+     ranked twelve people in an order nothing on the page could explain.
+     ⚠️ The first cut of this law compared two derivations of the same input
+     and passed over the broken comparator, because V8 sorts twelve items with
+     an insertion sort that is deterministic even when the comparator is not.
+     A law whose failure path cannot run is not a law (v39), so it asserts the
+     order the rows must actually be IN: nobody is ranked, so they are by
+     name, which is the one order a reader can account for. */
+  const NONE = [{ k: 1, l: 'Week 1', d: '2026-09-10', legs: [] }];
+  const order = LP._season(NONE).rows.map((x) => LHIST.name(x.m));
+  const byName = order.slice().sort((a, b) => a.localeCompare(b));
+  if (order.length !== R.length || order.join(',') !== byName.join(',')) {
+    fail(`twelve unrated rows come out as "${order.join(',')}" rather than in name order — that is not a sort, it is input order`);
+  }
+
+  /* 🚨 A STATED `open` IS ONLY HONOURED WHILE IT IS AHEAD OF THE SEASON
+     (v78). `open` is the one hand-kept field on this tab and it goes stale in
+     two directions, both silent — and the season it goes stale in is this
+     one, because week 1 takes no ticket at all, so nothing published can
+     advance it. Reproduced on the render before it was fixed: tickets
+     through week 5 with `open` still on week 1 offered week 1's picks, with
+     week 1's board, under a ticket card reading Week 5. */
+  const PLAYED = [{ k: 2, l: 'Week 2', legs: [leg('McD', -110, 'W')] },
+    { k: 3, l: 'Week 3', legs: [leg('McD', -110, 'W')] }];
+  const STALE = { open: { k: 1, l: 'Week 1', games: [{ a: 'TB', h: 'CIN' }] }, weeks: PLAYED };
+  const owStale = LP._open(STALE, PLAYED);
+  if (!owStale || owStale.k !== 4) {
+    fail(`an \`open\` behind the newest ticket gives week ${owStale && owStale.k} — picks would be taken at games already played`);
+  }
+  /* ⚠️ AND THE BOARD DOES NOT TRAVEL WITH IT. Once the stated week is
+     overtaken its games belong to a week that has been played, so handing
+     them to the next week would put last month's fixtures under this week's
+     heading — worse than no board, which renders the prop field and says so. */
+  if (owStale && owStale.games.length) {
+    fail('the overtaken week\'s board was carried into the derived week — those games have been played');
+  }
+  /* The documented symptom this also ends: `open` left sitting ON the week
+     just published used to return null and the pick card VANISHED. */
+  const onPub = LP._open({ open: { k: 3, l: 'Week 3' }, weeks: PLAYED }, PLAYED);
+  if (!onPub || onPub.k !== 4) fail('an `open` on the week just published leaves no week open — the pick card vanishes');
+  /* And a stated week that is genuinely ahead is still honoured, board and
+     all — a guard that always derived would "fix" this by deleting the one
+     field that makes the first week of a season possible. */
+  const AHEAD = { open: { k: 9, l: 'Week 9', games: [{ a: 'TB', h: 'CIN' }] }, weeks: PLAYED };
+  const owAhead = LP._open(AHEAD, PLAYED);
+  if (!owAhead || owAhead.k !== 9 || owAhead.l !== 'Week 9' || owAhead.games.length !== 1) {
+    fail('a stated `open` ahead of the season is not honoured with its own board — the first week of a season needs it');
+  }
+  /* With no tickets at all the stated week is all there is, which is exactly
+     where this season starts. */
+  const owFirst = LP._open({ open: { k: 2, l: 'Week 2', games: [] } }, []);
+  if (!owFirst || owFirst.k !== 2) fail('with no tickets published the stated open week is not honoured');
+
   /* Four opposite facts, four sentences — and a missing one is a hole rather
      than a quiet fall-through to the friendly copy. */
   const said = {};
@@ -1152,7 +1235,19 @@ function parlayLaws() {
      week whose ticket is already at a book is picking after kickoff. */
   const ow4 = LP._open({}, [{ k: 1 }, { k: 2 }, { k: 3 }]);
   if (!ow4 || ow4.k !== 4) fail(`picks after three tickets should open week 4, got ${JSON.stringify(ow4)}`);
-  if (LP._open({ open: { k: 3 } }, [{ k: 3 }]) !== null) fail('a week that already has a ticket is still open for picks');
+  /* ⚠️ THIS LAW ASSERTED THE OLD ANSWER AND NOW ASSERTS THE PROPERTY (v78),
+     which is the v42 trap handled rather than walked into. It required
+     `_open` to return NULL for a week that had a ticket — true of the code
+     and never the invariant, and the pick card simply vanishing is a symptom
+     CLAUDE.md used to document as something to edit around. The permanent
+     fact is the one worth holding: a week that has been bet is never the
+     open week, whatever is written in `open`. */
+  const PLAYED3 = [{ k: 1 }, { k: 2 }, { k: 3 }];
+  [{ k: 1 }, { k: 2 }, { k: 3 }].forEach((o) => {
+    const ow = LP._open({ open: o }, PLAYED3);
+    if (ow && PLAYED3.some((w) => w.k === ow.k)) fail(`week ${ow.k} has a ticket at a book and is open for picks`);
+    if (!ow || ow.k !== 4) fail(`a stale open on week ${o.k} gives ${ow && ow.k} rather than the next week, 4`);
+  });
   if (LP._open({}, []) !== null) fail('with no tickets and no stated week, picks must be closed rather than guessed');
   /* The board has to survive being resolved into a week — dropping it renders
      a page that looks complete and has no board on it. */

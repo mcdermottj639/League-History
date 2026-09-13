@@ -760,6 +760,29 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     denominators is not a comparison (v3). Pushes and pending legs are in
     neither half of the rate, and the card says so. **Competition rank with an
     `=` for joint** (v58), never array position.
+  - 🚨 **ALL TWELVE ARE ON THAT TABLE, PICKED OR NOT (v78, owner: *"each
+    persons w-l record for the year"*).** Built from the legs alone it was a
+    list of whoever had happened to put one in, so a manager sitting the
+    season out was simply **absent from the one card that is the league's
+    running record** — the v7 coverage fault in a new costume, landing again
+    on the person it is least fair to, since "has not been putting a leg in"
+    is exactly what this card could usefully say and it said it by saying
+    nothing. Seeded from **`LH.roster()`**, never a list typed out here.
+    - ⚠️ **A row with no legs prints NO record, not `0-0`** — that is the
+      Lab's oldest rule (v1: *a fabricated 0-0 beside a name is a lie*), and
+      `0-0` would read as a settled nought-and-nought rather than as somebody
+      who has not been in. Three states, three sentences: no leg all season ·
+      legs in with nothing settled · a real record.
+    - 🚨 **AND THE ROSTER ROWS MADE A NON-TRANSITIVE COMPARATOR REACHABLE.**
+      The sort read `y.rate == null ? -1 : …`, which answers −1 whichever way
+      round it is asked for two managers who both have nothing settled — the
+      `bySeed` fault (v62). Week 1 of a season is twelve unrated rows side by
+      side, and measured, the old one simply **reversed the roster** and never
+      reached its own tiebreak. Unrated rows are in NAME order now, which is
+      the one order a reader can account for. ⚠️ **The first law written for
+      it was vacuous** — it compared two derivations of one input, and V8
+      sorts twelve items with an insertion sort that is deterministic even
+      when the comparator is not. It asserts the order the rows must be IN.
   - ⚠️ **The sample caveat is DERIVED from how many tickets are in**, so the
     card stops apologising by itself once there is a season behind it.
   - ⚠️ **Odds are spelled with a HYPHEN, not the app's typographic minus.**
@@ -813,10 +836,31 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       normalises it and refuses anything that is not a whole number of at
       least 100 either way.
     - 🚨 **THE OPEN WEEK IS DERIVED WHEREVER IT CAN BE.** `open` in the file
-      wins; otherwise picks are for the week after the newest ticket. So the
-      first week of a season needs one line and every week after it needs
-      nothing — and **a week that already has a ticket is closed**, because a
-      pick then is a pick at a game that has kicked off.
+      names the week; otherwise picks are for the week after the newest
+      ticket. So the first week of a season needs one line and every week
+      after it needs nothing — and **a week that already has a ticket is
+      closed**, because a pick then is a pick at a game that has kicked off.
+      - 🚨 **AND A STATED `open` IS ONLY HONOURED WHILE IT IS AHEAD OF THE
+        NEWEST TICKET (v78).** `open` is the one hand-kept field on this tab,
+        so it is the one that goes stale, and it went stale in two directions
+        and both were silent. Sitting **on** the week just published it
+        returned null and the pick card **vanished** — a symptom this file
+        used to document as something to remember to edit around, which is a
+        hand-kept fix for a hand-kept field. Sitting **behind** the season —
+        which is what a week that never gets a ticket leaves behind, and
+        **week 1 of 2026 is exactly that** — it went on offering picks, with
+        that week's board, for games played a month ago, under a ticket card
+        reading Week 5. **Reproduced on the render before it was fixed.**
+        The newest ticket decides; the stated week only wins in front of it.
+      - ⚠️ **The board does not travel with an overtaken week.** Once the
+        stated week is passed its games belong to a week that has been played,
+        so carrying them forward would put last month's fixtures under this
+        week's heading — worse than no board, which renders the prop field and
+        says so.
+      - ⚠️ **So a week that takes no ticket costs ONE edit, once.** Nothing
+        published can advance past a week that never had a ticket, so `open`
+        still has to be moved by hand that once; every week after it heals
+        itself the moment a ticket lands.
     - ⚠️ **A name is needed to put a LEG in, and that is not a gate.** Every
       table on the page still renders for a stranger; a bet belongs to a
       person, so the one thing that cannot be anonymous is the one thing that
@@ -1030,6 +1074,11 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   business as usual; `checks.js` asserts it ships. ⚠️ **`open` ({`k`, `l`})
   names the week picks are being taken for** — needed only for the first week
   of a season, since every week after it derives from the newest ticket.
+  🚨 **And it is only honoured while it is AHEAD of the newest ticket (v78)**,
+  so a stale one is ignored rather than offering picks at games that have
+  been played — see `parlay.js`. The one case that still needs a hand is a
+  week that takes no ticket at all, because nothing published can advance
+  past it.
   ⚠️ **`open.games` is that week's board**, one object per game, in the shape
   `boardFrom` emits: `{a, h, kick, sp:{h, hp, a, ap}, ml:{h, a},
   tot:{n, op, up}}` — `a`/`h` the away and home abbreviations, `sp` each
@@ -1664,7 +1713,13 @@ correction, zero unresolved conflicts**.
   rankings copy names who publishes a set, none of it carries a pronoun for
   one, and the empty card still promises that a set is coming** (v77 — the
   last clause because copy that named nobody by saying nothing would pass the
-  first two) · **the
+  first two) · **every manager in the roster has a row on the rendered season
+  record, a row with no legs prints no record rather than 0-0, twelve unrated
+  rows sort to name order, and a stated `open` behind or on the newest ticket
+  neither opens a played week nor carries that week's board forward** (v78 —
+  the sort law because the roster rows made a non-transitive comparator
+  reachable, and its first cut could not fail; the `open` law replaced one
+  that asserted the OLD answer, which is the v42 trap) · **the
   bracket resolves the
   standings** — the final decides 1st/2nd, the semi-final losers are 3rd/4th,
   the R1 losers 5th/6th (their pair plays TWICE on ESPN and the last game
@@ -1984,11 +2039,15 @@ whole design:
 > 4. ⚠️ **APPEND — this file is the season's record**, unlike
 >    `season/current.json` which is overwritten. A repeated `k` means he is
 >    correcting that week, so REPLACE that entry rather than adding a second.
-> 5. ⚠️ **Move `open` on**. Picks derive to the week after the newest ticket,
->    so once a week is published the next one opens by itself — but if `open`
->    is still sitting on the week you just published, it is stale and must go
->    (a week with a ticket is closed either way, so the symptom is a pick card
->    that has vanished rather than a wrong one).
+> 5. ✅ **`open` looks after itself since v78 — there is nothing to do here.**
+>    Picks derive to the week after the newest ticket, and a stated `open` is
+>    ignored the moment the season passes it, so a stale one can neither
+>    vanish the pick card nor offer a week that has been played. ⚠️ **The one
+>    time it still needs a hand is a week that takes NO ticket at all** (week
+>    1 of 2026), because nothing published can advance past it: set
+>    `open` to the next week, with `games` empty — ESPN fills the board from
+>    the reader's phone (v72), and a missing floor renders the prop field and
+>    says so.
 > 6. Commit, push, **merge to `main`**. ⚠️ **No version bump**: `parlay/` is
 >    data outside the versioned JS and the app fetches it `no-store`. (Contrast
 >    v68 — data that lives INSIDE `history.js` does need a bump, because a
@@ -2186,6 +2245,102 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v78 — the parlay's running record covers all twelve, and a stale open week
+  stops offering played games (13 Sep 2026)** — the owner: *"Make sure for the
+  parlay page it tracks the history so we can see past parlays and each
+  persons w-l record for the year. Week 1 won't have any picks but starting
+  next week we will."*
+  - **Most of what he asked for was already there and was checked before
+    anything was written.** 📖 Every ticket has held every past parlay since
+    v69, 🎯 Who carries the ticket has held the per-manager record, and 📋 The
+    season so far has held the tally — all derived from `weeks`, so a
+    corrected leg corrects the lot. Driven with a four-week fixture (a push
+    week, a one-leg bust, a clean sweep, one still running) it renders
+    correctly. **The faults were in the two things his sentence implies and
+    nobody had exercised: a twelve-person table, and a week that never gets a
+    ticket.**
+  - 🚨 **THE W-L TABLE WAS A LIST OF WHOEVER HAD HAPPENED TO PICK.** It is
+    built from the legs, so a manager who sat the season out had **no row at
+    all** — absent from the one card that is the league's running record,
+    with nothing on screen distinguishing "has not put a leg in" from "not in
+    this league". That is the **v7 coverage fault** in a new costume, and it
+    lands the same way: on the person it is least fair to, because "has not
+    been putting a leg in" is exactly what this card could usefully say and
+    it said it by saying nothing. All twelve are seeded from `LH.roster()`.
+    - ⚠️ **A row with no legs prints NO record, not `0-0`.** The Lab's oldest
+      rule (v1: *a fabricated 0-0 beside a name is a lie*) — and `0-0` would
+      read as a settled nought-and-nought rather than as somebody who has not
+      been in. Three states, three sentences.
+    - 🚨 **AND THE NEW ROWS MADE A NON-TRANSITIVE COMPARATOR REACHABLE.** The
+      sort read `y.rate == null ? -1 : …`, which answers −1 **whichever way
+      round it is asked** for two managers who both have nothing settled — the
+      `bySeed` fault (v62), arriving in the one card where week 1 of a season
+      puts twelve unrated rows side by side. Measured, the old comparator
+      simply **reversed the roster** and never reached its own tiebreak, so
+      the first week of a season would have ranked twelve people in an order
+      nothing on the page could explain.
+    - 🚨 **MY FIRST LAW FOR THAT COULD NOT FAIL, AND ONLY FAULT INJECTION
+      SAID SO.** It derived the same season twice and compared the orders —
+      which passes over a broken comparator, because V8 sorts twelve items
+      with an insertion sort that is deterministic even when the comparator is
+      not. It asserts the order the rows must be IN (by name, since nobody is
+      ranked). **A law whose failure path cannot run is not a law** (v39) —
+      and a law that merely *agrees with the bug* is the worse half of it.
+  - 🚨 **"WEEK 1 WON'T HAVE ANY PICKS" IS A STATE THE OPEN-WEEK RULE COULD NOT
+    SURVIVE, AND HE SAID IT IN PASSING.** `open` is the one hand-kept field on
+    this tab, so it is the one that goes stale, and every week after the first
+    was meant to derive from the newest ticket — **which requires a ticket**.
+    A week that takes none leaves `open` pointing at it for ever. Reproduced
+    on the render: tickets through week 5, `open` still on week 1, and the tab
+    offered **week 1's picks with week 1's board** — games played a month
+    earlier — under a ticket card reading Week 5. That is the exact thing v70
+    wrote the rule to prevent, stated as *"a week that already has a ticket is
+    closed"* when the real rule is *behind the season*.
+    - **A stated `open` is now honoured only while it is ahead of the newest
+      ticket**, so the season heals it. ⚠️ **And the board does not travel with
+      an overtaken week** — carrying those games forward would put last
+      month's fixtures under this week's heading, which is worse than no
+      board, since a missing one renders the prop field and says so.
+    - ⚠️ **It also ends a symptom this file used to document as a chore.** An
+      `open` left sitting ON the week just published returned null and the
+      pick card simply **vanished**; CLAUDE.md's publish procedure carried a
+      step telling the next session to remember to edit it. **A hand-kept fix
+      for a hand-kept field is not a fix**, and that step is gone.
+    - 🚨 **THE EXISTING LAW FOR THIS ASSERTED THE OLD ANSWER, WHICH IS THE v42
+      TRAP ARRIVING ON SCHEDULE.** It required `_open` to return **null** for
+      a week with a ticket — true of the code, never the invariant, and it
+      went red the moment the design changed, which is the one time it is
+      easiest to "fix" a law without thinking. Rewritten to the permanent
+      fact: **a week that has been bet is never the open week**, whatever is
+      written in `open`.
+    - ⚠️ **The data move still has to happen once**, and it is done: `open` is
+      **Week 2**, with `games` empty so ESPN fills the board from the reader's
+      phone (v72). Week 1 takes no ticket, so nothing published could have
+      advanced past it.
+  - 🚨 **TWO MEASURED RENDER FAULTS IN THE EXACT CARD HE ASKED ABOUT, BOTH
+    SILENT, NEITHER VISIBLE TO ANY ASSERTION.**
+    - **The rank column clipped a joint two-digit rank.** `=10` measures 25px
+      against a 22px grid cell, so a three-way tie in the bottom third — which
+      the fixture produces, and which is ordinary in a twelve-person league —
+      cut the rank off with nothing on screen saying so. 26px now, with
+      `.lp-ld-s`'s padding moved with it or the sub-line stops lining up.
+    - **The rank was `--mu2`: 2.56:1 on white and 2.36:1 on the reader's own
+      tinted row.** v69 measured that exact tone and moved every piece of TEXT
+      on this tab off it; this one was missed — and it is **the column the
+      card is sorted by**, rendering faintest on the row belonging to whoever
+      is holding the phone (the v52 finding: the row that looks broken is
+      yours). It is 6.6:1.
+  - Verified across **96 view-contexts** — four tabs × {a stranger, the
+    reader, another manager, the nine-season manager} × {320, 390} × {a
+    four-week season, the shipped file, a season where only five of twelve
+    have picked}: no horizontal overflow, no clipped text, no template hole,
+    no rendered comment, no page error, and every clip the sweep does report
+    is the **Season tab's team names**, which are pre-existing and already in
+    Open / next, unchanged by this version. Plus the stale-open reproduction
+    both ways and a no-legs row reading in second person for its own reader.
+    `node --check` on every JS file and `node checks.js` green, with all five
+    new laws fault-injected and each one naming its own fault.
 
 - **v77 — the rankings promise a set, not a person (13 Sep 2026)** — the
   owner, with the empty Rankings tab on screen: *"Change the wording to the
@@ -5747,6 +5902,17 @@ stale entry written in the present tense reads as current to anyone who greps.
   selector, and this one was quietly excluding the chrome while reporting
   itself clean across dozens of view-contexts. The sweep now queries
   `.lg-top *, #lg-body *, .lg-foot *`.
+- ⚠️ **THE "LEGS HIT" TILE MEASURES 4.20:1 AND THE RULE IS SHARED WITH THE
+  ARCHIVE** — found in the v78 sweep, pre-existing since v69, and recorded
+  rather than drive-by fixed for the same reason as the `▾` below. `.ffp-tile
+  .v.wm` is `--wm` at 17px bold, which is under the 18.66px where WCAG's 3:1
+  large-text allowance starts, so 4.5 applies and it misses. ⚠️ **It is one
+  token in ONE rule in `styles.css`, and that rule also paints the archive's
+  "Top seed won" tile on the Honors hero strip** — so it is a cross-page
+  change wanting a render of the history views, not a line in a parlay
+  release. (v69 verified this tab and reported every colour over 4.5:1; this
+  one and `.lp-ld-r` both slipped that sweep, which is worth knowing before
+  trusting a past sweep's all-clear over a fresh measurement.)
 - ⚠️ **THE `▾` ON EVERY `<summary>` MEASURES 2.56:1 AND IS THE ONLY "THIS
   OPENS" AFFORDANCE ON THOSE CARDS** — found in the v73 sweep, pre-existing
   since v69, unrelated to the shared picks, and therefore recorded rather than
