@@ -1526,7 +1526,10 @@ function parlayLaws() {
   LP._reset(); LP._file({ weeks: [], sync: SB });
   if (!/Checking who is in/.test(LP._whoHTML({ k: 4, l: 'Week 4' }))) fail('before the store has answered, the card does not say it is checking');
   LP._picks({ k: 4, rows: {}, at: Date.now() });
-  if (!/Nobody has picked yet/.test(LP._whoHTML({ k: 4, l: 'Week 4' }))) fail('an empty week does not read as an empty week');
+  /* ⚠️ The wording moved when the empty block stopped restating the lead's
+     count; what must hold is that an answered-and-empty week says SOMETHING
+     of its own, and never reads as "still checking". */
+  if (!/going spare/.test(LP._whoHTML({ k: 4, l: 'Week 4' }))) fail('an empty week does not read as an empty week');
   if (/Checking who is in/.test(LP._whoHTML({ k: 4, l: 'Week 4' }))) fail('an answered-and-empty store still reads as "checking"');
   if (!/data-lp="sync"/.test(LP._whoHTML({ k: 4, l: 'Week 4' }))) fail('there is no way to ask the store again');
 
@@ -1535,6 +1538,92 @@ function parlayLaws() {
   const col2 = LP._collectHTML({ k: 4, l: 'Week 4' });
   if (!/data-lp="pull"/.test(col2)) fail('with picks in the shared list the collector does not offer to pull them');
   if (!/Pull in the 3 picks/.test(col2)) fail('the pull button does not say how many it would add');
+  /* 🚨 THE CHAT BOX IS THE FALLBACK, SO IT MAY ONLY VANISH WHEN THE PICK IS
+     ACTUALLY OUT. The owner asked for it gone once the store was live — and
+     deleting it outright would strand a pick every time the store is off or
+     the write is refused, silently, with the reader believing they had sent
+     it. Three states, and the two that need the box are the two nobody looks
+     at. */
+  const SB2 = 'https://lh-test-default-rtdb.firebaseio.com';
+  const OWP = { k: 4, l: 'Week 4' };
+  const MINE = { p: 'PIT -6.5 vs ATL', o: -112, t: 5 };
+  LHIST.setMe('McD');
+  const hasBox = (h) => /data-lp-t="pick"/.test(h) && /data-lp="send"/.test(h);
+  const setMine = () => localStorage.setItem('lh:pick', JSON.stringify({ k: 4, p: MINE.p, o: MINE.o, at: MINE.t }));
+
+  /* (a) store live and the pick is ON it — no box, and no offer to send. */
+  LP._reset(); LP._file({ weeks: [], sync: SB2 }); setMine();
+  LP._picks({ k: 4, rows: { McD: MINE }, at: Date.now() });
+  const upH = LP._pickHTML(OWP);
+  if (hasBox(upH)) fail('the pick is on the shared list and the card still offers to send it to the chat');
+  if (/Send it to the chat|Copy it for the chat/.test(upH)) fail('the chat button survived on a pick that is already shared');
+  if (!/data-lp="edit"/.test(upH)) fail('removing the chat box took "Change my pick" with it');
+  if (!/On the shared list/.test(upH)) fail('the card does not say the pick is on the shared list');
+
+  /* (b) 🚨 store live and the pick is NOT on it — the write was refused or the
+     store is unreachable, and the chat is now the ONLY way this leg reaches
+     the ticket. This is the state that must never lose the box. */
+  LP._picks({ k: 4, rows: {}, at: Date.now() });
+  const offH = LP._pickHTML(OWP);
+  if (!hasBox(offH)) fail('a pick that never reached the shared list has no way out — the chat fallback is gone');
+  if (!/has not reached the shared list/.test(offH)) fail('a pick that did not reach the store does not say so');
+
+  /* (c) no store at all — v72's app, where the chat is the whole transport. */
+  LP._reset(); LP._file({ weeks: [] }); setMine();
+  const noSyncH = LP._pickHTML(OWP);
+  if (!hasBox(noSyncH)) fail('with no store configured the chat box is missing, so a pick cannot reach anybody');
+  if (/On the shared list/.test(noSyncH)) fail('with no store the card claims the pick is on a shared list');
+
+  /* ⚠️ And another manager's pick being up must not hide MY box — `mineIsUp`
+     has to ask about the reader, not about the list being non-empty. */
+  LP._reset(); LP._file({ weeks: [], sync: SB2 }); setMine();
+  LP._picks({ k: 4, rows: { Buley: { p: 'Bills -7', o: -110, t: 9 } }, at: Date.now() });
+  if (!hasBox(LP._pickHTML(OWP))) fail("somebody else's pick being up hid the reader's own chat fallback");
+  localStorage.removeItem('lh:pick');
+
+  /* 🚨 THE CACHE MUST BE ON SCREEN BEFORE THE NETWORK IS ASKED, AND THE ORDER
+     IN `paint` IS THE WHOLE OF IT. The first cut primed `P.picks` inside
+     `refreshPicks`, which paint calls AFTER render — so the opening paint drew
+     an empty list, and a cache younger than the TTL returned early without
+     rendering at all: five picks in localStorage and "0 of 12 picks are in"
+     on the screen. Asserted two ways, because neither alone is enough — the
+     helper working says nothing about when it is called, and the source order
+     says nothing about whether it works. (The v41 precedent: the hash reader
+     is asserted by source order for the same reason.) */
+  LP._reset(); LP._file({ weeks: [], sync: SB2 });
+  localStorage.setItem('lh:picks', JSON.stringify({ k: 4, rows: { Buley: MINE, Wolff: MINE }, at: Date.now() }));
+  LP._prime(OWP);
+  const primed = LP._whoHTML(OWP);
+  if (!/2 of \d+ picks are in/.test(primed)) fail('a cached pick list is not on screen before the network is asked');
+  /* ⚠️ A "prime must not load another week's cache" assertion was written here
+     and DELETED as vacuous: `syncLegs` already gates on the week, so breaking
+     the guard inside `primePicks` changes nothing on screen and the check
+     could not fail. Fault injection is what showed it — the repo's own rule,
+     that a check whose failure path has never run is not a check, applies
+     just as much to one that has no failure path at all. */
+  localStorage.removeItem('lh:picks');
+
+  const paintSrc = fs.readFileSync('./parlay.js', 'utf8');
+  const paintFn = (paintSrc.match(/async function paint\([\s\S]*?\n  \}/) || [''])[0];
+  if (!paintFn) fail('could not find paint() to check its order');
+  else if (!(paintFn.indexOf('primePicks') > -1 && paintFn.indexOf('primePicks') < paintFn.indexOf('render()'))) {
+    fail('paint() renders before it primes the pick cache — the opening paint would draw an empty list over data this device already has');
+  }
+
+  /* ⚠️ And an answer identical to what is on screen must not repaint at all:
+     that is what lets the focus guard cover only a caret rather than every
+     button, which is what threw the first fetch away. */
+  if (!LP._same({ a: 1 }, { a: 1 })) fail('an unchanged pick list is seen as news, so the page repaints for nothing');
+  if (LP._same({ a: 1 }, { a: 2 })) fail('a changed pick list is seen as unchanged, so a new pick would never appear');
+
+  /* ⚠️ One fact, once: the lead carries the count, so the empty block must
+     not restate it (the v22 shape). */
+  LP._picks({ k: 4, rows: {}, at: Date.now() });
+  const emptyWho = LP._whoHTML(OWP);
+  if (/0 of \d+ picks are in/.test(emptyWho) && /Nobody has picked yet/.test(emptyWho)) {
+    fail('the who card says "0 of 12 picks are in" and "Nobody has picked yet" — one fact twice on one card');
+  }
+
   LP._reset();
   LP._file(shipped);
   LHIST.setMe(null);
