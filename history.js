@@ -808,15 +808,21 @@
      The games themselves are still used — head-to-heads, playoff scores, the
      regular-season-to-playoff scoring gap — as MEETINGS and SCORES, never
      totalled into a record. */
-  const CB_APP = {};
-  CUMBOWL.forEach((c) => [c.s11, c.s12].forEach((t) => { CB_APP[key(c.yr, t)] = 1; }));
+  /* ⚠️ `CB_PTS` is the SCORE that team put up in its Cum Bowl, read off the
+     same pass that records the appearance — one walk of `CUMBOWL`, so an
+     appearance and the points beside it can never come from two different
+     readings of the same game. That is the v66 lesson at its smallest: the
+     count and the thing it counts have to be taken from one place. */
+  const CB_APP = {}, CB_PTS = {};
+  CUMBOWL.forEach((c) => [[c.s11, c.p11], [c.s12, c.p12]].forEach(([t, v]) => {
+    CB_APP[key(c.yr, t)] = 1; CB_PTS[key(c.yr, t)] = v; }));
 
   /* ---- per-manager careers ------------------------------------------------ */
   const MGRS = {};
   SEASON.forEach((s) => s.rows.forEach((r) => {
     if (!r.mgr) return;
     const a = MGRS[r.mgr] || (MGRS[r.mgr] = { m: r.mgr, logo: MGR_LOGO[r.mgr],
-      seasons: 0, w: 0, l: 0, pf: 0, pa: 0, t1: 0, t2: 0, t3: 0, po: 0, fin: 0, f4: 0, bw: 0, bl: 0, bA: 0, cb: 0, cbA: 0,
+      seasons: 0, w: 0, l: 0, pf: 0, pa: 0, t1: 0, t2: 0, t3: 0, po: 0, fin: 0, f4: 0, bw: 0, bl: 0, bA: 0, cb: 0, cbA: 0, cbPF: 0,
       yrs: [], allW: 0, allL: 0, pfRankSum: 0, placeSum: 0 });
     a.seasons++; a.w += r.w; a.l += r.l; a.pf += r.pf; a.pa += r.pa;
     a.yrs.push(r);
@@ -838,6 +844,7 @@
     } else if (s.champ && s.champ.t === r.t) a.t1++;
     if (CB_LOSER[s.yr] === r.t) a.cb++;
     a.cbA += CB_APP[key(s.yr, r.t)] || 0;
+    a.cbPF += CB_PTS[key(s.yr, r.t)] || 0;
   }));
   /* 🚨 `name` is a LIVE getter, not a value. It was a plain field copied from
      nm() at build time — which is before anyone has picked a name — so every
@@ -855,6 +862,9 @@
     a.allPct = a.allW / (a.allW + a.allL);
     a.luck = (a.pct - a.allPct) * 100;          // + = won more than the scoring deserved
     a.ppg = a.pf / (a.w + a.l);
+    /* Points a game in the Cum Bowl itself. 0 when they have never been in
+       one — the card only ever prints it for rows that have. */
+    a.cbPpg = a.cbA ? a.cbPF / a.cbA : 0;
     a.papg = a.pa / (a.w + a.l);
     a.avgPlace = a.placeSum / a.yrs.filter((r) => r.place).length;
     a.avgPfRank = a.pfRankSum / a.seasons;
@@ -2203,14 +2213,34 @@
   function cumbowlHTML() {
     const played = [...ALL].filter((a) => a.cbA).sort((a, b) => b.cbA - a.cbA || b.cb - a.cb);
     const never = ALL.filter((a) => !a.cbA);
+    /* ⚠️ DERIVED over all 13 games rather than over the tracked rows, because
+       these are facts about the GAME and not about a career — the two
+       untracked managers played in some of them and the scoreline still
+       happened. And the gap is measured against EACH game's own season
+       (`lgPpg`), never against a 13-year average: the league scored 90.6 a
+       game in 2013 and 108.5 in 2018, so a flat baseline would report the era
+       rather than the game. That is the `relPpg` rule the detectors follow. */
+    const cbW = CUMBOWL.reduce((a, c) => a + c.p11, 0) / CUMBOWL.length;
+    const cbL = CUMBOWL.reduce((a, c) => a + c.p12, 0) / CUMBOWL.length;
+    const cbGap = CUMBOWL.reduce((a, c) => a + (c.p11 + c.p12) / 2
+      - SEASON.find((x) => x.yr === c.yr).lgPpg, 0) / CUMBOWL.length;
+    const cbN = played.map((a) => a.cbA);
     return `<h2 class="section-title">🚽 The Cum Bowl ${tag('po')}</h2>
     <div class="ffp-card">
       <p class="fh-lead">The two teams that lose their way to the bottom of the consolation bracket meet in its last game. <b>The winner is 11th and the loser is the league's worst.</b></p>
-      <div class="fh-cbt-h"><span>Record</span><span>PLAYED</span><span>LOST</span></div>
+      <div class="fh-cbt-h"><span>Record</span><span>PLAYED</span><span>LOST</span><span>PTS/G</span></div>
       ${played.map((a) => `<div class="fh-cbt-r${isMe(a.m) ? ' you' : ''}">
-        ${tap(a.m, `<b>${esc(a.name)}</b>`)}<span>${a.cbA}</span><span class="${a.cb ? 'neg' : 'pos'}">${a.cb || '0'}</span>
+        ${tap(a.m, `<b>${esc(a.name)}</b>`)}<span>${a.cbA}</span><span class="${a.cb ? 'neg' : 'pos'}">${a.cb || '0'}</span><span>${a.cbPpg.toFixed(1)}</span>
       </div>`).join('')}
       ${never.length ? `<div class="fh-cbt-n"><b>Never in the bottom two:</b> ${never.map((a) => esc(a.name)).join(' · ')}</div>` : ''}
+      <p class="ffp-cap"><b>Nobody scores in these.</b> The two teams average
+      ${((cbW + cbL) / 2).toFixed(1)} a game — ${Math.abs(cbGap).toFixed(1)}
+      ${cbGap < 0 ? 'below' : 'above'} what the league was scoring that same
+      season — and it is usually one of them not turning up at all: the
+      winner puts up ${cbW.toFixed(1)}, the loser ${cbL.toFixed(1)}.
+      ⚠️ <b>Read a PTS/G beside its own PLAYED.</b> These are
+      ${Math.min(...cbN)} to ${Math.max(...cbN)} games each, so most of that
+      column is a scoreline or two rather than a scoring average.</p>
     </div>
     <details class="ffp-card fh-det">
       <summary><b>Every game</b><span>${CUMBOWL.length} seasons</span><i>▾</i></summary>

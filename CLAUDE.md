@@ -536,6 +536,43 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       `<details>` summaries otherwise — so a second heading on that page turns
       13 year chips into 2 section chips. The years are still one tap each in
       the list; jumping straight to 2019 from the chip row is gone.
+    - 🚽 **The Cum Bowl table is FOUR columns since v67** — played · lost ·
+      **PTS/G** (owner: *"Add points per game in the cum bowl for this
+      sections. Feels info light"*). `cbPF` is summed in the same walk of
+      `CUMBOWL` that records the appearance, so the count and the points it
+      averages can never come from two readings of one game.
+      - 🚨 **THE LAW FOR IT IS PER MANAGER, AND THE SUMMED ONE WAS WRITTEN
+        FIRST AND THROWN AWAY.** Swapping the two scores inside one Cum Bowl
+        conserves every total in `checks.js` — the appearance counts cannot
+        see it (v66: a count cannot see WHOSE game it counted) and neither can
+        a summed `cbPF`. Fault-injected on 2019 before the law existed: six ✅
+        and the card printing both managers' PTS/G the wrong way round. The
+        v51 rule, learned a third time.
+      - ⚠️ **The caption's gap is measured against EACH game's own season**
+        (`lgPpg`), never a 13-year average — the league scored 90.6 a game in
+        2013 and 108.5 in 2018, so a flat baseline would report the era. It
+        reads **86.7 a game, 13.5 below the league that same season; the
+        winner 98.5, the loser 74.8** — all four derived.
+      - ⚠️ **The column itself is raw and the caption says so.** These are 1-8
+        games each, so most rows are a scoreline or two rather than a scoring
+        average, and that sample is a bigger caveat than the era is. The
+        alternative — a per-manager gap against their own regular season, the
+        `januaryHTML` shape — is the honest ranking if this ever wants sorting
+        by it; the table is sorted by PLAYED, so it does not rank on points.
+      - 🚨 **PTS/G TAKES THE SAME `--gy` AS THE COLUMNS BESIDE IT.** The first
+        cut gave it `--mu` to read as secondary: measured on the render,
+        **rgb(138,130,114) on white is 3.46:1**, under the 4.5 a 12.5px number
+        needs — and it is the exact tone the ⚑-badge bullet above already
+        names as the one nobody spots mid-page. It is also the newest thing on
+        the card, so printing it fainter than the counts was backwards twice.
+        ⚠️ No `--pos`/`--neg` either: scoring a lot in a Cum Bowl is not good
+        news and scoring little is not bad news (v189's semantic-colour rule).
+      - ⚠️ **`.neg`/`.pos` on the LOST column is INERT and has always been.**
+        `#fantasy-history .neg` needs an id this app does not have and
+        `.fh-prof .neg` never wraps this table, so `.fh-cbt-r span`'s `--gy`
+        wins everywhere — measured, LOST renders the same grey as PLAYED.
+        Deliberately left alone in v67: nothing on screen is wrong, and
+        turning it red is a design change nobody asked for. See Open / next.
   - `profile(mgr)` — the drill-down every name opens
   - `setMe(mgr)` / `me()` / `name(mgr)` / `roster()` — identity
   - `key()` — the three-badge provenance key, for the ? sheet in `league.js`
@@ -1150,7 +1187,9 @@ correction, zero unresolved conflicts**.
   (v61, now that the all-time standings display them) · **the seeds agree with
   the bracket's own shape** — byes are 1 and 2, round 1 is 3v6 and 4v5 (v62,
   over two independent sources) · **no two roll-call cards make the same
-  claim** and **a decimal is one number** (v66) · **the bracket resolves the
+  claim** and **a decimal is one number** (v66) · **every manager's Cum Bowl
+  points == the points from their own games, PER MANAGER** (v67 — a summed
+  version stays green through a swap) · **the bracket resolves the
   standings** — the final decides 1st/2nd, the semi-final losers are 3rd/4th,
   the R1 losers 5th/6th (their pair plays TWICE on ESPN and the last game
   decides), the consolation six are exactly 7-12 and GmC7/8/9 decide 7-8,
@@ -1547,6 +1586,87 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v67 — the Cum Bowl gets a scoreboard (13 Sep 2026)** — the owner, with
+  the tab open: *"Add points per game in the cum bowl for this sections.
+  Feels info light"*.
+  - **He is right that it was thin, and the reason is worth naming: the card
+    knew nothing about the games it was counting.** Played and lost are both
+    counts — the table could tell you Buley has been in eight of these and
+    lost two, and could not tell you a single thing that happened in one.
+    Every scoreline was already in `CUMBOWL`, sitting unused one collapsed
+    `<details>` away.
+  - 🚨 **THE LAW FOR THE NEW COLUMN WAS WRITTEN AS A TOTAL FIRST, AND THE
+    TOTAL WAS GREEN OVER A REAL BUG.** Summed `cbPF` against the summed game
+    scores, in the style of v61's career points-for — then fault-injected by
+    swapping the two scores inside the 2019 Cum Bowl. **Six ✅ under `cum
+    bowl` and not one word**, while the card printed Hurd's points against
+    Buley's name and Buley's against Hurd's. A swap conserves a sum. The
+    appearance counts could not see it either, for the reason v66 exists: a
+    count cannot see WHOSE game it counted. Rewritten per manager, and it
+    names both of them.
+    - ⚠️ **This is the v51 rule arriving for the third time** (v51 for the
+      bracket record, v58's re-verification, here). Worth stating as the
+      general form rather than as another instance: **a law over a sum is
+      blind to a swap, and a swap is what a new per-manager column is most
+      likely to get wrong.** Any number that is attributed to a person gets a
+      per-person law or it gets nothing.
+  - ⚠️ **The caption's comparison is against EACH game's own season, and a
+    flat baseline would have reported the era instead.** The league scored
+    90.6 a game in 2013 and 108.5 in 2018 — an 18-point span across a card
+    whose rows are one to eight games. Measured per season, a Cum Bowl runs
+    **13.5 below** what the league was scoring that year; measured against a
+    13-year average it would have read 13.5 too, by luck, and been wrong the
+    next time a season landed. The `relPpg` rule, applied to a card rather
+    than to a detector.
+  - **And the derived facts are better than the column on its own.** The two
+    teams average **86.7**; the winner puts up **98.5** and the loser
+    **74.8**. A Cum Bowl is not two bad teams playing badly — it is one of
+    them not turning up. That sentence is four `toFixed(1)`s and no typed
+    numbers, so it re-writes itself the next time a season lands.
+  - ⚠️ **The column is RAW points, and the honest caveat is the sample rather
+    than the era.** One to eight games each: most rows are a scoreline or two.
+    The card says so in as many words and names each row's own PLAYED beside
+    it (the v51 rule). The era-safe alternative — each manager's gap against
+    their own regular season in those same years, the `januaryHTML` shape —
+    is what this would need to be sorted BY; the table is sorted by PLAYED,
+    so it never ranks on points.
+  - 🚨 **AND THE COLOUR I CHOSE FOR IT FAILED ITS OWN MEASUREMENT.** PTS/G
+    shipped in the first cut as `--mu`, to read as secondary to the counts.
+    Measured on the render: **rgb(138,130,114) on white, 3.46:1** — under the
+    4.5 a 12.5px number needs, and the exact tone this file already warns is
+    the one "nobody spots mid-page". It is also the newest information on the
+    card, so making it fainter than the two columns it was added beside was
+    backwards twice over. It takes the same `--gy`, which needs no rule at
+    all. ⚠️ No `--pos`/`--neg` either — scoring a lot in a Cum Bowl is not
+    good news and scoring little is not bad news (v189's semantic-colour
+    rule). **A colour is invisible to every assertion in this repo; the only
+    thing that catches one is computing the contrast off the render.**
+  - ⚠️ **Found while doing that: `.neg` on the LOST column has never done
+    anything.** It needs `#fantasy-history`, an id this app does not have.
+    Left alone — nothing on screen is wrong and turning LOST red is a design
+    change nobody asked for. In Open / next with the question of what else
+    inherited that dead Sports-Hub selector.
+  - ⚠️ **A fourth column, on the row shape v39 and v52 both had to rescue.**
+    It survives only because this table is keyed by MANAGER — Christel is the
+    longest name at ~62px — and not by team name. Measured at 320px rather
+    than assumed: the name column holds 112px with nothing clipped. Written
+    into the CSS that a fifth column goes to two lines like `.fh-po`.
+  - Verified at 320 and 390px across 50 view-contexts — the five tabs ×
+    {stranger, McD, Buley, Hurd, Christel}: no horizontal overflow, no clipped
+    cell, no type under 9px, no tap target under 38px, no template hole, no
+    page error. The card renders four columns at both widths (name 112px at
+    320, 182px at 390; numbers 44/38/48) with the reader's own row lit.
+    `node --check` on every JS file and `node checks.js` green, with the new
+    law fault-injected.
+    - ⚠️ **A first sweep came back "clean across all view-contexts" and was
+      worthless.** It clicked `button[data-sub=…]`; the attribute is
+      `data-l2`, so every tap missed and all 50 contexts measured whichever
+      tab the app had booted onto — including, silently, the one card this
+      version changes. The harness asserts `aria-selected` on the tab it
+      asked for before it measures anything now. **A sweep that cannot fail
+      to reach its subject is not a sweep** — the v39 rule about a check whose
+      failure path has never run, one level up in the harness.
 
 - **v66 — the Cum Bowl was the wrong game, for 65 versions (12 Sep 2026)** —
   the owner, looking at one storyline card: *"Buley has finished 11th seven
@@ -4273,6 +4393,16 @@ stale entry written in the present tense reads as current to anyone who greps.
   three lists added after it in v40/v42/v43. The fix is the same shape; it
   wants its own pass with a render at both widths, which is why it is here
   and not in v58.
+- **The Cum Bowl LOST column emits `.neg` and nothing styles it** (found while
+  measuring v67's new column). `#fantasy-history .neg` is (1,1,0) but needs an
+  id this app does not carry, and `.fh-prof .neg` never wraps `.fh-cbt-r` —
+  so `.fh-cbt-r span { color: var(--gy) }` wins and LOST renders the same grey
+  as PLAYED. It is a class emitted and never read, which is the v8 `STATS`
+  shape one layer out: invisible to every assertion, because a colour is.
+  Nothing is wrong on screen, so the fix is a decision rather than a repair —
+  either drop the class or decide LOST should be red, and the same sweep
+  should check what else in `.fh-` inherited that dead `#fantasy-history`
+  selector from Sports-Hub.
 - **Not built:** any way for a member to write anything back (a reaction, a
   pick, a comment). That needs a backend and is a real product decision, not a
   missing feature.

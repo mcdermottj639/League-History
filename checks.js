@@ -123,6 +123,30 @@ ALL.forEach((x) => {
     console.log(`  ❌ ${x.m}: ${x.bl} bracket losses, but ${x.bA} brackets − ${won} title(s) = ${x.bA - won}`); bad++;
   }
 });
+/* 🚨 THE CUM BOWL POINTS ARE PER MANAGER, AND THE SUMMED VERSION WAS WRITTEN
+   FIRST AND THROWN AWAY (v67 — the PTS/G column). Swapping the two scores
+   inside one Cum Bowl leaves every total in this file green: the appearance
+   counts cannot see it (a count cannot see WHOSE game it counted — v66), and
+   neither can a summed `cbPF`, because a swap conserves the sum. Verified by
+   doing exactly that to 2019 before this law existed — six ✅ and nothing
+   said a word, while the card printed both managers' PTS/G the wrong way
+   round. This is the v51 rule, which the bracket law above already learned:
+   per manager, not summed. Rounded to a tenth — both sides are float sums
+   taken in different orders, and a tenth is what the column prints. */
+{
+  const ptMark = block();
+  const mgrAtYr = (yr, t) => { const se = SEASON.find((x) => x.yr === yr);
+    const r = se && se.rows.find((x) => x.t === t); return r ? r.mgr : null; };
+  ALL.forEach((x) => {
+    const want = CUMBOWL.reduce((a, c) =>
+      a + (mgrAtYr(c.yr, c.s11) === x.m ? c.p11 : 0)
+        + (mgrAtYr(c.yr, c.s12) === x.m ? c.p12 : 0), 0);
+    if (Math.round(x.cbPF * 10) !== Math.round(want * 10)) {
+      console.log(`  ❌ ${x.m}: ${x.cbPF.toFixed(1)} Cum Bowl points on the career, but ${want.toFixed(1)} on the games themselves`); bad++;
+    }
+  });
+  console.log(`  ${ptMark()} cum bowl points            every manager's PTS/G is the points from their own games`);
+}
 /* 🚨 EVERY PLAYOFF APPEARANCE IS A BRACKET ON FILE (v59). The Playoff
    appearances caption now states, as fact, that the bracket count beside each
    record IS that manager's appearance count and that losses == appearances −

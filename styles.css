@@ -3388,7 +3388,13 @@ tr.fav td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .fh-med-leg b { color: var(--gy); }
 /* Cum Bowl standings */
 .fh-cbt { margin: 0 0 14px; padding: 0 0 12px; box-shadow: inset 0 -1px 0 var(--l07); }
-.fh-cbt-h, .fh-cbt-r { display: grid; grid-template-columns: 1fr 52px 44px; gap: 6px; align-items: baseline; }
+/* 🚨 FOUR COLUMNS SINCE v67, AND THE NAME IS THE ONE THAT GIVES. The numeric
+   columns have floors (a 3-digit PTS/G with tabular figures) and the name is
+   all that is left to squeeze — the v39/v52 finding. It survives here only
+   because this table is keyed by MANAGER (Christel is the longest at ~62px),
+   not by team name; measured at 320px the name column is 112px with nothing
+   clipped. Add a fifth and it goes to two lines like `.fh-po`. */
+.fh-cbt-h, .fh-cbt-r { display: grid; grid-template-columns: 1fr 44px 38px 48px; gap: 6px; align-items: baseline; }
 .fh-cbt-h { font: 800 8.5px/1 Archivo, system-ui, sans-serif; letter-spacing: .06em; color: var(--mu); padding-bottom: 7px; }
 .fh-cbt-h span:not(:first-child) { text-align: right; }
 .fh-cbt-h span:first-child { color: var(--ac6); font-size: 9.5px; letter-spacing: .07em; text-transform: uppercase; }
@@ -3397,6 +3403,16 @@ tr.fav td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .fh-cbt-r.you { background: rgba(var(--acRGB), .09); margin: 0 -14px; padding: 6px 14px; border-radius: var(--r1); }
 .fh-cbt-r b { font-size: 12.5px; font-weight: 800; color: var(--ink); }
 .fh-cbt-r span { text-align: right; font-size: 12.5px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--gy); }
+/* 🚨 PTS/G TAKES THE SAME --gy AS THE TWO COLUMNS BESIDE IT, AND THE FIRST CUT
+   DID NOT (v67). It was given --mu to read as secondary — measured on the
+   render at rgb(138,130,114) on white, 3.46:1, under the 4.5 a 12.5px number
+   needs, and it is the exact tone this repo already flagged as the one
+   "nobody spots mid-page". It is also the newest information on the card, so
+   printing it fainter than the counts was backwards twice over.
+   ⚠️ And no --pos/--neg either: scoring a lot in a Cum Bowl is not good news
+   and scoring little is not bad news — colour would assert a direction the
+   number does not have (the v189 semantic-colour rule). Same neutral as
+   PLAYED is the whole answer, so the column needs no rule of its own. */
 .fh-cbt-n { font-size: 10.5px; color: var(--mu2); margin-top: 10px; line-height: 1.5; }
 .fh-cbt-n b { color: var(--gy); }
 
