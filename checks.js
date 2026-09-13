@@ -1366,12 +1366,45 @@ function parlayLaws() {
      the app it was before the feature existed, because that is the whole
      safety argument — the store is an upgrade over the chat path and never a
      dependency of it. */
-  if (String(shipped.sync || '').trim()) {
-    fail('parlay/current.json ships with a live `sync` URL — the shared store must be opt-in, and turning it on is a deliberate data commit');
+  /* 🚨 THE SHIPPED FILE MUST NEVER CARRY A SECRET, AND THIS IS THE LAW THAT
+     OUTLIVES THE FEATURE. The repo is PUBLIC. A Firebase console offers an
+     apiKey, a databaseSecret, a whole config object and a service account,
+     none of which this app needs — the design is that the one thing committed
+     is a URL that grants exactly what the published rules grant. A token in
+     here would be readable by anyone, for ever, including after it is
+     deleted from the tip. */
+  const shippedTxt = fs.readFileSync('./parlay/current.json', 'utf8');
+  [[/api[_-]?key/i, 'an API key'], [/databaseSecret/i, 'a database secret'],
+    [/private[_-]?key/i, 'a private key'], [/serviceAccount/i, 'a service account'],
+    [/client[_-]?secret/i, 'a client secret'], [/Bearer\s/i, 'a bearer token'],
+    [/AIza[0-9A-Za-z_-]{10,}/, 'a Google API key'],
+  ].forEach(([re, what]) => {
+    if (re.test(shippedTxt)) fail(`parlay/current.json looks like it carries ${what} — this repo is PUBLIC and the store needs no credential`);
+  });
+
+  /* 🚨 AND IF `sync` IS SET IT MUST ACTUALLY RESOLVE. ⚠️ This REPLACED a law
+     asserting the file ships BLANK, which was true of v73's release and was
+     never an invariant — the owner turned the store on the same day, and a
+     law that encodes the old design fails at exactly the moment the design
+     changes (the v42 lesson). What matters is not whether it is on, it is
+     that ON means on: `syncBase` refuses a URL with a path, a trailing
+     scheme slip or plain http, and it refuses SILENTLY — the tab would look
+     exactly like the chat-path app while somebody believed the store was
+     live. So a set-but-unusable `sync` is a fault, and blank is fine. */
+  const shippedSync = String(shipped.sync || '').trim();
+  if (shippedSync && !LP._syncBase(shipped)) {
+    fail(`parlay/current.json sets sync to "${shippedSync}" and syncBase refuses it — the shared picks would be silently off (https, no path, no trailing slash)`);
   }
+
+  /* 🚨 AND WITH IT BLANK THE TAB IS STILL THE APP IT WAS. That is the whole
+     safety argument for having written a WRITE at all: the store is an
+     upgrade over the chat path and never a dependency of it, so deleting one
+     line has to put v72 back exactly. Asserted against a blank file rather
+     than against the shipped one, so it keeps testing that after the store
+     is switched on. */
   LP._reset();
-  LP._file(shipped);
-  if (LP._syncBase(shipped)) fail('the shipped file resolves to a store URL when it should resolve to none');
+  LP._file(Object.assign({}, shipped, { sync: '' }));
+  if (LP._syncBase({ sync: '' })) fail('a blank sync still resolves to a store URL');
   if (LP._whoHTML({ k: 4, l: 'Week 4' }) !== '') fail('the "who is in" card renders with no store configured');
   if (!/travel through the group chat/.test(LP._howto())) fail('with no store the tab does not say picks travel through the chat');
   if (/data-lp="pull"/.test(LP._collectHTML({ k: 4, l: 'Week 4' }))) fail('the collector offers to pull from a store that is not configured');

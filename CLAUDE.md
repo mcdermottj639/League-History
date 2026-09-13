@@ -922,24 +922,36 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   and the price either way. Every market is optional and a missing one simply
   renders no buttons. ⚠️ It is the FLOOR: the app fetches ESPN's public
   scoreboard over the top of it.
-  - 🚨 **`sync` IS THE WHOLE SHARED-PICKS FEATURE, AND IT SHIPS BLANK** (v73)
-    — a Firebase Realtime Database URL (https, no path, no trailing slash).
-    Fill it in and every pick writes to the store and the tab grows a
-    **👥 who is in** card; leave it blank and the tab is byte-for-byte the app
-    v72 shipped, picks travelling through the group chat. **So turning the
-    feature on and off is this one line and NO version bump** — `parlay/` is
-    data outside the versioned JS and is fetched `no-store`.
-    ⚠️ `checks.js` asserts it ships BLANK: an opt-in that arrives on is not
-    opt-in, and the shared list is an upgrade over the chat path rather than a
-    dependency of it.
+  - 🚨 **`sync` IS THE WHOLE SHARED-PICKS FEATURE, AND IT IS LIVE** (v73, set
+    the same day) — a Firebase Realtime Database URL (https, no path, no
+    trailing slash), currently
+    `https://nectars-bologna-default-rtdb.firebaseio.com`, the owner's own
+    project. With it set every pick writes to the store and the tab grows a
+    **👥 who is in** card; blank it and the tab is byte-for-byte the app v72
+    shipped, picks travelling through the group chat. **So turning the feature
+    on and off is this one line and NO version bump** — `parlay/` is data
+    outside the versioned JS and is fetched `no-store`.
+    ⚠️ **`checks.js` does NOT assert it is blank, and briefly did.** That law
+    was written against v73's release state and was never an invariant; it
+    would have failed the moment he switched the store on, which is the v42
+    trap (a test that encodes the old design fails exactly when the design
+    changes). What is asserted instead is stronger and permanent: **the file
+    carries no credential** (see below), **a `sync` that is SET must actually
+    resolve** — a URL with a path or plain `http` is refused *silently*, so
+    the tab would look like the chat-path app while somebody believed the
+    store was live — and **with `sync` blank the tab is still the v72 app**,
+    asserted against a blanked copy so it keeps testing after the switch-on.
     ⚠️ 🚨 **IT IS NOT A CREDENTIAL AND MUST NEVER BE TREATED AS ONE.** The repo
     is public, so the URL is public, and anybody who reads `parlay.js` could
     write a row under any name — the same bar the published passphrase hash
     already sets, against the same eleven relatives. Every row is untrusted
-    input; see `parlay.js` below. **Never put a Firebase API key, a database
-    secret, or any other token in this file** — the whole design is that there
-    is nothing here worth stealing. The setup steps and the exact security
-    rules are under "🔗 Turning the shared picks on" below.
+    input; see `parlay.js` below. 🚨 **Never put a Firebase API key, a
+    `databaseSecret`, a service account or any other token in this file** —
+    the whole design is that there is nothing here worth stealing, and
+    `checks.js` now greps the shipped file for each of those shapes. A token
+    committed to a public repo is readable for ever, including after it is
+    deleted from the tip. The setup steps and the exact security rules are
+    under "🔗 Turning the shared picks on" below.
 - `espn.js` — **the manager map and the ESPN transform**, loaded by BOTH pages
   (v42), `window.LeagueESPN`.
   - 🚨 **IT EXISTS BECAUSE THE ALTERNATIVE WAS TWO COPIES.** When the Season
@@ -1889,6 +1901,7 @@ whole design:
 > 3. **He sends the URL; a session sets `"sync"` to it** (https, no path, no
 >    trailing slash — `syncBase` refuses anything else, and there are laws for
 >    each of those shapes). ⚠️ **No version bump**: `parlay/` is data.
+>    ✅ **DONE 13 Sep 2026**: `https://nectars-bologna-default-rtdb.firebaseio.com`.
 > 4. ⚠️ **Never add anything else from that console.** No API key, no
 >    `databaseSecret`, no service account, no config object — none of it is
 >    needed and **this repo is PUBLIC**. The design is that the one thing in
@@ -2033,12 +2046,25 @@ stale entry written in the present tense reads as current to anyone who greps.
     takes a write", and the only three answers were his Render backend (a
     different repo, a free-tier cold start, and **unreachable from this
     sandbox**), a keyless third party, or nothing.
-  - **`sync` in `parlay/current.json`, and it ships BLANK.** Fill it in and
-    every saved pick writes to a Firebase Realtime Database and the tab grows
-    a **👥 who is in** card. Leave it blank and the tab is byte-for-byte the
-    v72 app. 🚨 **So the feature is complete and OFF, turning on is one line
-    of DATA with no version bump, and the first law asserts it ships off** —
-    an opt-in that arrives on is not an opt-in.
+  - **`sync` in `parlay/current.json`.** Fill it in and every saved pick
+    writes to a Firebase Realtime Database and the tab grows a **👥 who is
+    in** card. Leave it blank and the tab is byte-for-byte the v72 app.
+    🚨 **Turning it on is one line of DATA with no version bump**, which is
+    what made the switch-on a five-minute job an hour after the code shipped:
+    he made the project, pasted the rules, sent the URL.
+    - ⚠️ **AND THE LAW I WROTE FOR IT WAS WRONG WITHIN THE HOUR.** The first
+      cut asserted the file *ships blank* — true of the release, never an
+      invariant, and it went red the moment he switched the store on. **That
+      is the v42 trap exactly: a test that encodes the old design fails at the
+      one moment it is easiest to "fix" without thinking.** Replaced with the
+      three that are permanent — the file carries **no credential** (grepped
+      for apiKey, databaseSecret, private_key, service account, bearer token,
+      because the repo is public and a committed token is readable for ever),
+      a `sync` that is SET must **actually resolve** (a path or plain http is
+      refused *silently*, so the tab would look like the chat-path app while
+      somebody believed the store was live), and with `sync` blank the tab is
+      still the v72 app — asserted against a blanked COPY, so it goes on
+      testing the degrade path now that the real file is live.
   - 🚨 **THE HARD CONSTRAINT SURVIVES, AND IT IS THE SAME ARGUMENT v42 MADE
     ABOUT READS, POINTED AT A WRITE.** `lh:pick` is written first and cannot
     fail; the `PUT` happens after. A dead store costs the other eleven a live
