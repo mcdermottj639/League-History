@@ -1086,6 +1086,25 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       button with no price behind it. A board arrives half-posted all the
       time — a total up before a spread — and half a game is still worth
       showing. A one-sided moneyline renders neither side.
+    - 🚨 **AND A BOARD IS GAMES YOU CAN BET, NOT GAMES ESPN KNOWS ABOUT
+      (v80, `playable()`).** ESPN lists a week's fixtures as soon as the
+      schedule exists and prices them only when the books do — so **every
+      week has a window, days long, where the payload is all games and no
+      markets**, and it is the window the tab sits in for most of the week.
+      Every gate counted GAMES, so the card said *"Tap a line below"* over an
+      empty board with the write-it-in field **folded shut**: a control named
+      in a sentence and absent from the page, which is the v30 fault.
+      Reproduced on the render before it was fixed.
+      ⚠️ **ONE helper and four gates read it** — the lead sentence, the board,
+      the note, and whether the prop field opens. Four gates asking one
+      question four ways is how three agree and one does not.
+      🚨 **The buttons stay keyed by their index into the WHOLE week, never
+      into the priced subset.** A pick travels as `{g, id}` and `selPick`
+      resolves it back through `gamesOf`, so renumbering around an unpriced
+      fixture would point a saved tap at a **different game** — silently, and
+      only in the half-priced state, which is every week for a day or two.
+      There is a law that reads the rendered buttons back against the week
+      they came from, on a board with the gaps deliberately at 0 and 2.
     - 🚨 **SAVE SITS WHERE THE CHOOSING HAPPENS.** The first cut put it above
       the board, which on a sixteen-game slate (~90 buttons) means tapping a
       line and scrolling back to the top to confirm it. The chosen line rides
@@ -1762,7 +1781,12 @@ correction, zero unresolved conflicts**.
   rankings copy names who publishes a set, none of it carries a pronoun for
   one, and the empty card still promises that a set is coming** (v77 — the
   last clause because copy that named nobody by saying nothing would pass the
-  first two) · **every manager in the roster has a row on the rendered season
+  first two) · **a week whose games carry no odds is not a board — no option
+  buttons, no empty container, no note claiming a source, the prop field open
+  and the card saying why — and an option's `data-g` indexes the WHOLE week
+  rather than the priced subset, so a tap cannot land on a different game**
+  (v80 — the second clause because renumbering is the obvious fix and it is
+  the silent one) · **every manager in the roster has a row on the rendered season
   record, a row with no legs prints no record rather than 0-0, twelve unrated
   rows sort to name order, and a stated `open` behind or on the newest ticket
   neither opens a played week nor carries that week's board forward** (v78 —
@@ -2297,6 +2321,65 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v80 — a board is games you can BET (13 Sep 2026)** — the owner, on the
+  week 2 board: *"What time will we get the week 2 odds shown"*.
+  - **The question has no time in the answer, and checking that is what found
+    the bug.** Nothing here is scheduled: the board is pulled from ESPN by
+    the reader's phone when the tab paints, cached 15 minutes, so the lines
+    appear on the first open more than fifteen minutes after ESPN carries
+    them. What that exposed is **what the tab does in the meantime**.
+  - 🚨 **ESPN LISTS A WEEK'S FIXTURES LONG BEFORE THE BOOKS PRICE THEM, AND
+    EVERY GATE ON THIS CARD COUNTED GAMES.** So in the window between the
+    two — days long, every week, and exactly where week 2 sits today — the
+    payload came back with sixteen games and no markets, and the card
+    rendered: *"Tap a line below, or write your own prop"*, **no lines**, a
+    `.lp-board` container with nothing in it, *"Lines as published with the
+    app"* under it, and the write-it-in field **collapsed**, because three
+    games looked like a board. **A control named in a sentence and absent
+    from the page is the v30 fault**, and this is it in the state the tab
+    spends most of the week in. Reproduced on the render first.
+  - ⚠️ **The distinction the code was missing is one word**: a board is games
+    you can BET, not games ESPN knows about. `playable()` is that question
+    asked once, and the lead sentence, the board, the note and the prop
+    field's own `open` all read it. **Four gates asking one question four
+    ways is how three of them agree and one does not** — which is what had
+    already happened here, since `gameBoardHTML` filtered per game correctly
+    and then rendered its wrapper anyway.
+  - 🚨 **THE REAL RISK WAS NOT THE EMPTY BOX, IT WAS RENUMBERING.** The
+    obvious fix is to render the filtered list — and a pick travels as
+    `{g, id}` with `selPick` resolving it back through `gamesOf`, so the
+    moment one unpriced fixture sat above a priced one, **a saved tap would
+    point at a different game**. Silently, and only in the half-priced state,
+    which is every week for a day or two. The buttons keep their index into
+    the whole week; a law reads the rendered buttons back against the week
+    they came from, with the gaps deliberately at 0 and 2, and it names the
+    wrong game when injected.
+  - ⚠️ **The copy says why, and that it fixes itself.** "The week's board is
+    not in yet" now covers two different situations (no fixtures, or no
+    prices), so it reads *"The week's lines are not posted yet… Tappable
+    lines turn up here on their own once they are"* — nobody has to be told
+    to come back, and nobody files it as broken.
+  - 🚨 **ANOTHER SESSION TOOK v79 WHILE THIS WAS BEING BUILT, WHICH IS THE
+    v50 COLLISION ARRIVING EXACTLY AS PREDICTED.** v50 shipped as v49 because
+    two sessions independently wrote the same string into `APP_VERSION`,
+    `CACHE` and both pages, and **git merges an identical line clean** — so
+    the clash is invisible to the merge. The rule it wrote down is read
+    `origin/main` before bumping and re-read after merging; what this version
+    adds is the practical half: **do the bump LAST**. The work was committed
+    with no version in it, `origin/main` was re-read (it had moved to v79),
+    their commit was merged with no conflict, and only then was the number
+    taken — so there was never a moment when two commits claimed one version.
+  - Verified on the merged tree, both sessions' work together: `node --check`
+    on every JS file, `node checks.js` green including v79's new Cum Bowl
+    laws and v80's five, each of mine fault-injected and naming its own
+    fault. Rendered across **96 view-contexts** — four tabs × four personas ×
+    {320, 390} × {the shipped file, a week of fixtures with no odds, a
+    half-priced week}: no overflow, no clipped text, no template hole, no
+    page error, and every clip reported is the Season tab's team names, which
+    are pre-existing and in Open / next. Plus the tap driven through the real
+    page on a half-priced board — `data-g` 1 and 3 with the gaps at 0 and 2,
+    and the last game's moneyline saving as **TEN ML vs LAR +145**.
 
 - **v79 — the Cum Bowl is round one, and it decides last place (13 Sep 2026)**
   — the owner, with the whole 2022 consolation bracket on screen beside the
