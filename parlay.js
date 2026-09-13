@@ -763,6 +763,20 @@
     return await r.json();
   }
 
+  /* 🚨 A DELETE IS REFUSED BY THE PUBLISHED RULES UNLESS THEY HAVE BEEN
+     WIDENED, AND THAT IS HANDLED RATHER THAN ASSUMED. The rules shipped with
+     v73 grant `.write` at the leaf only when `newData.hasChildren(['p','o',
+     't'])` — a delete has no `newData`, so it is denied. Widening them to
+     `!newData.exists() || newData.hasChildren(…)` allows exactly one pick to
+     be removed and nothing else, because write is STILL leaf-only. Until
+     that is pasted, this call 401s and the card says the pick is still on
+     the shared list instead of pretending it is gone. */
+  async function delPick(base, k, m) {
+    const r = await fetch(pickPath(base, k, m), { method: 'DELETE', cache: 'no-store' });
+    if (!r.ok) throw new Error('http ' + r.status);
+    return true;
+  }
+
   async function putPick(base, k, m, p, o, t) {
     const r = await fetch(pickPath(base, k, m), {
       method: 'PUT', cache: 'no-store',
@@ -973,6 +987,7 @@
           <div class="lp-btns">
             ${up ? '' : `<button type="button" class="lg-sheet-go" data-lp="send" data-lp-for="pick">${navigator.share ? '📤 Send it to the chat' : '📋 Copy it for the chat'}</button>`}
             <button type="button" class="${up ? 'lg-sheet-go' : 'lp-alt'}" data-lp="edit">Change my pick</button>
+            <button type="button" class="lp-alt" data-lp="drop">Clear my pick</button>
           </div>
           ${noteFor('pick')}
         </div>`;
@@ -1308,6 +1323,45 @@
       });
       return;
     }
+    /* 🚨 `drop`, NOT `clear` — that action name is already the collector's
+       "Start again", and a second handler for one name in one delegated
+       listener means whichever branch is reached first wins, silently. The
+       v71 name collision (`boardHTML` twice) took a whole card off the page
+       the same way; it is cheaper to not do it again than to find it.
+       🚨 AND THE LOCAL STATE NEVER CONTRADICTS THE STORE. When the pick is on
+       the shared list, the DELETE goes FIRST and `lh:pick` is only cleared if
+       it succeeds — the opposite order would leave the reader with no pick on
+       their own phone while the other eleven, and the ticket, still carried
+       their bet. That is the worst possible split, so a refused delete leaves
+       everything exactly as it was and says why. (The reverse order is right
+       for SAVING, where the local write is the one that must not fail — the
+       two are not symmetric, because a save adds and a clear removes.) */
+    if (act === 'drop') {
+      const mine = ow ? myPick(ow.k) : null;
+      if (!mine) return;
+      const base = syncBase(P.file);
+      /* No store, or it never got there: nothing to take back. */
+      if (!base || !mineIsUp(ow)) {
+        write(PICK_KEY, null); P.draftP = ''; P.draftO = ''; P.sel = null;
+        say('Cleared. Pick again whenever you like.', 'pick');
+        return render();
+      }
+      say('Taking it off the shared list…', 'pick');
+      render();
+      delPick(base, ow.k, LH.me()).then(() => {
+        write(PICK_KEY, null); P.draftP = ''; P.draftO = ''; P.sel = null;
+        const rows = (P.picks && Number(P.picks.k) === ow.k) ? P.picks.rows : {};
+        delete rows[LH.me()];
+        P.picks = { k: ow.k, rows, at: Date.now() };
+        say('Cleared, and off the shared list. Pick again whenever you like.', 'pick');
+        refreshPicks(ow, true); render();
+      }).catch((e) => {
+        console.warn('[parlay] that pick would not come off the shared list', e);
+        say("Couldn't take it off the shared list, so it is still on the ticket. Change it to something else instead.", 'pick');
+        render();
+      });
+      return;
+    }
     if (act === 'edit') {
       const mine = ow ? myPick(ow.k) : null;
       if (mine) { P.draftP = mine.p; P.draftO = String(mine.o); }
@@ -1439,6 +1493,7 @@
     _collectHTML: (ow) => collectHTML(ow),
     _syncBase: syncBase, _rows: rowsToLegs, _takeLeg: takeLeg, _takeAll: takeAll,
     _same: sameRows, _prime: (ow) => primePicks(ow),
+    _delPath: (base, k, m) => pickPath(base, k, m),
     _whoHTML: (ow) => whoHTML(ow), _howto: () => howtoHTML(),
     _file: (v) => { P.file = v; }, _picks: (v) => { P.picks = v; P.syncErr = false; },
     _reset: () => { P.picks = null; P.syncErr = false; P.file = null;

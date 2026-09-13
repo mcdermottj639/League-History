@@ -861,10 +861,30 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       a silent merge: it changes what somebody is about to put money on, and
       it reports what it did — including duplicates, which are still reported
       rather than resolved quietly (the v70 rule).
-    - ⚠️ **Nothing is ever deleted from the store**, because the rules grant
-      write only at the leaf and a delete has no `newData`. Changing your mind
-      overwrites. So "Change my pick" says out loud that the others are still
-      looking at the old one until the new one is saved.
+    - 🧹 **CLEAR MY PICK TAKES THE ROW OFF THE SHARED LIST (v75, owner:
+      *"Allow option to clear pick from selection just like the change pick
+      option"*), AND THE ORDER OF THE TWO WRITES IS THE WHOLE CARE IN IT.**
+      The DELETE goes FIRST and `lh:pick` is cleared only if it succeeds —
+      the opposite order would leave the reader with no pick on their own
+      phone while the other eleven, and the ticket, still carried their bet.
+      That is the worst possible split, so **a refused delete changes nothing
+      and says why**. ⚠️ It is the mirror of SAVING, where the local write
+      goes first because it is the one that must not fail: a save adds and a
+      clear removes, so they are not symmetric.
+      ⚠️ **`data-lp="drop"`, never `"clear"`** — that action name is already
+      the collector's "Start again", and two branches answering one name in
+      one delegated listener means the wrong thing gets cleared, silently.
+      The v71 `boardHTML` collision, pre-empted rather than rediscovered; a
+      law asserts it by name.
+      ⚠️ **The rules had to widen by one clause** (`!newData.exists() ||`),
+      because a delete carries no `newData` and v73's rule refused it. Write
+      is still leaf-only, so the most anybody can remove is one pick — which
+      they could already overwrite with anything. **The app ships working
+      against BOTH rule sets**: with the old ones the delete 401s, nothing is
+      cleared, and the card says the pick is still on the ticket.
+    - ⚠️ **"Change my pick" leaves the old row up until the new one is saved**,
+      because a change overwrites rather than deletes, and it says so.
+      Clearing is the way to come off the list entirely.
     - ⚠️ **It asks again when the app becomes visible**, not on a timer — that
       is the moment somebody wants to know who has picked, and a poll running
       all Sunday would spend a battery on a list that changes twelve times a
@@ -1920,7 +1940,7 @@ whole design:
 >          ".read": true,
 >          "$week": {
 >            "$mgr": {
->              ".write": "newData.hasChildren(['p','o','t'])",
+>              ".write": "!newData.exists() || newData.hasChildren(['p','o','t'])",
 >              ".validate": "newData.child('p').isString() && newData.child('p').val().length <= 120 && newData.child('o').isNumber() && newData.child('t').isNumber()"
 >            }
 >          }
@@ -1931,10 +1951,21 @@ whole design:
 >    🚨 **`.write` IS GRANTED AT THE LEAF AND NOWHERE ABOVE IT, AND THAT IS THE
 >    ONE THING NOT TO "TIDY".** Hoisting it to `picks` or to the root would let
 >    a single request replace or empty the whole tree; at the leaf, the worst
->    anybody can do is overwrite one pick — which is what changing your mind
->    does anyway, and it is visible on the card with a name on it. There is no
->    `.read`/`.write` at the root, so nothing else in that database is
->    reachable at all.
+>    anybody can do is overwrite or remove one pick — which is what changing
+>    your mind and clearing a pick both do anyway, and it is visible on the
+>    card with a name on it. There is no `.read`/`.write` at the root, so
+>    nothing else in that database is reachable at all.
+>    ⚠️ **`!newData.exists() ||` WAS ADDED IN v75 AND IS WHAT ALLOWS A DELETE.**
+>    A delete has no `newData`, so the v73 rule refused it and 🧹 Clear my pick
+>    could not take a row off the shared list. **It loosens less than it
+>    looks**: write is still leaf-only, so the most anybody can remove is one
+>    pick — and they could already overwrite that same pick with anything,
+>    which is strictly worse. Anyone whose row is removed reappears under
+>    "Still to pick", so it is visible rather than silent.
+>    ⚠️ **The app works either way.** With the OLD rules still published, Clear
+>    degrades honestly — the delete 401s, nothing is cleared, and the card
+>    says the pick is still on the ticket and to change it instead. So this
+>    paste is worth doing and is not urgent.
 > 3. **He sends the URL; a session sets `"sync"` to it** (https, no path, no
 >    trailing slash — `syncBase` refuses anything else, and there are laws for
 >    each of those shapes). ⚠️ **No version bump**: `parlay/` is data.
@@ -2065,6 +2096,53 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v75 — clear my pick (13 Sep 2026)** — the owner: *"Allow option to clear
+  pick from selection just like the change pick option."*
+  - **A second button beside Change my pick**, which takes the row off the
+    shared list rather than overwriting it. Change was the only exit and it
+    only ever swaps one bet for another; there was no way to come off the
+    ticket.
+  - 🚨 **THE ORDER OF THE TWO WRITES IS THE WHOLE FEATURE.** The DELETE goes
+    first and `lh:pick` is cleared only if it succeeds. Reverse them — the
+    obvious way, and the way SAVING does it — and a refused delete leaves the
+    reader with no pick on their own phone while the other eleven, and the
+    ticket, still carry their bet. **That split is worse than not having the
+    button.** ⚠️ Saving is the mirror and is right to be: a save ADDS, so the
+    local write is the one that must not fail; a clear REMOVES, so the remote
+    one is. They are not symmetric and treating them the same is the bug.
+  - 🚨 **IT NEEDED THE FIREBASE RULES WIDENED BY ONE CLAUSE, AND THE APP SHIPS
+    WORKING WITHOUT IT.** A delete carries no `newData`, so v73's
+    `newData.hasChildren([…])` refused it. `!newData.exists() ||` allows it —
+    still leaf-only, so the most anybody can remove is one pick, which they
+    could already overwrite with anything. Against the OLD rules the delete
+    401s, **nothing is cleared**, and the card says the pick is still on the
+    ticket and to change it instead. So the paste is worth doing and is not
+    urgent, which is the only honest way to ship a feature that depends on
+    somebody else's console.
+  - ⚠️ **`data-lp="drop"`, never `"clear"`** — the collector's "Start again"
+    already owns that name on the same delegated listener, and two branches
+    for one name means the wrong thing gets cleared in silence. **The v71
+    `boardHTML` collision, pre-empted this time rather than found**, with a
+    law naming both.
+  - ⚠️ **A law pins the DELETE path to the reader's own row.** One wrong
+    segment and Clear removes somebody else's leg or the whole week — verified
+    by injecting exactly that (`/picks/w4.json`), which the law reports three
+    ways.
+  - ⚠️ **And one of my own sweep assertions was wrong before the code was.**
+    It expected the shared count to fall to "0 of 12" after a clear; the
+    fixture holds five rows, one of them the junk one, so the true answer is
+    4 → 3. The sweep dutifully reported the CODE for my arithmetic. **An
+    assertion has to know what its fixture holds** — it checks the reader's
+    own row is gone and the total dropped by exactly one now.
+  - Verified by driving the real button at 320 and 390px, both ways: with the
+    store accepting the delete (row gone, count down one, card back to the
+    board, `lh:pick` empty) and with it **refusing** (nothing cleared, the
+    pick still on the card, the note saying it is still on the ticket). The
+    store mock is stateful for this — a route that always answers the same
+    cannot tell a delete happened. Plus the same 18 view-contexts, with the
+    three-button row measured at 320px: nothing clipped, no overflow, no tap
+    target under 38px.
 
 - **v74 — the chat box goes, and two bugs come with it (13 Sep 2026)** —
   folded into the v73 entry below, because it is the same feature reaching the
