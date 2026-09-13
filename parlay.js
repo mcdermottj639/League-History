@@ -1227,9 +1227,23 @@
     return { file: j };
   }
 
+  /* 🚨 EVERY WRITE GOES THROUGH `render`, SO THE GUARD ONLY HAS TO BE HERE —
+     and it has to be here, because the callers are the problem: a picks
+     fetch, a board fetch, and a `visibilitychange` that fires on every
+     reopen. Any of them can resolve long after the reader has moved to
+     another tab, and `#lg-body` is the same element for every view.
+     ⚠️ Read off the SHELL's stamp rather than a flag of our own: `paint` is
+     not told when its view is torn down, so a local "am I visible" boolean
+     would have to be maintained from the outside anyway — and the moment it
+     drifted, this would be back to painting over other people's pages. */
+  const ownsHost = () => !!(P.host && P.host.dataset && P.host.dataset.view === 'parlay');
+
   function render() {
     const host = P.host;
     if (!host) return;
+    /* Somebody else's page is on screen; this answer is no longer wanted.
+       Nothing is lost — coming back to the tab repaints from scratch. */
+    if (!ownsHost()) return;
     if (P.err) { host.innerHTML = emptyHTML(P.err); return; }
     const file = P.file || { weeks: [] };
     const weeks = Array.isArray(file.weeks) ? file.weeks : [];
@@ -1492,7 +1506,8 @@
     _sel: (v) => { P.sel = v; },
     _collectHTML: (ow) => collectHTML(ow),
     _syncBase: syncBase, _rows: rowsToLegs, _takeLeg: takeLeg, _takeAll: takeAll,
-    _same: sameRows, _prime: (ow) => primePicks(ow),
+    _same: sameRows, _prime: (ow) => primePicks(ow), _owns: ownsHost,
+    _host: (el) => { P.host = el; }, _render: () => render(),
     _delPath: (base, k, m) => pickPath(base, k, m),
     _whoHTML: (ow) => whoHTML(ow), _howto: () => howtoHTML(),
     _file: (v) => { P.file = v; }, _picks: (v) => { P.picks = v; P.syncErr = false; },

@@ -591,9 +591,20 @@
       <div class="ffp-card ls-sched">${cells}</div>`;
   }
 
+  /* 🚨 THE SAME GUARD AS `parlay.js`, AND IT IS HERE BECAUSE THE FAULT IS
+     IDENTICAL RATHER THAN BECAUSE ANYBODY SAW IT HERE (v76). This file has
+     revalidated behind the reader since v42 — cache, then file, then the
+     network — and `render()` writes into `#lg-body`, which every view shares.
+     A refresh that lands after the reader has switched tabs paints the
+     season over whatever they are looking at. Fixing only the tab somebody
+     pointed at while the same fault sits one file over is the v3 lesson, and
+     v54 is the version that had to learn it twice. */
+  const ownsHost = () => !!(S.host && S.host.dataset && S.host.dataset.view === 'season');
+
   function render() {
     const host = S.host, cr = S.cr;
     if (!host) return;
+    if (!ownsHost()) return;
     if (!S.snap) {
       host.innerHTML = `<h2 class="section-title">📊 This Season</h2>
         <div class="ffp-card"><div class="ffp-empty">${EMPTY[S.err] || EMPTY.none}</div></div>`;

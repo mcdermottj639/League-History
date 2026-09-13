@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v75';
+  const APP_VERSION = 'v76';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -619,6 +619,20 @@
     bar.innerHTML = L1.map(([k, l]) =>
       `<button type="button" role="tab" class="${k === S.view ? 'on' : ''}" aria-selected="${k === S.view}" data-l1="${k}">${l}</button>`).join('');
     const host = $('#lg-body');
+    /* 🚨 THE HOST RECORDS WHICH VIEW OWNS IT, AND THAT IS THE ONLY THING
+       STOPPING A LATE CALLBACK PAINTING OVER A PAGE SOMEBODY ELSE IS READING
+       (v76, the owner's screenshot: History and Leaders both lit, with the
+       parlay's pick card in the body).
+       `#lg-body` is ONE element reused by every view, and two of them —
+       `season.js` and `parlay.js` — write into it from async work that
+       outlives the tab: a fetch that resolves after you have moved on, and,
+       since v73, a `visibilitychange` handler that fires every time the app
+       is reopened. Neither had any way to ask whether it was still on screen,
+       so the answer arrived and overwrote whatever was.
+       ⚠️ It is stamped HERE, at the one place a view change goes through, so
+       the stamp cannot disagree with what was painted. A flag kept in each
+       module would be a second copy of a fact the shell already owns. */
+    host.dataset.view = S.view;
     $('#lg-sub2').hidden = true;
     /* ⚠️ The second argument is the REJECTION handler, and passing `buildJump`
        to both is what made the v29 hang invisible — the view failed and the

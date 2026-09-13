@@ -1673,6 +1673,84 @@ function parlayLaws() {
 }
 parlayLaws();
 
+/* ══ 🚨 ONE BODY, FOUR VIEWS — WHO IS ALLOWED TO PAINT IT (v76) ═══════════
+   The owner reopened the app on the History tab and got the parlay's pick
+   card in the body with History and Leaders both lit. `#lg-body` is ONE
+   element shared by every view, and two of them write into it from work that
+   outlives the tab: `season.js` revalidates behind the reader (v42) and
+   `parlay.js` re-asks the shared store on `visibilitychange` (v73) — which
+   fires on EVERY reopen, with `force: true`, so it rendered unconditionally.
+   The shell stamps `#lg-body` with the view that owns it and both files
+   refuse to paint a body that is not theirs.
+   ⚠️ ASSERTED IN BOTH DIRECTIONS, because a guard that always says no would
+   "fix" this by breaking the feature outright — and nothing on screen would
+   distinguish the two until somebody's picks stopped arriving. */
+function hostLaws() {
+  const mark = block();
+  const fail = (m) => { console.log(`  ❌ ${m}`); bad++; };
+  const fs = require('fs');
+
+  /* ① THE SHELL STAMPS IT, AND BEFORE IT DISPATCHES. A stamp written after
+     the view has been handed the host is a stamp the view could not have
+     read — the v41 hash-order precedent, asserted the same way. */
+  const lj = fs.readFileSync('./league.js', 'utf8');
+  const paintFn = (lj.match(/\n  function paint\(\)[\s\S]*?\n  \}\n/) || [''])[0];
+  if (!paintFn) fail('could not find league.js paint() to check the host stamp');
+  else {
+    const at = paintFn.indexOf('host.dataset.view');
+    if (at < 0) fail('league.js paint() does not stamp #lg-body with the view that owns it — a late fetch can paint over any tab');
+    else {
+      /* Every hand-off of `host` to a view must come after the stamp. */
+      ['LeagueSeason.paint(host', 'LeagueParlay.paint(host', 'paintRankings(host'].forEach((call) => {
+        const c = paintFn.indexOf(call);
+        if (c > -1 && c < at) fail(`league.js paint() hands the body to ${call.split('.')[0]} before it stamps who owns it`);
+      });
+    }
+  }
+
+  /* ② BOTH LATE PAINTERS READ THAT STAMP. Asserted by source for season.js,
+     which has no render handle to drive, and by behaviour for parlay.js,
+     which does — the source check alone would pass over a guard that reads
+     the stamp and then ignores it. */
+  [['season.js', 'season'], ['parlay.js', 'parlay']].forEach(([f, view]) => {
+    const src = fs.readFileSync('./' + f, 'utf8');
+    if (!new RegExp(`dataset\\.view === '${view}'`).test(src)) {
+      fail(`${f} never checks whether it still owns #lg-body — a fetch that lands after the reader switches tabs paints over them`);
+    }
+    const rf = (src.match(/\n  function render\(\)[\s\S]*?\n  \}\n/) || [''])[0];
+    if (rf && !/ownsHost\(\)/.test(rf)) fail(`${f}'s render() does not ask whether it owns the body`);
+  });
+
+  /* ③ AND IT SAYS YES WHEN IT SHOULD. Both directions off the real helper. */
+  const LP = window.LeagueParlay;
+  if (typeof LP._owns !== 'function') fail('parlay.js exposes no ownership check to drive');
+  else {
+    const fake = { dataset: {}, innerHTML: '' };
+    LP._host(fake);
+    fake.dataset.view = 'parlay';
+    if (!LP._owns()) fail('the parlay refuses to paint a body that IS its own — the tab would never render');
+    fake.dataset.view = 'hist';
+    if (LP._owns()) fail('the parlay claims a body the archive owns — the bug this version fixes');
+    fake.dataset.view = '';
+    if (LP._owns()) fail('an unstamped body reads as the parlay\'s — it would paint over the picker or a first boot');
+
+    /* The guard has to be in `render` itself, not only in its callers: the
+       fetch, the board and the visibility handler all end there, and a guard
+       per caller is three chances to forget the fourth. */
+    fake.dataset.view = 'hist';
+    fake.innerHTML = '<h2>the archive</h2>';
+    LP._render();
+    if (fake.innerHTML !== '<h2>the archive</h2>') fail('parlay render() overwrote a body owned by another view');
+    fake.dataset.view = 'parlay';
+    LP._render();
+    if (fake.innerHTML === '<h2>the archive</h2>') fail('parlay render() painted nothing into its OWN body — the guard is on backwards');
+    LP._host(null);
+  }
+
+  console.log(`  ${mark()} one body, four views: only the view on screen may paint it`);
+}
+hostLaws();
+
 /* ══ 🔑 THE PASSPHRASE RESET TOOL (v41) ═══════════════════════════════════
    `power.html#newpass` hands the owner the hash that replaces `HASH`. If that
    hash is computed by ANY path other than the one the gate checks with, he

@@ -174,6 +174,25 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     ⚠️ The ? sheet builds its tab list FROM `L1`, so a rename needs no second
     edit; `HELP` supplies only the sentence a tab cannot know about itself.
   It is deliberately small; all the archive logic lives in `history.js`.
+  - 🚨 **`paint()` STAMPS `#lg-body` WITH THE VIEW THAT OWNS IT
+    (`host.dataset.view = S.view`, v76), AND TWO OTHER FILES REFUSE TO PAINT A
+    BODY THAT IS NOT THEIRS.** `#lg-body` is ONE element reused by all four
+    tabs, and two of them write into it from work that outlives the tab:
+    `season.js` revalidates behind the reader (v42) and `parlay.js` re-asks
+    the shared store on `visibilitychange` (v73) — which fires on **every**
+    reopen. Neither could ask whether it was still on screen, so the answer
+    arrived and overwrote whatever was: the owner reopened on History and got
+    the parlay's pick card in the body with History and Leaders both lit.
+    ⚠️ **Stamped HERE, at the one place a view change goes through**, and
+    BEFORE the body is handed to any view — a stamp written after the hand-off
+    is one the view could not have read (the v41 hash-order precedent, and
+    `checks.js` asserts the order). A flag kept inside each module would be a
+    second copy of a fact the shell already owns, and it would drift.
+    ⚠️ **Nothing is lost by refusing**: coming back to a tab repaints it from
+    scratch with whatever arrived while you were away — asserted, because a
+    guard that always said no would "fix" this by breaking the feature and
+    nothing on screen would tell the two apart until somebody's picks stopped
+    turning up.
   - 🚨 **`pickList()` keeps the commissioner off the picker (v21).** Anyone in
     the league can be anyone else in the league — that is the whole point of
     the thing — but nobody gets to put the app into his voice. Two escapes,
@@ -606,6 +625,17 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   - `key()` — the three-badge provenance key, for the ? sheet in `league.js`
 - `season.js` — **the season still being played** (v39). One global,
   `window.LeagueSeason`, one entry point `paint(host, crest)`.
+  - 🚨 **`render()` REFUSES A BODY IT NO LONGER OWNS (`ownsHost()`, v76).**
+    It has revalidated behind the reader since v42, so an answer routinely
+    lands after they have switched tabs — and `#lg-body` is the same element
+    for every view, so the season painted itself over whatever was there.
+    ⚠️ **This was a live fault here too, not a precaution taken by analogy**:
+    the render harness holds `season/current.json` open for two seconds and
+    the season lands on top of History with the guard removed. It was found
+    by analogy (the v3 lesson — fixing the tab somebody pointed at while the
+    same fault sits one file over), and then it was *reproduced*, which is the
+    difference between a guard and a guess. ⚠️ The stamp it reads is set by
+    `league.js`'s `paint()`; see that bullet for why it lives there.
   - 🚨 **IT FETCHES ESPN, AND THE PUBLISHED FILE IS THE FLOOR (v42).**
     ⚠️ **SUPERSEDED the v39 design**, which read only `season/current.json`.
     That made the commissioner PUBLISH the standings — and the copy saying so
@@ -671,6 +701,18 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 - `parlay.js` — **the weekly group parlay** (v69), `window.LeagueParlay`, one
   entry point `paint(host, crest)`. Twelve managers, one NFL bet each, all on
   one ticket.
+  - 🚨 **`render()` REFUSES A BODY IT NO LONGER OWNS (`ownsHost()`, v76), AND
+    THIS FILE IS WHERE THE OWNER SAW IT.** Every write to `#lg-body` goes
+    through `render`, so the guard only has to be there — and it has to be
+    there, because the callers are the problem: a picks fetch, a board fetch,
+    and a `visibilitychange` handler that fires on every reopen with
+    `force: true`. Any of them resolves long after the reader has moved on.
+    ⚠️ **It reads the SHELL's stamp rather than a flag of its own** — `paint`
+    is never told when its view is torn down, so a local "am I visible"
+    boolean would have to be maintained from outside anyway, and the moment it
+    drifted this would be back to painting over other people's pages.
+    ⚠️ **Refusing costs nothing**: returning to the tab repaints from scratch
+    with the newest list, which is asserted in both directions.
   - 🚨 **IT IS THE ONE TAB WHOSE FACTS ARE TYPED IN, AND IT SAYS SO ON THE
     PAGE.** Everything else in this app is derived from the archive precisely
     so it cannot go stale; a bet has no such source — the pick, the price and
@@ -1606,11 +1648,20 @@ correction, zero unresolved conflicts**.
   its legs, a push leaves the price and does not kill the ticket, and every
   manager's leg record is the legs from their own rows, PER MANAGER** (v69 —
   the third outing for the per-manager rule, because a swap conserves a sum) ·
-  **the shared pick store ships OFF, a nearly-right URL is refused, every row
-  from it goes through the same `checkPick` a pasted link does, and a leg made
-  from the store is byte-identical to the same leg made from the chat** (v73 —
-  one resolver, or two would eventually disagree about which pick is on the
-  ticket) · **the bracket resolves the
+  **the shipped `parlay/current.json` carries no credential, a nearly-right
+  `sync` URL is refused, a blank one still gives the v72 app, every row from
+  the store goes through the same `checkPick` a pasted link does, and a leg
+  made from the store is byte-identical to the same leg made from the chat**
+  (v73 — ⚠️ the first version of the first of these asserted the file ships
+  with `sync` blank, which was true of the release and was never an invariant;
+  it would have failed the moment the store was switched on. See the
+  `parlay/current.json` bullet. And one resolver for three routes, or two
+  would eventually disagree about which pick is on the ticket) · **the shell
+  stamps `#lg-body` with the view that owns it, before it hands the body to
+  any view, and both late painters read that stamp — and
+  say yes to their own body as well as no to somebody else's** (v76 — a guard
+  that always said no would "fix" the bug by breaking the feature) · **the
+  bracket resolves the
   standings** — the final decides 1st/2nd, the semi-final losers are 3rd/4th,
   the R1 losers 5th/6th (their pair plays TWICE on ESPN and the last game
   decides), the consolation six are exactly 7-12 and GmC7/8/9 decide 7-8,
@@ -2112,6 +2163,66 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v76 — the parlay was painting over other tabs (13 Sep 2026)** — the owner,
+  with a screenshot of History and Leaders both lit and the parlay's pick card
+  in the body: *"It seems sometimes when I reopen the app it loads looking at
+  the parlay page even if it's on another tab. Fix that bug"*.
+  - 🚨 **THE BUG IS MINE, INTRODUCED IN v73 AND MADE WORSE IN v74, AND IT IS
+    THE COST OF ONE ELEMENT SHARED BY FOUR VIEWS.** `#lg-body` is a single
+    node that every tab writes into, and two files write into it from work
+    that outlives the tab: `season.js` has revalidated behind the reader since
+    v42, and v73 added a `visibilitychange` handler to `parlay.js` that
+    re-asks the shared store — **which fires on every reopen, with
+    `force: true`, so it rendered unconditionally**. Neither had any way to
+    ask whether it was still on screen. The answer arrived and overwrote
+    whatever was there, leaving the tab bar telling the truth about a page
+    that was no longer under it.
+  - ⚠️ **THIS IS THE v1 RULE POINTED THE OTHER WAY, AND WORTH NAMING AS ITS
+    OWN SHAPE.** v1 was *a value derived at init cannot answer a question
+    asked later*; this is its mirror — **an answer that arrives later cannot
+    assume the question is still being asked.** Everything async in this app
+    now has to be able to say who it is for, not just what it found.
+  - **The shell stamps the body and the two late painters read the stamp.**
+    `paint()` sets `host.dataset.view = S.view` at the one place a view change
+    goes through, before the body is handed to anybody, and `season.js` and
+    `parlay.js` each return early from `render()` when the stamp is not
+    theirs. ⚠️ **The stamp lives in the shell rather than as a flag in each
+    module**, because `paint` is never told when a view is torn down: a local
+    "am I visible" boolean would have to be maintained from outside, and the
+    day it drifted this would be back exactly where it started.
+  - 🚨 **ASSERTED IN BOTH DIRECTIONS, BECAUSE ONE DIRECTION IS NOT A FIX.** A
+    guard that always answered no would take the bug off the screen by
+    breaking the feature outright — the parlay would simply never repaint, and
+    **nothing on screen distinguishes the two until somebody's picks stop
+    turning up**. So the law drives the real helper both ways and drives
+    `render()` itself: it must leave another view's body untouched AND paint
+    its own. Fault-injected five ways (stamp deleted, stamp moved below the
+    hand-off, either guard deleted, guard forced false) and each is named.
+  - 🚨 **AND FIXING IT IN `season.js` TOO WAS DONE BY ANALOGY AND THEN
+    REPRODUCED, WHICH IS THE DIFFERENCE BETWEEN A GUARD AND A GUESS.** The
+    owner only ever saw the parlay; the v3 lesson (fixing the tab somebody
+    pointed at while the same fault sits one file over) said to check the
+    other. ⚠️ **My first render assertion for it was VACUOUS and only fault
+    injection showed it** — with the guard removed it still passed, because
+    nothing was in flight when the tab changed: this sandbox cannot reach the
+    backend, so the revalidate fails fast. Holding `season/current.json` open
+    for two seconds puts a real answer in the air, and then the season does
+    land on top of History with the guard out. **A check whose failure path
+    has never run is not a check** (v39), for the second time in three
+    versions.
+  - ⚠️ **`checks.js` asserts the ORDER as well as the stamp.** A stamp written
+    after the body has been handed to a view is a stamp that view could not
+    have read — the v41 hash-order precedent, and the law names which caller
+    got there first.
+  - Verified: the exact reproduction from his screenshot (reopen while on
+    History) no longer produces the parlay card; a reopen **on** the parlay
+    still picks up new picks; leaving and coming back repaints with the newest
+    list; and a season fetch that lands after the tab changed stays off
+    screen. `node --check` on every JS file, `node checks.js` green, and the
+    24-context render sweep clean but for the three colours already sitting in
+    Open / next (the `▾`, `.lg-brand small`, `.lg-foot p`) — none of which
+    this version touches.
 
 - **v75 — clear my pick, and the version moves to the foot (13 Sep 2026)** —
   the owner, two asks: *"Allow option to clear pick from selection just like
