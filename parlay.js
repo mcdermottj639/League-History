@@ -480,30 +480,113 @@
      ⚠️ A GAME MISSING A MARKET RENDERS NO BUTTON FOR IT rather than a button
      that cannot price itself. A board arrives half-filled all the time — a
      total posted before a spread — and half a game is still worth showing. */
-  const sp = (n) => (n > 0 ? `+${n}` : `${n}`);
+  /* A line reads "+3.5" / "-7" / "PK", never "0" — a pick'em written as a
+     number looks like a missing value. */
+  const sp = (n) => (n === 0 ? 'PK' : n > 0 ? `+${n}` : `${n}`);
+  const juice = (v) => (okOdds(Number(v)) ? Number(v) : -110);
 
   function optionsFor(g) {
     const out = [];
     const a = String(g.a || '').trim(), h = String(g.h || '').trim();
     if (!a || !h) return out;
-    if (isFinite(Number(g.sp))) {
-      const n = Number(g.sp), o = okOdds(Number(g.spo)) ? Number(g.spo) : -110;
-      out.push({ id: 'sa', lab: `${a} ${sp(-n)}`, p: `${a} ${sp(-n)} at ${h}`, o });
-      out.push({ id: 'sh', lab: `${h} ${sp(n)}`, p: `${h} ${sp(n)} vs ${a}`, o });
+    const s = g.sp || {}, m = g.ml || {}, t = g.tot || {};
+    /* 🚨 EACH SIDE CARRIES ITS OWN PRICE, and the real board is why. ESPN's
+       own numbers for one game come back as home -3.5 at -118 and away +3.5
+       at -102 — the juice is NOT symmetric, and pricing both sides at -110
+       would put a leg on the ticket at a price the book is not offering. */
+    if (isFinite(Number(s.h)) && isFinite(Number(s.a))) {
+      const hn = Number(s.h), an = Number(s.a);
+      out.push({ id: 'sa', lab: `${a} ${sp(an)}`, p: `${a} ${sp(an)} at ${h}`, o: juice(s.ap) });
+      out.push({ id: 'sh', lab: `${h} ${sp(hn)}`, p: `${h} ${sp(hn)} vs ${a}`, o: juice(s.hp) });
     }
-    if (Array.isArray(g.ml) && okOdds(Number(g.ml[0])) && okOdds(Number(g.ml[1]))) {
-      out.push({ id: 'ma', lab: `${a} ML`, p: `${a} ML at ${h}`, o: Number(g.ml[0]) });
-      out.push({ id: 'mh', lab: `${h} ML`, p: `${h} ML vs ${a}`, o: Number(g.ml[1]) });
+    if (okOdds(Number(m.a)) && okOdds(Number(m.h))) {
+      out.push({ id: 'ma', lab: `${a} ML`, p: `${a} ML at ${h}`, o: Number(m.a) });
+      out.push({ id: 'mh', lab: `${h} ML`, p: `${h} ML vs ${a}`, o: Number(m.h) });
     }
-    if (isFinite(Number(g.tot))) {
-      const n = Number(g.tot), o = okOdds(Number(g.toto)) ? Number(g.toto) : -110;
-      out.push({ id: 'to', lab: `Over ${n}`, p: `${a}/${h} over ${n}`, o });
-      out.push({ id: 'tu', lab: `Under ${n}`, p: `${a}/${h} under ${n}`, o });
+    if (isFinite(Number(t.n))) {
+      const n = Number(t.n);
+      out.push({ id: 'to', lab: `Over ${n}`, p: `${a}/${h} over ${n}`, o: juice(t.op) });
+      out.push({ id: 'tu', lab: `Under ${n}`, p: `${a}/${h} under ${n}`, o: juice(t.up) });
     }
     return out;
   }
 
-  const gamesOf = (ow) => (ow && Array.isArray(ow.games) ? ow.games : []);
+  /* ══ ESPN'S OWN BOARD ══════════════════════════════════════════════════
+     🚨 WRITTEN AGAINST A REAL CAPTURE, NOT AGAINST MEMORY (v72). The owner
+     pasted the live scoreboard payload; every field read below was read off
+     it. The v39 rule is that a consumer proves what a producer sends AT
+     LEAST, never at most — and the corollary is that a transform written
+     from recollection is a guess with good posture.
+
+     🚨 A GAME THAT HAS KICKED OFF IS NOT PICKABLE, AND THE WEEK CONTAINS
+     THEM. The capture's week 1 carries two FINAL games (NE at SEA, SF v LAR
+     in Melbourne) alongside fourteen still to play. Anything but
+     `state === 'pre'` is dropped, or the board offers a bet on a game whose
+     result is already printed three lines away in the same payload.
+
+     ⚠️ `close` BEFORE `open`. Both are there for every market and they
+     differ — one game opened DEN +130 and closed +114. The open price is
+     what was available yesterday; the board has to show what is available
+     now, and falls back to the open only when there is no close.
+
+     ⚠️ THE PER-SIDE LINES ARE READ, NOT DERIVED FROM `spread`. That
+     top-level number is the HOME spread (verified against `details` on all
+     fourteen: "BAL -3.5" arrives as `spread: 3.5` because Indianapolis is
+     home) — correct, but it carries no price and it makes the reader infer a
+     sign. `pointSpread.home.close.line` says "+3.5" in as many words. */
+  const NFL_URL = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard';
+  const side = (o) => (o && (o.close || o.open)) || null;
+  const lineNum = (v) => { const n = Number(String(v == null ? '' : v).replace(/^[ou]/i, ''));
+    return isFinite(n) ? n : NaN; };
+
+  function boardFrom(payload) {
+    const evs = (payload && Array.isArray(payload.events)) ? payload.events : [];
+    const out = [];
+    evs.forEach((e) => {
+      const c = (e.competitions || [])[0];
+      if (!c) return;
+      const state = (((c.status || e.status || {}).type) || {}).state;
+      if (state !== 'pre') return;
+      const cs = c.competitors || [];
+      const H = cs.find((x) => x.homeAway === 'home'), A = cs.find((x) => x.homeAway === 'away');
+      const h = H && H.team && H.team.abbreviation, a = A && A.team && A.team.abbreviation;
+      if (!h || !a) return;
+      const g = { a, h, kick: e.date || c.date || '' };
+      const o = (c.odds || [])[0];
+      if (o) {
+        const ps = o.pointSpread || {}, hs = side(ps.home), as = side(ps.away);
+        if (hs && as && isFinite(lineNum(hs.line)) && isFinite(lineNum(as.line))) {
+          g.sp = { h: lineNum(hs.line), hp: parseOdds(hs.odds), a: lineNum(as.line), ap: parseOdds(as.odds) };
+        } else if (isFinite(Number(o.spread))) {
+          /* No per-side block: the home spread is all there is, so both sides
+             take the standard price rather than inventing two. */
+          g.sp = { h: Number(o.spread), hp: -110, a: -Number(o.spread), ap: -110 };
+        }
+        const ml = o.moneyline || {}, mh = side(ml.home), ma = side(ml.away);
+        if (mh && ma) g.ml = { h: parseOdds(mh.odds), a: parseOdds(ma.odds) };
+        const tt = o.total || {}, to = side(tt.over), tu = side(tt.under);
+        if (to && isFinite(lineNum(to.line))) {
+          g.tot = { n: lineNum(to.line), op: parseOdds(to.odds), up: tu ? parseOdds(tu.odds) : NaN };
+        } else if (isFinite(Number(o.overUnder))) {
+          g.tot = { n: Number(o.overUnder), op: -110, up: -110 };
+        }
+      }
+      out.push(g);
+    });
+    /* Kickoff order, then alphabetical — a board is read down the day. */
+    out.sort((x, y) => String(x.kick).localeCompare(String(y.kick)) || x.a.localeCompare(y.a));
+    return out;
+  }
+
+
+  const gamesOf = (ow) => {
+    if (!ow) return [];
+    /* The live board beats the committed one for the same week, and only for
+       the same week — a board fetched for week 4 must never render under a
+       heading that says week 5. */
+    if (P.live && Number(P.live.k) === ow.k && Array.isArray(P.live.games) && P.live.games.length) return P.live.games;
+    return Array.isArray(ow.games) ? ow.games : [];
+  };
   /* The selected option, resolved from the board rather than remembered as
      text — so a corrected line corrects the pick that is sitting on it. */
   function selPick(ow) {
@@ -541,6 +624,53 @@
         }).join('')}</div>
       </div>`;
     }).join('')}</div>`;
+  }
+
+  /* ⚠️ THE LIVE BOARD IS A REFRESH, NEVER A DEPENDENCY — the v42 doctrine,
+     which is the only reason fetching from a members' app is allowed at all.
+     The board committed in `parlay/current.json` is the floor; ESPN is asked
+     behind the reader and only ever upgrades what is already on screen. If
+     the call is blocked, slow, or gone, the tab is exactly as good as it was
+     before it existed and says which copy it is showing.
+     ⚠️ Keyless and public — no account, no token, nothing this repo could
+     leak by being public. It is ESPN's own scoreboard, the same one the
+     website reads. */
+  const BOARD_KEY = 'lh:board';
+  const BOARD_TTL = 15 * 60 * 1000;
+
+  async function fetchBoard(k) {
+    const r = await fetch(`${NFL_URL}?seasontype=2&week=${k}`, { cache: 'no-store' });
+    if (!r.ok) throw new Error('http ' + r.status);
+    return boardFrom(await r.json());
+  }
+
+  function refreshBoard(ow) {
+    if (!ow || typeof fetch !== 'function') return;
+    const c = read(BOARD_KEY);
+    if (c && Number(c.k) === ow.k && Array.isArray(c.games) && c.games.length) {
+      P.live = c;
+      if (Date.now() - (Number(c.at) || 0) < BOARD_TTL) return;
+    }
+    fetchBoard(ow.k).then((games) => {
+      if (!games.length) return;
+      P.live = { k: ow.k, games, at: Date.now() };
+      write(BOARD_KEY, P.live);
+      /* ⚠️ Never yank the page out from under a thumb: a repaint while a
+         field has focus drops the caret, and one arriving mid-tap would move
+         the button being tapped. The Lab's v25 rule, and lines move often
+         enough here that it would actually happen. */
+      const el = document.activeElement;
+      if (el && /^(INPUT|TEXTAREA|BUTTON)$/.test(el.tagName)) return;
+      render();
+    }).catch((e) => { console.warn('[parlay] the live board did not answer', e); });
+  }
+
+  function boardNote(ow) {
+    const live = P.live && Number(P.live.k) === ow.k && P.live.games.length;
+    if (!live) return gamesOf(ow).length
+      ? '<p class="lp-note">Lines as published with the app.</p>' : '';
+    const mins = Math.round((Date.now() - (Number(P.live.at) || 0)) / 60000);
+    return `<p class="lp-note">Lines from <b>ESPN</b>${mins > 0 ? `, ${mins === 1 ? 'a minute' : `${mins} minutes`} ago` : ', just now'}. They move — what you save is the price at the moment you tap it.</p>`;
   }
 
   /* ══ 🎯 YOUR PICK ══════════════════════════════════════════════════════ */
@@ -639,6 +769,7 @@
           ? 'Tap a line below, or write your own prop.'
           : "The week's board is not in yet, so write the bet the way the book writes it."}</p>
         ${noteFor('pick')}
+        ${boardNote(ow)}
         ${gameBoardHTML(ow)}
         ${prop}
       </div>
@@ -938,6 +1069,8 @@
     const got = await load();
     if (got.why) { P.err = got.why; P.file = null; } else { P.err = null; P.file = got.file; }
     render();
+    /* Behind the reader, deliberately not awaited. */
+    refreshBoard(curOpen());
   }
 
   window.LeagueParlay = {
@@ -956,6 +1089,9 @@
     _empty: emptyHTML,
     _pickHTML: (ow) => pickHTML(ow),
     _options: optionsFor,
+    _board: boardFrom,
+    _note: boardNote,
+    _live: (v) => { P.live = v; },
     _sel: (v) => { P.sel = v; },
     _collectHTML: (ow) => collectHTML(ow),
   };

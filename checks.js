@@ -1145,7 +1145,7 @@ function parlayLaws() {
   if (LP._open({}, []) !== null) fail('with no tickets and no stated week, picks must be closed rather than guessed');
   /* The board has to survive being resolved into a week — dropping it renders
      a page that looks complete and has no board on it. */
-  const owB = LP._open({ open: { k: 1, l: 'Week 1', games: [{ a: 'DAL', h: 'PHI', sp: -3 }] } }, []);
+  const owB = LP._open({ open: { k: 1, l: 'Week 1', games: [{ a: 'DAL', h: 'PHI', sp: { h: -3, a: 3 } }] } }, []);
   if (!owB || !owB.games || owB.games.length !== 1) fail('the week\'s board was dropped on the way to the view');
   LHIST.setMe('Buley');
   if (!LP._pickHTML(owB).includes('data-lp="opt"')) fail('a week that has a board rendered no lines to tap');
@@ -1240,7 +1240,8 @@ function parlayLaws() {
      THE BOARD. Twelve people typing "Eagles -3.5" / "PHI -3.5" / "philly -3½"
      produce twelve spellings of one bet and nothing downstream can tell they
      are the same. */
-  const G = { a: 'DAL', h: 'PHI', sp: -3.5, spo: -110, ml: [145, -170], tot: 47.5, toto: -115 };
+  const G = { a: 'DAL', h: 'PHI', sp: { h: -3.5, hp: -118, a: 3.5, ap: -102 },
+    ml: { h: -170, a: 145 }, tot: { n: 47.5, op: -108, up: -112 } };
   const opts = LP._options(G);
   if (opts.length !== 6) fail(`a full game should offer six lines, offered ${opts.length}`);
   opts.forEach((o) => {
@@ -1256,9 +1257,64 @@ function parlayLaws() {
   /* ⚠️ A half-posted board is normal — a total up before a spread — and half
      a game is still worth showing. What must never render is a button for a
      market that has no price behind it. */
-  if (LP._options({ a: 'NYJ', h: 'BUF', tot: 41 }).length !== 2) fail('a game with only a total did not offer exactly the two totals');
-  if (LP._options({ a: 'NYJ', h: 'BUF', ml: [100] }).length !== 0) fail('a one-sided moneyline still produced buttons');
-  if (LP._options({ sp: -3 }).length !== 0) fail('a game with no teams produced options');
+  if (LP._options({ a: 'NYJ', h: 'BUF', tot: { n: 41 } }).length !== 2) fail('a game with only a total did not offer exactly the two totals');
+  if (LP._options({ a: 'NYJ', h: 'BUF', ml: { h: -110 } }).length !== 0) fail('a one-sided moneyline still produced buttons');
+  if (LP._options({ sp: { h: -3, a: 3 } }).length !== 0) fail('a game with no teams produced options');
+  /* 🚨 EACH SIDE KEEPS ITS OWN PRICE. Pricing both at -110 puts a leg on the
+     ticket at a number the book is not offering — and the real board is
+     asymmetric on most games. */
+  if (sa.o === sh.o) fail('both sides of the spread were priced the same when the board prices them differently');
+  if (sa.o !== -102 || sh.o !== -118) fail(`the spread juice was not carried through: ${sa.o} / ${sh.o}`);
+  if (LP._options({ a: 'A', h: 'B', sp: { h: 0, a: 0 } })[0].lab !== 'A PK') fail('a pick\'em renders as a number rather than PK');
+
+  /* ══ ESPN'S OWN BOARD, READ OFF A REAL CAPTURE ═════════════════════════
+     Written against the payload the owner pasted, not against memory — the
+     v39 rule. `fixtures/espn-nfl-scoreboard.json` holds four of its events
+     verbatim, including both of the ones that make this hard. */
+  const cap = JSON.parse(fs.readFileSync('./fixtures/espn-nfl-scoreboard.json', 'utf8'));
+  const board = LP._board(cap);
+  /* 🚨 A GAME THAT HAS KICKED OFF IS NOT PICKABLE, AND THE WEEK CONTAINS
+     THEM. The real week 1 carries two FINAL games beside fourteen still to
+     play; offering a bet on one whose score is in the same payload is the
+     worst thing this board could do. */
+  if (board.length !== 2) fail(`the board kept ${board.length} of the capture's games — the two FINAL ones must be dropped`);
+  ['SEA', 'LAR', 'NE', 'SF'].forEach((t) => {
+    if (board.some((g) => g.a === t || g.h === t)) fail(`${t} played a game that is already FINAL and it is still on the board`);
+  });
+  const cin = board.find((g) => g.h === 'CIN'), ind = board.find((g) => g.h === 'IND');
+  if (!cin || !ind) fail('the capture\'s two live games did not both come through');
+  else {
+    /* Every number below was read off the paste by hand and must come back
+       out of the transform unchanged. */
+    const want = { h: -3.5, hp: -118, a: 3.5, ap: -102 };
+    Object.keys(want).forEach((k) => {
+      if (cin.sp[k] !== want[k]) fail(`TB at CIN spread ${k} came back ${cin.sp[k]}, the capture says ${want[k]}`);
+    });
+    if (cin.ml.h !== -205 || cin.ml.a !== 170) fail(`TB at CIN moneyline came back ${cin.ml.h}/${cin.ml.a}, the capture says -205/+170`);
+    if (cin.tot.n !== 50.5 || cin.tot.op !== -108 || cin.tot.up !== -112) fail('TB at CIN total did not survive the transform');
+    /* 🚨 THE AWAY TEAM IS THE FAVOURITE IN THIS ONE, which is where a
+       transform that assumes the home side is laying points goes wrong: the
+       capture reads "BAL -3.5" while `spread` is +3.5, because the sign is
+       relative to the HOME team. */
+    if (ind.sp.h !== 3.5 || ind.sp.a !== -3.5) fail(`an away favourite came out backwards: home ${ind.sp.h}, away ${ind.sp.a}`);
+    if (ind.ml.a !== -175 || ind.ml.h !== 145) fail('the away favourite\'s moneyline came out backwards');
+    const io = LP._options(ind);
+    if (!io.some((o) => o.p === 'BAL -3.5 at IND')) fail('the away favourite does not render as laying the points');
+    if (!io.some((o) => o.p === 'IND +3.5 vs BAL')) fail('the home underdog does not render as taking them');
+  }
+  /* `close` before `open`: both are in the payload for every market and they
+     differ. The open price is what was available yesterday. */
+  if (cin && cin.sp.hp === -110) fail('the OPEN price was taken where a CLOSE price exists');
+  if (LP._board({}).length || LP._board({ events: 'nope' }).length) fail('a payload that is not a scoreboard produced games');
+
+  /* And the board that ships must itself be pickable. */
+  const shipped = JSON.parse(fs.readFileSync('./parlay/current.json', 'utf8'));
+  const shippedGames = (shipped.open && shipped.open.games) || [];
+  shippedGames.forEach((g) => {
+    const o = LP._options(g);
+    if (!o.length) fail(`the shipped board's ${g.a} at ${g.h} offers nothing to tap`);
+    o.forEach((x) => { if (LP._check({ m: 'McD', p: x.p, o: x.o }) !== 'ok') fail(`the shipped board makes a leg the pipeline refuses: ${x.p}`); });
+  });
 
   /* A tapped line has to survive all the way onto a ticket. */
   LHIST.setMe('Buley');

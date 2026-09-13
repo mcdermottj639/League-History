@@ -785,14 +785,39 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       leg against the board it came from. An option writes its own text, so
       twelve picks are comparable. That is the difference between a list and
       data, and it is why this was worth doing properly.
-    - 🚨 **THE LINES ARE DATA, BECAUSE NOTHING IN THIS APP KNOWS AN NFL GAME.**
-      ⚠️ **The ESPN feed that IS wired is the FANTASY league** —
-      `/api/fantasy/football/season`, twelve fantasy teams whose `sch` is a
-      list of fantasy team ids. There is no fixture and no price anywhere in
-      it, so a board cannot be derived from anything already here. It is not
-      invented either: with no board the card says so and the prop field opens
-      by itself. See Open / next for the live ESPN scoreboard, which does
-      carry both and needs one capture to build against.
+    - 🚨 **THE BOARD COMES FROM ESPN'S PUBLIC NFL SCOREBOARD (v72)**, fetched
+      from the reader's phone with no key, and `open.games` in the file is the
+      FLOOR beneath it — the v42 doctrine, which is the only reason a members'
+      app is allowed to fetch anything. Blocked, slow or gone, the tab is
+      exactly as good as it was and says which copy is on screen.
+      ⚠️ **The ESPN feed that was ALREADY wired is a different one** —
+      `/api/fantasy/football/season`, the commissioner's FANTASY league, whose
+      `sch` is a list of fantasy team ids. There is no fixture and no price
+      anywhere in it. "ESPN is linked" was true and was the wrong ESPN; worth
+      keeping written down, because it will be assumed again.
+    - 🚨 **`boardFrom` WAS WRITTEN AGAINST A REAL CAPTURE, NOT AGAINST
+      MEMORY** (the v39 rule). `fixtures/espn-nfl-scoreboard.json` holds four
+      of the owner's pasted events verbatim, chosen because they are the ones
+      that make it hard:
+      - **Two of them are FINAL.** A week's payload carries games that have
+        already been played beside the ones still to come — the real week 1
+        had two — so anything but `status.type.state === 'pre'` is dropped.
+        Offering a bet on a game whose score is three lines away in the same
+        payload is the worst thing this board could do.
+      - **One has the AWAY team favourite.** The top-level `spread` is the
+        HOME spread, so "BAL -3.5" arrives as `spread: 3.5` because
+        Indianapolis is at home. Verified against `details` on all fourteen —
+        but the per-side `pointSpread.home.close.line` says `"+3.5"` in as
+        many words and carries its own price, so that is what is read.
+      - **The juice is not symmetric.** One game is home −3.5 at −118 and away
+        +3.5 at −102. Pricing both sides at −110 would put a leg on the ticket
+        at a number the book is not offering, so each side keeps its own.
+      - **`close` beats `open`**, which are both present and differ (one game
+        opened DEN +130 and closed +114).
+    - ⚠️ **The committed board was hand-transcribed and then CHECKED AGAINST
+      THE TRANSFORM.** Two of its games are among the four captured verbatim,
+      and the typed numbers match what `boardFrom` produces from the raw
+      payload exactly — which is what makes the other twelve trustworthy.
     - ⚠️ **A game missing a market renders no button for it**, rather than a
       button with no price behind it. A board arrives half-posted all the
       time — a total up before a spread — and half a game is still worth
@@ -826,12 +851,13 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   business as usual; `checks.js` asserts it ships. ⚠️ **`open` ({`k`, `l`})
   names the week picks are being taken for** — needed only for the first week
   of a season, since every week after it derives from the newest ticket.
-  ⚠️ **`open.games` is that week's board**, one object per game:
-  `{a, h, sp, spo, ml:[away,home], tot, toto, kick}` — `a`/`h` the away and
-  home abbreviations, `sp` the HOME spread (negative = home favoured), `spo`
-  and `toto` the prices either side (default −110), `ml` the two moneylines,
-  `kick` an ISO time. Every field but `a`/`h` is optional and a missing market
-  simply renders no buttons.
+  ⚠️ **`open.games` is that week's board**, one object per game, in the shape
+  `boardFrom` emits: `{a, h, kick, sp:{h, hp, a, ap}, ml:{h, a},
+  tot:{n, op, up}}` — `a`/`h` the away and home abbreviations, `sp` each
+  side's line and its own price, `ml` the two moneylines, `tot` the number
+  and the price either way. Every market is optional and a missing one simply
+  renders no buttons. ⚠️ It is the FLOOR: the app fetches ESPN's public
+  scoreboard over the top of it.
 - `espn.js` — **the manager map and the ESPN transform**, loaded by BOTH pages
   (v42), `window.LeagueESPN`.
   - 🚨 **IT EXISTS BECAUSE THE ALTERNATIVE WAS TWO COPIES.** When the Season
@@ -1287,7 +1313,7 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 
 ## localStorage keys
 
-The members' app writes **seven keys**, and only two of them are ever written
+The members' app writes **eight keys**, and only two of them are ever written
 by anybody but the reader themselves. Everything else here belongs to the Lab,
 which only the commissioner opens. ⚠️ This heading said "three keys and no
 more" until v70 and had been wrong since v33 — `lh:season` and `lh:guest`
@@ -1325,6 +1351,10 @@ is a hand-kept copy of that list, and it drifts.
   pasting the chat or by opening a pick link. ⚠️ **It reaches nobody else's
   app** — it is one person's working copy until the assembled block is
   committed, and the card says so in as many words.
+- `lh:board` — **the last board fetched from ESPN** (v72): `{k, games, at}`.
+  Per device, refreshed at most every 15 minutes, and only ever an upgrade on
+  the board committed in `parlay/current.json` — a blocked or dead call costs
+  freshness and nothing else.
 - `powerlab:draft` — the Power Rankings Lab's week in progress
   (`{key, order, comments, at}`, autosaved on every edit). `key` = weeks
   played, so it is restored only for the week it belongs to — a new week's
@@ -1689,11 +1719,11 @@ whole design:
 > Twelve people, one NFL bet each, one ticket. He sends the slip (a screenshot,
 > or the picks typed out); a session turns it into a week in
 > `parlay/current.json`. There is no Lab for this yet — see Open / next.
-> 🏈 **The BOARD comes first, and it is the one thing he has to send.** Put the
-> week's games in `open.games` (shape above) and the picker turns them into
-> tappable lines; without it the tab falls back to a text field, which is what
-> v71 exists to stop. A screenshot of the book is enough to type it from —
-> and see Open / next for making this fetch itself.
+> 🏈 **The BOARD looks after itself since v72.** The app fetches ESPN's public
+> scoreboard from the reader's phone, so nobody types lines. What is in
+> `open.games` is only the floor for a device that cannot reach ESPN — worth
+> refreshing when a season starts (paste the scoreboard JSON and a session
+> runs it through `boardFrom`), not worth chasing weekly.
 >
 > ⚡ **Since v70 the app usually hands the TICKET over ready-made.** Whoever collects
 > the picks gets a block out of the collector card that is already exactly the
@@ -1843,6 +1873,63 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v72 — the board comes from ESPN (13 Sep 2026)** — the owner pasted the
+  live scoreboard payload after being told it was the one thing missing.
+  - **Fourteen games, 84 tappable lines, real prices, fetched from the
+    phone.** No key, no backend, no typing.
+  - 🚨 **THE TRANSFORM WAS WRITTEN AGAINST THE CAPTURE, WHICH IS THE ONLY
+    REASON IT IS RIGHT.** Four of the pasted events are in
+    `fixtures/espn-nfl-scoreboard.json` verbatim, and each one is there
+    because it breaks something a transform written from memory would have
+    got wrong:
+    - **Two of the week's games were already FINAL** (NE at SEA, and SF v LAR
+      in Melbourne). A payload for "week 1" is not a list of upcoming games,
+      and offering a bet on one whose score is three lines away in the same
+      response is the worst thing this board could do. Only
+      `status.type.state === 'pre'` survives.
+    - **One has the AWAY team favourite**, and that is where the obvious
+      reading fails: the top-level `spread` is the HOME spread, so
+      *"BAL -3.5"* arrives as `spread: 3.5` because Indianapolis is at home.
+      Verified against `details` on all fourteen. The per-side
+      `pointSpread.home.close.line` says `"+3.5"` in as many words and carries
+      its own price, so that is what is read and the top-level number is only
+      a fallback.
+    - **The juice is not symmetric** — one game is home −3.5 at −118 and away
+      +3.5 at −102. v71's shape had ONE price per spread, which would have put
+      a leg on the ticket at a number the book is not offering. Each side
+      carries its own now.
+    - **`close` and `open` are both present and differ** (one game opened
+      DEN +130 and closed +114). The open price is what was available
+      yesterday.
+  - ⚠️ **The committed board is a FLOOR, not the source** — the v42 doctrine,
+    which is the only thing that makes fetching from a members' app allowable.
+    ESPN is asked behind the reader, at most every fifteen minutes, and can
+    only upgrade what is already on screen. Blocked, slow or gone, the tab is
+    exactly as good as it was and the card says which copy it is showing.
+    ⚠️ **This sandbox cannot reach ESPN** (403 through the egress proxy), so
+    what is verified here is the transform against the capture and the floor
+    against a blocked call; the live fetch itself is the owner's phone to
+    confirm, the same division this repo already draws around the Lab.
+  - ⚠️ **The fourteen committed games were typed by hand and then checked
+    against the transform.** Two of them are among the four captured verbatim,
+    and the typed numbers match `boardFrom`'s output from the raw payload
+    exactly — which is what makes the other twelve worth trusting. A
+    transcription with no independent check is the v56 bracket problem, and
+    that is how it was solved there too.
+  - ⚠️ **A repaint is skipped while anything has focus.** Lines move, so the
+    refresh genuinely lands mid-interaction — and a board that re-renders
+    under a thumb moves the button being tapped. The Lab's v25 rule, arriving
+    somewhere it matters more.
+  - ⚠️ **A pick'em renders `PK`, not `0`** — a zero line looks like a missing
+    value, which on a board is the difference between "no spread" and "no
+    points".
+  - Verified: the transform against the verbatim capture (finals dropped, away
+    favourite the right way round, per-side juice preserved, `close` beaten
+    out of `open`); the shipped board rendering 14 games and 84 lines at 390px
+    with nothing clipped, nothing under 44px and no overflow; the away
+    favourite tapping through to **"BAL -3.5 at IND +102"** on the slip; and
+    40 view-contexts with ESPN deliberately blocked, which is the floor.
 
 - **v71 — the board, tapped (13 Sep 2026)** — the owner, on v70: *"Each week
   every game ML, spread and total are available or a person can fill in a prop
@@ -5009,22 +5096,15 @@ stale entry written in the present tense reads as current to anyone who greps.
   exactly the shape the collector already solves — a "settle this week"
   screen with twelve W/L/P toggles that hands back the same block would close
   it. ⚠️ Worth doing when the by-hand loop actually annoys him.
-- 🏈 **THE BOARD COULD FETCH ITSELF, AND IT NEEDS ONE PASTE TO BUILD AGAINST**
-  (v71). ESPN publishes the week's games with spreads, totals and moneylines
-  at a **public, keyless** endpoint —
-  `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard` —
-  and the app could call it straight from the reader's phone, no key, no build
-  step, exactly the way the Season tab calls ESPN since v42. That would end
-  the weekly board entry completely.
-  ⚠️ **What blocks it is testing, not permission.** This sandbox cannot reach
-  that host (verified: 000 through the egress proxy, with `api.github.com`
-  answering 200 as a control), so a transform written here would be written
-  against a payload nobody has looked at — the v39 fault, which cost two
-  features being called impossible. **The fix is one capture**: open that URL
-  on a phone and paste what comes back, the same way the v39 season capture
-  and the v56 bracket screenshots unblocked their features. With it the
-  transform gets built, verified byte-for-byte against a fixture, and the
-  board stops being data anybody types.
+- ✅ **THE BOARD FETCHES ITSELF — CLOSED in v72**, off the owner's capture.
+  ⚠️ **One thing genuinely untested and it is the fetch itself**: this sandbox
+  cannot reach `site.api.espn.com` (403 through the egress proxy), so what is
+  verified is the transform against the captured payload and the committed
+  floor against a blocked call. **If ESPN does not send CORS headers to a
+  GitHub Pages origin the call fails and the floor takes over silently** —
+  the tab keeps working and the note reads "Lines as published with the app"
+  instead of "Lines from ESPN". That is the one line to check on his phone,
+  and it is why the floor exists rather than being an afterthought.
 - 🚨 **THE PICKS DO NOT SYNC, AND THAT IS THE ONE THING v70 COULD NOT BUILD.**
   Everybody sees every pick in the group chat and everybody sees the finished
   ticket in the app, but nobody sees the other eleven picks *inside* the app

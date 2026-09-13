@@ -1,0 +1,26 @@
+{"events":[
+{"id":"401872925","date":"2026-09-13T17:00Z","shortName":"TB @ CIN","competitions":[{"competitors":[
+{"homeAway":"home","team":{"abbreviation":"CIN"}},{"homeAway":"away","team":{"abbreviation":"TB"}}],
+"status":{"type":{"state":"pre","completed":false}},
+"odds":[{"provider":{"name":"DraftKings"},"details":"CIN -3.5","overUnder":50.5,"spread":-3.5,
+"moneyline":{"home":{"close":{"odds":"-205"},"open":{"odds":"-198"}},"away":{"close":{"odds":"+170"},"open":{"odds":"+164"}}},
+"pointSpread":{"home":{"close":{"line":"-3.5","odds":"-118"},"open":{"line":"-3.5","odds":"-110"}},
+"away":{"close":{"line":"+3.5","odds":"-102"},"open":{"line":"+3.5","odds":"-110"}}},
+"total":{"over":{"close":{"line":"o50.5","odds":"-108"},"open":{"line":"o50.5","odds":"-115"}},
+"under":{"close":{"line":"u50.5","odds":"-112"},"open":{"line":"u50.5","odds":"-105"}}}}]}]},
+{"id":"401872659","date":"2026-09-13T17:00Z","shortName":"BAL @ IND","competitions":[{"competitors":[
+{"homeAway":"home","team":{"abbreviation":"IND"}},{"homeAway":"away","team":{"abbreviation":"BAL"}}],
+"status":{"type":{"state":"pre","completed":false}},
+"odds":[{"provider":{"name":"DraftKings"},"details":"BAL -3.5","overUnder":48.5,"spread":3.5,
+"moneyline":{"home":{"close":{"odds":"+145"}},"away":{"close":{"odds":"-175"}}},
+"pointSpread":{"home":{"close":{"line":"+3.5","odds":"-122"}},"away":{"close":{"line":"-3.5","odds":"+102"}}},
+"total":{"over":{"close":{"line":"o48.5","odds":"-102"}},"under":{"close":{"line":"u48.5","odds":"-118"}}}}]}]},
+{"id":"401872656","date":"2026-09-10T00:20Z","shortName":"NE @ SEA","competitions":[{"competitors":[
+{"homeAway":"home","winner":true,"team":{"abbreviation":"SEA"},"score":"13"},
+{"homeAway":"away","winner":false,"team":{"abbreviation":"NE"},"score":"10"}],
+"status":{"type":{"state":"post","completed":true}}}]},
+{"id":"401872657","date":"2026-09-11T00:35Z","shortName":"SF VS LAR","competitions":[{"competitors":[
+{"homeAway":"home","team":{"abbreviation":"LAR"},"score":"7"},
+{"homeAway":"away","team":{"abbreviation":"SF"},"score":"27"}],
+"status":{"type":{"state":"post","completed":true}}}]}
+],"week":{"number":1},"season":{"year":2026,"type":2}}
