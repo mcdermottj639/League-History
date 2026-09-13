@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v68';
+  const APP_VERSION = 'v69';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -251,6 +251,7 @@
     hist: 'Thirteen seasons, 2013–2025. Five pages:',
     season: 'This year as it stands — the standings, ESPN\'s playoff odds, who you play next, and your season measured against your other thirteen.',
     rank: "The commissioner's weekly power rankings — every team in order, with a take on each. Only during the season, and only once he publishes a set.",
+    parlay: 'The weekly group parlay — one NFL bet each, all twelve on one ticket. Who picked what, how far it got, and who keeps landing their leg.',
     hon: 'The trophy case, the champions, who is still waiting, every final four, and the champion\'s curse.',
     you: 'Your thirteen seasons — medals, Cum Bowls, your best and worst years.',
     rec: 'What the archive turns up on its own: the storylines, the record book, the luck index and the rivalries.',
@@ -553,17 +554,32 @@
   addEventListener('resize', spy, { passive: true });
 
   /* ══ ROUTER ════════════════════════════════════════════════════════════ */
-  /* ⚠️ THREE TABS SHARE ONE ROW, AND THAT ROW CLIPS SILENTLY. `.ai-sub button`
-     is `flex: 1; white-space: nowrap; overflow: hidden`, so a label too wide
-     for its third is simply cut off with nothing to show it happened — the
-     fault styles.css already records once. "📜 League History" measured too
-     wide at 390px once the season tab took a third of the bar, so the archive
-     is "History" here — and "This Season" was MEASURED clipping at 320px and
-     is "Season". Both were found by rendering and comparing each button's
-     scrollWidth to its clientWidth, which is the only thing that can see this.
+  /* ⚠️ FOUR TABS SHARE ONE ROW, AND THAT ROW CLIPS SILENTLY. `.ai-sub button`
+     is `white-space: nowrap; overflow: hidden`, so a label too wide for its
+     share is simply cut off with nothing to show it happened — the fault
+     styles.css already records once, and league.css twice more.
+
+     🚨 THE EMOJI CAME OFF THESE LABELS IN v69, AND IT IS THE MEASUREMENT THAT
+     DECIDED IT, NOT TASTE. A fourth tab does not fit at the type size v55 was
+     asked for. Measured against the FALLBACK font (the one a phone that
+     cannot reach Google Fonts renders), the biggest size four labels fit at:
+
+         with emoji     320px 11px · 375px 13px · 390px 13.5px · 430px 15px
+         without emoji  15px at every width down to 320px
+
+     An emoji costs ~20px of a ~67px button and shrinking it does not recover
+     that — at 0.65em it still costs ~14px and still clips at 375px. So the
+     choice was four tabs at 11px on a narrow phone or four tabs at 15px with
+     no marks, and 15px wins: v55 exists because the owner asked for this type
+     to be BIGGER, and the level-2 bar has never carried emoji, so the two
+     rows now match. The marks are all still on the section headings inside
+     each page, which is where the jump chips read them from.
+     ⚠️ Put one back and the row clips at 320, 375 and 390px in silence. The
+     way to see it is comparing every button's scrollWidth to its clientWidth
+     at each width — nothing else can.
      The ? sheet builds its tab list FROM this array, so it follows a rename
      with no second edit. */
-  const L1 = [['hist', '📜 History'], ['season', '📊 Season'], ['rank', '🏆 Rankings']];
+  const L1 = [['hist', 'History'], ['season', 'Season'], ['rank', 'Rankings'], ['parlay', 'Parlay']];
 
   function paint() {
     paintHead();
@@ -589,6 +605,22 @@
       S.prof = null;
       window.LeagueSeason.paint(host, crest)
         .then(buildJump, (e) => { console.error('[season] paint failed', e); buildJump(); });
+      return;
+    }
+    /* 🎲 The group parlay — its own file, its own tab, same shape as the two
+       above. ⚠️ Guarded, unlike them: `parlay.js` is a separate script and a
+       missing one would throw out of this click handler rather than out of a
+       promise, leaving the previous view on screen with the tab lit — a lit
+       tab over the wrong page, which is the v30 fault. Nothing may render
+       blank or wrong; say what happened instead. */
+    if (S.view === 'parlay') {
+      S.prof = null;
+      if (!window.LeagueParlay) {
+        host.innerHTML = '<div class="ffp-card"><div class="ffp-empty"><b>The parlay didn\'t load.</b>Reload the page — parlay.js ships as its own file and the browser didn\'t get it.</div></div>';
+        buildJump(); return;
+      }
+      window.LeagueParlay.paint(host, crest)
+        .then(buildJump, (e) => { console.error('[parlay] paint failed', e); buildJump(); });
       return;
     }
     /* A profile is a drill-down out of the sub-tabs, not one of them — showing

@@ -5,6 +5,12 @@
 global.window = {};
 require('./history.js');
 const S = window.LeagueHistory._stats;
+/* ⚠️ HELD ON TO, BECAUSE TWO LATER BLOCKS REPLACE `global.window` WHOLESALE
+   to give `owner.js` a `crypto`. Anything required after those gets a window
+   with no archive on it — and a module that binds `window.LeagueHistory` at
+   load time (parlay.js does, for the voice) would silently come up with no
+   names and no second person rather than throwing anywhere useful. */
+const LHIST = window.LeagueHistory;
 const { ALL, SEASON, CUMBOWL, PLAYOFF_GAMES } = S;
 const rows = [].concat(...SEASON.map((s) => s.rows));
 const exRows = rows.filter((r) => !r.mgr);          // the two untracked managers
@@ -456,7 +462,7 @@ console.log(`  ${ownMark()} own-page stories: ${owned.length} kept off the card,
     const mine = window.LeagueHistory._stories().filter((x) => x.m === r.m);
     const onYou = mine.filter((x) => you.includes(x.head)).length;
     if (onYou < WANT2) { console.log(`  ❌ ${r.name}'s You page renders ${onYou} storyline(s), want ${WANT2}`); bad++; }
-    window.LeagueHistory.setMe(null);
+    LHIST.setMe(null);
   });
   const counts = window.LeagueHistory.roster()
     .map((r) => window.LeagueHistory._stories().filter((x) => x.m === r.m).length);
@@ -664,7 +670,13 @@ function seasonLaws() {
      there for good. A second counter for one file's freshness is a second
      source of truth, and the stale one wins on whichever page forgot. */
   const ph = fs.readFileSync('./power.html', 'utf8');
-  ['styles.css', 'power.css'].forEach((f) => {
+  /* ⚠️ `espn.js` JOINED THIS LIST IN v69, AFTER SPLITTING IN ONE COMMAND.
+     It is loaded by both pages exactly like the two stylesheets, and it was
+     the one shared file with no law — so a blanket `?v=68 → ?v=69` over
+     index.html alone left power.html on the old copy of the manager map, in
+     silence. That is v28 verbatim, and the reason the law is written per
+     shared FILE rather than per file that has burned us. */
+  ['styles.css', 'power.css', 'espn.js'].forEach((f) => {
     const a = (html.match(new RegExp(f.replace('.', '\\.') + '\\?v=(\\d+)')) || [])[1];
     const b = (ph.match(new RegExp(f.replace('.', '\\.') + '\\?v=(\\d+)')) || [])[1];
     if (!a || !b) return fail(`${f} has no ?v= in one of the two pages`);
@@ -926,6 +938,180 @@ function oddsLaws() {
   if (!bad) console.log('  ✅ playoff odds: field conserved, deterministic, winning never hurts, shrinkage grows');
 }
 oddsLaws();
+
+/* ══ 🎲 THE GROUP PARLAY (v69) ════════════════════════════════════════════
+   The one tab whose FACTS are typed in — the picks and the results come off a
+   betting slip, because a bet has no other source. Everything with a number
+   in it is still derived, and that is what these laws are about: the price,
+   the payout, the records and the ranks all have to come off the legs, so a
+   corrected leg corrects the tab instead of leaving one confident wrong
+   number behind. */
+function parlayLaws() {
+  /* ⚠️ Its OWN `fail` — the v39 rule. A check whose failure path has never
+     run is not a check, and borrowing another block's `fail` throws
+     ReferenceError on exactly the path nobody exercises. */
+  const fail = (m) => { console.log(`  ❌ ${m}`); bad++; };
+  const mark = block();
+  const fs = require('fs');
+  /* Put the archive back first: parlay.js reads `window.LeagueHistory` at
+     load time for the voice, and a block above has swapped the window out. */
+  global.window = global.window || {};
+  global.window.LeagueHistory = LHIST;
+  require('./parlay.js');
+  const LP = global.window.LeagueParlay;
+  if (!LP) return fail('parlay.js exposes no LeagueParlay');
+
+  /* 🚨 `parlay/current.json` MUST SHIP, and it must parse with an array
+     `weeks`. That is the whole reason a 404 on it is reportable as a broken
+     deploy rather than as "nothing up yet": an unstarted season still answers
+     200 with an empty array. Stop shipping it and the app starts telling the
+     league that a fault is business as usual. */
+  let file;
+  try { file = JSON.parse(fs.readFileSync('./parlay/current.json', 'utf8')); }
+  catch (e) { return fail('parlay/current.json is missing or unparseable: ' + e.message); }
+  if (!Array.isArray(file.weeks)) return fail('parlay/current.json has no `weeks` array — an unstarted season must still parse');
+
+  const html0 = fs.readFileSync('./index.html', 'utf8');
+  const ver = (fs.readFileSync('./league.js', 'utf8').match(/APP_VERSION = 'v(\d+)'/) || [])[1];
+  if (!html0.includes(`parlay.js?v=${ver}`)) fail(`index.html does not load parlay.js?v=${ver}`);
+
+  /* ── the arithmetic ─────────────────────────────────────────────────────
+     American odds are what a slip is written in and the wrong thing to
+     multiply. There is one conversion each way and every caller goes through
+     it; two implementations is how a payout and the price above it end up
+     disagreeing about the same ticket, both nearly right. */
+  [-1000, -250, -110, -101, 101, 120, 350, 2500].forEach((o) => {
+    const back = LP._amer(LP._dec(o));
+    if (back !== o) fail(`odds round-trip broke: ${o} → ${LP._dec(o)} → ${back}`);
+  });
+  /* ⚠️ ±100 IS THE ONE PRICE THAT CANNOT ROUND-TRIP, AND THAT IS ARITHMETIC
+     RATHER THAN A BUG — even money is decimal 2.0 written two ways, so a
+     conversion back has to pick one and +100 is the convention. The first cut
+     of this law asserted the round-trip over ±100 and reported a fault in
+     correct code, which is its own kind of failure: a law that cries wolf
+     gets ignored, and this one would have gone off on every even-money leg. */
+  if (LP._dec(100) !== 2 || LP._dec(-100) !== 2) fail('even money is not 2.0 in decimal');
+  if (LP._amer(2) !== 100) fail('decimal 2.0 does not come back as +100');
+  if (Math.abs(LP._dec(-110) - 1.909090909) > 1e-6) fail('−110 is not 1.9091 in decimal');
+  if (Math.abs(LP._dec(150) - 2.5) > 1e-9) fail('+150 is not 2.5 in decimal');
+
+  const R = ['McD', 'CC', 'Hurd', 'Hyman', 'Christel', 'Woods', 'Zach', 'Buley', 'Wolff', 'Riz', 'Slemp', 'Gotch'];
+  const leg = (m, o, r) => ({ m, p: `${m} pick`, o, r });
+  const FIX = [
+    /* Week 1 — eleven land and one does not: the sole assassin. */
+    { k: 1, l: 'Week 1', d: '2026-09-10', stake: 60,
+      legs: R.map((m, i) => leg(m, i % 2 ? -110 : 120, m === 'Buley' ? 'L' : 'W')) },
+    /* Week 2 — the whole thing lands, with a push in it. */
+    { k: 2, l: 'Week 2', d: '2026-09-17', stake: 60,
+      legs: R.map((m) => leg(m, -110, m === 'Wolff' ? 'P' : 'W')) },
+    /* Week 3 — still running, nothing missed yet. */
+    { k: 3, l: 'Week 3', d: '2026-09-24', stake: 60,
+      legs: R.map((m, i) => leg(m, -140, i < 8 ? 'W' : undefined)) },
+  ];
+
+  const t1 = LP._ticket(FIX[0]), t2 = LP._ticket(FIX[1]), t3 = LP._ticket(FIX[2]);
+
+  /* 🚨 A PUSH DROPS OUT OF THE PRICE AND DOES NOT KILL THE TICKET. Getting it
+     wrong is silent in both directions: as a loss, a live parlay reads dead;
+     left in the multiplication, every payout for the rest of the season is
+     quietly too big. It is the one rule here that is not obvious from a slip. */
+  if (t2.status !== 'cashed') fail(`a ticket of eleven wins and a push reads "${t2.status}" — a push is not a loss`);
+  const want2 = Math.pow(LP._dec(-110), 11);
+  if (Math.abs(t2.price - want2) > 1e-9) fail(`the push is still in the price: ${t2.price} against ${want2}`);
+  if (t1.status !== 'dead') fail('one losing leg did not kill the ticket');
+  if (t3.status !== 'live') fail('a ticket with legs still to come does not read as live');
+
+  /* The price is the product of the legs, recomputed here rather than trusted. */
+  const want1 = FIX[0].legs.reduce((a, g) => a * LP._dec(g.o), 1);
+  if (Math.abs(t1.price - want1) > 1e-9) fail(`combined price is not the product of its legs: ${t1.price} against ${want1}`);
+  if (Math.abs(t1.ret - 60 * t1.price) > 1e-9) fail('the payout is not the stake times the price');
+
+  /* ⚠️ ONE LEG PER MANAGER PER WEEK. Two would double every count that
+     manager appears in and would double-count a sole kill as two. */
+  FIX.concat(file.weeks).forEach((w) => {
+    const seen = {};
+    (w.legs || []).forEach((g) => { seen[g.m] = (seen[g.m] || 0) + 1; });
+    Object.keys(seen).filter((m) => seen[m] > 1)
+      .forEach((m) => fail(`${w.l || w.k}: ${m} has ${seen[m]} legs on one ticket`));
+  });
+
+  /* Every leg belongs to somebody the app can name. An unknown code renders
+     as the raw code rather than as a blank, which is visible — but it also
+     means a typo would quietly attribute a bet to nobody. */
+  const known = new Set(LHIST.roster().map((r) => r.m));
+  file.weeks.forEach((w) => (w.legs || []).forEach((g) => {
+    if (!known.has(g.m)) fail(`${w.l || w.k}: "${g.m}" is not a manager in this league`);
+  }));
+
+  /* 🚨 THE RECORDS ARE PER MANAGER, AND A SUMMED LAW WOULD BE BLIND TO THE
+     LIKELIEST MISTAKE. Swap two managers' results inside one week and every
+     total in the file is conserved — the fault the Cum Bowl points column hit
+     in v67 and the bracket record hit in v51, arriving a third time in a new
+     feature. So this recounts each manager's own legs out of the fixture and
+     compares them to the row the tab prints for that manager. */
+  const S2 = LP._season(FIX);
+  R.forEach((m) => {
+    const mine = [].concat(...FIX.map((w) => (w.legs || []).filter((g) => g.m === m)));
+    const row = S2.rows.find((x) => x.m === m);
+    if (!row) return fail(`${m} has legs on the ticket and no row in the table`);
+    const w = mine.filter((g) => g.r === 'W').length, l = mine.filter((g) => g.r === 'L').length;
+    const p = mine.filter((g) => g.r === 'P').length;
+    if (row.legs !== mine.length || row.w !== w || row.l !== l || row.p !== p) {
+      fail(`${m}'s record is ${row.w}-${row.l}-${row.p} from ${row.legs} legs, but their own legs are ${w}-${l}-${p} from ${mine.length}`);
+    }
+    /* A sole kill is only ever a week where exactly one leg lost. */
+    const solo = FIX.filter((wk) => { const L = (wk.legs || []).filter((g) => g.r === 'L');
+      return L.length === 1 && L[0].m === m; }).length;
+    if (row.solo !== solo) fail(`${m} is credited with ${row.solo} sole kills against ${solo} in the data`);
+  });
+  if (!S2.rows.some((x) => x.solo === 1)) fail('the fixture has a one-leg bust and nobody is credited with it');
+
+  /* The money is over SETTLED tickets only — a live one is not a loss yet. */
+  if (S2.staked !== 120) fail(`staked reads ${S2.staked} over two settled tickets of 60 — a running ticket is not a loss yet`);
+  if (Math.abs(S2.back - 60 * t2.price) > 1e-9) fail('the money back is not the cashed tickets times their price');
+
+  /* ── what RENDERS, which is the only thing a reader gets (the v7 rule) ──
+     A law that agrees with `_season` would go on passing over a view that had
+     stopped reading it. */
+  const strange = LP._html(FIX);
+  [['undefined', /undefined/], ['NaN', /NaN/], ['[object', /\[object/],
+   ['a code comment', /\/\*|\*\//]].forEach(([what, re]) => {
+    if (re.test(strange)) fail(`the parlay view renders ${what}`);
+  });
+  if (strange.length < 1500) fail(`the parlay view is only ${strange.length} chars`);
+  if (/YOU<\/span>/.test(strange)) fail('a reader who has picked nobody gets a YOU badge on somebody else\'s leg');
+
+  /* 🚨 A RANK THAT IS SHARED MUST SAY SO (v58). Eleven of the twelve in the
+     fixture have identical records, so array position would hand out 1st
+     through 11th off nothing but sort order — the same value producing a
+     different sentence depending on who is reading. */
+  const tiedRows = S2.rows.filter((x) => x.tied);
+  if (tiedRows.length < 2) fail('the fixture has managers on identical rates and none is marked as tied');
+  tiedRows.forEach((x) => { const same = S2.rows.filter((y) => y.rate === x.rate);
+    if (new Set(same.map((y) => y.rank)).size !== 1) fail(`${x.m} shares a rate and not a rank — that is array position, not a rank`); });
+  if (!/>=\d/.test(strange)) fail('tied ranks render without the = that says they are joint');
+
+  /* And the reader's own leg is lit, in second person, on the same markup. */
+  LHIST.setMe('Buley');
+  const mine = LP._html(FIX);
+  if (!/YOU<\/span>/.test(mine)) fail('the reader\'s own leg is not badged YOU');
+  if (!/Yours is the only one that missed/.test(mine)) fail('the sole-bust sentence does not read in second person for the reader');
+  if (/Buley's is the only one/.test(mine)) fail('the reader is addressed by name where the app should say "you"');
+  LHIST.setMe(null);
+
+  /* Four opposite facts, four sentences — and a missing one is a hole rather
+     than a quiet fall-through to the friendly copy. */
+  const said = {};
+  ['none', 'missing', 'offline', 'bad'].forEach((k) => {
+    const h = LP._empty(k);
+    if (!h || h.length < 120) return fail(`the "${k}" state has no sentence of its own`);
+    if (said[h]) fail(`the "${k}" state says the same thing as "${said[h]}"`);
+    said[h] = k;
+  });
+
+  console.log(`  ${mark()} the parlay: price is the product, a push is not a loss, every record is per manager`);
+}
+parlayLaws();
 
 /* ══ 🔑 THE PASSPHRASE RESET TOOL (v41) ═══════════════════════════════════
    `power.html#newpass` hands the owner the hash that replaces `HASH`. If that

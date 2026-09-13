@@ -5,8 +5,9 @@ Guidance for Claude (and humans) working on this repo. Read this first.
 ## What this is
 
 The **Nectars Bolonga** fantasy football league's own app: thirteen seasons of
-history (2013–2025), the **season being played right now** (v39), and the
-**weekly power rankings** the commissioner publishes. It is a **pure static browser app** — HTML/CSS/vanilla JS, no build
+history (2013–2025), the **season being played right now** (v39), the
+**weekly power rankings** the commissioner publishes, and the **weekly group
+parlay** the twelve of them put on together (v69). It is a **pure static browser app** — HTML/CSS/vanilla JS, no build
 step, no framework, no backend, no API keys — served from GitHub Pages.
 
 Live URL: **https://mcdermottj639.github.io/League-History/**
@@ -150,15 +151,26 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       them to two different places.
 - `league.js` — the shell: identity, router, jump nav, the rankings view, and
   the **? sheet** (`helpHTML` / `openHelp` / `closeHelp`).
-  - 🚨 **`L1` IS THREE TABS NOW (v39) AND THAT ROW CLIPS SILENTLY.**
-    `📜 History` · `📊 Season` · `🏆 Rankings`. `.ai-sub button` is
-    `flex: 1; white-space: nowrap; overflow: hidden`, so a label wider than
-    its third is simply cut off with nothing on screen saying so. Two tabs
-    never came close; three at 320px leave 93px each, and **"📊 This Season"
-    measured over it** — found by comparing each button's `scrollWidth` to its
-    `clientWidth`, which is the only thing that can see this. "League History"
-    became "History" and "This Season" became "Season", AND the type tightens
-    under 360px — the label alone only holds until the next word is added.
+  - 🚨 **`L1` IS FOUR TABS NOW (v69) AND THE EMOJI CAME OFF TO PAY FOR IT.**
+    `History` · `Season` · `Rankings` · `Parlay`. `.ai-sub button` is
+    `white-space: nowrap; overflow: hidden`, so a label wider than its share
+    is simply cut off with nothing on screen saying so — found by comparing
+    each button's `scrollWidth` to its `clientWidth`, the only thing that can
+    see it. Two tabs never came close; three at 320px left 93px each and
+    "📊 This Season" measured over it (v39).
+    🚨 **A FOURTH DOES NOT FIT WITH MARKS ON, AND THE MEASUREMENT DECIDED IT,
+    NOT TASTE.** Against the FALLBACK font — the one a phone that cannot reach
+    Google Fonts renders, which is the number that has to fit (v55) — the
+    biggest type four labels fit at:
+    **with emoji** 320px 11px · 375px 13px · 390px 13.5px · 430px 15px;
+    **without** 15px at every width down to 320px. An emoji costs ~20px of a
+    ~67px button and shrinking it does not recover that: at 0.65em it still
+    costs ~14px and still clips at 375px. So it was four tabs at 11px on a
+    narrow phone or four at 15px with no marks — and **v55 exists because the
+    owner asked for this type to be BIGGER**, while the level-2 bar has never
+    carried emoji, so the two rows now match. The marks are all still on the
+    section headings inside each page, which is where the jump chips read them.
+    ⚠️ **Put one back and the row clips at 320, 375 and 390px, in silence.**
     ⚠️ The ? sheet builds its tab list FROM `L1`, so a rename needs no second
     edit; `HELP` supplies only the sentence a tab cannot know about itself.
   It is deliberately small; all the archive logic lives in `history.js`.
@@ -640,6 +652,71 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     SHIPS with an empty `t` so an unpublished season answers 200 — which is
     what makes a 404 reportable as a broken deploy rather than as business as
     usual. `checks.js` asserts the file ships.
+- `parlay.js` — **the weekly group parlay** (v69), `window.LeagueParlay`, one
+  entry point `paint(host, crest)`. Twelve managers, one NFL bet each, all on
+  one ticket.
+  - 🚨 **IT IS THE ONE TAB WHOSE FACTS ARE TYPED IN, AND IT SAYS SO ON THE
+    PAGE.** Everything else in this app is derived from the archive precisely
+    so it cannot go stale; a bet has no such source — the pick, the price and
+    whether it landed come off a betting slip by hand into
+    `parlay/current.json`. The card states which half is transcribed and which
+    half is worked out, because the alternative is letting a reader assume the
+    same provenance the rest of the app has earned.
+  - ⚠️ **AND EVERYTHING WITH A NUMBER IN IT IS STILL DERIVED** — the combined
+    price, the payout, every record, every rate, every rank. A hand-typed
+    "+414,491" beside twelve legs would be the one number on the page that
+    lies the moment a leg is corrected, **and a leg WILL be corrected**:
+    results get entered wrong on a Sunday night. Correcting one leg corrects
+    the whole tab.
+  - 🚨 **A PUSH DROPS OUT OF THE PRICE AND DOES NOT KILL THE TICKET**, which
+    is what a book does with one and the only rule here that is not obvious
+    from the slip. Wrong in either direction it is silent: treated as a loss,
+    a live parlay reads dead; left in the multiplication, every payout for the
+    rest of the season is quietly too big. ⚠️ **It is out of the COUNT for the
+    same reason** — a ticket of eleven wins and a void leg cashed, and the
+    first cut printed it "11/12", a complete ticket reading as though a leg
+    had missed. If a void leg is out of the arithmetic it is out of the
+    denominator, or the two numbers on one card describe different tickets.
+  - ⚠️ **One conversion each way** (`dec`/`amer`), and every caller goes
+    through it. Two implementations of one conversion is how a payout and the
+    price above it end up disagreeing about the same ticket, both nearly
+    right. 🚨 **±100 is the one price that cannot round-trip** — even money is
+    decimal 2.0 written two ways — so the law asserts the round-trip outside
+    ±100 and asserts even money separately. The first cut of that law reported
+    a fault in correct code, and a law that cries wolf gets ignored.
+  - **Four sections:** 🎲 this week's ticket (the legs, the price, the
+    verdict) · 📋 the season so far · 🎯 who carries the ticket · 📖 every
+    ticket. Four `.section-title`s, so the jump nav picks them up with no
+    second edit.
+  - 🚨 **THE VERDICT IS THE POINT OF THE TAB, AND THE SOLE ASSASSIN IS THE
+    BEST LINE IN IT.** One losing leg gets its own sentence — *"One leg.
+    Yours is the only one that missed — and it cost the other eleven."* —
+    rather than being folded into a list. ⚠️ **The dead branches key on HOW
+    MANY LEGS MISSED, not on the status**: a fault injection that made a push
+    kill the ticket produced `status: 'dead'` with an empty loser list, and
+    this function printed the word "undefined" into the sentence under the
+    ticket. Unreachable in correct code, one bug from being the first thing on
+    the page.
+  - ⚠️ **Ranked by hit RATE and every row names its own denominator** (the v51
+    rule) — somebody who sat a week out has fewer legs, and two rates over two
+    denominators is not a comparison (v3). Pushes and pending legs are in
+    neither half of the rate, and the card says so. **Competition rank with an
+    `=` for joint** (v58), never array position.
+  - ⚠️ **The sample caveat is DERIVED from how many tickets are in**, so the
+    card stops apologising by itself once there is a season behind it.
+  - ⚠️ **Odds are spelled with a HYPHEN, not the app's typographic minus.**
+    Everywhere else a negative number takes U+2212, but odds sit on the same
+    line as the pick they belong to, and "Eagles -3.5" beside "−115" is one
+    line in two different dashes. A price is quoted text off a slip.
+  - ⚠️ **The provenance mark is ✍️, deliberately not ⚑.** The flag is the
+    archive's *playoffs only* badge with a specific meaning in the ? sheet's
+    key; borrowing it for a different kind of caveat teaches a reader that one
+    glyph means two things — the v50 icon-clash rule, applied across pages.
+- `parlay/current.json` — the season's tickets. **ONE file, APPENDED to** —
+  unlike `season/current.json`, which is overwritten, because the running
+  record IS the tab. ⚠️ It ships with an empty `weeks` array so an unstarted
+  season answers 200 and a 404 is reportable as a broken deploy rather than as
+  business as usual; `checks.js` asserts it ships.
 - `espn.js` — **the manager map and the ESPN transform**, loaded by BOTH pages
   (v42), `window.LeagueESPN`.
   - 🚨 **IT EXISTS BECAUSE THE ALTERNATIVE WAS TWO COPIES.** When the Season
@@ -1073,7 +1150,11 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   ⚠️ **A summary line reports ITS OWN block — use `block()`** (v49). Three of
   them read the running `bad` counter, so any failure above turned them ❌
   about a subject that was fine. Only the total at the bottom reads the global.
-  It
+  It holds the **parlay laws** (v69 — the price is the product of its legs, a
+  push leaves the price without killing the ticket, ±100 is the one price that
+  cannot round-trip, every leg belongs to a real manager, one leg per manager
+  per ticket, and every record is checked PER MANAGER against that manager's
+  own legs, because a swap conserves every total). It
   also holds the **gate laws** (v21): `index.html` must not name `power.html`,
   `owner.js` must hold a 64-hex hash rather than a phrase, and the phrase must
   not be one of sixteen obvious guesses. None of that is visible in a render,
@@ -1189,7 +1270,10 @@ correction, zero unresolved conflicts**.
   over two independent sources) · **no two roll-call cards make the same
   claim** and **a decimal is one number** (v66) · **every manager's Cum Bowl
   points == the points from their own games, PER MANAGER** (v67 — a summed
-  version stays green through a swap) · **the bracket resolves the
+  version stays green through a swap) · **the parlay's price is the product of
+  its legs, a push leaves the price and does not kill the ticket, and every
+  manager's leg record is the legs from their own rows, PER MANAGER** (v69 —
+  the third outing for the per-manager rule, because a swap conserves a sum) · **the bracket resolves the
   standings** — the final decides 1st/2nd, the semi-final losers are 3rd/4th,
   the R1 losers 5th/6th (their pair plays TWICE on ESPN and the last game
   decides), the consolation six are exactly 7-12 and GmC7/8/9 decide 7-8,
@@ -1214,6 +1298,11 @@ untrustworthy. Every view carries a badge saying which it is.
 | **Regular season** | Every W-L and points total. ESPN's standings are regular-season standings |
 | **⚑ Playoffs only** | 209 bracket games from **all 13 seasons** — **every Cum Bowl is one of them** (`GmC9`), bar the 2025 reconstruction. ⚠️ It read "plus 13 Cum Bowls" until v66 and that double-counted twelve games |
 
+- 🚨 **THE PARLAY TAB IS A FOURTH KIND OF FACT AND WEARS NONE OF THESE THREE
+  BADGES** (v69). Its picks and results are transcribed from a betting slip,
+  not derived from the archive, so giving it one of these would say it had a
+  provenance it does not have. It carries its own ✍️ note instead, and
+  deliberately not the ⚑ — see `parlay.js`.
 - ⚠️ **There is NO regular-season schedule anywhere in this data.** So nothing
   here is a career head-to-head, however much it looks like one. **If you add a
   stat, tag it** (`tag('po')` on a heading, `dot('po')` on a row).
@@ -1468,6 +1557,31 @@ whole design:
 >    corrected on Tuesday gets a new name), **delete the old file** — the Lab's
 >    publish output says so as a ③ step when it spots one.
 
+> ### 🎲 WHEN HE SENDS THE WEEK'S BETS — do this
+> Twelve people, one NFL bet each, one ticket. He sends the slip (a screenshot,
+> or the picks typed out); a session turns it into a week in
+> `parlay/current.json`. There is no Lab for this yet — see Open / next.
+> 1. **Append an object to `weeks`**: `k` the NFL week (UNIQUE), `l` its label,
+>    `d` the date it went on, `stake` the total in dollars and `book` where it
+>    was placed (both optional), and `legs` — one per manager: `m` the manager
+>    CODE (`McD` · `CC` · `Hurd` · `Hyman` · `Christel` · `Woods` · `Zach` ·
+>    `Buley` · `Wolff` · `Riz` · `Slemp` · `Gotch`), `p` the pick **verbatim as
+>    the slip reads it**, and `o` the American odds as a number.
+> 2. **Leave `r` off until it has settled.** Omitted means "not yet", and the
+>    tab says so; `W`, `L` or `P` once the game is in. He will send results
+>    later in the week — setting them is the whole update, and every number on
+>    the tab re-derives.
+> 3. 🚨 **NEVER type a combined price, a payout, a record or a rate.** All of
+>    it is worked out from the legs on load. A typed one is the single number
+>    that lies the moment a leg is corrected.
+> 4. ⚠️ **APPEND — this file is the season's record**, unlike
+>    `season/current.json` which is overwritten. A repeated `k` means he is
+>    correcting that week, so REPLACE that entry rather than adding a second.
+> 5. Commit, push, **merge to `main`**. ⚠️ **No version bump**: `parlay/` is
+>    data outside the versioned JS and the app fetches it `no-store`. (Contrast
+>    v68 — data that lives INSIDE `history.js` does need a bump, because a
+>    device holding the old `?v=` keeps the old data for good.)
+
 Why not have the app compute it live: members have no ESPN cookies and no
 backend, and **a ranking is an opinion column that must not silently re-derive
 itself into a different answer a week after it was written**.
@@ -1586,6 +1700,126 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v69 — the group parlay gets its own tab (13 Sep 2026)** — the owner:
+  *"We've done a weekly group parlay for the league where everyone make and
+  nfl bet and we parlay together. Can we have a tab for that."*
+  - **Twelve people, one NFL bet each, one ticket.** The tab is that ticket:
+    every leg with whose it is, the twelve prices multiplied into one, how far
+    it got, and across the season who keeps landing their leg and who keeps
+    killing everybody else's.
+  - 🚨 **A FOURTH TAB DOES NOT FIT, AND THE MEASUREMENT IS WHAT CHOSE BETWEEN
+    THE TWO WAYS OUT.** `.ai-sub button` clips in silence, so this was
+    measured against the FALLBACK font before a label was picked: with the
+    emoji on, four labels need **11px at 320px** and still clip at 375 and
+    390; with them off, **15px fits at every width down to 320**. An emoji
+    costs ~20px of a ~67px button and shrinking it recovers nothing — at
+    0.65em it still costs ~14px and still clips. So the choice was four tabs
+    at 11px on a narrow phone or four at 15px with no marks. **v55 exists
+    because the owner asked for this type to be BIGGER**, and the level-2 bar
+    has never carried emoji, so the marks came off and the two rows now match.
+    ⚠️ **This is the one judgment call in the version and it is his to
+    reverse**: the emoji go back for one line of `L1` plus a type step down.
+  - 🚨 **THE ONE TAB IN THIS APP WHOSE FACTS ARE TYPED IN, AND IT SAYS SO.**
+    Everything else here is derived from the archive precisely so it cannot go
+    stale. A bet has no such source. Rather than let that difference sit
+    unmentioned under a page that looks like every other page, the card names
+    which half is transcribed (the picks, the results) and which half is
+    worked out (the price, the payout, every record and rate). ⚠️ **The mark
+    is ✍️, deliberately not ⚑** — the flag already means *playoffs only* three
+    taps away in the ? sheet, and one glyph with two meanings is the v50 clash
+    across pages instead of within one.
+  - 🚨 **A PUSH IS THE ONLY RULE HERE THAT IS NOT OBVIOUS FROM THE SLIP, AND
+    IT IS WRONG SILENTLY IN BOTH DIRECTIONS.** A void leg drops out of the
+    price and does not kill the ticket — treat it as a loss and a live parlay
+    reads dead; leave it in the multiplication and every payout for the rest
+    of the season is quietly too big. ⚠️ **And it has to leave the COUNT too**:
+    a ticket of eleven wins and a void leg CASHED, and the first cut printed
+    it as **"11/12"** — a complete ticket reading as though a leg had missed,
+    with the verdict above it saying *"All twelve landed"* about a twelve-leg
+    ticket that had eleven. If a leg is out of the arithmetic it is out of the
+    denominator, or the two numbers on one card describe different tickets.
+  - 🚨 **THE PER-MANAGER LAW, FOR THE THIRD TIME, AND IT CAUGHT THE INJECTION
+    THE TOTALS COULD NOT.** Swap two managers' results inside one week and
+    every total in the file is conserved — v51 learned this on the bracket
+    record, v67 on the Cum Bowl points, and a new feature attributing numbers
+    to people is exactly where it lands next. Verified by injecting that swap:
+    the per-manager law names **both** managers while nothing else moves.
+    **Any number attributed to a person gets a per-person law or it gets
+    nothing.**
+  - **Every new law was fault-injected**, and two of them were wrong before
+    the code was:
+    - 🚨 **THE ROUND-TRIP LAW REPORTED A FAULT IN CORRECT CODE.** ±100 is one
+      price written two ways — even money is decimal 2.0 — so it cannot round
+      back to both, and +100 is the convention. The law would have gone off on
+      every even-money leg in the league. **A law that cries wolf gets
+      ignored**, so it asserts the round-trip outside ±100 and asserts even
+      money separately.
+    - **The second-person law was looking at the wrong ticket.** It asserted
+      the sole-bust sentence on a fixture whose newest week was still running,
+      so the sentence it was checking never rendered at all. Fixing the law
+      turned up the actual gap: **a past ticket kept its verdict off screen
+      entirely** — the best line the data produces was visible only in the
+      week it happened. Past tickets carry their verdict now.
+  - 🚨 **AND A FAULT INJECTION FOUND A TEMPLATE HOLE NOTHING ELSE WOULD
+    HAVE.** Making a push kill the ticket produced `status: 'dead'` with an
+    EMPTY loser list, and the verdict printed the word **"undefined"** into
+    the sentence under the ticket. Unreachable in correct code and one bug
+    away from being the first thing on the page, so the dead branches key on
+    **how many legs missed** rather than on the status.
+  - ⚠️ **Five colours failed their own measurement**, which is the v67 rule
+    arriving on schedule: a colour is invisible to every assertion in this
+    repo, and the only thing that catches one is computing the contrast off
+    the render. On white, `--mu2` at 9.5px is **2.56:1**, `--mu` at 9.5-11.5px
+    is **3.81:1** and `--wm` at 9.5px is **4.2:1**, all under the 4.5 small
+    text needs. The muted tones went to `--gy` (6.6:1) and the live pill took
+    the accent with `--on-ac`. **HIT and MISS keep `--pos`/`--neg`** — both
+    clear 4.5, and unlike v67's points column a leg landing genuinely IS good
+    news, which is the test v189's rule sets. ⚠️ **PUSH and OPEN now share a
+    colour and that is correct**, because the WORD carries the state and
+    neither is good or bad news.
+    - ⚠️ **The contrast harness itself was wrong first**, and it is worth
+      recording: it read `rgba(184,148,47,.09)` — the reader's own highlighted
+      row — as an opaque dark gold and reported **eight false failures on
+      exactly the rows that were fine**. It composites each layer onto the one
+      behind it now. A checker that cries wolf is worse than no checker, twice
+      in one version.
+  - ⚠️ **`.lp-tag` shipped at 8.5px** under this app's 9px floor, on all 40
+    view-contexts, and **a cashed week clipped its own summary by ONE pixel**
+    ("11/…") because "IT CASHED" is 62px against "BUSTED"'s 46px. The tag has
+    a short word of its own now. A one-pixel clip is still a clip, and the
+    sweep's `+1` tolerance is what had been hiding it — tightened.
+  - 🚨 **AND BUMPING THE VERSION SPLIT A SHARED FILE IN ONE COMMAND.** A
+    blanket `?v=68 → ?v=69` over `index.html` left `power.html` loading
+    `espn.js?v=68` — the manager map, the one shared file with no law on it,
+    which is **v28 verbatim** (`styles.css` sat at `?v=1` on the Lab side long
+    enough to pin any device that had opened it to a pre-v20 stylesheet).
+    `espn.js` is in that law now, so the next blanket bump fails loudly.
+    **The law belongs on every shared FILE, not on the ones that have already
+    burned us.**
+  - ⚠️ **Four prose faults, all found by reading the render**, none of them
+    visible to any measurement: *"would have returned"* over a ticket that is
+    still running (three tenses now, because a ticket is in one of three
+    times); the season lead saying *"…and once has that been all of them"*
+    and the very next sentence saying *"Once the whole thing has landed"* —
+    one finding twice on one card, the v22 fault; a hard-coded *"and one is
+    still running"* that would have said "one" for any number; and odds in
+    the app's typographic minus sitting on the same line as a pick written
+    with a hyphen (**"Eagles -3.5" beside "−115"**, one line, two dashes).
+  - **No new localStorage key and no backend.** The ticket is a file the same
+    way the rankings are, for a stronger reason: a parlay is a record of
+    something that already happened, so a page that re-derived it from a live
+    odds feed would show a different bet next week than the one the league
+    placed.
+  - Verified at 320 and 390px across **40 view-contexts** — the four tabs ×
+    {stranger, McD, Buley, Wolff, Christel} — with a fixture covering all four
+    ticket states (live, cashed with a push, a one-leg bust, a three-leg
+    bust): no horizontal overflow, no clipped tab label, no clipped text, no
+    type under 9px, no tap target under 38px, no template hole, no rendered
+    comment, no page error, every colour over 4.5:1. The ? sheet listed the
+    new tab **with no edit** (it is built from `L1`) and the jump nav picked
+    up four chips the same way. `node --check` on every JS file and
+    `node checks.js` green, every new law fault-injected.
 
 - **v68 — 2025's last unordered pair, settled (13 Sep 2026)** — the owner:
   *"Make Slemp 9 and Hurd 10 for 2025."*
@@ -4464,6 +4698,27 @@ stale entry written in the present tense reads as current to anyone who greps.
   either drop the class or decide LOST should be red, and the same sweep
   should check what else in `.fh-` inherited that dead `#fantasy-history`
   selector from Sports-Hub.
+- 🎲 **The parlay has no Lab, so a week is entered by hand** (v69). Publishing
+  a ticket is a session editing `parlay/current.json` from the slip he sends —
+  which is fine for twelve legs and one weekly update, and is why the paste
+  procedure above exists. What would earn a tool is the RESULTS pass: setting
+  twelve `r` fields every week is the repetitive half, and it is exactly the
+  shape `power.html` already solves (build it on the phone, hand over a blob).
+  ⚠️ Worth doing only if the by-hand loop actually annoys him — the Lab exists
+  because the rankings need twelve TAKES written, and a parlay needs twelve
+  letters.
+- ⚠️ **`season.js`'s paint call is unguarded and `parlay.js`'s is not** (v69).
+  `window.LeagueSeason.paint(...)` throws out of the click handler rather than
+  out of a promise if that script fails to load, leaving the previous view on
+  screen under a lit tab — the v30 fault. The parlay branch guards against it
+  because it was new; the season one was left alone rather than drive-by
+  fixed. One line, whenever that file is next open.
+- 🚨 **The Season tab's clipped team names are STILL THERE** — re-measured in
+  the v69 sweep, unchanged from v58: `.ls-odd-t` at 320px clips
+  `"Death Dont Hurts Very Long"` at 191/128, and two names still clip at 390px
+  for every persona including a stranger. It is above in its own item; this is
+  only to record that a second render sweep found the same thing rather than
+  it having quietly fixed itself.
 - **Not built:** any way for a member to write anything back (a reaction, a
   pick, a comment). That needs a backend and is a real product decision, not a
   missing feature.

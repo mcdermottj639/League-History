@@ -571,3 +571,86 @@
 .fh-as-w { font-size: 13px; font-weight: 800; color: var(--gy); }
 .fh-as-s { margin-top: 4px; padding-left: 31px; font: 700 9.5px/1.6 Archivo, system-ui, sans-serif; color: var(--mu2); }
 .fh-as-s b { color: var(--gy); font-weight: 800; }
+
+/* ══ 🎲 THE GROUP PARLAY (v69) ══════════════════════════════════════════════
+   Twelve legs on one ticket, so every row is the `.fh-as`/`.fh-po` two-line
+   shape rather than columns: the pick is free text off a betting slip
+   ("Eagles -3.5 vs the Cowboys"), and a name, a result and a variable-length
+   sentence cannot share one line on a phone without the name being the thing
+   that gets squeezed. That is the v39/v52 finding, applied before it bites
+   rather than after.
+   🚨 THE RESULT IS A WORD BEFORE IT IS A COLOUR. `HIT`/`MISS`/`PUSH`/`OPEN`
+   carry the meaning on their own; --pos/--neg only reinforce it. Colour-only
+   status is unreadable to a chunk of the league and invisible to every
+   assertion in this repo.
+   ⚠️ And semantic colour is CORRECT here, unlike the Cum Bowl's points column
+   (v67): a leg that lands is good news and a leg that misses is bad news,
+   which is exactly the test v189's rule sets. */
+.lp-hero { margin-top: 14px; }
+.lp-k { font: 800 9.5px/1 Archivo, system-ui, sans-serif; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--ac7); }
+.lp-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
+.lp-price b { display: block; font: 900 30px/1 Archivo, system-ui, sans-serif;
+  letter-spacing: -.03em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.lp-price i { display: block; margin-top: 4px; font: 700 10px/1 Archivo, system-ui, sans-serif;
+  font-style: normal; text-transform: uppercase; letter-spacing: .08em; color: var(--gy); }
+/* A pill, so the status reads at a glance from the top of the page. */
+.lp-stat { flex: none; padding: 6px 11px; border-radius: 999px;
+  font: 900 11px/1 Archivo, system-ui, sans-serif; letter-spacing: .06em; white-space: nowrap; }
+.lp-verdict { margin: 12px 0 0; font-size: 13px; line-height: 1.55; color: var(--gy); }
+.lp-verdict b { color: var(--ink); }
+.lp-pay { margin: 7px 0 0; font: 600 11.5px/1.5 Archivo, system-ui, sans-serif; color: var(--gy); }
+.lp-pay b { color: var(--gy); font-weight: 800; }
+
+/* ── the legs ────────────────────────────────────────────────────────────── */
+.lp-legs { margin-top: 10px; }
+.lp-leg { padding: 8px 0; }
+.lp-leg + .lp-leg { box-shadow: inset 0 1px 0 var(--l07); }
+/* The reader's own leg bleeds to the card edge, the same way `.fh-as.you` and
+   `.fh-po.you` do — one highlight shape for "this row is you", everywhere. */
+.lp-leg.you { background: rgba(var(--acRGB), .09); margin: 0 -14px; padding: 8px 14px; border-radius: var(--r1); }
+.lp-leg-t { display: flex; align-items: center; gap: 9px; }
+.lp-leg-n { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 800; color: var(--ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 41px = the 32px crest plus its 9px gap, so the pick lines up under the name
+   it belongs to instead of under the logo. */
+.lp-leg-p { margin-top: 3px; padding-left: 41px; font: 600 11.5px/1.45 Archivo, system-ui, sans-serif; color: var(--gy); }
+.lp-leg-p b { margin-left: 6px; color: var(--mu); font-weight: 800; font-variant-numeric: tabular-nums; }
+.lp-r { flex: none; font: 900 9.5px/1 Archivo, system-ui, sans-serif; letter-spacing: .07em; }
+/* ⚠️ 9.5px, not the 8.5px this shipped at in the first cut. This app has a
+   9px type floor and the render sweep caught it on every one of the 40
+   view-contexts — a status word nobody can read is not a status. */
+.lp-tag { font: 900 9.5px/1 Archivo, system-ui, sans-serif; letter-spacing: .06em; }
+.lp-r-w { color: var(--pos); } .lp-r-l { color: var(--neg); }
+.lp-r-p, .lp-r-o { color: var(--gy); }
+/* The status pill inverts the same four, so it reads as a state rather than
+   as one more line of text. An accent fill takes --on-ac, never #fff. */
+.lp-stat.lp-r-w { background: var(--pos); color: var(--sf); }
+.lp-stat.lp-r-l { background: var(--neg); color: var(--sf); }
+.lp-stat.lp-r-o { background: var(--ac); color: var(--on-ac); }
+.lp-stat.lp-r-p { background: var(--gy); color: var(--sf); }
+
+/* 🚨 EVERY ONE OF THESE COLOURS WAS MEASURED OFF THE RENDER, AND FIVE OF THEM
+   FAILED THE FIRST CUT. A colour is invisible to every assertion in this repo
+   — the only thing that catches one is computing the contrast on the page
+   (the v67 rule). What it caught here, all on white: `--mu2` at 9.5px is
+   2.56:1, `--mu` at 9.5-11.5px is 3.81:1, and `--wm` at 9.5px is 4.2:1, all
+   under the 4.5 that small text needs. The muted tones went to `--gy` (6.6:1)
+   and the live pill went to the accent, which is the app's own fill pattern
+   and takes `--on-ac` rather than white.
+   ⚠️ HIT and MISS keep `--pos` and `--neg`, which both clear 4.5 — measured.
+   ⚠️ PUSH and OPEN now share a colour, and that is fine BECAUSE the word
+   carries the meaning: neither is good news or bad news, so a tint that said
+   otherwise would be the v189 semantic-colour fault. */
+
+/* ── who carries the ticket ──────────────────────────────────────────────── */
+.lp-ld { padding: 7px 0; }
+.lp-ld + .lp-ld { box-shadow: inset 0 1px 0 var(--l07); }
+.lp-ld.you { background: rgba(var(--acRGB), .09); margin: 0 -14px; padding: 7px 14px; border-radius: var(--r1); }
+.lp-ld-t { display: grid; grid-template-columns: 22px 1fr auto; gap: 9px; align-items: center; }
+.lp-ld-r { font: 800 11px/1 Archivo, system-ui, sans-serif; color: var(--mu2); font-variant-numeric: tabular-nums; }
+.lp-ld-n { font-size: 12.5px; font-weight: 800; color: var(--ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lp-ld-w { font-size: 13px; font-weight: 800; color: var(--gy); font-variant-numeric: tabular-nums; }
+.lp-ld-s { margin-top: 4px; padding-left: 31px; font: 700 9.5px/1.6 Archivo, system-ui, sans-serif; color: var(--gy); }
+.lp-ld-s b { color: var(--gy); font-weight: 800; }

@@ -1,0 +1,6 @@
+{
+  "note": "The league's weekly group parlay. ONE file for the season, APPENDED to — unlike season/current.json, which is overwritten, because the point of this tab is the running record. It ships with an empty `weeks` array so an unstarted season still answers 200 and a 404 can be reported as a broken deploy rather than as business as usual. Each week: `k` the NFL week (unique), `l` its label, `d` the date the ticket was placed, `stake` the total on it in dollars (optional), `book` where it was placed (optional), and `legs` — one per manager: `m` the manager code, `p` the pick as it reads on the slip, `o` the American odds, `r` the result ('W' won, 'L' lost, 'P' push, omitted = not settled yet). NOTHING derived is stored: the combined price, the payout, the records and the hit rates are all worked out from these legs when the page loads, so a corrected leg corrects every number on the tab.",
+  "v": 1,
+  "y": 2026,
+  "weeks": []
+}
