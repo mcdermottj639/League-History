@@ -1751,6 +1751,59 @@ function hostLaws() {
 }
 hostLaws();
 
+/* ══ 🗣️ THE RANKINGS COPY NAMES NO PUBLISHER (v77) ═══════════════════════
+   The owner: "make no claim to who will publish them". Since v33 he can hand
+   the Lab to any manager for a week or a season, so copy promising that HE
+   publishes is the app guessing at something it cannot know — and the byline
+   FALLBACK did it in the one case where it knows least, a payload carrying no
+   byline at all. Four strings, asserted together because three of them were
+   found by looking for the fourth (the v3 rule).
+   ⚠️ THE FIRST CUT OF THIS LAW TRIED TO TOKENISE league.js WITH A REGEX for
+   string literals and reported three faults in correct code — it was matching
+   fragments of the comments that EXPLAIN this rule. A law that cries wolf gets
+   ignored, so each of the four is extracted by its own anchor instead. */
+function rankVoiceLaws() {
+  const mark = block();
+  const fail = (m) => { console.log(`  ❌ ${m}`); bad++; };
+  const fs = require('fs');
+  const lj = fs.readFileSync('./league.js', 'utf8');
+
+  const SPOTS = [
+    ['the empty rankings card', /none: "<b>No rankings published yet[\s\S]*?",/],
+    ["the ? sheet's Rankings line", /\n    rank: (["'])[\s\S]*?\1,/],
+    ['the byline line on a published week', /<p class="pr-sub">[\s\S]*?<\/p>/],
+    ['the model caveat under the rows', /⚠️ <b>The order is one person's opinion[\s\S]*?<\/p>/],
+  ];
+  const got = {};
+  SPOTS.forEach(([what, re]) => {
+    const m = lj.match(re);
+    if (!m) return fail(`could not find ${what} to check its voice`);
+    got[what] = m[0];
+    if (/commissioner/i.test(m[0])) fail(`${what} still names who publishes the rankings`);
+    /* The same sentence used to read "only once HE publishes a set" — the
+       repo's oldest voice rule (no pronouns in generated copy) reaching the
+       help sheet rather than a storyline. */
+    if (/\bpublish/i.test(m[0]) && /\b(he|his|she|her|hers)\b/i.test(m[0])) {
+      fail(`${what} carries a pronoun for whoever publishes`);
+    }
+  });
+
+  /* ⚠️ Stripping the CLAIM must not strip the PROMISE. Without this the copy
+     could satisfy every line above by saying nothing at all, and the one card
+     a reader meets before anything has landed would stop explaining the tab. */
+  const none = got['the empty rankings card'] || '';
+  if (none && !/each week during the season/.test(none)) {
+    fail('the empty rankings card no longer says a set is published each week');
+  }
+  const sub = got['the byline line on a published week'] || '';
+  if (sub && !/p\.b \?/.test(sub)) {
+    fail('the published week no longer prefers the payload\'s own byline');
+  }
+
+  console.log(`  ${mark()} the rankings copy says a set is published, never who publishes it`);
+}
+rankVoiceLaws();
+
 /* ══ 🔑 THE PASSPHRASE RESET TOOL (v41) ═══════════════════════════════════
    `power.html#newpass` hands the owner the hash that replaces `HASH`. If that
    hash is computed by ANY path other than the one the gate checks with, he

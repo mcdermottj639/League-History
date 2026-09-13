@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v76';
+  const APP_VERSION = 'v77';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -282,7 +282,7 @@
   const HELP = {
     hist: 'Thirteen seasons, 2013–2025. Five pages:',
     season: 'This year as it stands — the standings, ESPN\'s playoff odds, who you play next, and your season measured against your other thirteen.',
-    rank: "The commissioner's weekly power rankings — every team in order, with a take on each. Only during the season, and only once he publishes a set.",
+    rank: "The weekly power rankings — every team in order, with a take on each. Only during the season, and only once a set is published.",
     parlay: 'The weekly group parlay — one NFL bet each, all twelve on one ticket. Who picked what, how far it got, and who keeps landing their leg.',
     hon: 'The trophy case, the champions, who is still waiting, every final four, and the champion\'s curse.',
     you: 'Your thirteen seasons — medals, Cum Bowls, your best and worst years.',
@@ -385,7 +385,9 @@
   addEventListener('keydown', (e) => { if (e.key === 'Escape') closeHelp(); });
 
   /* ══ 🏆 RANKINGS ═══════════════════════════════════════════════════════
-     Published by the commissioner, read by everyone. It is a FILE in this
+     Published from the Lab, read by everyone — ⚠️ by the commissioner OR by
+     a manager he has lent a guest pass to (v33), which is why no copy on this
+     tab names a publisher (v77). It is a FILE in this
      repo, not a live model run: members have no ESPN cookies and no backend,
      and a ranking is an opinion column that should not silently re-derive
      itself into a different answer a week after it was written. */
@@ -464,13 +466,13 @@
     return `<div class="pr-card pr-head lg-rank-head">
         <div class="pr-week">${esc(p.l || '')}${p.d ? ` · ${esc(niceDate(p.d))}` : ''}</div>
         <h2>Power Rankings</h2>
-        <p class="pr-sub">${p.b ? `${esc(p.b)}'s` : "The commissioner's"} rankings for the league. ${p.r
+        <p class="pr-sub">${p.b ? `${esc(p.b)}'s rankings` : 'This week\'s rankings'} for the league. ${p.r
           ? 'Built from all-play record, scoring and recent form, then argued with by hand.'
           : 'Preseason — pure opinion, no games played yet.'}</p>
       </div>
       ${pick}
       <ol class="pr-list">${rankRowsHTML(p)}</ol>
-      <div class="ffp-card"><p class="ffp-cap">⚠️ <b>The order is one person's opinion.</b> The model that pre-builds it weights all-play win%, points per game and the last three weeks — but a power ranking has no graded outcome, so nothing here is validated the way a betting model would be. Rows the commissioner moved say where the numbers had them.</p></div>`;
+      <div class="ffp-card"><p class="ffp-cap">⚠️ <b>The order is one person's opinion.</b> The model that pre-builds it weights all-play win%, points per game and the last three weeks — but a power ranking has no graded outcome, so nothing here is validated the way a betting model would be. Rows that were moved say where the numbers had them.</p></div>`;
   }
 
   function niceDate(d) {
@@ -479,11 +481,21 @@
   }
 
   /* Keyed by `S.wkErr`, so adding a state without writing its sentence is a
-     visible hole rather than a silent fall-through to the friendly one. */
+     visible hole rather than a silent fall-through to the friendly one.
+     🚨 NONE OF THIS COPY NAMES WHO PUBLISHES (v77, owner: "make no claim to
+     who will publish them"). It said "the commissioner publishes a set each
+     week" — and since v33 he can hand the Lab to any manager for a week or a
+     season, so the app was promising something only he can keep, on the one
+     screen a reader sees when nothing has landed. ⚠️ The same claim sat in
+     THREE other places and all four moved together (the v3 rule): the ? sheet's
+     Rankings sentence, the byline FALLBACK on a published week, and the model
+     caveat under the rows. The fallback was the worst of them — it only fires
+     when a payload carries NO byline, which is exactly when the app knows
+     least about who built it. `checks.js` asserts the whole set. */
   const WK_EMPTY = {
     offline: "<b>Can't reach the rankings right now.</b>You are offline, or the page didn't load properly. The league's history below works with no connection at all, so it is still all there.",
     missing: "<b>The rankings list didn't load.</b>The file that lists the published weeks is not there — which is a fault at our end, not yours. The league's thirteen seasons below are unaffected.",
-    none: "<b>No rankings published yet.</b>The commissioner publishes a set each week during the season. When one lands it shows up here — every team, in order, with a take on each.",
+    none: "<b>No rankings published yet.</b>A set is published each week during the season. When one lands it shows up here — every team, in order, with a take on each.",
   };
 
   const wkBad = () => `<h2 class="section-title">🏆 Power Rankings</h2>

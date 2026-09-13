@@ -1660,7 +1660,11 @@ correction, zero unresolved conflicts**.
   stamps `#lg-body` with the view that owns it, before it hands the body to
   any view, and both late painters read that stamp — and
   say yes to their own body as well as no to somebody else's** (v76 — a guard
-  that always said no would "fix" the bug by breaking the feature) · **the
+  that always said no would "fix" the bug by breaking the feature) · **no
+  rankings copy names who publishes a set, none of it carries a pronoun for
+  one, and the empty card still promises that a set is coming** (v77 — the
+  last clause because copy that named nobody by saying nothing would pass the
+  first two) · **the
   bracket resolves the
   standings** — the final decides 1st/2nd, the semi-final losers are 3rd/4th,
   the R1 losers 5th/6th (their pair plays TWICE on ESPN and the last game
@@ -2062,6 +2066,25 @@ itself into a different answer a week after it was written**.
   no graded outcome, so nothing here can be validated the way a betting model
   is. Never present it as measured; never "tune" it as if a sample existed. The
   app says so on the page.
+- 🗣️ **NONE OF THE RANKINGS COPY NAMES WHO PUBLISHES (v77, owner: *"make no
+  claim to who will publish them"*).** It said *"the commissioner publishes a
+  set each week"* — and **since v33 he can hand the Lab to any manager for a
+  week or a season**, so the app was promising something only he can keep, on
+  the one screen a reader meets when nothing has landed. It reads *"A set is
+  published each week during the season"*: the promise without the claim.
+  ⚠️ **Four strings moved together, and three were found by looking for the
+  fourth** (the v3 rule) — the empty card, the ? sheet's Rankings sentence, the
+  byline FALLBACK on a published week, and the model caveat under the rows.
+  🚨 **The fallback was the worst of them.** `p.b ? … : "The commissioner's"`
+  fires only when a payload carries NO byline — which is exactly when the app
+  knows least about who built the week, so it was guessing hardest at the one
+  moment it had nothing to go on. It reads "This week's rankings" now; a week
+  WITH a byline is unchanged and still leads with it (v33's whole point).
+  ⚠️ The ? sheet's line also carried a pronoun (*"once **he** publishes"*) —
+  the repo's no-pronouns rule reaching the help text rather than a storyline.
+  ⚠️ **`checks.js` asserts all four by their own anchors AND that the promise
+  survives** — copy that named nobody by saying nothing would pass a
+  name-check while leaving the card unable to explain its own tab.
 - **An empty archive, an unreachable one and a MISSING one are three opposite
   facts, and the rankings view says which** (`WK_EMPTY`, keyed by `S.wkErr`).
   "Nothing published yet" when the truth is "you are offline" is a lie the app
@@ -2163,6 +2186,57 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v77 — the rankings promise a set, not a person (13 Sep 2026)** — the
+  owner, with the empty Rankings tab on screen: *"Change the wording to the
+  rankings will be published. Make no claim to who will publish them"*.
+  - **The card said *"The commissioner publishes a set each week during the
+    season"*, and the app has not been able to promise that since v33.** That
+    version built guest passes precisely so he can hand the Lab to another
+    manager for a week or a season — the copy was written in v1 and simply
+    never revisited when the feature that contradicted it shipped. It reads
+    *"A set is published each week during the season"*: **the promise kept,
+    the claim dropped.**
+  - 🚨 **HE POINTED AT ONE STRING AND THERE WERE FOUR, WHICH IS THE v3 RULE
+    AND THE REASON TO LOOK BEFORE EDITING.** The ? sheet's Rankings sentence,
+    the byline line on a published week, and the model caveat under the rows
+    all made the same claim. Fixing only the one in the screenshot would have
+    left the reader meeting it again on the next tap.
+  - 🚨 **THE BYLINE FALLBACK WAS THE WORST OF THE FOUR, AND IT IS THE ONE
+    NOBODY WOULD HAVE FOUND FROM A SCREENSHOT.** `p.b ? … : "The
+    commissioner's"` fires **only when the payload carries no byline at all** —
+    so the app asserted authorship hardest in the single case where it knew
+    nothing about who built the week. A week WITH a byline is untouched and
+    still leads with it, which is what v33 added it for.
+  - ⚠️ **The ? sheet's line also said "only once *he* publishes a set".** This
+    repo has banned pronouns in generated copy since v1 (a sentence that
+    agrees with the wrong person is the first thing a reader notices) — the
+    rule had simply never been pointed at the help text, because that text is
+    not generated. It is now in the law.
+  - 🚨 **THE FIRST CUT OF THE LAW CRIED WOLF, WHICH IS THE ONE THING A LAW
+    MUST NOT DO.** It tried to find string literals in `league.js` with a
+    regex and reported three faults in correct code — it was matching
+    fragments of **the comments explaining this very rule**. A regex cannot
+    tokenise JavaScript. Each of the four strings is extracted by its own
+    anchor instead, and every branch is fault-injected.
+  - ⚠️ **And the law asserts the PROMISE as well as the silence.** Stripping
+    the claim must not strip the sentence: copy that named nobody by saying
+    nothing would satisfy a name-check while leaving the one card a reader
+    meets before anything lands unable to explain what the tab is for.
+    Fault-injected by deleting the clause.
+  - ⚠️ **A vacuous render assertion, again, caught by reading the output.**
+    The check for the bylineless week swapped the index fixture mid-session
+    and re-clicked the tab — but `loadWeeks()` memoises, so the empty list was
+    re-used, the week never rendered, and *"and it names no publisher"* passed
+    over a **blank page**. Each case gets its own browser context now, and the
+    render is asserted before anything is asserted about its words. Third time
+    in three versions (v73's cache, v76's season hold, here).
+  - Verified on the render at 320 and 390px: the empty card, the ? sheet, and
+    a published week with no byline — reading *"A set is published each week
+    during the season"* and *"This week's rankings for the league"*, with no
+    "commissioner" anywhere in any of them, no overflow and no page errors.
+    `node --check` on every JS file and `node checks.js` green, the new law
+    fault-injected five ways.
 
 - **v76 — the parlay was painting over other tabs (13 Sep 2026)** — the owner,
   with a screenshot of History and Leaders both lit and the parlay's pick card
