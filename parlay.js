@@ -648,6 +648,20 @@
     if (P.live && Number(P.live.k) === ow.k && Array.isArray(P.live.games) && P.live.games.length) return P.live.games;
     return Array.isArray(ow.games) ? ow.games : [];
   };
+  /* 🚨 A BOARD IS GAMES YOU CAN BET, NOT GAMES ESPN KNOWS ABOUT (v79).
+     ESPN lists a week's fixtures as soon as the schedule exists and prices
+     them only when the books do — so between the two there is a window,
+     several days long every week, where `gamesOf` returns sixteen games and
+     not one of them carries a market. Every gate here counted GAMES, so the
+     card said *"Tap a line below"* over an empty board with the write-it-in
+     field folded shut: a control named in a sentence and absent from the
+     page, which is the v30 fault, in the state the tab sits in for most of
+     the week. Reproduced on the render before it was fixed.
+     ⚠️ ONE helper, and every gate reads it — the lead sentence, the note,
+     the board itself and whether the prop field opens. Four gates asking the
+     same question four ways is how three of them end up agreeing and one
+     does not. */
+  const playable = (ow) => gamesOf(ow).filter((g) => optionsFor(g).length);
   /* The selected option, resolved from the board rather than remembered as
      text — so a corrected line corrects the pick that is sitting on it. */
   function selPick(ow) {
@@ -671,7 +685,11 @@
      is a law written for something else entirely doing the catching. */
   function gameBoardHTML(ow) {
     const games = gamesOf(ow);
-    if (!games.length) return '';
+    /* ⚠️ Keyed by INDEX INTO `gamesOf`, never into the filtered list — the
+       selection travels as `{g, id}` and `selPick` resolves it back through
+       `gamesOf`, so renumbering here would point a saved tap at a different
+       game the moment one unpriced fixture sat above it. */
+    if (!playable(ow).length) return '';
     return `<div class="lp-board">${games.map((g, i) => {
       const opts = optionsFor(g);
       if (!opts.length) return '';
@@ -727,9 +745,11 @@
   }
 
   function boardNote(ow) {
+    /* ⚠️ A note about where the lines came from is nonsense when there are
+       no lines, however many fixtures came back with them. */
+    if (!playable(ow).length) return '';
     const live = P.live && Number(P.live.k) === ow.k && P.live.games.length;
-    if (!live) return gamesOf(ow).length
-      ? '<p class="lp-note">Lines as published with the app.</p>' : '';
+    if (!live) return '<p class="lp-note">Lines as published with the app.</p>';
     const mins = Math.round((Date.now() - (Number(P.live.at) || 0)) / 60000);
     return `<p class="lp-note">Lines from <b>ESPN</b>${mins > 0 ? `, ${mins === 1 ? 'a minute' : `${mins} minutes`} ago` : ', just now'}. They move — what you save is the price at the moment you tap it.</p>`;
   }
@@ -1053,7 +1073,7 @@
           ${noteFor('pick')}
         </div>`;
     }
-    const games = gamesOf(ow);
+    const games = playable(ow);
     const chosen = selPick(ow);
     /* ⚠️ The prop field is a fallback, not the front door — it opens by
        itself only when there is no board to tap, which is exactly when it is
@@ -1080,7 +1100,7 @@
       <div class="ffp-card lp-you">
         <p><b>One NFL bet, any market.</b> ${games.length
           ? 'Tap a line below, or write your own prop.'
-          : "The week's board is not in yet, so write the bet the way the book writes it."}</p>
+          : "The week's lines are not posted yet, so write the bet the way the book writes it. Tappable lines turn up here on their own once they are."}</p>
         ${noteFor('pick')}
         ${boardNote(ow)}
         ${gameBoardHTML(ow)}
