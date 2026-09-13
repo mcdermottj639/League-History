@@ -654,3 +654,58 @@
 .lp-ld-w { font-size: 13px; font-weight: 800; color: var(--gy); font-variant-numeric: tabular-nums; }
 .lp-ld-s { margin-top: 4px; padding-left: 31px; font: 700 9.5px/1.6 Archivo, system-ui, sans-serif; color: var(--gy); }
 .lp-ld-s b { color: var(--gy); font-weight: 800; }
+
+/* ══ 🎯 PUTTING A LEG IN (v70) ══════════════════════════════════════════════
+   The one place in the members' app that takes input. Everything else here is
+   read-only, so these are the only fields the league ever meets — and they
+   are met on a phone, in a hurry, on a Thursday.
+   🚨 EVERY FIELD IS 16px AND THAT IS NOT A STYLE CHOICE. iOS Safari zooms the
+   whole page in when a text input under 16px takes focus and does not zoom
+   back out; the ? sheet's link field already carries this rule and it applies
+   to a textarea exactly as much as to an input.
+   ⚠️ The two buttons are `.lg-sheet-go` (the app's existing primary) and a
+   quieter `.lp-alt`, both over the 38px floor — "Change my pick" throws away
+   what you typed, so it does not get to look like the main action. */
+.lp-you { margin-top: 12px; }
+.lp-you > p { margin: 0 0 12px; font-size: 12.5px; line-height: 1.55; color: var(--gy); }
+.lp-you > p b { color: var(--ink); }
+.lp-lab {
+  display: block; margin: 12px 0 5px; font: 800 9.5px/1 Archivo, system-ui, sans-serif;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--gy); }
+.lp-in, .lp-out {
+  display: block; width: 100%; box-sizing: border-box; padding: 10px 12px;
+  font: 600 16px/1.4 Archivo, system-ui, sans-serif; color: var(--ink);
+  background: var(--sf); border: 1px solid var(--tr2); border-radius: var(--r1);
+  min-height: 44px; -webkit-appearance: none; }
+.lp-in:focus, .lp-out:focus { outline: 2px solid var(--ac); outline-offset: 1px; }
+/* A price and a stake are short; a full-width field for four characters
+   invites a sentence into a box that has to parse as a number. */
+.lp-in-s { max-width: 140px; }
+.lp-out { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 16px;
+  color: var(--gy); resize: vertical; }
+/* ⚠️ The blob is the one field nobody reads, only copies — it stays 16px for
+   the zoom rule but wraps anywhere so a long line cannot widen the card. */
+.lp-blob { overflow-wrap: anywhere; }
+.lp-paste { resize: vertical; }
+.lp-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.lp-btns .lg-sheet-go { margin: 0; flex: 1 1 auto; }
+.lp-alt {
+  flex: 0 1 auto; min-height: 44px; padding: 0 16px; border-radius: 999px;
+  border: 1px solid var(--tr2); background: transparent; cursor: pointer;
+  font: 800 12.5px/1 Archivo, system-ui, sans-serif; color: var(--gy); }
+/* role="status" — empty until something happens, so it must not hold space. */
+.lp-say { margin: 8px 0 0; font: 700 11.5px/1.5 Archivo, system-ui, sans-serif; color: var(--gy); }
+.lp-say:empty { display: none; }
+.lp-note { margin: 10px 0 0; font: 500 11.5px/1.5 Archivo, system-ui, sans-serif; color: var(--gy); }
+.lp-note b { font-weight: 800; }
+/* Your own pick, once it is in: the bet reads as the headline and the price
+   sits beside it, the same shape as a leg on the ticket. */
+.lp-mine {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  padding: 12px 14px; margin: 0 0 4px; border-radius: var(--r1);
+  background: rgba(var(--acRGB), .09); }
+.lp-mine-p { font: 800 14px/1.35 Archivo, system-ui, sans-serif; color: var(--ink); }
+.lp-mine-o { flex: none; font: 800 14px/1 Archivo, system-ui, sans-serif; color: var(--gy);
+  font-variant-numeric: tabular-nums; }
+.lp-col > .lp-note:first-of-type { margin-top: 12px; }
+.lp-asm { margin-top: 16px; padding-top: 14px; box-shadow: inset 0 1px 0 var(--l07); }

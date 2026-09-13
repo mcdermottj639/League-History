@@ -712,11 +712,73 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
     archive's *playoffs only* badge with a specific meaning in the ? sheet's
     key; borrowing it for a different kind of caveat teaches a reader that one
     glyph means two things — the v50 icon-clash rule, applied across pages.
+  - 🎯 **THE TWELVE PICK IN THE APP, AND THE PICKS TRAVEL BY LINK (v70,
+    owner's ask: *"each person has to be able to pick there game in the app
+    for parlay. And then someone takes the ticket and bets it on a book"*).**
+    A reader writes their bet and its price, the app saves it on that phone
+    and turns it into a line for the group chat; whoever is placing the bet
+    pastes the chat into the collector, which finds every pick in it and
+    assembles the ticket.
+    - 🚨 **THERE IS NOWHERE TO WRITE, SO THE CHAT IS THE TRANSPORT.** This is
+      a set of static files with no account and no server — the one hard
+      constraint the app has never bent. A pick therefore travels the way the
+      Lab's shared rankings already travel, as a payload in a link
+      (`index.html#p=…`), except pointed the other way: the Lab sends one
+      payload to twelve people and this collects twelve into one.
+    - ⚠️ **BE HONEST ABOUT WHAT THAT DOES NOT BUY, AND THE CARD IS.** Everyone
+      sees every pick *in the chat* as it is made, and everyone sees the
+      finished ticket in the app. What it cannot do is show the other eleven
+      picks INSIDE the app before the ticket is assembled. Saying so beats
+      implying a sync that is not there — see Open / next for what a real one
+      would cost.
+    - 🚨 **A PICK IS NOT A CREDENTIAL.** The payload carries a manager code, so
+      anybody could craft one in somebody else's name — the same bar the
+      published passphrase hash sets, against the same eleven relatives. What
+      protects the ticket is that the collector SEES every leg with a name on
+      it before it goes to a book. **Two picks from one manager are reported
+      rather than silently resolved** (the later one wins, and the card says
+      so): quietly picking one is how a leg nobody meant reaches a book.
+    - 🚨 **THE SHARED LINE CARRIES THE REAL NAME, NEVER `nm()`.** That helper
+      answers "You" for whoever holds the phone, and this string is read by
+      the other eleven — a pick shared by Buley would arrive in the chat as
+      *"You: Bills -7"*. The v33 byline bug, one feature over, and now a law.
+    - ⚠️ **UTF-8 before base64url.** `btoa` is Latin-1 only and a bet is free
+      text off a phone keyboard: one emoji, one curly quote, one em-dash and
+      it throws. The Lab learned this on takes.
+    - ⚠️ **A phone's minus is U+2212 as often as a hyphen**, and reading it as
+      a plus would silently invert the leg — the sign IS the bet. `parseOdds`
+      normalises it and refuses anything that is not a whole number of at
+      least 100 either way.
+    - 🚨 **THE OPEN WEEK IS DERIVED WHEREVER IT CAN BE.** `open` in the file
+      wins; otherwise picks are for the week after the newest ticket. So the
+      first week of a season needs one line and every week after it needs
+      nothing — and **a week that already has a ticket is closed**, because a
+      pick then is a pick at a game that has kicked off.
+    - ⚠️ **A name is needed to put a LEG in, and that is not a gate.** Every
+      table on the page still renders for a stranger; a bet belongs to a
+      person, so the one thing that cannot be anonymous is the one thing that
+      asks — with the picker one tap away, worded as an invitation.
+    - ⚠️ **Its listeners are registered behind a `typeof document` guard**,
+      because `checks.js` requires this file in node. A bare
+      `document.addEventListener` at module scope throws on load and takes
+      every parlay law with it — a crash instead of a fault, which is the
+      least useful failure a check can have.
+    - ⚠️ **A status line belongs to ONE card** (`say(txt, where)`). A single
+      shared string rendered into every `.lp-say` printed "Saved. Send it to
+      the chat" under the collector as well — one event reported twice, the
+      second time about something the reader never did. Only a render showed
+      it; there is a law for it now.
+    - ⚠️ **Each share button NAMES the box it sends** (`data-lp-for`). The
+      first cut picked one by position and happened to be right — a thing
+      that works by accident stops working the day a fourth field is added,
+      silently, by sending the wrong text.
 - `parlay/current.json` — the season's tickets. **ONE file, APPENDED to** —
   unlike `season/current.json`, which is overwritten, because the running
   record IS the tab. ⚠️ It ships with an empty `weeks` array so an unstarted
   season answers 200 and a 404 is reportable as a broken deploy rather than as
-  business as usual; `checks.js` asserts it ships.
+  business as usual; `checks.js` asserts it ships. ⚠️ **`open` ({`k`, `l`})
+  names the week picks are being taken for** — needed only for the first week
+  of a season, since every week after it derives from the newest ticket.
 - `espn.js` — **the manager map and the ESPN transform**, loaded by BOTH pages
   (v42), `window.LeagueESPN`.
   - 🚨 **IT EXISTS BECAUSE THE ALTERNATIVE WAS TWO COPIES.** When the Season
@@ -1172,9 +1234,12 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 
 ## localStorage keys
 
-The members' app writes **three keys and no more**, and the third is only ever
-written on the commissioner's own device. Everything else here belongs to the
-Lab, which only he opens.
+The members' app writes **seven keys**, and only two of them are ever written
+by anybody but the reader themselves. Everything else here belongs to the Lab,
+which only the commissioner opens. ⚠️ This heading said "three keys and no
+more" until v70 and had been wrong since v33 — `lh:season` and `lh:guest`
+landed under it without it being re-counted. A number in prose beside a list
+is a hand-kept copy of that list, and it drifts.
 
 - `lh:me` — the manager code the reader picked. There is no account and there
   must never be one: twelve relatives are not going to sign in to read a
@@ -1197,6 +1262,16 @@ Lab, which only he opens.
   ⚠️ **It is deliberately not `lh:owner`.** A guest gets the Lab and nothing
   else: not his name on the picker, not the ability to invite anybody. Clearing
   site data, or 🔒 Sign out, ends it.
+- `lh:pick` — **this device's own leg for the open week** (v70): `{k, p, o,
+  at}`. ⚠️ Keyed by WEEK, so it is restored only for the week it belongs to —
+  a new week gets an empty form rather than last week's bet, the same rule
+  `powerlab:draft` follows and for the same reason: a stale draft is worse
+  than none.
+- `lh:tick` — **the picks somebody is collecting into a ticket** (v70):
+  `{k, legs:[{m, p, o, t}]}`. Written on whichever phone is assembling, by
+  pasting the chat or by opening a pick link. ⚠️ **It reaches nobody else's
+  app** — it is one person's working copy until the assembled block is
+  committed, and the card says so in as many words.
 - `powerlab:draft` — the Power Rankings Lab's week in progress
   (`{key, order, comments, at}`, autosaved on every edit). `key` = weeks
   played, so it is restored only for the week it belongs to — a new week's
@@ -1561,6 +1636,10 @@ whole design:
 > Twelve people, one NFL bet each, one ticket. He sends the slip (a screenshot,
 > or the picks typed out); a session turns it into a week in
 > `parlay/current.json`. There is no Lab for this yet — see Open / next.
+> ⚡ **Since v70 the app usually hands this over ready-made.** Whoever collects
+> the picks gets a block out of the collector card that is already exactly the
+> object below — if what he sends looks like that, write it in verbatim and
+> skip to step 4. The rest of this is for a slip typed out by hand.
 > 1. **Append an object to `weeks`**: `k` the NFL week (UNIQUE), `l` its label,
 >    `d` the date it went on, `stake` the total in dollars and `book` where it
 >    was placed (both optional), and `legs` — one per manager: `m` the manager
@@ -1577,7 +1656,12 @@ whole design:
 > 4. ⚠️ **APPEND — this file is the season's record**, unlike
 >    `season/current.json` which is overwritten. A repeated `k` means he is
 >    correcting that week, so REPLACE that entry rather than adding a second.
-> 5. Commit, push, **merge to `main`**. ⚠️ **No version bump**: `parlay/` is
+> 5. ⚠️ **Move `open` on**. Picks derive to the week after the newest ticket,
+>    so once a week is published the next one opens by itself — but if `open`
+>    is still sitting on the week you just published, it is stale and must go
+>    (a week with a ticket is closed either way, so the symptom is a pick card
+>    that has vanished rather than a wrong one).
+> 6. Commit, push, **merge to `main`**. ⚠️ **No version bump**: `parlay/` is
 >    data outside the versioned JS and the app fetches it `no-store`. (Contrast
 >    v68 — data that lives INSIDE `history.js` does need a bump, because a
 >    device holding the old `?v=` keeps the old data for good.)
@@ -1700,6 +1784,96 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v70 — the twelve pick in the app (13 Sep 2026)** — the owner, on the tab
+  that had just shipped: *"But each person has to be able to pick there game
+  in the app for parlay. And then someone takes the ticket and bets it on a
+  book. Probably won't happen for week 1 but build it so they all see."*
+  - **Write your bet, get a line, drop it in the chat; whoever is placing the
+    bet pastes the chat and the ticket assembles itself.** Three screens:
+    your pick, the collector, and the published ticket v69 already had.
+  - 🚨 **THIS IS THE FIRST TIME THE MEMBERS' APP HAS TAKEN INPUT, AND THERE IS
+    STILL NOWHERE TO WRITE.** Open / next has said since v1 that a member
+    writing anything back "needs a backend and is a real product decision".
+    That is still true and this does not change it — what changed is noticing
+    that the app already had a transport for exactly this shape of problem.
+    The Lab has shipped a self-contained payload in a link since v1
+    (`power.html#r=`), and the group chat is where this league already talks.
+    So a pick is a payload pointed the other way: **the Lab sends one to
+    twelve people, this collects twelve into one.**
+  - ⚠️ **AND THE HONEST LIMIT IS ON THE CARD, NOT JUST IN HERE.** "Build it so
+    they all see" is satisfied twice over — every pick is visible in the chat
+    as it is made, and the finished ticket is in everybody's app. What it
+    cannot do is show the other eleven picks *inside* the app before the
+    ticket is assembled. A card that implied that sync would be lying about
+    the one thing a reader would check, so it says plainly that picks travel
+    through the chat and why.
+  - 🚨 **THE SHARED LINE CARRIES THE REAL NAME, AND `nm()` WOULD HAVE BROKEN
+    IT SILENTLY.** That helper answers "You" for whoever is holding the phone
+    — correct everywhere else in this app and catastrophic here, because this
+    string is read by the other eleven: Buley's pick would have arrived in the
+    group chat as **"You: Bills -7"**. It is the v33 byline bug one feature
+    over (a guest's rankings going out under the commissioner's team name),
+    and the shape is worth naming as a rule: **a sentence written on one
+    device and read on another has no "you" in it.** Asserted, and verified by
+    swapping the helper back.
+  - 🚨 **TWO PICKS FROM ONE MANAGER ARE REPORTED, NEVER SILENTLY RESOLVED.**
+    Taking the later one is right — somebody changed their mind — but doing
+    it quietly is how a leg nobody meant ends up on a ticket that has been
+    paid for. The card names it; the law asserts the later one wins AND that
+    an older one cannot overwrite a newer.
+  - 🚨 **THE OPEN WEEK IS DERIVED, AND A PLACED WEEK IS CLOSED.** `open` in
+    the file wins, otherwise picks are for the week after the newest ticket —
+    so the first week of a season costs one line and every week after it costs
+    nothing. And a week that already has a ticket takes no picks, because a
+    pick then is a pick at a game that has kicked off.
+  - ⚠️ **A name is needed to put a LEG in, and that is not the app gating
+    content.** Every table still renders for a stranger exactly as before; a
+    bet belongs to a person, so the one thing that cannot be anonymous is the
+    one thing that asks. The picker is one tap away and the wording is an
+    invitation — the v45 line between "personal" and "a login", held.
+  - **Two encoding traps, both from the Lab's scar tissue:** `btoa` is
+    Latin-1 only, so a bet with an emoji or a curly quote throws unless it is
+    UTF-8 encoded first (verified with **"Saquon 75+ — “lock” 🦅 ½ unit"**);
+    and **a phone's minus is U+2212 as often as a hyphen**, which reading as a
+    plus would silently invert the leg. The sign IS the bet.
+  - ⚠️ **The listeners are behind a `typeof document` guard**, because
+    `checks.js` requires this file in node. Without it a bare
+    `document.addEventListener` at module scope throws on load and takes every
+    parlay law down with it — **a crash instead of a fault, which is the least
+    useful failure a check can have.** Found by running the suite, not by
+    reading the file.
+  - 🚨 **THREE FAULTS THE MEASUREMENTS COULD NOT SEE, ALL FOUND BY LOOKING AT
+    THE PAGE:**
+    - **The status line printed twice.** One shared `note` string was
+      rendered into every `.lp-say`, so "Saved. Send it to the chat" appeared
+      under the collector as well as under the pick — one event reported
+      twice, the second time about something the reader never did. A note
+      belongs to the card that raised it; there is a law for it now.
+    - **Two headings shared 🎯** once picks were open — the pick card and
+      "Who carries the ticket" — so the jump row carried the same mark twice,
+      and that row is read by its mark. **The v50 clash, arriving the same
+      way: as a knock-on of something else appearing on the page.** The pick
+      card is 📝, whose codepoint needs no variation selector (checked on the
+      render, the v49 trap).
+    - **A share button was picking its textarea by position** and happened to
+      be right. A thing that works by accident stops working the day a fourth
+      field is added — silently, by sending the wrong text. Each button names
+      its own box now.
+  - ⚠️ **And one clip at 320px**: the collector's summary hint ("collect the
+    picks") pushed its own line 93px into a 26px box. The hint is gone and the
+    count carries it.
+  - **Verified by driving three phones**, not by reading the code: Buley picks
+    on one (emoji and curly quotes intact through the payload, the line naming
+    *Buley* and not *You*), McD pastes the whole chat on another and gets both
+    legs, a price and the block to publish, and a third opens a bare pick link
+    — which lands on the Parlay tab, adds the leg and **cleans the hash so a
+    reload cannot add it twice**. Plus 40 view-contexts at 320 and 390px with
+    the collector forced open, every new law fault-injected, and the shipped
+    file (week 1 open, no tickets) rendering clean.
+  - ⚠️ **The `?v=` bump was done in both pages this time**, which is only worth
+    saying because v69 got it wrong in exactly one command — `espn.js` is in
+    that law now and the law is what made this one boring.
 
 - **v69 — the group parlay gets its own tab (13 Sep 2026)** — the owner:
   *"We've done a weekly group parlay for the league where everyone make and
@@ -4698,15 +4872,33 @@ stale entry written in the present tense reads as current to anyone who greps.
   either drop the class or decide LOST should be red, and the same sweep
   should check what else in `.fh-` inherited that dead `#fantasy-history`
   selector from Sports-Hub.
-- 🎲 **The parlay has no Lab, so a week is entered by hand** (v69). Publishing
-  a ticket is a session editing `parlay/current.json` from the slip he sends —
-  which is fine for twelve legs and one weekly update, and is why the paste
-  procedure above exists. What would earn a tool is the RESULTS pass: setting
-  twelve `r` fields every week is the repetitive half, and it is exactly the
-  shape `power.html` already solves (build it on the phone, hand over a blob).
-  ⚠️ Worth doing only if the by-hand loop actually annoys him — the Lab exists
-  because the rankings need twelve TAKES written, and a parlay needs twelve
-  letters.
+- 🎲 **The parlay's RESULTS are still entered by hand** (v69, narrowed in
+  v70). The picks now come out of the app as a ready-made block, so
+  publishing a ticket is paste-and-commit. What is left is the settle: twelve
+  `r` fields once the games are in. That is the repetitive half and it is
+  exactly the shape the collector already solves — a "settle this week"
+  screen with twelve W/L/P toggles that hands back the same block would close
+  it. ⚠️ Worth doing when the by-hand loop actually annoys him.
+- 🚨 **THE PICKS DO NOT SYNC, AND THAT IS THE ONE THING v70 COULD NOT BUILD.**
+  Everybody sees every pick in the group chat and everybody sees the finished
+  ticket in the app, but nobody sees the other eleven picks *inside* the app
+  before the ticket is assembled. Closing that needs somewhere to write, and
+  there are only two honest routes:
+  - **His own Render backend**, which already exists for the Lab's ESPN data.
+    A write endpoint plus a per-league secret would do it. ⚠️ Three real
+    costs: **this sandbox cannot reach that service**, so no session can build
+    or test it here (the same wall the Lab's live data path hits); it is a
+    different repo; and its free tier sleeps, so the first pick of the day
+    waits 30-60s. It also ends the property that this app works with nothing
+    but static files.
+  - **A keyless third party** — a Google Form writing to a Sheet published as
+    CSV, which the app could read with no key at all. ⚠️ Picking would happen
+    in a form rather than in the app, which is most of what he asked for; and
+    it puts a dependency in the members' app that **cannot be verified in
+    this sandbox**, which today verifies fully.
+  A write key committed to a PUBLIC repo is not on the list, and neither is
+  anything that needs a build step. Until one of those is chosen the chat is
+  the transport and the app says so.
 - ⚠️ **`season.js`'s paint call is unguarded and `parlay.js`'s is not** (v69).
   `window.LeagueSeason.paint(...)` throws out of the click handler rather than
   out of a promise if that script fails to load, leaving the previous view on
@@ -4719,6 +4911,9 @@ stale entry written in the present tense reads as current to anyone who greps.
   for every persona including a stranger. It is above in its own item; this is
   only to record that a second render sweep found the same thing rather than
   it having quietly fixed itself.
-- **Not built:** any way for a member to write anything back (a reaction, a
-  pick, a comment). That needs a backend and is a real product decision, not a
-  missing feature.
+- **Not built:** any way for a member to write anything back that ANOTHER
+  member's app can read (a reaction, a comment, a live pick). ⚠️ **v70
+  narrowed this rather than closing it**: a member can now enter a pick, and
+  it reaches the others through the group chat and then through a published
+  file — never through the app. The item above says what a real write path
+  would cost.

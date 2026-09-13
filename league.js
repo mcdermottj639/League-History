@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v69';
+  const APP_VERSION = 'v70';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -78,6 +78,23 @@
   /* Opens on the archive, not the rankings — the history is the thing that is
      always there, and a week is only published during the season. */
   const S = { view: 'hist', sub: 'hon', prof: null, weeks: null, week: null, wkErr: null };
+
+  /* 🚨 THE SHARED PICK IS READ AT THE TOP OF THE FILE, BEFORE ANY OTHER LINE
+     CAN TOUCH THE HASH — the v23/v33/v41 rule, which the Lab shipped broken
+     twice before it was written down. A value consumed at init cannot answer
+     a question asked later, and a hash is the easiest thing in the app to
+     consume by accident. The members' app has no routing of its own, so this
+     is the only reader there is; it takes the payload, hands it to the parlay
+     on first paint, and cleans the address bar so a reload does not re-add
+     the same leg. */
+  const SHARED_PICK = (function () {
+    try {
+      const m = /[#&]p=([A-Za-z0-9\-_]+)/.exec(location.hash || '');
+      if (!m) return null;
+      history.replaceState(null, '', location.pathname + location.search);
+      return m[1];
+    } catch (_) { return null; }
+  })();
 
   /* ── crests ────────────────────────────────────────────────────────────
      Real logos, keyed by MANAGER — the same rule the archive follows, and for
@@ -154,6 +171,21 @@
       if (i) { i.focus(); i.select(); }
       say('Press and hold the link above to copy it.');
     }
+  }
+
+  /* 🎲 The same ladder, for anything else worth sending — the parlay hands
+     it a pick to put in the group chat. ⚠️ Written ONCE and passed in rather
+     than copied into `parlay.js`: two implementations of "get this into the
+     chat" drift, and the fallback rung (select the text and say so) is the
+     one that matters and the one a copy would leave out. Returns the sentence
+     to show, so the caller decides where it goes. */
+  async function shareThing(text, title) {
+    if (navigator.share) {
+      try { await navigator.share({ title: title || 'Nectars Bolonga', text }); return 'Sent.'; }
+      catch (e) { if (e && (e.name === 'AbortError' || e.name === 'NotAllowedError')) return ''; }
+    }
+    if (await copyText(text)) return 'Copied — paste it into the chat.';
+    return 'Press and hold the box above to copy it.';
   }
 
   /* ══ THE NAME PICKER ═══════════════════════════════════════════════════
@@ -619,7 +651,7 @@
         host.innerHTML = '<div class="ffp-card"><div class="ffp-empty"><b>The parlay didn\'t load.</b>Reload the page — parlay.js ships as its own file and the browser didn\'t get it.</div></div>';
         buildJump(); return;
       }
-      window.LeagueParlay.paint(host, crest)
+      window.LeagueParlay.paint(host, crest, { share: shareThing, url: appURL })
         .then(buildJump, (e) => { console.error('[parlay] paint failed', e); buildJump(); });
       return;
     }
@@ -740,6 +772,10 @@
        own thirteen seasons (the v1 rule, which already lands `choose()` there),
        and everybody else lands on Honors. */
     if (me) { LH.setMe(me); S.sub = 'you'; }
+    /* A tapped pick link is a request to look at the parlay, so land there —
+       otherwise the leg is quietly collected behind the archive and the tap
+       reads as having done nothing (the v30 rule). */
+    if (SHARED_PICK && window.LeagueParlay) { window.LeagueParlay.take(SHARED_PICK); S.view = 'parlay'; }
     /* First ever open with nobody picked → the picker IS the front door.
        After that it never asks again, even with no name chosen, because a
        prompt that returns every visit is a nag rather than an invitation. */

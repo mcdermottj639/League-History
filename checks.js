@@ -957,6 +957,16 @@ function parlayLaws() {
      load time for the voice, and a block above has swapped the window out. */
   global.window = global.window || {};
   global.window.LeagueHistory = LHIST;
+  /* ⚠️ A REAL localStorage, not a stub that swallows writes. The collection
+     path IS storage — two picks from one manager, a week rolling over, a
+     cleared ticket — so a no-op shim would make every one of those laws pass
+     by never storing anything. */
+  const mem = {};
+  global.localStorage = {
+    getItem: (k) => (k in mem ? mem[k] : null),
+    setItem: (k, v) => { mem[k] = String(v); },
+    removeItem: (k) => { delete mem[k]; },
+  };
   require('./parlay.js');
   const LP = global.window.LeagueParlay;
   if (!LP) return fail('parlay.js exposes no LeagueParlay');
@@ -1109,6 +1119,131 @@ function parlayLaws() {
     said[h] = k;
   });
 
+
+  /* ══ 🎯 PICKS: TWELVE PHONES, ONE TICKET, NO BACKEND ═══════════════════
+     A pick travels as a payload in a link through the group chat. Everything
+     below is about that trip: it has to survive a phone keyboard, it has to
+     refuse a leg that would go on the ticket wrong, and it must never put the
+     word "You" in a message eleven other people read. */
+  const R2 = LHIST.roster().map((r) => r.m);
+
+  /* 🚨 UTF-8 BEFORE base64. `btoa` is Latin-1 only and a bet is free text off
+     a phone — one emoji, one curly quote, one em-dash and it throws. */
+  [{ v: 1, k: 4, m: 'McD', p: 'Eagles -3.5 vs Cowboys', o: -110, t: 1 },
+   { v: 1, k: 4, m: 'Buley', p: 'Saquon 75+ — “lock” 🦅 ½ unit', o: 145, t: 2 }].forEach((p) => {
+    let back;
+    try { back = LP._dec64(LP._enc64(p)); } catch (e) { return fail(`a pick with "${p.p}" would not encode: ${e.message}`); }
+    if (JSON.stringify(back) !== JSON.stringify(p)) fail(`a pick did not survive the round trip: ${JSON.stringify(back)}`);
+  });
+  if (/[+/=]/.test(LP._enc64({ a: 'ÿÿÿÿ?>?>' }))) fail('the payload is not base64URL — it will not survive being a link');
+
+  /* 🚨 THE OPEN WEEK IS DERIVED, AND A PLACED WEEK IS CLOSED. Picking for a
+     week whose ticket is already at a book is picking after kickoff. */
+  const ow4 = LP._open({}, [{ k: 1 }, { k: 2 }, { k: 3 }]);
+  if (!ow4 || ow4.k !== 4) fail(`picks after three tickets should open week 4, got ${JSON.stringify(ow4)}`);
+  if (LP._open({ open: { k: 3 } }, [{ k: 3 }]) !== null) fail('a week that already has a ticket is still open for picks');
+  if (LP._open({}, []) !== null) fail('with no tickets and no stated week, picks must be closed rather than guessed');
+  const ow1 = LP._open({ open: { k: 1, l: 'Week 1' } }, []);
+  if (!ow1 || ow1.k !== 1) fail('a stated open week was not honoured');
+  if (LP._open({ open: { k: 9 } }, [{ k: 1 }, { k: 2 }]).k !== 9) fail('a stated open week must beat the derived one');
+
+  /* Four ways a leg is refused, and each sends the collector somewhere else. */
+  [[{ m: 'Nobody', o: -110, p: 'x' }, 'who'],
+   [{ m: 'McD', o: 12, p: 'x' }, 'odds'],
+   [{ m: 'McD', o: -110, p: '   ' }, 'empty'],
+   [null, 'bad']].forEach(([p, want]) => {
+    const got = LP._check(p);
+    if (got !== want) fail(`a pick that should be refused as "${want}" came back "${got}"`);
+  });
+  ['-110', '−110', ' +150 ', '1,200'].forEach((t) => {
+    if (!isFinite(LP._odds(t))) fail(`"${t}" is a price a phone produces and it was refused`);
+  });
+  if (isFinite(LP._odds('evens'))) fail('"evens" is not a price and was accepted');
+  /* ⚠️ A phone's minus is U+2212 as often as a hyphen, and reading it as a
+     PLUS would silently invert the leg — the sign is the whole bet. */
+  if (LP._odds('−110') !== -110) fail('a typographic minus did not read as negative');
+
+  /* 🚨 A PICK FOR ANOTHER WEEK NEVER JOINS THIS TICKET. */
+  const mk = (o) => LP._enc64(Object.assign({ v: 1, k: 4, m: 'McD', p: 'Eagles -3.5', o: -110, t: 1 }, o));
+  if (LP._takeOne(mk({ k: 9 }), 4) !== 'week') fail('a pick for a different week was accepted onto the ticket');
+
+  /* 🚨 TWO PICKS FROM ONE MANAGER IS REPORTED, AND THE LATER ONE WINS.
+     Silently taking one of them is how a leg nobody meant reaches a book. */
+  localStorage.removeItem('lh:tick');
+  if (LP._takeOne(mk({ t: 10, p: 'first bet' }), 4) !== 'ok') fail('the first pick did not go on');
+  if (LP._takeOne(mk({ t: 20, p: 'second bet' }), 4) !== 'dupe') fail('a second pick from one manager was not reported as a duplicate');
+  let box = JSON.parse(localStorage.getItem('lh:tick'));
+  if (box.legs.length !== 1) fail(`one manager produced ${box.legs.length} legs on the ticket`);
+  if (box.legs[0].p !== 'second bet') fail('the later pick did not win');
+  if (LP._takeOne(mk({ t: 5, p: 'stale bet' }), 4) !== 'dupe' ||
+      JSON.parse(localStorage.getItem('lh:tick')).legs[0].p !== 'second bet') {
+    fail('an OLDER pick overwrote a newer one');
+  }
+
+  /* The whole chat pasted in at once: it finds every payload and ignores the
+     prose, which is most of what a group chat is. */
+  localStorage.removeItem('lh:tick');
+  const chat = R2.slice(0, 5).map((m, i) =>
+    `Week 4 parlay — ${LHIST.name(m)}: bet ${i} (-110)\nhttps://x.test/#p=${LP._enc64({ v: 1, k: 4, m, p: `bet ${i}`, o: -110, t: i })}`)
+    .join('\nlol nice\n') + '\nwho else is in';
+  const many = LP._takeMany(chat, 4);
+  if (many.ok !== 5) fail(`five picks pasted out of a chat, ${many.ok} added`);
+  box = JSON.parse(localStorage.getItem('lh:tick'));
+  if (box.legs.length !== 5) fail(`the collection holds ${box.legs.length} legs, not five`);
+  /* PER MANAGER, not a count — a count cannot see whose bet it kept (v66). */
+  box.legs.forEach((leg) => {
+    const want = `bet ${R2.indexOf(leg.m)}`;
+    if (leg.p !== want) fail(`${leg.m}'s leg reads "${leg.p}" and their pick was "${want}"`);
+  });
+  if (LP._takeMany('just chatting, no links here', 4).none !== true) fail('a paste with no picks in it did not say so');
+
+  /* 🚨 THE COLLECTED TICKET MUST BE A TICKET THE ENGINE ACCEPTS. The blob the
+     collector sends is the same shape a published week is, or publishing it
+     is a second format that only looks like the first. */
+  const asm = LP._ticket({ k: 4, l: 'Week 4', legs: box.legs });
+  if (asm.legs.length !== 5 || !(asm.price > 1)) fail('the collected legs do not assemble into a priced ticket');
+  if (asm.status !== 'live') fail(`a ticket of unsettled legs reads "${asm.status}" rather than live`);
+
+  /* ── what the pick card RENDERS, per reader (the v7 rule) ────────────── */
+  localStorage.removeItem('lh:pick');
+  LHIST.setMe(null);
+  const strangerPick = LP._pickHTML({ k: 4, l: 'Week 4' });
+  if (!/data-pickme/.test(strangerPick)) fail('a reader with no name is not offered the picker on the pick card');
+  if (/id="lp-bet"/.test(strangerPick)) fail('a reader with no name is shown a pick form their leg cannot belong to');
+
+  LHIST.setMe('Buley');
+  if (!/id="lp-bet"/.test(LP._pickHTML({ k: 4, l: 'Week 4' }))) fail('a reader who has picked a name gets no pick form');
+  localStorage.setItem('lh:pick', JSON.stringify({ k: 4, p: 'Bills -7', o: -115, at: 1 }));
+  const mineHTML = LP._pickHTML({ k: 4, l: 'Week 4' });
+  /* 🚨 THE SHARED LINE CARRIES THE REAL NAME. `nm()` answers "You" for
+     whoever holds the phone, and this string is read by the other eleven in
+     a group chat — the v33 byline bug, one feature over. */
+  if (!/Buley: Bills -7/.test(mineHTML)) fail('the shared pick line does not name the manager it belongs to');
+  if (/&gt;?You: /.test(mineHTML) || /— You:/.test(mineHTML)) fail('the shared pick line says "You" — eleven other people read it');
+  if (!/#p=/.test(mineHTML)) fail('the shared pick line carries no payload');
+  /* A saved pick belongs to ITS week and must not be restored into the next
+     one — the `powerlab:draft` rule, where a stale draft is worse than none. */
+  if (/Bills -7/.test(LP._pickHTML({ k: 5, l: 'Week 5' }).replace(/placeholder="[^"]*"/g, ''))) {
+    fail("last week's pick was restored into a new week");
+  }
+  localStorage.removeItem('lh:pick');
+
+  /* 🚨 A STATUS LINE BELONGS TO ONE CARD. One shared string rendered into
+     every `.lp-say` printed "Saved. Send it to the chat" under the collector
+     as well as under the pick — one event reported twice, the second time
+     about something the reader never did. Only a render showed it. */
+  LP.take(mk({ m: 'Wolff', t: 99 }));
+  const notes = (h) => (h.match(/class="lp-say"[^>]*>([^<]*)</g) || []).filter((x) => !/>\s*</.test(x));
+  if (notes(LP._collectHTML({ k: 4, l: 'Week 4' })).length !== 1) fail('the collector did not report what it just did');
+  if (notes(LP._pickHTML({ k: 4, l: 'Week 4' })).length !== 0) {
+    fail('a note raised by the collector is also printed on the pick card');
+  }
+
+  [['pick card', mineHTML], ['collector', LP._collectHTML({ k: 4, l: 'Week 4' })]].forEach(([what, h]) => {
+    if (/undefined|NaN|\[object/.test(h)) fail(`the ${what} has a template hole`);
+    if (/\/\*|\*\//.test(h)) fail(`the ${what} renders a code comment`);
+  });
+  LHIST.setMe(null);
   console.log(`  ${mark()} the parlay: price is the product, a push is not a loss, every record is per manager`);
 }
 parlayLaws();
