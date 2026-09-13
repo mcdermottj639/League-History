@@ -36,18 +36,29 @@
      11-3 team finished 3rd — and that gap IS the history worth showing.
      ══════════════════════════════════════════════════════════════════════ */
   const LEAGUE_HISTORY = [
-    /* 🚨 2025's BOTTOM TWO ARE THE OWNER'S CALL, AND THEY MOVED IN v66.
-       Sleeper's export never ordered the bottom four, so this season carried
-       two unordered pairs — 9/10 and 11/12 — with Buley and Slemp in the lower
-       one. It also carried `worst: "buleyn14"`, which said Buley finished
-       last and flatly contradicted rows that put Slemp there. The owner
-       settled it once the Cum Bowl was defined as the 11/12 game: *"It was
-       Buley losing to Christel in 2025."* Loser is 12th and winner is 11th, so
-       Christel is 11th and Buley last, and Hurd and Slemp are the pair left
-       unordered. ⚠️ That also makes the season read the way its records do —
-       Christel went 3-11, the worst in the league, and was previously shown
-       9th or 10th while 7-7 Slemp was shown 11th or 12th. */
-    { yr: 2025, games: 14, platform: "sleeper", finalOrder: true, champ: "JMcD6", final: { w: "JMcD6", ws: 124.04, l: "Cheeky_Clapz", ls: 107.28 }, tieNote: 'The 9th/10th game is missing from Sleeper\'s export, so that pair is shown unordered rather than guessed. 11th and 12th are the Cum Bowl, taken from the two scores because Sleeper never paired them.', rows: [
+    /* 🚨 2025's BOTTOM FOUR ARE ALL THE OWNER'S CALL, AND THEY ARE NOT ALL
+       THE SAME KIND OF FACT. Sleeper's export never ordered them, so this
+       season carried two unordered pairs — 9/10 and 11/12. It also carried
+       `worst: "buleyn14"`, which said Buley finished last and flatly
+       contradicted rows that put Slemp there.
+       - **11th and 12th (v66)** are RECONSTRUCTED. The owner named the game —
+         *"It was Buley losing to Christel in 2025."* — and the Cum Bowl rule
+         does the rest: loser is 12th, winner 11th. There are two week-15
+         scores behind it, which is why `CB_RECON` carries them.
+       - **9th and 10th (v68)** are STATED, not reconstructed: *"Make Slemp 9
+         and Hurd 10 for 2025."* Sleeper exported no such game and no score
+         stands behind the order, so nothing in the archive can check it and
+         the caption says so rather than implying a scoreline exists.
+       🚨 **Keeping that distinction visible is the point.** Everywhere else
+       in this archive a placing is decided by a game `checks.js` can conserve
+       against (v66's bracket-resolves-the-standings law). These two rows are
+       the one place a human's memory IS the source, and a caption that made
+       them look reconstructed would be the v14 fault — a number that sounds
+       like a different kind of number.
+       ⚠️ Both calls also read the way the records do, which is worth noting
+       and is NOT why they were made: Slemp went 7-7 to Hurd's 6-8 with 70
+       more points, and Christel's 3-11 was the worst in the league. */
+    { yr: 2025, games: 14, platform: "sleeper", finalOrder: true, champ: "JMcD6", final: { w: "JMcD6", ws: 124.04, l: "Cheeky_Clapz", ls: 107.28 }, tieNote: 'Sleeper\'s export is missing the bottom-four placement games, so the commissioner settled them — and <b>the two halves rest on different evidence</b>. 11th and 12th are the Cum Bowl, read off the two week-15 scores because Sleeper never paired them. 9th and 10th are <b>his call alone</b>: there is no score to take them from.', rows: [
       { t: "JMcD6", w: 11, l: 3, pf: 1543.74, pa: 1473.52, tx: 37, seed: 1 },
       { t: "Cheeky_Clapz", w: 7, l: 7, pf: 1507.02, pa: 1413.76, tx: 24, seed: 6 },
       { t: "Gotch118", w: 8, l: 6, pf: 1546.24, pa: 1405.84, tx: 14, seed: 2 },
@@ -56,8 +67,8 @@
       { t: "BonJiles", w: 8, l: 6, pf: 1524.5, pa: 1411.48, tx: 28, seed: 3 },
       { t: "samrizz", w: 7, l: 7, pf: 1506.52, pa: 1424.44, tx: 23, seed: 7 },
       { t: "TheCaptainCC", w: 7, l: 7, pf: 1433.28, pa: 1424.6, tx: 37, seed: 8 },
-      { t: "AarrogantFraudg", w: 6, l: 8, pf: 1317.94, pa: 1386.88, tx: 34, seed: 10, tie: "9-10" },
-      { t: "Slempw92", w: 7, l: 7, pf: 1387.86, pa: 1448.22, tx: 29, seed: 9, tie: "9-10" },
+      { t: "Slempw92", w: 7, l: 7, pf: 1387.86, pa: 1448.22, tx: 29, seed: 9 },
+      { t: "AarrogantFraudg", w: 6, l: 8, pf: 1317.94, pa: 1386.88, tx: 34, seed: 10 },
       { t: "schristel26", w: 3, l: 11, pf: 1446.54, pa: 1638.84, tx: 3, seed: 12 },
       { t: "buleyn14", w: 5, l: 9, pf: 1257.98, pa: 1391.64, tx: 40, seed: 11 },
     ]},
@@ -2193,6 +2204,26 @@
      both of which were correct — rather than by reading the page. **Nothing
      assertable can see this; only a render can, and only if somebody reads
      it.** The `no-template-comment` law in checks.js is the cheap half. */
+  /* 🚨 ONE ELEMENT FOR BOTH BRANCHES, AND THE FIRST CUT HAD TWO (v68).
+     This was `${s.tieNote || (… ? '<p class="ffp-cap">…</p>' : '')}` — the
+     FALLBACK carried its own element and the DATA did not, so a season with a
+     `tieNote` printed it as a raw text node directly inside the `<details>`:
+     measured on the render at **16px near-black against the caption's 11px
+     muted**, which made a footnote the loudest thing in the card, louder than
+     the standings it qualifies. The same expression produced two different
+     presentations depending on which branch fired, and nothing assertable can
+     see that — only reading the DOM does, which is how it turned up (a query
+     for `.ffp-cap` inside the season came back empty while the sentence was
+     plainly on screen). **The data holds the sentence; the template holds the
+     element.** ⚠️ Not escaped, deliberately: every other caption in this file
+     carries inline `<b>`, and a note that could not emphasise its own claim
+     would be the odd one out. */
+  const seasonNote = (s) => {
+    const t = s.tieNote || (s.rows.some((r) => r.tie)
+      ? 'The 9th/10th and 11th/12th placement games are missing from the export, so those pairs are shown unordered rather than guessed.'
+      : '');
+    return t ? `<p class="ffp-cap">${t}</p>` : '';
+  };
   function seasonsHTML() {
     return `<h2 class="section-title">📖 Season by season ${tag('fin')}</h2>
     ${SEASON.map((s) => `<details class="ffp-card fh-det">
@@ -2205,7 +2236,7 @@
         <span class="fh-tr-r mono">${rec(r)}</span>
         <span class="fh-tr-r mono dim">${Math.round(r.pf)}</span>
       </div>`).join('')}
-      ${s.tieNote || (s.rows.some((r) => r.tie) ? '<p class="ffp-cap">The 9th/10th and 11th/12th placement games are missing from the export, so those pairs are shown unordered rather than guessed.</p>' : '')}
+      ${seasonNote(s)}
     </details>`).join('')}`;
   }
 

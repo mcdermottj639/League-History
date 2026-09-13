@@ -1587,6 +1587,65 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
 
+- **v68 — 2025's last unordered pair, settled (13 Sep 2026)** — the owner:
+  *"Make Slemp 9 and Hurd 10 for 2025."*
+  - **v66 ordered 11/12 and left 9/10 rendering as a joined `9-10` row.** This
+    closes it: all 156 team-seasons now have a place of their own.
+  - 🚨 **BUT THE TWO PAIRS ARE NOT THE SAME KIND OF FACT, AND THE CAPTION HAD
+    TO SAY SO.** 11th and 12th are **reconstructed** — he named the game
+    (*"Buley losing to Christel"*) and the Cum Bowl rule does the rest, with
+    two week-15 scores standing behind it in `CB_RECON`. 9th and 10th are
+    **stated**: Sleeper exported no such game, no score exists, and nothing in
+    the archive can check them. Reusing v66's wording would have made a
+    remembered order look like a recovered one — **the v14 fault, a number
+    that sounds like a different kind of number** — so the caption names which
+    half rests on what.
+  - 🚨 **2025 IS THE ONLY SEASON WHERE THIS IS EVEN POSSIBLE, AND THAT WAS
+    VERIFIED RATHER THAN ASSUMED.** v66's law conserves every placing against
+    the game that decided it, and **`GmC8` decides 9th/10th in all twelve ESPN
+    seasons** — 2025 has 5 winner's-bracket games and no consolation ladder at
+    all. Fault-injected by swapping 2024's 9th and 10th: the suite reports
+    *"2024: GmC8 does not decide 9th/10th"*. So the law is awake and simply
+    has nothing to check here — which is the thing the caption now admits
+    rather than letting silence read as confirmation.
+  - ⚠️ **Both his calls read the way the records do, and that is NOT why they
+    were made** — worth separating, because "it matches the records" is how a
+    guess gets laundered into a fact. Slemp went **7-7 with 70 more points**
+    against Hurd's 6-8, and Christel's 3-11 was the league's worst.
+  - **Measured, the change is three numbers.** Slemp's 2025 square 10 → 9 and
+    his average finish 6.8 → 6.7; Hurd's square 9 → 10 (his 6.8 is unmoved by
+    rounding). **The storylines are byte-identical for all thirteen readers** —
+    checked by rendering both builds side by side rather than assumed, because
+    the swap broke a real tie: Slemp and Hurd sat on an identical 6.769 average
+    finish and now do not, and v58's "joint" rule would have had something to
+    say if any card ranked on it. None does.
+  - ⚠️ **It is a version bump even though it is only data**, per the v51 rule:
+    this data lives in `history.js`, so a device holding `history.js?v=67`
+    would keep the old order for good. **Where the data lives decides whether a
+    data change needs a release.**
+  - 🚨 **AND READING THE DOM FOUND THE CAPTION HAD NEVER BEEN A CAPTION.**
+    `seasonsHTML` ended
+    `${s.tieNote || (… ? '<p class="ffp-cap">…</p>' : '')}` — **the fallback
+    carried the element and the data did not**, so 2025's note printed as a
+    raw text node directly inside the `<details>`, inheriting **16px
+    near-black against a caption's 11px muted**. The one sentence whose job is
+    to footnote the table was the loudest thing in the card. Pre-existing
+    since v66 and made worse by this version's longer sentence; caught because
+    a query for `.ffp-cap` inside the season came back **empty while the text
+    was plainly on screen**. One expression, two presentations, depending on
+    which branch fired — and nothing assertable can see it, because the
+    difference is a computed style. **The data holds the sentence and the
+    template holds the element** (`seasonNote`), so both branches now render
+    identically. ⚠️ The fallback branch is kept though no season has `tie`
+    rows any more: the row renderer still supports `tie`, and deleting one
+    half of a live feature is worse than an unexercised branch.
+  - Verified at 320 and 390px across 50 view-contexts — the five tabs ×
+    {stranger, McD, Slemp, Hurd, Christel}: the 2025 table reads 9 Slemp /
+    10 Hurd with no joined row left, its note an 11px `.ffp-cap`, no
+    horizontal overflow, no clipped cell, no type under 9px, no tap target
+    under 38px, no template hole, no page error. `node --check` on every JS
+    file and `node checks.js` green.
+
 - **v67 — the Cum Bowl gets a scoreboard (13 Sep 2026)** — the owner, with
   the tab open: *"Add points per game in the cum bowl for this sections.
   Feels info light"*.
@@ -1714,7 +1773,9 @@ stale entry written in the present tense reads as current to anyone who greps.
     last. He settled it: *"It was Buley losing to Christel in 2025. Sleeper
     didn't match them up so we just took the scores."* Loser is 12th, so
     Christel is 11th and Buley last, and Hurd and Slemp are the pair left
-    unordered. ⚠️ It also reads better against the records — Christel went
+    unordered (⚠️ **SUPERSEDED in v68**: he ordered that pair too — Slemp 9th,
+    Hurd 10th — so 2025 has no unordered pair left). ⚠️ It also reads better
+    against the records — Christel went
     **3-11**, the worst in the league, and was being shown 9th or 10th while
     7-7 Slemp was shown 11th or 12th.
   - **So the card he asked about reads "six times"**, and its claim survives
