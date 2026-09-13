@@ -24,7 +24,7 @@
   <header class="lg-top">
     <div class="lg-brand">
       <span class="lg-shield">🏈</span>
-      <h1>Nectars Bolonga<small>League history <span id="lg-ver"></span></small></h1>
+      <h1>Nectars Bolonga<small>League history</small></h1>
     </div>
     <div class="lg-hd-r">
       <!-- What everything on the page means, from every page. The badge key
@@ -58,6 +58,13 @@
     <div id="lg-body"></div>
     <footer class="lg-foot">
       <p>Thirteen seasons, 2013–2025 · every finish mapped to a person and cross-checked against ESPN's own owner column.</p>
+      <!-- ⚠️ The version moved here from the masthead in v75 (owner's call).
+           It is still on EVERY screen, which is the only property that
+           matters: v12 exists because a "this looks wrong" report turned out
+           to be a cached build, and the first question is always which one
+           they are running. So it keeps a readable colour of its own rather
+           than inheriting the footer paragraph's muted grey. -->
+      <p class="lg-ver-l">League History <span id="lg-ver"></span></p>
     </footer>
   </main>
 

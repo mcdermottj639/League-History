@@ -983,6 +983,17 @@ function parlayLaws() {
 
   const html0 = fs.readFileSync('./index.html', 'utf8');
   const ver = (fs.readFileSync('./league.js', 'utf8').match(/APP_VERSION = 'v(\d+)'/) || [])[1];
+  /* 🚨 THE VERSION HAS TO BE SOMEWHERE ON THE PAGE. It moved out of the
+     masthead in v75, and the failure mode of a move is that it lands nowhere
+     — silently, because nothing else reads it. v12 is why it matters: a
+     "this looks wrong" report turned out to be a cached build, and the first
+     question is always which version they are running. The element and its
+     one writer are asserted together; either alone would pass over a move
+     that dropped the other. */
+  if (!/id="lg-ver"/.test(html0)) fail('index.html has no #lg-ver — the app cannot say which version it is running');
+  if (!/\$\('#lg-ver'\)/.test(fs.readFileSync('./league.js', 'utf8'))) {
+    fail('nothing in league.js writes the version into #lg-ver, so the slot renders empty');
+  }
   if (!html0.includes(`parlay.js?v=${ver}`)) fail(`index.html does not load parlay.js?v=${ver}`);
 
   /* ── the arithmetic ─────────────────────────────────────────────────────
