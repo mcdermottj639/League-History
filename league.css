@@ -709,3 +709,73 @@
   font-variant-numeric: tabular-nums; }
 .lp-col > .lp-note:first-of-type { margin-top: 12px; }
 .lp-asm { margin-top: 16px; padding-top: 14px; box-shadow: inset 0 1px 0 var(--l07); }
+
+/* ══ 🏈 THE WEEK'S BOARD (v71) ══════════════════════════════════════════════
+   Every game, its three markets, two sides each — tapped, not typed.
+   🚨 SIX BUTTONS A GAME AND SIXTEEN GAMES IS ~96 TAP TARGETS, so the floor
+   matters more here than anywhere else in the app: `min-height: 44px` on
+   every one, two to a row, because a thumb on a moving train is the actual
+   use case. Two columns rather than three — three puts "Under 47.5 -110" at
+   about 95px on a 390px phone, which clips the price off the end of the very
+   thing being chosen. */
+.lp-board { margin-top: 14px; }
+.lp-gm { padding: 12px 0; }
+.lp-gm + .lp-gm { box-shadow: inset 0 1px 0 var(--l07); }
+.lp-gm-h { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.lp-gm-h b { font: 800 13px/1.2 Archivo, system-ui, sans-serif; color: var(--ink); }
+.lp-gm-h i { flex: none; font: 700 10px/1 Archivo, system-ui, sans-serif;
+  font-style: normal; color: var(--gy); }
+.lp-opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+/* ⚠️ `minmax(0, 1fr)`, never a bare `1fr` — a bare one floors at the content's
+   min-width, which is how a grid silently overflows its card (the v64 rule). */
+.lp-opt {
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  min-height: 44px; padding: 6px 10px; cursor: pointer; text-align: left;
+  border: 1px solid var(--tr2); border-radius: var(--r1); background: var(--sf); }
+.lp-opt-l { font: 800 12.5px/1.2 Archivo, system-ui, sans-serif; color: var(--ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lp-opt-o { flex: none; font: 700 11.5px/1 Archivo, system-ui, sans-serif; color: var(--gy);
+  font-variant-numeric: tabular-nums; }
+/* The chosen line takes the app's accent fill, and an accent fill takes
+   --on-ac, never #fff (white on this gold measures ~1.9:1). */
+.lp-opt.on { background: var(--grad); border-color: transparent; }
+.lp-opt.on .lp-opt-l, .lp-opt.on .lp-opt-o { color: var(--on-ac); }
+/* The prop fallback: a real summary row, over the 38px floor, because the
+   existing "How the model ranks" summary shipped at 21px for versions. */
+.lp-prop { margin-top: 14px; padding-top: 12px; box-shadow: inset 0 1px 0 var(--l07); }
+.lp-prop > summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  min-height: 40px; cursor: pointer; list-style: none;
+  font: 800 12.5px/1.2 Archivo, system-ui, sans-serif; color: var(--gy); }
+.lp-prop > summary::-webkit-details-marker { display: none; }
+.lp-prop > summary i { font-style: normal; color: var(--mu2); }
+.lp-prop[open] > summary i { transform: rotate(180deg); }
+
+/* The bet slip: the chosen line, pinned, with the only button that commits it.
+   ⚠️ z-index 30 — above the page, below the ? sheet's 60, so the sheet still
+   covers everything when it opens. And `env(safe-area-inset-bottom)` because
+   an iPhone's home indicator sits exactly where this bar does. */
+.lp-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  background: var(--sf); border-top: 1px solid var(--tr);
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -6px 18px rgba(0, 0, 0, .07); }
+.lp-bar-in { display: flex; align-items: center; gap: 10px; max-width: 560px; margin: 0 auto; }
+.lp-bar-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.lp-bar-t b { font: 800 13px/1.25 Archivo, system-ui, sans-serif; color: var(--ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lp-bar-t span { font: 700 11.5px/1 Archivo, system-ui, sans-serif; color: var(--gy);
+  font-variant-numeric: tabular-nums; }
+.lp-bar .lg-sheet-go { flex: 0 0 auto; margin: 0; min-width: 96px; }
+.lp-bar-pad { height: 84px; }
+
+/* 🚨 AT 320px THE PRICE AND THE LABEL CANNOT SHARE A LINE, and the measurement
+   is what said so: "Under 47.5" beside "-110" in a ~127px button clipped on
+   five of the ten totals — silently, with `text-overflow: ellipsis`, on the
+   one control the whole feature exists to tap. Stacked, the label has the
+   full width and the button grows 44px → 48px, which is still one thumb.
+   The v39/v52 fix (move the second value to its own line rather than squeeze
+   the first) applied to a button instead of a row. */
+@media (max-width: 360px) {
+  .lp-opt { flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px; }
+  .lp-opt-o { font-size: 11px; }
+}

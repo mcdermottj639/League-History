@@ -172,7 +172,13 @@
       k = Number(file.open.k); l = String(file.open.l || `Week ${k}`);
     } else if (ks.length) { k = Math.max.apply(null, ks) + 1; l = `Week ${k}`; }
     if (k == null || ks.indexOf(k) !== -1) return null;
-    return { k, l };
+    /* ⚠️ THE BOARD TRAVELS WITH THE WEEK. The first cut returned `{k, l}` and
+       dropped `games` on the floor, so every option button silently stopped
+       rendering — the page still looked complete, just with a text field
+       where the board should be, which is precisely the state this version
+       exists to end. A law asserts the board survives the trip. */
+    const games = (file && file.open && Array.isArray(file.open.games)) ? file.open.games : [];
+    return { k, l, games };
   }
 
   /* ══ ONE TICKET ════════════════════════════════════════════════════════
@@ -450,6 +456,93 @@
       }).join('')}`;
   }
 
+  /* ══ THE WEEK'S BOARD ══════════════════════════════════════════════════
+     🚨 YOU TAP A PRICE, YOU DO NOT TYPE ONE (v71, owner: *"Why can we have
+     pick selections like by tapping not writing"*). v70 shipped a text field
+     and he was right that it is the wrong control for a board.
+
+     ⚠️ AND THE REAL WIN IS NOT THE TAPPING, IT IS THAT THE TEXT IS DERIVED.
+     Twelve people typing "Eagles -3.5", "PHI -3.5", "philly -3½" produce
+     twelve spellings of one bet, and nothing downstream can tell they are the
+     same — no per-market record, no duplicate detection, no checking a leg
+     against the board it came from. An option that writes its own line makes
+     twelve picks comparable, which is the difference between a list and data.
+
+     🚨 THE LINES ARE DATA, BECAUSE NOTHING IN THIS APP KNOWS AN NFL GAME.
+     The ESPN feed that IS wired is the commissioner's FANTASY league — twelve
+     fantasy teams and a fantasy schedule of team ids. It carries no fixture
+     and no price, so a board cannot be derived from anything already here and
+     is not going to be invented. ⚠️ ESPN's public NFL scoreboard does publish
+     both, keylessly, and the app could fetch it from the reader's phone the
+     way the Season tab already fetches — see Open / next; it needs one live
+     capture to build the transform against, which this sandbox cannot get.
+
+     ⚠️ A GAME MISSING A MARKET RENDERS NO BUTTON FOR IT rather than a button
+     that cannot price itself. A board arrives half-filled all the time — a
+     total posted before a spread — and half a game is still worth showing. */
+  const sp = (n) => (n > 0 ? `+${n}` : `${n}`);
+
+  function optionsFor(g) {
+    const out = [];
+    const a = String(g.a || '').trim(), h = String(g.h || '').trim();
+    if (!a || !h) return out;
+    if (isFinite(Number(g.sp))) {
+      const n = Number(g.sp), o = okOdds(Number(g.spo)) ? Number(g.spo) : -110;
+      out.push({ id: 'sa', lab: `${a} ${sp(-n)}`, p: `${a} ${sp(-n)} at ${h}`, o });
+      out.push({ id: 'sh', lab: `${h} ${sp(n)}`, p: `${h} ${sp(n)} vs ${a}`, o });
+    }
+    if (Array.isArray(g.ml) && okOdds(Number(g.ml[0])) && okOdds(Number(g.ml[1]))) {
+      out.push({ id: 'ma', lab: `${a} ML`, p: `${a} ML at ${h}`, o: Number(g.ml[0]) });
+      out.push({ id: 'mh', lab: `${h} ML`, p: `${h} ML vs ${a}`, o: Number(g.ml[1]) });
+    }
+    if (isFinite(Number(g.tot))) {
+      const n = Number(g.tot), o = okOdds(Number(g.toto)) ? Number(g.toto) : -110;
+      out.push({ id: 'to', lab: `Over ${n}`, p: `${a}/${h} over ${n}`, o });
+      out.push({ id: 'tu', lab: `Under ${n}`, p: `${a}/${h} under ${n}`, o });
+    }
+    return out;
+  }
+
+  const gamesOf = (ow) => (ow && Array.isArray(ow.games) ? ow.games : []);
+  /* The selected option, resolved from the board rather than remembered as
+     text — so a corrected line corrects the pick that is sitting on it. */
+  function selPick(ow) {
+    if (!P.sel) return null;
+    const g = gamesOf(ow)[P.sel.g];
+    if (!g) return null;
+    return optionsFor(g).find((o) => o.id === P.sel.id) || null;
+  }
+
+  const kickTxt = (v) => {
+    if (!v) return '';
+    const d = new Date(v);
+    return isNaN(d) ? '' : d.toLocaleString(undefined,
+      { weekday: 'short', hour: 'numeric', minute: '2-digit' });
+  };
+
+  /* ⚠️ `gameBoardHTML`, not `boardHTML` — that name was already taken by the
+     "Who carries the ticket" leaderboard, and a second function declaration
+     of the same name in the same scope silently WINS. The leaderboard
+     disappeared from the page and nothing threw; the tie law caught it, which
+     is a law written for something else entirely doing the catching. */
+  function gameBoardHTML(ow) {
+    const games = gamesOf(ow);
+    if (!games.length) return '';
+    return `<div class="lp-board">${games.map((g, i) => {
+      const opts = optionsFor(g);
+      if (!opts.length) return '';
+      return `<div class="lp-gm">
+        <div class="lp-gm-h"><b>${esc(g.a)} @ ${esc(g.h)}</b><i>${esc(kickTxt(g.kick))}</i></div>
+        <div class="lp-opts">${opts.map((o) => {
+          const on = P.sel && P.sel.g === i && P.sel.id === o.id;
+          return `<button type="button" class="lp-opt${on ? ' on' : ''}" data-lp="opt"
+            data-g="${i}" data-o="${esc(o.id)}" aria-pressed="${on}">
+            <span class="lp-opt-l">${esc(o.lab)}</span><span class="lp-opt-o">${esc(oddsTxt(o.o))}</span></button>`;
+        }).join('')}</div>
+      </div>`;
+    }).join('')}</div>`;
+  }
+
   /* ══ 🎯 YOUR PICK ══════════════════════════════════════════════════════ */
   /* 🚨 A STATUS LINE BELONGS TO ONE CARD. `note` was a single string rendered
      into every `.lp-say` on the page, so "Saved. Send it to the chat" printed
@@ -458,7 +551,7 @@
      Found by looking at the render; no assertion could see it, so there is a
      law for it now. `where` is which card asked. */
   const P = { host: null, cr: null, api: null, file: null, err: null,
-    note: '', where: '', det: false, paste: '' };
+    note: '', where: '', det: false, paste: '', sel: null, prop: false };
   const say = (txt, where) => { P.note = txt; P.where = where; };
   const noteFor = (where) => (P.where === where && P.note
     ? `<p class="lp-say" role="status">${esc(P.note)}</p>` : '<p class="lp-say" role="status"></p>');
@@ -517,18 +610,42 @@
           ${noteFor('pick')}
         </div>`;
     }
-    return `${head}
-      <div class="ffp-card lp-you">
-        <p><b>One NFL bet, any market.</b> Write it the way the book writes it, put the price in, and the app makes the line you drop in the chat.</p>
+    const games = gamesOf(ow);
+    const chosen = selPick(ow);
+    /* ⚠️ The prop field is a fallback, not the front door — it opens by
+       itself only when there is no board to tap, which is exactly when it is
+       the only way in. With a board up it is one line, out of the way. */
+    const prop = `<details class="lp-prop"${(!games.length || P.prop) ? ' open' : ''} data-lp-prop="1">
+        <summary><b>Something else — write it in</b><i>▾</i></summary>
         <label class="lp-lab" for="lp-bet">The bet</label>
         <input class="lp-in" id="lp-bet" type="text" maxlength="${PICK_MAX}" autocomplete="off"
-          placeholder="Eagles -3.5 vs Cowboys" value="${esc(P.draftP || '')}" />
+          placeholder="Saquon 75+ rushing yards" value="${esc(P.draftP || '')}" />
         <label class="lp-lab" for="lp-odds">The price</label>
         <input class="lp-in lp-in-s" id="lp-odds" type="text" inputmode="text" autocomplete="off"
           placeholder="-110" value="${esc(P.draftO || '')}" />
         <div class="lp-btns"><button type="button" class="lg-sheet-go" data-lp="save">Save my pick</button></div>
+      </details>`;
+    /* 🚨 SAVE SITS WHERE THE CHOOSING HAPPENS, AND THE FIRST CUT PUT IT ABOVE
+       THE BOARD. Sixteen games is roughly ninety buttons and a very long
+       scroll, so tapping a line and then scrolling back to the top to confirm
+       it is the whole interaction fighting the reader. The chosen line rides
+       a bar pinned to the bottom of the screen — a bet slip, which is the one
+       pattern everybody using this already knows — and the prop field keeps
+       its own button inside itself, next to the thing being typed. Neither
+       path has two buttons and neither has none. */
+    return `${head}
+      <div class="ffp-card lp-you">
+        <p><b>One NFL bet, any market.</b> ${games.length
+          ? 'Tap a line below, or write your own prop.'
+          : "The week's board is not in yet, so write the bet the way the book writes it."}</p>
         ${noteFor('pick')}
-      </div>`;
+        ${gameBoardHTML(ow)}
+        ${prop}
+      </div>
+      ${chosen ? `<div class="lp-bar"><div class="lp-bar-in">
+        <div class="lp-bar-t"><b>${esc(chosen.p)}</b><span>${esc(oddsTxt(chosen.o))}</span></div>
+        <button type="button" class="lg-sheet-go" data-lp="save">Save</button>
+      </div></div>` : ''}`;
   }
 
   /* ══ 🧾 COLLECTING THE TICKET ══════════════════════════════════════════ */
@@ -695,7 +812,10 @@
       let out = '';
       if (ow) out += pickHTML(ow) + collectHTML(ow) + HOWTO;
       if (has) out += ticketHTML(s2.ts[0], P.cr, !!ow) + tallyHTML(s2) + boardHTML(s2) + pastHTML(s2, P.cr);
-      host.innerHTML = out + SOURCE;
+      /* The bar is pinned to the viewport, so the page needs room under it or
+         it covers whatever the reader has scrolled to the bottom of. */
+      const barred = ow && LH && LH.me() && !myPick(ow.k) && selPick(ow);
+      host.innerHTML = out + SOURCE + (barred ? '<div class="lp-bar-pad"></div>' : '');
     } catch (e) {
       console.error('[parlay] that ticket would not render', e);
       host.innerHTML = emptyHTML('bad');
@@ -721,14 +841,24 @@
     if (!b) return;
     const act = b.dataset.lp;
     const ow = curOpen();
+    if (act === 'opt') {
+      /* Tapping a line clears whatever was half-typed in the prop box and
+         vice versa — two answers to one question, and the one they touched
+         last is the one they mean. */
+      P.sel = { g: Number(b.dataset.g), id: b.dataset.o };
+      P.draftP = ''; P.draftO = '';
+      say('', 'pick');
+      return render();
+    }
     if (act === 'save') {
-      const p = String(val('lp-bet') || '').trim().slice(0, PICK_MAX);
-      const o = parseOdds(val('lp-odds'));
+      const chosen = selPick(ow);
+      const p = chosen ? chosen.p : String(val('lp-bet') || '').trim().slice(0, PICK_MAX);
+      const o = chosen ? chosen.o : parseOdds(val('lp-odds'));
       if (!p) { say('Write the bet first — however the book writes it.', 'pick'); return render(); }
       if (!okOdds(o)) { say('The price needs to be a number like -110 or +150.', 'pick'); return render(); }
       if (!ow || !LH.me()) { say('Picks are not open right now.', 'pick'); return render(); }
       write(PICK_KEY, { k: ow.k, p, o, at: Date.now() });
-      P.draftP = ''; P.draftO = '';
+      P.draftP = ''; P.draftO = ''; P.sel = null;
       say('Saved. Send it to the chat so it makes the ticket.', 'pick');
       return render();
     }
@@ -769,6 +899,7 @@
   document.addEventListener('input', (e) => {
     const el = e.target;
     if (!el || !el.id) return;
+    if (el.id === 'lp-bet' || el.id === 'lp-odds') P.sel = null;
     if (el.id === 'lp-bet') P.draftP = el.value;
     if (el.id === 'lp-odds') P.draftO = el.value;
     if (el.id === 'lp-stake') P.stake = el.value;
@@ -779,6 +910,7 @@
   /* `toggle` does not bubble, so it is caught on the way down. */
   document.addEventListener('toggle', (e) => {
     if (e.target && e.target.matches && e.target.matches('[data-lp-det]')) P.det = !!e.target.open;
+    if (e.target && e.target.matches && e.target.matches('[data-lp-prop]')) P.prop = !!e.target.open;
   }, true);
   }
 
@@ -823,6 +955,8 @@
       return ticketHTML(s.ts[0], cr) + tallyHTML(s) + boardHTML(s) + pastHTML(s, cr) + SOURCE; },
     _empty: emptyHTML,
     _pickHTML: (ow) => pickHTML(ow),
+    _options: optionsFor,
+    _sel: (v) => { P.sel = v; },
     _collectHTML: (ow) => collectHTML(ow),
   };
 })();

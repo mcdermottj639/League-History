@@ -1143,6 +1143,13 @@ function parlayLaws() {
   if (!ow4 || ow4.k !== 4) fail(`picks after three tickets should open week 4, got ${JSON.stringify(ow4)}`);
   if (LP._open({ open: { k: 3 } }, [{ k: 3 }]) !== null) fail('a week that already has a ticket is still open for picks');
   if (LP._open({}, []) !== null) fail('with no tickets and no stated week, picks must be closed rather than guessed');
+  /* The board has to survive being resolved into a week — dropping it renders
+     a page that looks complete and has no board on it. */
+  const owB = LP._open({ open: { k: 1, l: 'Week 1', games: [{ a: 'DAL', h: 'PHI', sp: -3 }] } }, []);
+  if (!owB || !owB.games || owB.games.length !== 1) fail('the week\'s board was dropped on the way to the view');
+  LHIST.setMe('Buley');
+  if (!LP._pickHTML(owB).includes('data-lp="opt"')) fail('a week that has a board rendered no lines to tap');
+  LHIST.setMe(null);
   const ow1 = LP._open({ open: { k: 1, l: 'Week 1' } }, []);
   if (!ow1 || ow1.k !== 1) fail('a stated open week was not honoured');
   if (LP._open({ open: { k: 9 } }, [{ k: 1 }, { k: 2 }]).k !== 9) fail('a stated open week must beat the derived one');
@@ -1227,6 +1234,59 @@ function parlayLaws() {
     fail("last week's pick was restored into a new week");
   }
   localStorage.removeItem('lh:pick');
+
+  /* ══ 🏈 THE BOARD: TAPPED, AND THE TEXT DERIVED FROM IT ════════════════
+     The point of an option is not the tap, it is that the LINE IS WRITTEN BY
+     THE BOARD. Twelve people typing "Eagles -3.5" / "PHI -3.5" / "philly -3½"
+     produce twelve spellings of one bet and nothing downstream can tell they
+     are the same. */
+  const G = { a: 'DAL', h: 'PHI', sp: -3.5, spo: -110, ml: [145, -170], tot: 47.5, toto: -115 };
+  const opts = LP._options(G);
+  if (opts.length !== 6) fail(`a full game should offer six lines, offered ${opts.length}`);
+  opts.forEach((o) => {
+    /* Through the module's OWN gate, not a copy of it here — a second
+       implementation of "is this a price" is a second thing to keep true. */
+    if (LP._check({ m: 'McD', p: o.p, o: o.o }) !== 'ok') fail(`the "${o.lab}" option makes a leg the pipeline refuses`);
+    if (!o.p.includes(G.a) || !o.p.includes(G.h)) fail(`"${o.p}" does not name both teams, so it cannot be read back to a game`);
+  });
+  if (new Set(opts.map((o) => o.p)).size !== opts.length) fail('two lines on one game write the same bet');
+  /* The two sides of a spread are opposites, or one of them is a free bet. */
+  const sa = opts.find((o) => o.id === 'sa'), sh = opts.find((o) => o.id === 'sh');
+  if (!/\+3\.5/.test(sa.p) || !/-3\.5/.test(sh.p)) fail(`the spread sides are not opposites: "${sa.p}" against "${sh.p}"`);
+  /* ⚠️ A half-posted board is normal — a total up before a spread — and half
+     a game is still worth showing. What must never render is a button for a
+     market that has no price behind it. */
+  if (LP._options({ a: 'NYJ', h: 'BUF', tot: 41 }).length !== 2) fail('a game with only a total did not offer exactly the two totals');
+  if (LP._options({ a: 'NYJ', h: 'BUF', ml: [100] }).length !== 0) fail('a one-sided moneyline still produced buttons');
+  if (LP._options({ sp: -3 }).length !== 0) fail('a game with no teams produced options');
+
+  /* A tapped line has to survive all the way onto a ticket. */
+  LHIST.setMe('Buley');
+  localStorage.removeItem('lh:pick');
+  const OWG = { k: 4, l: 'Week 4', games: [G] };
+  LP._sel({ g: 0, id: 'sh' });
+  const boardHTML2 = LP._pickHTML(OWG);
+  if (!/PHI -3\.5 vs DAL/.test(boardHTML2)) fail('a tapped line is not shown back as the pick it makes');
+  if ((boardHTML2.match(/data-lp="opt"/g) || []).length !== 6) fail('the board did not render a button per line');
+  if (!/aria-pressed="true"/.test(boardHTML2)) fail('the chosen line is not marked as chosen for a screen reader');
+  const asTicket = LP._ticket({ k: 4, l: 'Week 4', legs: [{ m: 'Buley', p: sh.p, o: sh.o }] });
+  if (!(asTicket.price > 1)) fail('a tapped line does not price as a leg');
+  LP._sel(null);
+  /* With no board there is still a way in — the prop field, open by itself,
+     because it is then the only door. */
+  const noBoard = LP._pickHTML({ k: 4, l: 'Week 4' });
+  if (!/id="lp-bet"/.test(noBoard)) fail('with no board there is no way to enter a pick at all');
+  if (!/<details class="lp-prop" open/.test(noBoard)) fail('with no board the prop field is closed, so the only way in is hidden');
+  if (/data-lp="opt"/.test(noBoard)) fail('a board with no games still rendered option buttons');
+
+  /* 🚨 AND THE PAGE STILL CARRIES THE CARDS IT ALREADY HAD. A second function
+     declaration of the same name silently WINS in the same scope, which is
+     how the "Who carries the ticket" leaderboard vanished when the game board
+     was added — nothing threw, and the tie law caught it by accident. */
+  const full = LP._html([{ k: 1, l: 'Week 1', legs: R2.map((m, i) => ({ m, p: `p${i}`, o: -110, r: i ? 'W' : 'L' })) }]);
+  ['Who carries the ticket', 'The season so far'].forEach((h) => {
+    if (!full.includes(h)) fail(`the parlay page has lost its "${h}" card`);
+  });
 
   /* 🚨 A STATUS LINE BELONGS TO ONE CARD. One shared string rendered into
      every `.lp-say` printed "Saved. Send it to the chat" under the collector

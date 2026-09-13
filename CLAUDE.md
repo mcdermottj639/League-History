@@ -772,6 +772,53 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       first cut picked one by position and happened to be right — a thing
       that works by accident stops working the day a fourth field is added,
       silently, by sending the wrong text.
+  - 🏈 **THE WEEK'S BOARD IS TAPPED, NOT TYPED (v71, owner: *"Each week every
+    game ML, spread and total are available or a person can fill in a prop bet
+    for a game… Why can we have pick selections like by tapping not
+    writing"*).** Every game renders its three markets, two sides each, as
+    buttons; a prop field stays underneath for anything the board does not
+    carry.
+    - 🚨 **THE REAL WIN IS NOT THE TAPPING, IT IS THAT THE LINE IS DERIVED.**
+      Twelve people typing "Eagles -3.5", "PHI -3.5", "philly -3½" produce
+      twelve spellings of one bet, and nothing downstream can tell they are
+      the same — no per-market record, no duplicate detection, no checking a
+      leg against the board it came from. An option writes its own text, so
+      twelve picks are comparable. That is the difference between a list and
+      data, and it is why this was worth doing properly.
+    - 🚨 **THE LINES ARE DATA, BECAUSE NOTHING IN THIS APP KNOWS AN NFL GAME.**
+      ⚠️ **The ESPN feed that IS wired is the FANTASY league** —
+      `/api/fantasy/football/season`, twelve fantasy teams whose `sch` is a
+      list of fantasy team ids. There is no fixture and no price anywhere in
+      it, so a board cannot be derived from anything already here. It is not
+      invented either: with no board the card says so and the prop field opens
+      by itself. See Open / next for the live ESPN scoreboard, which does
+      carry both and needs one capture to build against.
+    - ⚠️ **A game missing a market renders no button for it**, rather than a
+      button with no price behind it. A board arrives half-posted all the
+      time — a total up before a spread — and half a game is still worth
+      showing. A one-sided moneyline renders neither side.
+    - 🚨 **SAVE SITS WHERE THE CHOOSING HAPPENS.** The first cut put it above
+      the board, which on a sixteen-game slate (~90 buttons) means tapping a
+      line and scrolling back to the top to confirm it. The chosen line rides
+      a **bar pinned to the bottom of the screen** — a bet slip, the one
+      pattern everyone using this already knows — and the prop field keeps its
+      own button inside itself. Neither path has two buttons and neither has
+      none. ⚠️ The page renders a spacer when the bar is up, or the bar covers
+      whatever is at the bottom of the scroll.
+    - ⚠️ **At 320px the label and the price cannot share a button.** Measured:
+      "Under 47.5" beside "-110" in a ~127px button clipped five of the ten
+      totals, silently, on the one control the feature exists to tap. They
+      stack under 360px and the button grows 44px → 48px. The v39/v52 fix — a
+      second value gets its own line rather than squeezing the first — applied
+      to a button instead of a row.
+    - ⚠️ **Tapping a line clears the prop box and typing in the prop box
+      clears the selection.** Two answers to one question; the one touched
+      last is the one they mean.
+    - 🚨 **`gameBoardHTML`, not `boardHTML`.** That name was already the
+      leaderboard's, and a second function declaration of the same name in one
+      scope silently WINS — "Who carries the ticket" vanished off the page and
+      nothing threw. The tie law caught it, which is a law written for
+      something else doing the catching; there is a named law for it now.
 - `parlay/current.json` — the season's tickets. **ONE file, APPENDED to** —
   unlike `season/current.json`, which is overwritten, because the running
   record IS the tab. ⚠️ It ships with an empty `weeks` array so an unstarted
@@ -779,6 +826,12 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   business as usual; `checks.js` asserts it ships. ⚠️ **`open` ({`k`, `l`})
   names the week picks are being taken for** — needed only for the first week
   of a season, since every week after it derives from the newest ticket.
+  ⚠️ **`open.games` is that week's board**, one object per game:
+  `{a, h, sp, spo, ml:[away,home], tot, toto, kick}` — `a`/`h` the away and
+  home abbreviations, `sp` the HOME spread (negative = home favoured), `spo`
+  and `toto` the prices either side (default −110), `ml` the two moneylines,
+  `kick` an ISO time. Every field but `a`/`h` is optional and a missing market
+  simply renders no buttons.
 - `espn.js` — **the manager map and the ESPN transform**, loaded by BOTH pages
   (v42), `window.LeagueESPN`.
   - 🚨 **IT EXISTS BECAUSE THE ALTERNATIVE WAS TWO COPIES.** When the Season
@@ -1636,7 +1689,13 @@ whole design:
 > Twelve people, one NFL bet each, one ticket. He sends the slip (a screenshot,
 > or the picks typed out); a session turns it into a week in
 > `parlay/current.json`. There is no Lab for this yet — see Open / next.
-> ⚡ **Since v70 the app usually hands this over ready-made.** Whoever collects
+> 🏈 **The BOARD comes first, and it is the one thing he has to send.** Put the
+> week's games in `open.games` (shape above) and the picker turns them into
+> tappable lines; without it the tab falls back to a text field, which is what
+> v71 exists to stop. A screenshot of the book is enough to type it from —
+> and see Open / next for making this fetch itself.
+>
+> ⚡ **Since v70 the app usually hands the TICKET over ready-made.** Whoever collects
 > the picks gets a block out of the collector card that is already exactly the
 > object below — if what he sends looks like that, write it in verbatim and
 > skip to step 4. The rest of this is for a slip typed out by hand.
@@ -1784,6 +1843,77 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v71 — the board, tapped (13 Sep 2026)** — the owner, on v70: *"Each week
+  every game ML, spread and total are available or a person can fill in a prop
+  bet for a game… Did u make it like they have to write the pick in? Why can
+  we have pick selections like by tapping not writing. ESPN is linked no. That
+  should have the lines and games."*
+  - **He is right on both counts.** v70 shipped a text field, which is the
+    wrong control for a board, and every game now renders its three markets —
+    spread, moneyline, total, two sides each — as buttons, with a prop field
+    underneath for anything the board does not carry.
+  - 🚨 **THE REAL WIN IS THAT THE LINE IS DERIVED, NOT THAT IT IS TAPPED.**
+    Twelve people typing "Eagles -3.5", "PHI -3.5", "philly -3½" produce
+    twelve spellings of one bet and nothing downstream can tell they are the
+    same. An option writes its own text, so the twelve legs on a ticket are
+    comparable — which is what would let a per-market record, or a check of a
+    leg against the board it came from, ever exist. **A free-text field was
+    not just worse to use, it was throwing the data away.**
+  - 🚨 **"ESPN IS LINKED" IS TRUE AND IT IS THE WRONG ESPN, WHICH IS WORTH
+    WRITING DOWN BECAUSE IT WILL BE ASSUMED AGAIN.** What is wired is
+    `/api/fantasy/football/season` through his own Render backend: twelve
+    FANTASY teams, whose `sch` is a list of fantasy team ids. There is no NFL
+    fixture and no price anywhere in that payload — shown to him from the
+    shipped snapshot rather than asserted. ESPN's **public NFL scoreboard**
+    does carry games, spreads, totals and moneylines, keylessly, and the app
+    could fetch it from the reader's phone exactly as the Season tab already
+    fetches. ⚠️ **This sandbox cannot reach it** (the egress proxy answers 000
+    — tested, alongside `api.github.com` answering 200 as a control), so
+    writing a transform against a payload I cannot see would be inferring a
+    shape from memory, which is the v39 fault stated as a rule. It needs one
+    capture. In Open / next with the exact URL.
+  - **So the board is data**, in `open.games`, and **it is not invented**: the
+    file ships with no board, the card says the week's board is not in yet,
+    and the prop field opens by itself so there is still a way in. A screenshot
+    of the book is enough to fill it from.
+  - 🚨 **SAVE SITS WHERE THE CHOOSING HAPPENS, AND THE FIRST CUT DID NOT.**
+    Sixteen games is about ninety buttons; putting the button above the board
+    means tapping a line and then scrolling back to the top to confirm it. The
+    chosen line rides a bar pinned to the bottom of the screen — a bet slip,
+    the one pattern everybody using this already knows — and the prop field
+    keeps its own button beside the thing being typed. Found by looking at the
+    render, not by measuring it: every number on that page was correct.
+  - ⚠️ **At 320px the label and the price could not share a button.** Measured
+    rather than guessed: "Under 47.5" beside "-110" in a ~127px button clipped
+    **five of the ten totals**, silently, on the one control the whole feature
+    exists to tap. They stack under 360px; the button goes 44px → 48px and
+    nothing clips at 320, 360 or 390. The v39/v52 rule — the second value gets
+    its own line rather than squeezing the first — applied to a button.
+  - 🚨 **AND A NAME COLLISION TOOK A WHOLE CARD OFF THE PAGE IN SILENCE.** The
+    new `boardHTML(ow)` was the second function of that name in one scope —
+    the leaderboard's `boardHTML(s)` was already there — and **a later
+    declaration simply wins**. "Who carries the ticket" stopped rendering,
+    nothing threw, and the page still looked complete. What caught it was the
+    v58 tie law, written for something else entirely, going red about ranks
+    that were no longer on the page. It is `gameBoardHTML` now and there is a
+    law that names the two cards by their headings, so the next one says what
+    it is instead of being deduced.
+  - ⚠️ **One more silent drop, same session:** `openWeekOf` rebuilt the week as
+    `{k, l}` and left `games` behind, so every option button stopped rendering
+    while the page still looked finished — a text field exactly where the
+    board should be, which is the state this version exists to end. Asserted
+    now: the board must survive being resolved into a week.
+  - **Every new law fault-injected**, including the two above, the spread
+    sides being opposites, a one-sided moneyline rendering nothing, an option
+    whose text does not name its game, and the prop field being reachable when
+    there is no board.
+  - Verified at 320, 360 and 390px with a five-game fixture board (one of them
+    deliberately half-posted, totals only): 26 options, none clipped, none
+    under 44px, no overflow; the slip appears on tap, names the line, and the
+    page carries a spacer so it never covers the last card; the saved pick
+    goes out as **"Week 1 parlay — Buley: PHI -7.5 vs DAL (-110)"**. Plus 40
+    view-contexts with the board up and 40 with the file as it ships.
 
 - **v70 — the twelve pick in the app (13 Sep 2026)** — the owner, on the tab
   that had just shipped: *"But each person has to be able to pick there game
@@ -4879,6 +5009,22 @@ stale entry written in the present tense reads as current to anyone who greps.
   exactly the shape the collector already solves — a "settle this week"
   screen with twelve W/L/P toggles that hands back the same block would close
   it. ⚠️ Worth doing when the by-hand loop actually annoys him.
+- 🏈 **THE BOARD COULD FETCH ITSELF, AND IT NEEDS ONE PASTE TO BUILD AGAINST**
+  (v71). ESPN publishes the week's games with spreads, totals and moneylines
+  at a **public, keyless** endpoint —
+  `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard` —
+  and the app could call it straight from the reader's phone, no key, no build
+  step, exactly the way the Season tab calls ESPN since v42. That would end
+  the weekly board entry completely.
+  ⚠️ **What blocks it is testing, not permission.** This sandbox cannot reach
+  that host (verified: 000 through the egress proxy, with `api.github.com`
+  answering 200 as a control), so a transform written here would be written
+  against a payload nobody has looked at — the v39 fault, which cost two
+  features being called impossible. **The fix is one capture**: open that URL
+  on a phone and paste what comes back, the same way the v39 season capture
+  and the v56 bracket screenshots unblocked their features. With it the
+  transform gets built, verified byte-for-byte against a fixture, and the
+  board stops being data anybody types.
 - 🚨 **THE PICKS DO NOT SYNC, AND THAT IS THE ONE THING v70 COULD NOT BUILD.**
   Everybody sees every pick in the group chat and everybody sees the finished
   ticket in the app, but nobody sees the other eleven picks *inside* the app
