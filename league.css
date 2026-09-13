@@ -105,6 +105,26 @@
   margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--tr); }
 :root[data-palette] .lg-foot p {
   margin: 0 0 7px; font: 500 11px/1.5 Archivo, system-ui, sans-serif; color: var(--mu2); }
+/* 🚨 THE VERSION KEEPS A READABLE COLOUR, AND THAT IS NOT A STYLE CHOICE.
+   It moved out of the masthead in v75 and the obvious home was the footer
+   paragraph above — which is `--mu2`, measured at 2.56:1 on this ground. The
+   whole job of this string is to be legible in a screenshot when somebody
+   reports a fault (v12: the report turned out to be a cached build), so
+   putting it in the app's faintest tone would have quietly retired the one
+   diagnostic the app has. `--gy` is 6.6:1 and the numerals are tabular so a
+   two-digit version does not jitter against a three-digit one.
+   🚨 AND THE SELECTOR HAS TO OUT-SPECIFY `.lg-foot p`, WHICH THE FIRST CUT
+   DID NOT. `:root[data-palette] .lg-foot p` is (0,3,1) and a bare
+   `:root[data-palette] .lg-ver-l` is (0,3,0), so the muted rule won and took
+   the whole declaration with it — colour, size and weight — leaving the
+   version rendering at the exact 2.27:1 this comment exists to avoid.
+   Measured on the render (`rgb(169,161,147)`, not the `--gy` it was given),
+   which is the only thing that can see it: the CSS looked right and lost. */
+:root[data-palette] .lg-foot p.lg-ver-l {
+  margin: 4px 0 0; font: 700 10.5px/1.4 Archivo, system-ui, sans-serif;
+  letter-spacing: .07em; text-transform: uppercase; color: var(--gy);
+  font-variant-numeric: tabular-nums; }
+
 /* ⚠️ A link is a tap target. Inline in a footer paragraph it measured 13px
    tall — a third of the 38px floor — so it becomes its own row. */
 :root[data-palette] .lg-foot a {

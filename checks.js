@@ -983,6 +983,17 @@ function parlayLaws() {
 
   const html0 = fs.readFileSync('./index.html', 'utf8');
   const ver = (fs.readFileSync('./league.js', 'utf8').match(/APP_VERSION = 'v(\d+)'/) || [])[1];
+  /* 🚨 THE VERSION HAS TO BE SOMEWHERE ON THE PAGE. It moved out of the
+     masthead in v75, and the failure mode of a move is that it lands nowhere
+     — silently, because nothing else reads it. v12 is why it matters: a
+     "this looks wrong" report turned out to be a cached build, and the first
+     question is always which version they are running. The element and its
+     one writer are asserted together; either alone would pass over a move
+     that dropped the other. */
+  if (!/id="lg-ver"/.test(html0)) fail('index.html has no #lg-ver — the app cannot say which version it is running');
+  if (!/\$\('#lg-ver'\)/.test(fs.readFileSync('./league.js', 'utf8'))) {
+    fail('nothing in league.js writes the version into #lg-ver, so the slot renders empty');
+  }
   if (!html0.includes(`parlay.js?v=${ver}`)) fail(`index.html does not load parlay.js?v=${ver}`);
 
   /* ── the arithmetic ─────────────────────────────────────────────────────
@@ -1579,6 +1590,36 @@ function parlayLaws() {
   LP._reset(); LP._file({ weeks: [], sync: SB2 }); setMine();
   LP._picks({ k: 4, rows: { Buley: { p: 'Bills -7', o: -110, t: 9 } }, at: Date.now() });
   if (!hasBox(LP._pickHTML(OWP))) fail("somebody else's pick being up hid the reader's own chat fallback");
+  localStorage.removeItem('lh:pick');
+
+  /* 🚨 CLEAR IS ON THE CARD, AND IT MUST NOT COLLIDE WITH THE COLLECTOR'S
+     "Start again". Both are a delegated `data-lp` on one listener, so two
+     branches answering to one name means whichever is reached first wins —
+     silently, exactly like v71's duplicate `boardHTML`. Asserted by name
+     because the failure is invisible: the wrong thing gets cleared. */
+  LP._reset(); LP._file({ weeks: [], sync: SB2 }); setMine();
+  LP._picks({ k: 4, rows: { McD: MINE }, at: Date.now() });
+  const clearH = LP._pickHTML(OWP);
+  if (!/data-lp="drop"/.test(clearH)) fail('there is no way to clear a saved pick');
+  if (/data-lp="clear"/.test(clearH)) fail('the pick card reuses the collector\'s "clear" action — one name, two handlers, and the wrong one wins');
+  if (!/data-lp="edit"/.test(clearH)) fail('adding Clear took "Change my pick" off the card');
+  /* Three controls on one row when the chat box is up; two when it is not. */
+  const btns = (h) => (h.match(/data-lp="(send|edit|drop)"/g) || []).length;
+  if (btns(clearH) !== 2) fail(`a shared pick offers ${btns(clearH)} controls, not the expected Change + Clear`);
+  LP._picks({ k: 4, rows: {}, at: Date.now() });
+  if (btns(LP._pickHTML(OWP)) !== 3) fail('an unshared pick lost one of Send / Change / Clear');
+
+  /* 🚨 AND THE DELETE IS SCOPED TO THE READER'S OWN ROW. One wrong path
+     segment and Clear removes somebody else's leg, or the whole week. */
+  const dpath = LP._delPath(SB2, 4, 'McD');
+  if (dpath !== `${SB2}/picks/w4/McD.json`) fail(`the clear path is wrong: ${dpath}`);
+  ['Buley', 'Wolff'].forEach((m) => {
+    if (dpath.includes(m)) fail(`the clear path for McD names ${m}`);
+  });
+  if (LP._delPath(SB2, 4, 'McD') === LP._delPath(SB2, 4, 'Buley')) {
+    fail('two managers resolve to the same clear path — one would wipe the other');
+  }
+  if (/\/picks\/w4\.json$|\/picks\.json$/.test(dpath)) fail('the clear path points at a whole week or the whole tree, not one pick');
   localStorage.removeItem('lh:pick');
 
   /* 🚨 THE CACHE MUST BE ON SCREEN BEFORE THE NETWORK IS ASKED, AND THE ORDER
