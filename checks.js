@@ -16,19 +16,54 @@ const rows = [].concat(...SEASON.map((s) => s.rows));
 const exRows = rows.filter((r) => !r.mgr);          // the two untracked managers
 const exYrs = new Set(exRows.map((r) => r.yr + '\0' + r.t));
 const exCB = CUMBOWL.filter((c) => [c.s11, c.s12].some((t) => exYrs.has(c.yr + '\0' + t))).length;
-const exCBloss = CUMBOWL.filter((c) => exYrs.has(c.yr + '\0' + c.s12)).length;
-/* 🚨 THE CUM BOWL IS THE 11th/12th PLACE GAME (v66), AND THESE TWO LAWS ARE
-   WHY THAT CAN NEVER DRIFT AGAIN. From v1 to v65 the tab held `GmC3` — the
-   11-SEED v 12-SEED game, a whole round earlier — and every total above was
-   green the entire time, because a count of appearances cannot see WHICH game
-   was counted. It took the owner reading one storyline card. So the laws are
-   written against the thing that makes it the Cum Bowl: the winner finishes
-   11th, the loser finishes 12th. Under the old definition the first of these
-   reports 9 of 13 seasons wrong. */
-const cbPlace = (c, t) => { const s = SEASON.find((x) => x.yr === c.yr);
-  const r = s && s.rows.find((x) => x.t === t); return r ? r.place : null; };
-const cbPlaceBad = CUMBOWL.filter((c) => cbPlace(c, c.s11) !== 11 || cbPlace(c, c.s12) !== 12);
-const cbScoreBad = CUMBOWL.filter((c) => !(c.p11 > c.p12));
+const cbLoserOf = (c) => (c.p11 > c.p12 ? c.s12 : c.s11);
+const exCBloss = CUMBOWL.filter((c) => exYrs.has(c.yr + '\0' + cbLoserOf(c))).length;
+/* 🚨 THE CUM BOWL IS `GmC3` — THE 11-SEED v 12-SEED GAME (v79, owner: *"The
+   cum bowl is 1st round of playoffs between the 11th and 12th ranked team
+   immediately following the regular season"*), AND THESE LAWS ARE WRITTEN SO
+   THAT NEITHER DEFINITION CAN PASS FOR THE OTHER.
+   🚨 **v66's LAWS WERE THE REASON IT FELT SAFE TO MOVE, AND THEY COULD NOT
+   HAVE CAUGHT THE MOVE BEING WRONG.** They asserted that the s11 team
+   finished 11th and the s12 team 12th — which is a restatement of v66's own
+   definition, not an independent fact about it: GmC9 decides 11th v 12th by
+   construction, so the law was true of ANY reading that pointed at GmC9 and
+   said nothing about whether GmC9 was the right game. **A law derived from
+   the definition it is checking cannot fail for the only reason that
+   matters.** It is the v14 rule one level up: the totals could not see which
+   game they counted, and then the laws written to fix that could not see
+   which game they were describing.
+   So this one is structural and external — a fact about the FORMAT, taken
+   from the bracket's own shape rather than from the tab's belief about it:
+   round one of the consolation ladder pairs 7v8, 9v10 and 11v12, so the Cum
+   Bowl's two teams are the bottom two seeds. Under v66's GmC9 reading it
+   reports 9 of 12 seasons wrong; verified by pointing `CUMBOWL` back at
+   GmC9, where every total above stays green and only this speaks.
+   ⚠️ The seeds themselves come from ESPN for 2018-24 and are derived (win%,
+   then points, within the consolation six) for 2013-17, which seed the
+   bracket six only — so the law checks the real seed where there is one and
+   the derived order where there is not, and a third law asserts the two
+   agree wherever both exist. Two independent sources, never one. */
+const cbSeedBad = [], cbDeriveBad = [];
+CUMBOWL.filter((c) => !c.recon).forEach((c) => {
+  const s = SEASON.find((x) => x.yr === c.yr);
+  const row = (t) => s.rows.find((x) => x.t === t);
+  const A = row(c.s11), B = row(c.s12);
+  /* The bottom two of the six that missed the playoffs, by record then points. */
+  const con = s.rows.filter((r) => !r.seed || r.seed >= 7)
+    .sort((x, y) => (y.pct - x.pct) || (y.pf - x.pf));
+  const d11 = con[con.length - 2], d12 = con[con.length - 1];
+  if (!d11 || !d12 || d11.t !== c.s11 || d12.t !== c.s12) cbSeedBad.push(c.yr);
+  /* Where ESPN published seeds for 11 and 12, they must BE 11 and 12. */
+  if (A && B && A.seed && B.seed && (A.seed !== 11 || B.seed !== 12)) cbDeriveBad.push(c.yr);
+});
+const cbScoreBad = CUMBOWL.filter((c) => c.p11 === c.p12);
+/* 🚨 ONE DEFINITION, NOT TWO. `MEET` tags a game `kind: 'cb'` independently of
+   `CUMBOWL`, and from v66 to v78 the two named DIFFERENT games — the
+   head-to-head rows called 2022's GmC3 a Cum Bowl while the tab showed GmC9.
+   Nothing caught it, because both feed the same totals. They are tied now. */
+const cbMeet = S.MEET.filter((m) => m.kind === 'cb');
+const cbMeetBad = CUMBOWL.filter((c) => !cbMeet.some((m) =>
+  m.yr === c.yr && [m.a, m.b].sort().join('|') === [c.s11, c.s12].sort().join('|')));
 /* ⚠️ A bracket W-L IS kept on a manager again (v50/v52 — `bw`/`bl`/`bA`),
    which is why the directional title-bracket laws below exist. This comment
    said the opposite until v58: it was written when v19 deleted the record and
@@ -71,10 +106,13 @@ const T = [
   ['career points for', Math.round(ALL.reduce((a, x) => a + x.pf, 0)), Math.round(rows.filter((r) => r.mgr).reduce((a, r) => a + r.pf, 0))],
   ['cum bowls played', ALL.reduce((a, x) => a + x.cbA, 0), CUMBOWL.length * 2 - exCB],
   ['cum bowls lost', ALL.reduce((a, x) => a + x.cb, 0), CUMBOWL.length - exCBloss],
-  /* One Cum Bowl per season, every season — it is the game that ends the year. */
+  /* One Cum Bowl per season, every season — it opens the consolation ladder. */
   ['cum bowls on file', CUMBOWL.length, SEASON.length],
-  ['cum bowl winner finished 11th, loser 12th', cbPlaceBad.length, 0],
-  ['cum bowl winner outscored the loser', cbScoreBad.length, 0],
+  ['cum bowl pairs the bottom two seeds', cbSeedBad.length, 0],
+  ["cum bowl agrees with ESPN's own 11 and 12 seeds", cbDeriveBad.length, 0],
+  ['cum bowl has a winner (no tie)', cbScoreBad.length, 0],
+  ['cum bowl is one game, not two definitions', cbMeetBad.length, 0],
+  ['cum bowl meetings == cum bowls', cbMeet.length, CUMBOWL.length],
   /* Places 1-4 ARE the final four in this format (the semi-final losers play
      for 3rd), so every season with placements contributes exactly four. */
   ['final fours', ALL.reduce((a, x) => a + x.f4, 0), SEASON.filter((s) => s.fin).length * 4 - exRows.filter((r) => r.place && r.place <= 4).length],
@@ -171,8 +209,18 @@ console.log(`  ${apMark()} brackets == appearances     every playoff berth has i
    so each is independent evidence about the other. In this format every
    placing is decided by a game: the final → 1st/2nd, the semi-final losers →
    3rd/4th, the R1 losers → 5th/6th (⚠️ that pair plays TWICE on ESPN and the
-   LAST game decides), the six consolation teams are exactly places 7-12, and
-   GmC7/GmC8/GmC9 decide 7-8, 9-10 and 11-12. And the regular season is a
+   LAST game decides), and the six consolation teams are exactly places 7-12.
+   🚨 **11th AND 12th ARE THE CUM BOWL'S, NOT `GmC9`'s (v79, owner's call),
+   AND THIS LAW USED TO SAY THE OPPOSITE.** It asserted GmC7/GmC8/GmC9 decide
+   7-8, 9-10 and 11-12 — ESPN's rule, correctly transcribed, and the league
+   does not use it below 10th: *"11th and 12th are decided in the cum bowl"*.
+   ⚠️ **The law went red in 9 seasons the moment the rule changed, which is
+   exactly the v42 trap and exactly when it is easiest to "fix" a law without
+   thinking.** So what replaced it is not a relaxation: 11th and 12th are
+   pinned to the Cum Bowl's winner and loser directly, and `GmC7`/`GmC8` are
+   still held to deciding adjacent places **whenever neither of their teams is
+   in the Cum Bowl** — which is the whole of ESPN's ladder that survives, and
+   it still catches a mistyped consolation result. And the regular season is a
    closed league: every point scored was scored against somebody, so a season's
    points-for must equal its points-against — one mistyped digit anywhere in a
    season breaks it — and wins must equal losses. Verified by swapping two
@@ -202,8 +250,20 @@ console.log(`  ${apMark()} brackets == appearances     every playoff berth has i
     if (c.length) {
       const teams = new Set(c.flatMap((g) => [g.a, g.b]));
       if (teams.size !== 6 || [...teams].some((t) => !(P(s, t) >= 7))) f('consolation teams are not exactly places 7-12');
-      [['GmC7', 7], ['GmC8', 9], ['GmC9', 11]].forEach(([rd, p]) => { const g = c.find((x) => x.rd === rd);
-        if (g && (P(s, W(g)) !== p || P(s, Lo(g)) !== p + 1)) f(`${rd} does not decide ${p}th/${p + 1}th`); });
+      /* The league's own rule: the Cum Bowl settles the bottom two. */
+      const cb = CUMBOWL.find((x) => x.yr === yr);
+      if (cb) {
+        const cw = cb.p11 > cb.p12 ? cb.s11 : cb.s12, cl = cb.p11 > cb.p12 ? cb.s12 : cb.s11;
+        if (P(s, cw) !== 11) f(`the Cum Bowl winner is ${P(s, cw)}th, not 11th`);
+        if (P(s, cl) !== 12) f(`the Cum Bowl loser is ${P(s, cl)}th, not 12th`);
+        /* What is left of ESPN's ladder still has to hold: a placement game
+           between two teams the Cum Bowl did not move must decide adjacent
+           places, winner above loser. */
+        const inCB = (t) => t === cw || t === cl;
+        [['GmC7', 7], ['GmC8', 9]].forEach(([rd]) => { const g = c.find((x) => x.rd === rd);
+          if (!g || inCB(g.a) || inCB(g.b)) return;
+          if (P(s, W(g)) !== P(s, Lo(g)) - 1) f(`${rd} does not decide adjacent places (${P(s, W(g))} v ${P(s, Lo(g))})`); });
+      }
     }
     gs.forEach((g) => { if (!s.rows.find((r) => r.t === g.a) || !s.rows.find((r) => r.t === g.b)) f(`${g.rd} names a team not in the standings`);
       if (g.a === g.b || g.as === g.bs || !(g.as > 0 && g.bs > 0)) f(`${g.rd} is not a valid game`); });
@@ -429,11 +489,14 @@ owned.forEach((x) => {
    and said the other one is better. Recorded by detector id — never by
    manager — so it cannot be quietly undone, and so it goes quiet on its own
    if the detector ever stops firing. */
-/* ⚠️ 'floor' joined them in v66 for a different reason — not an owner's
-   preference between two cards, but a detector whose finding weakened when
-   the Cum Bowl was redefined. Same flag, same law: recorded by id so it
-   cannot be quietly undone. */
-['nofinal', 'dynasty', 'collapse', 'floor'].forEach((id) => {
+/* ⚠️ 'floor' joined them in v66 and CAME OFF in v79, and the asymmetry is the
+   point: every id left here is an OWNER's call between two cards about one
+   person (v15, v16, v18), which no later session may quietly undo. 'floor'
+   was the one flag argued from the data instead — v66's note said so — and
+   the data it was argued from was the wrong Cum Bowl. A flag that exists
+   because of a fact goes when the fact does; a flag that exists because
+   somebody chose does not. */
+['nofinal', 'dynasty', 'collapse'].forEach((id) => {
   const st = window.LeagueHistory._stories().find((x) => x.id === id);
   if (st && !st.own) { console.log(`  ❌ story "${id}" is a league headline again; the owner made it own-page only (v15)`); bad++; }
 });

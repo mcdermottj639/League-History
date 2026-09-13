@@ -58,7 +58,7 @@
        ⚠️ Both calls also read the way the records do, which is worth noting
        and is NOT why they were made: Slemp went 7-7 to Hurd's 6-8 with 70
        more points, and Christel's 3-11 was the worst in the league. */
-    { yr: 2025, games: 14, platform: "sleeper", finalOrder: true, champ: "JMcD6", final: { w: "JMcD6", ws: 124.04, l: "Cheeky_Clapz", ls: 107.28 }, tieNote: 'Sleeper\'s export is missing the bottom-four placement games, so the commissioner settled them — and <b>the two halves rest on different evidence</b>. 11th and 12th are the Cum Bowl, read off the two week-15 scores because Sleeper never paired them. 9th and 10th are <b>his call alone</b>: there is no score to take them from.', rows: [
+    { yr: 2025, games: 14, platform: "sleeper", finalOrder: true, champ: "JMcD6", final: { w: "JMcD6", ws: 124.04, l: "Cheeky_Clapz", ls: 107.28 }, tieNote: 'Sleeper\'s export is missing the bottom-four placement games, and <b>the two halves rest on different evidence</b>. 11th and 12th are the <b>Cum Bowl</b>: Buley and Christel were the 11 and 12 seeds, and because Sleeper never paired them the game is read off their two week-15 scores. 9th and 10th are <b>the commissioner\'s call alone</b> — there is no score to take them from.', rows: [
       { t: "JMcD6", w: 11, l: 3, pf: 1543.74, pa: 1473.52, tx: 37, seed: 1 },
       { t: "Cheeky_Clapz", w: 7, l: 7, pf: 1507.02, pa: 1413.76, tx: 24, seed: 6 },
       { t: "Gotch118", w: 8, l: 6, pf: 1546.24, pa: 1405.84, tx: 14, seed: 2 },
@@ -352,41 +352,63 @@
   };
 
   /* ── 🚽 THE CUM BOWL ───────────────────────────────────────────────────────
-     🚨 THE CUM BOWL IS THE LAST-PLACE GAME — THE ONE THAT DECIDES 11th v 12th
-     (v66, owner: *"Remember cum bowl winner is always 11th place"*). It is
-     `GmC9`, the final game of the consolation ladder, and that rule is a fact
-     about the format rather than a convention: in ALL 12 seasons with a
-     bracket on file the GmC9 winner finished 11th and the loser finished 12th.
-     ⚠️ **It was the 11-SEED v 12-SEED game (`GmC3`) from v1 until v66, and
-     every number on the tab was wrong for it.** GmC3 is round ONE of the
-     consolation ladder, so its loser plays on and its winner does too: across
-     the 12 brackets the GmC3 loser finished last only 4 times, and the card's
-     own lead — "the loser is the league's worst" — was therefore false in two
-     seasons out of three. It also credited Cum Bowls to managers who finished
-     7th (Gotch, 2023) and 8th (McD, 2021) purely for having been seeded badly.
-     The tell was in the app the whole time, dressed as a finding: a caption
-     that said "in 8 seasons the Cum Bowl winner still finished 12th". **A
-     rule the data breaks two times in three is not a quirk worth a caption,
-     it is the wrong definition** — and the owner read one sentence off one
-     storyline card and named it.
-     🚨 **DERIVED FROM THE BRACKET, NEVER RE-TYPED.** The games were hand-typed
-     from v1 to v65 and that is how they drifted a whole round away from what
-     the league means by the word. `PLAYOFF_GAMES` already holds every
-     consolation game, so the Cum Bowl is now a filter over it and the two can
-     never disagree again. `checks.js` conserves it both ways: the s11 team
-     must finish 11th and the s12 team 12th, and s11 must have outscored s12.
-     ⚠️ **s11 IS THE WINNER AND s12 IS THE LOSER, BY DEFINITION NOW.** They
-     used to be the two SEEDS and the winner was worked out from the scores —
-     which is what let the meaning drift in silence. Deriving the loser from
-     the scores again would be a second source of truth for the same fact. */
+     🚨 THE CUM BOWL IS `GmC3` — THE 11-SEED v 12-SEED GAME, ROUND ONE OF THE
+     CONSOLATION LADDER, THE FIRST WEEKEND AFTER THE REGULAR SEASON (v79,
+     owner, with the whole 2022 loser bracket on screen: *"The cum bowl is
+     1st round of playoffs between the 11th and 12th ranked team immediately
+     following the regular season"*).
+     🚨 **v66 MOVED IT TO `GmC9` AND THAT WAS WRONG.** GmC9 is the LAST game
+     of the ladder. It decides 11th v 12th — a true and separate fact, which
+     the standings law in `checks.js` still asserts — but it is not the game
+     the league means by the word, and this tab showed it for thirteen
+     versions. The 2022 card read *Slemp 91.5 · Hurd 72.0* where the league
+     means *Slemp 108.9 · Riz 92.6*.
+     🚨 **AND THE LEAD v66 CALLED FALSE IS TRUE AFTER ALL — BY RULE, NOT BY
+     THE LADDER.** v66 measured *"the loser is the league's worst"* against
+     ESPN's standings, found it held 4 times in 12, and concluded the sentence
+     was wrong. The sentence was right and ESPN's ordering was the thing the
+     league does not use: *"losing the cum bowl does make u finish last… we
+     don't give a shit about the losers bracket"*. So 11th and 12th are taken
+     from this game (see `cbPlaced`), the lead says so plainly again, and the
+     4-in-12 figure was never evidence about the league — only about a
+     tiebreak nobody here reads.
+     ⚠️ **The one v66 finding that does survive is the mechanism**: the games
+     are DERIVED from `PLAYOFF_GAMES` and never hand-typed. That is the only
+     reason this correction is one filter rather than thirteen rows retyped,
+     and it is what stopped the data drifting a round away again.
+     🚨 **AND v66 LEFT A SECOND DEFINITION STANDING, WHICH IS THE REAL
+     LESSON.** `MEET` never moved: it has tagged `GmC3` as `kind: 'cb'` since
+     v1, so from v66 to v78 a head-to-head row called 2022's *Slob on my Cobb
+     v London Silly Willies* a Cum Bowl while this tab showed *Slob on my Cobb
+     v Return Of The Mac* — one file, two answers, thirteen versions, every
+     law green. ⚠️ And the half that was right is the half nobody edited. **They were green because they were
+     written over TOTALS** (24 appearances, 11 losses, points per manager) and
+     a total cannot see which game it counted — the v14 rule, which v66 itself
+     quoted while writing three more laws of the same shape. The laws are
+     STRUCTURAL now: `GmC3` pairs seeds 11 and 12, in every season, which is a
+     fact about the format that no re-definition can satisfy by accident.
+     ⚠️ **`s11`/`s12` ARE THE SEEDS AGAIN AND THE WINNER IS READ OFF THE
+     SCORES.** v66 made them mean winner/loser, because under its definition
+     the result WAS the placing. Here the result decides nothing but the game,
+     so the seeding and the outcome are two facts and are stored as two.
+     ⚠️ **THE SEEDS ARE TRANSCRIBED WHERE ESPN PUBLISHED THEM AND DERIVED
+     WHERE IT DID NOT** — 2013-17 seed the bracket six only (v62), so 7-12
+     have no number on the page. The derivation is win% then points within the
+     consolation six, and it is checked rather than assumed: it reproduces the
+     real ESPN seed in **all 7 seeded seasons**, and agrees with the 11/12
+     assignment hand-typed in v65 — off the ESPN pages, years earlier — in
+     **all 5 unseeded ones**. Two independent sources, 12 of 12. */
   const CB_RECON = [
     /* 2025 is the Sleeper season and its consolation ladder was never
-       captured, so there is no 11/12 game to read. The owner's call, twice:
-       *"It was Buley losing to Christel in 2025. Sleeper didn't match them up
-       so we just took the scores."* Their week-15 scores stand in for the game
-       that was never played — which is why the year is marked `recon` on the
-       card rather than passed off as a result. */
-    { yr: 2025, s11: 'schristel26', p11: 107.42, s12: 'buleyn14', p12: 105.06, recon: true },
+       captured, so there is no `GmC3` to read. The owner's call: *"It was
+       Buley losing to Christel in 2025. Sleeper didn't match them up so we
+       just took the scores."* ⚠️ The pair he named IS the 11 v 12 seed, which
+       2025's own seeds confirm independently — Buley 11, Christel 12 — so
+       this entry survived the definition moving back unchanged, apart from
+       which field each name sits in. Their week-15 scores stand in for the
+       game that was never played, which is why the year is marked `recon` on
+       the card rather than passed off as a result. */
+    { yr: 2025, s11: 'buleyn14', p11: 105.06, s12: 'schristel26', p12: 107.42, recon: true },
   ];
 
 
@@ -395,16 +417,18 @@
      from Sleeper in v57 — winner's bracket only for that one).
      br: W = winner's bracket · WC = winner's consolation ladder (places 4-6)
      C = consolation ladder, GmC1-9 (places 7-12).
-     🚨 **`GmC9` IS THE CUM BOWL — the LAST game of the ladder, which decides
-     11th v 12th. `GmC1`-`GmC3` are ROUND ONE and decide nothing final.**
-     ⚠️ This comment said "GmC3 is the Cum Bowl" until v66 fixed the data and
-     missed the sentence describing it — and it then did exactly what v58
-     wrote down as the failure mode: *"a comment that outlives its fact is how
-     the next session reintroduces the bug it describes."* It was read back as
-     fact within the hour and a 2023 round-one game was called a Cum Bowl out
-     loud. **Nothing assertable can see a comment. When the definition moves,
-     the prose describing it moves in the same commit or it becomes the
-     surviving copy of the bug.**
+     🚨 **`GmC1`-`GmC3` ARE ROUND ONE: 7v8, 9v10 and 11v12 — so `GmC3` IS THE
+     CUM BOWL** (v79). Verified against every season on file, both ways: in
+     the 7 seeded seasons GmC3's two teams carry ESPN's seeds 11 and 12, and
+     in the 5 unseeded ones they are the bottom two of the consolation six by
+     record. ⚠️ `GmC9` is the LAST game and it decides 11th v 12th — a real
+     fact, asserted by the standings law, and **not** the Cum Bowl. v66
+     confused the two and this comment said so for thirteen versions.
+     ⚠️ The comment lesson v66 wrote here still stands and is worth keeping,
+     because v66 is what proved it: *a comment that outlives its fact is how
+     the next session reintroduces the bug it describes.* **It was this file's
+     own prose that was right and the data that was wrong** — `MEET` and the
+     ladder comment below both kept saying GmC3 while the tab showed GmC9.
      ⚠️ Names are the FULL names resolved against each season's standings —
      ESPN truncates them with "…" in the bracket view. */
   const PLAYOFF_GAMES = [
@@ -638,13 +662,31 @@
     { yr: 2013, br: "C", rd: "GmC9", a: "Hugh Junions", as: 123.3, b: "Team Wolff", bs: 62.8 },
   ];
 
-  /* The Cum Bowl, read off the bracket: GmC9 is the last game of the
-     consolation ladder and its winner finishes 11th, its loser 12th. Newest
-     first, so the card opens on the season people remember. */
-  const CUMBOWL = [...PLAYOFF_GAMES.filter((g) => g.rd === 'GmC9').map((g) => {
-    const aWon = g.as > g.bs;
-    return { yr: g.yr, s11: aWon ? g.a : g.b, p11: aWon ? g.as : g.bs,
-                       s12: aWon ? g.b : g.a, p12: aWon ? g.bs : g.as };
+  /* 🚨 THE CUM BOWL, READ OFF THE BRACKET: `GmC3`, the 11-seed v the 12-seed,
+     round one of the consolation ladder. ⚠️ Which of the two is 11 and which
+     is 12 is ESPN's own seed where it published one, and otherwise the worse
+     of the two by win% then points — the order that reproduces the real seed
+     in all 7 seeded seasons (asserted in `checks.js`). Never array order and
+     never the scores: the seeding is a fact about the regular season and the
+     result is a fact about the game, and collapsing them is what let v66's
+     definition drift without a law going red. Newest first, so the card opens
+     on the season people remember. */
+  const cbSeeded = (g) => {
+    const rows = LEAGUE_HISTORY.find((s) => s.yr === g.yr).rows;
+    const row = (t) => rows.find((r) => r.t === t);
+    const A = row(g.a), B = row(g.b);
+    if (A.seed && B.seed) return A.seed < B.seed ? [A, B] : [B, A];
+    /* ⚠️ In its own statement, not folded into the ternary: `>=` binds
+       tighter than `||`, so the one-liner asked whether the POINTS gap was
+       positive and used the win% gap only as a truthiness test. */
+    const pc = (r) => r.w / (r.w + r.l);
+    const cmp = (pc(A) - pc(B)) || (A.pf - B.pf);
+    return cmp >= 0 ? [A, B] : [B, A];
+  };
+  const CUMBOWL = [...PLAYOFF_GAMES.filter((g) => g.rd === 'GmC3').map((g) => {
+    const [hi, lo] = cbSeeded(g);
+    const pts = (r) => (r.t === g.a ? g.as : g.bs);
+    return { yr: g.yr, s11: hi.t, p11: pts(hi), s12: lo.t, p12: pts(lo) };
   }), ...CB_RECON].sort((a, b) => b.yr - a.yr);
 
   /* 🚨 EVERY name here is a REAL PERSON'S, and the map is what the twelve of
@@ -741,19 +783,60 @@
      cannot award places; only its named champion counts. */
   const isFinal = (s) => s.finalOrder !== false;
   const champRow = (s) => (isFinal(s) ? s.rows[0] : s.rows.find((r) => r.t === s.champ));
-  /* 🚨 The winner IS the 11th-place team and the loser IS the 12th — that is
-     what the Cum Bowl is, not something to re-derive from the scores (v66).
-     Working it out from the scores a second time is how the old definition
-     drifted without a single check going red. `checks.js` asserts the scores
-     and the placings both agree with these two lines. */
-  const cbWinner = (c) => c.s11;
-  const cbLoser = (c) => c.s12;
+  /* 🚨 THE WINNER IS WHOEVER SCORED MORE, AND IT DECIDES THE BOTTOM TWO
+     (v79). `s11`/`s12` are the two SEEDS — where they finished the regular
+     season — and the result of the game is what sets 11th and 12th, via
+     `cbPlaced` below. Two facts, stored apart, because they are opposite
+     ends of the season and they disagree: in 2022 the 12 seed won it and is
+     11th, while the 11 seed lost it and is last.
+     ⚠️ v66 had these return `c.s11`/`c.s12` outright, because under its
+     definition the seeding and the result were the same field — so the day
+     the definition moved, both were wrong together and nothing could tell
+     them apart. Read each from where it actually lives. */
+  const cbWinner = (c) => (c.p11 > c.p12 ? c.s11 : c.s12);
+  const cbLoser = (c) => (c.p11 > c.p12 ? c.s12 : c.s11);
+  const cbWinPts = (c) => Math.max(c.p11, c.p12);
+  const cbLosePts = (c) => Math.min(c.p11, c.p12);
   const CB_LOSER = {}; CUMBOWL.forEach((c) => { CB_LOSER[c.yr] = cbLoser(c); });
 
   /* ---- per-season derived tables ------------------------------------------ */
   const ppg = (r) => r.pf / (r.w + r.l);
+  /* ══ 🚽 THE CUM BOWL DECIDES 11th AND 12th ═══════════════════════════════
+     🚨 THE LEAGUE'S OWN RULE OVERRIDES ESPN'S LADDER, AND IT IS THE OWNER'S
+     CALL (v79): *"losing the cum bowl does make u finish last. We DO NOT CARE
+     about any consolidation bracket games besides the cum bowl. If I need
+     them to sort the final standings then fine but 11th and 12th are decided
+     in the cum bowl."*
+     🚨 **ESPN DISAGREES IN 9 OF 13 SEASONS AND THAT WAS PUT TO HIM BEFORE A
+     ROW MOVED.** ESPN settles 11th/12th with `GmC9`, the ladder's last game,
+     so its pages have Hurd last in 2022 while the Cum Bowl loser that year is
+     CC. He was shown that collision, in that season, off his own screenshot,
+     and chose the Cum Bowl. **The transcribed data is untouched** — `rows`
+     still arrives exactly as ESPN published it — and the league's rule is
+     applied here, once, in the open, where a law can check it and one line
+     can undo it. Hand-editing thirteen row arrays would have destroyed the
+     evidence the archive was built from to record a convention.
+     ⚠️ **THE SHARP EDGE, STATED RATHER THAN DISCOVERED LATER:** the Cum Bowl
+     WINNER is 11th even when they went on to win the whole ladder. Gotch won
+     the 2023 Cum Bowl and then GmC5 and GmC7, which ESPN scores 7th; here he
+     is 11th. Same for McD in 2021 (ESPN 8th) and Christel in 2024 (ESPN 8th).
+     That is what "11th and 12th are decided in the cum bowl" means, and it is
+     one `return` away from being reversed if he wants it softened.
+     ⚠️ **Everyone else keeps ESPN's order.** The other four consolation teams
+     slide up into 7-10 in the relative order the ladder gave them, and 1-6
+     are not touched at all — the championship bracket is not in dispute. */
+  const cbPlaced = (s) => {
+    const c = CUMBOWL.find((x) => x.yr === s.yr);
+    if (!c || !isFinal(s)) return s.rows;
+    const w = s.rows.find((r) => r.t === cbWinner(c));
+    const l = s.rows.find((r) => r.t === cbLoser(c));
+    /* Both must be in the season, or leave the published order alone rather
+       than build a 12-row table out of 11 rows and a guess. */
+    if (!w || !l) return s.rows;
+    return [...s.rows.filter((r) => r !== w && r !== l), w, l];
+  };
   const SEASON = LH.map((s) => {
-    const rows = s.rows.map((r, i) => ({
+    const rows = cbPlaced(s).map((r, i) => ({
       ...r, place: isFinal(s) ? i + 1 : null, mgr: mgrOf(r.t), yr: s.yr,
       ppg: ppg(r), papg: r.pa / (r.w + r.l), diff: r.pf - r.pa,
       pct: r.w / (r.w + r.l),
@@ -906,6 +989,18 @@
      5th-place game and a semi-final printed the same word on a head-to-head
      row. Every meeting still counts as a meeting; the label says which. */
   const MEET = PLAYOFF_GAMES.map((g) => ({ ...g, kind: g.br === 'C' ? (g.rd === 'GmC3' ? 'cb' : 'con') : g.br === 'WC' ? 'plc' : g.rd === 'FINAL' ? 'fin' : g.rd === 'R2' ? 'f4' : 'r1' }));
+  /* ⚠️ Only the 2025 reconstruction can land here: every other Cum Bowl IS a
+     `GmC3` row above and is already in `seen`.
+     🚨 **THIS IS WHERE THE TWO DEFINITIONS WERE VISIBLY DISAGREEING, AND NO
+     ROW WAS EVER DUPLICATED** — checked, because the first draft of this
+     comment asserted a duplicate and the data said otherwise. `kind` above
+     has tagged `GmC3` as `'cb'` since v1 and v66 never touched it, so from
+     v66 to v78 a head-to-head row called 2022's *Slob on my Cobb v London
+     Silly Willies* a Cum Bowl while the Cum Bowl tab showed *Slob on my Cobb
+     v Return Of The Mac*. **The head-to-head was right for thirteen versions
+     and nothing could tell**, because the totals it feeds (meetings, playoff
+     scores) are the same either way. `checks.js` ties the two together now:
+     the `cb` meetings must be exactly the `CUMBOWL` games. */
   CUMBOWL.forEach((c) => { const k = c.yr + '|' + [c.s11, c.s12].sort().join('|');
     if (!seen.has(k)) { seen.add(k); MEET.push({ yr: c.yr, br: 'C', rd: 'GmC3', kind: 'cb', a: c.s12, as: c.p12, b: c.s11, bs: c.p11 }); } });
   LH.forEach((s2) => { if (!s2.final) return; const k = s2.yr + '|' + [s2.final.w, s2.final.l].sort().join('|');
@@ -999,11 +1094,13 @@
   const dot = (k) => { const [c, l] = SRC[k]; return `<em class="fh-dot ${c}" title="${l}">${l}</em>`; };
   const PO_YRS = new Set(PLAYOFF_GAMES.map((g) => g.yr)).size;
   /* ⚠️ "plus the 13 Cum Bowls" DOUBLE-COUNTED, and v66 is what made it
-     visible. The Cum Bowl is a bracket game — `GmC9` — so twelve of the
-     thirteen are already inside `PLAYOFF_GAMES.length`. It read that way
-     before v66 too (the old Cum Bowl was `GmC3`, equally already counted);
-     what changed is that the archive now states the relationship instead of
-     keeping a second hand-typed list that merely happened to duplicate one.
+     visible. The Cum Bowl is a bracket game — `GmC3` — so twelve of the
+     thirteen are already inside `PLAYOFF_GAMES.length`. ⚠️ This has been true
+     under BOTH definitions, which is exactly why the double-count survived so
+     long: the sentence was wrong about an amount rather than about a game, so
+     moving the game (v66) and moving it back (v79) neither broke nor fixed
+     it. What ended it is that the archive derives the list instead of keeping
+     a second hand-typed one that merely happened to duplicate the first.
      Only the 2025 reconstruction is genuinely extra. */
   const CB_EXTRA = CUMBOWL.filter((c) => c.recon).length;
   const PO_NOTE = `⚠️ <b>Playoff games only.</b> The archive has final standings and playoff brackets — <b>no regular-season schedule</b> — so this covers the ${PLAYOFF_GAMES.length} bracket games across ${PO_YRS} seasons${CB_EXTRA ? `, plus ${CB_EXTRA} reconstructed Cum Bowl${CB_EXTRA === 1 ? '' : 's'}` : ''}. It is not a career record.`;
@@ -1129,7 +1226,7 @@
         <div class="fh-med-v${a.cbA ? ' app' : ' zero'}">${a.cbA || '–'}</div>
         <div class="fh-med-v${a.cb ? ' cb' : ' zero'}">${a.cb || '–'}</div>
       </div>`).join('')}
-      <div class="fh-med-leg">Medals are the <b>playoff</b> finish; the W-L under each name is the <b>regular season</b>. <b>CB</b> = Cum Bowls played · <b>🚽</b> = Cum Bowls lost. Playing one means you finished in the bottom two; losing one makes you the league's worst. Tap a name for that manager's full career.</div>
+      <div class="fh-med-leg">Medals are the <b>playoff</b> finish; the W-L under each name is the <b>regular season</b>. <b>CB</b> = Cum Bowls played · <b>🚽</b> = Cum Bowls lost. Playing one means you were one of the league's two worst seeds that year; losing one makes you that season's last-place team. Tap a name for that manager's full career.</div>
     </div>`;
   }
 
@@ -1464,7 +1561,7 @@
         <span class="fh-fr-f">${a.f4 ? `${a.f4} final four${a.f4 > 1 ? 's' : ''}` : '<i>no final fours</i>'}${a.fin ? ` · ${a.fin} final${a.fin > 1 ? 's' : ''}` : ''}</span>
         <span class="fh-fr-g">${a.t1 ? `<span class="mono">${a.t1}</span> won` : '<i>none won</i>'}</span>
       </div>`).join('')}
-      <p class="ffp-cap"><b>The final four is places 1-4</b>: the two teams that lose in the final four play each other for 3rd, so the four left after round one <b>are</b> the top four finishers. Verified against every bracket on file — all ${SEASON.length} seasons.<br><br>Six teams make the playoffs, so getting to the last four is the cut that means something. This is a count of <b>finishes</b>, not a record: the championship-bracket <b>win-loss record</b> is a different population and lives on <b>Playoff appearances</b> under ${subName('led')}. Placement games and the consolation ladder decide places rather than records — that is how the Cum Bowl is settled — and every game in them is kept as a meeting, never totalled into a W-L.</p>
+      <p class="ffp-cap"><b>The final four is places 1-4</b>: the two teams that lose in the final four play each other for 3rd, so the four left after round one <b>are</b> the top four finishers. Verified against every bracket on file — all ${SEASON.length} seasons.<br><br>Six teams make the playoffs, so getting to the last four is the cut that means something. This is a count of <b>finishes</b>, not a record: the championship-bracket <b>win-loss record</b> is a different population and lives on <b>Playoff appearances</b> under ${subName('led')}. Placement games and the consolation ladder decide places rather than records — that is how 7th to 10th are settled, with the Cum Bowl taking 11th and 12th — and every game in them is kept as a meeting, never totalled into a W-L.</p>
     </div>`;
   }
 
@@ -1621,13 +1718,15 @@
       const out = [];
       app.forEach((a) => out.push({ id: 'cbking', t: 'cb', m: a.m, w: 60 + a.cbA * 5, src: 'po',
         head: `${nm(a.m)} ${vb(a.m, 'have', 'has')} played ${pl(a.cbA, 'Cum Bowl')}, more than anyone${alsoTxt(tiedWith(app, a.m))}.`,
-        /* 🚨 "also the record" WAS SAID AS SOLE POSSESSION AND v66 MADE IT
-           FALSE. With the Cum Bowl defined as the 11/12 game, five managers
-           share the loss record at 2 — so the same clause was about to print
-           on five cards, each claiming the record. That is the app's oldest
-           storyline rule (v2: a superlative that fires twice is just wrong),
-           and this clause was the one place that never went through
-           `alsoTxt`. The appearances half beside it always did. */
+        /* 🚨 "also the record" IS GUARDED, AND IT HAS TO STAY GUARDED EVEN
+           THOUGH TODAY'S DATA DOES NOT NEED IT. Under v66's definition five
+           managers shared the loss record at 2, so the clause was about to
+           print on five cards each claiming it — the app's oldest storyline
+           rule broken (v2: a superlative that fires twice is just wrong), in
+           the one place that had never gone through `alsoTxt`. v79 puts Buley
+           back on 4 alone, so the guard goes quiet; **that is exactly when a
+           guard gets deleted as dead code and exactly why it must not be.**
+           One season is all it takes to tie a record. */
         body: `${lost.some((x) => x.m === a.m) ? `${vb(a.m, 'You have', 'And ' + nm(a.m) + ' has')} lost ${a.cb} of them${lost.length > 1 ? '' : ' — also the record'}. ` : ''}${a.t1 ? `There is a championship in there too.` : `${vb(a.m, 'You have', 'That is')} no title to set against it.`}` }));
       return out;
     },
@@ -1649,29 +1748,31 @@
       });
     },
 
-    /* ── never in the bottom two ─────────────────────────────────────────
-       🚨 `own: true` SINCE v66, AND THE REASON IS THAT THE FINDING GOT
-       WEAKER. It was "never last and never even a bottom-two SEED" — one
-       manager in thirteen years, a real distinction, and it earned a slot on
-       the league roll-call. Redefining the Cum Bowl as the 11/12 game turned
-       it into "never finished 11th or 12th", which two managers clear and
-       which mostly restates being good: it printed **"McD has never finished
-       in the bottom two … with 5 finals and 4 titles"**, a card whose own
-       body argues that its headline is not the story. It took the roll-call
-       slot off "McD is the unluckiest team in the league" to do it, and put
-       a second identical heading next to it for Gotch.
-       ⚠️ So the card is still true and still on those two managers' own
-       pages, where "you have never finished in the bottom two" is a fine line
-       about you — it just stops outranking a better card about the same
-       person on the one screen that is a roll-call of the league (v15's
-       rule, reached from the other direction: there the owner picked the
-       better card, here the data demoted the duller one). */
+    /* ── never last, never a play-in ──────────────────────────────────────
+       🚨 `own: true` WAS ADDED IN v66 AND IS REMOVED IN v79, BECAUSE THE ONLY
+       REASON FOR IT WAS THE WRONG DATA. v66's own note said so in as many
+       words — *"not an owner's preference between two cards, but a detector
+       whose finding weakened when the Cum Bowl was redefined"* — and the
+       redefinition is what has just been undone. Under `GmC9` this read
+       "never finished 11th or 12th", which is mostly a restatement of being
+       good and fired for three managers, one of them with 5 finals and 4
+       titles. Under `GmC3` it is back to what it was: never last AND never
+       once a bottom-two seed in thirteen years, which exactly one manager in
+       the league clears.
+       ⚠️ **This is the one `own` flag that was data-driven, and it is the one
+       that comes off.** The other three are the owner's calls between two
+       cards about the same person (v15, v16, v18) and are untouched —
+       `checks.js` still records them by id so they cannot be quietly undone.
+       ⚠️ The uniqueness claim in the body is DERIVED from how many managers
+       clear it, not typed: v65 hard-coded "The only manager with both" and it
+       would have gone on saying "only" the day a second one qualified. */
     function cleanFloor() {
       const n = SEASON[0].rows.length;
-      return ALL.filter((a) => a.seasons >= 8 && !a.cbA && !a.yrs.some((r) => r.place === n)).map((a) => ({
-        id: 'floor', t: 'place', m: a.m, w: 62, src: 'mix', own: true,
-        head: `${nm(a.m)} ${vb(a.m, 'have', 'has')} never finished in the bottom two.`,
-        body: `Never last, never in a Cum Bowl, across ${a.seasons} seasons — with ${pl(a.fin, 'final')} and ${a.t1 ? pl(a.t1, 'title') : 'no title'}.` }));
+      const clean = ALL.filter((a) => a.seasons >= 8 && !a.cbA && !a.yrs.some((r) => r.place === n));
+      return clean.map((a) => ({
+        id: 'floor', t: 'place', m: a.m, w: 62, src: 'mix',
+        head: `${nm(a.m)} ${vb(a.m, 'have', 'has')} never finished last or played a Cum Bowl.`,
+        body: `${clean.length === 1 ? 'The only manager in the league with both' : `One of ${pl(clean.length, 'manager')} with both`}, across ${pl(a.seasons, 'season')} — with ${pl(a.fin, 'final')} and ${a.t1 ? pl(a.t1, 'title') : 'no title'}.` }));
     },
 
     /* ── the January collapse, and its opposite ─────────────────────────── */
@@ -2251,24 +2352,43 @@
        (`lgPpg`), never against a 13-year average: the league scored 90.6 a
        game in 2013 and 108.5 in 2018, so a flat baseline would report the era
        rather than the game. That is the `relPpg` rule the detectors follow. */
-    const cbW = CUMBOWL.reduce((a, c) => a + c.p11, 0) / CUMBOWL.length;
-    const cbL = CUMBOWL.reduce((a, c) => a + c.p12, 0) / CUMBOWL.length;
+    /* ⚠️ Off `cbWinPts`/`cbLosePts`, never off `p11`/`p12` — those are the
+       SEEDS since v79, and the 12 seed wins these as often as not. Reading
+       the winner's average out of the 11-seed column would have been v66's
+       collapse of seeding and result surviving in the one sentence that
+       quotes both numbers. */
+    const cbW = CUMBOWL.reduce((a, c) => a + cbWinPts(c), 0) / CUMBOWL.length;
+    const cbL = CUMBOWL.reduce((a, c) => a + cbLosePts(c), 0) / CUMBOWL.length;
     const cbGap = CUMBOWL.reduce((a, c) => a + (c.p11 + c.p12) / 2
       - SEASON.find((x) => x.yr === c.yr).lgPpg, 0) / CUMBOWL.length;
+    /* 🚨 THE HEADLINE IS CHOSEN BY THE NUMBERS, NOT TYPED, AND v79 IS WHY.
+       It read "Nobody scores in these" — true of `GmC9`, where two spent
+       teams meet in week 17 and come in 13.5 under the league. Round one is
+       week 15 with full rosters: these land 3.1 under, which is nothing, so
+       the old headline became false the moment the data was corrected while
+       every number beside it stayed right. The finding here is the SPLIT —
+       the winner outscores the loser by more than either misses the league
+       by — so the sentence is picked from that comparison and cannot outlive
+       it. Both branches are true of the data that selects them. */
     const cbN = played.map((a) => a.cbA);
+    /* ⚠️ `last` is the size of the league, not a typed 12 — the sentence has
+       to stay true if a thirteenth manager ever joins. */
+    const last = SEASON[0].rows.length;
+    const recon = CUMBOWL.filter((c) => c.recon).map((c) => c.yr);
     return `<h2 class="section-title">🚽 The Cum Bowl ${tag('po')}</h2>
     <div class="ffp-card">
-      <p class="fh-lead">The two teams that lose their way to the bottom of the consolation bracket meet in its last game. <b>The winner is 11th and the loser is the league's worst.</b></p>
+      <p class="fh-lead">The league's two worst seeds meet on the first weekend of the playoffs — round one of the consolation bracket, straight off the regular season. <b>The loser is the league's worst.</b> Whatever the rest of the ladder does over the next fortnight, ${last}th belongs to whoever loses this.</p>
       <div class="fh-cbt-h"><span>Record</span><span>PLAYED</span><span>LOST</span><span>PTS/G</span></div>
       ${played.map((a) => `<div class="fh-cbt-r${isMe(a.m) ? ' you' : ''}">
         ${tap(a.m, `<b>${esc(a.name)}</b>`)}<span>${a.cbA}</span><span class="${a.cb ? 'neg' : 'pos'}">${a.cb || '0'}</span><span>${a.cbPpg.toFixed(1)}</span>
       </div>`).join('')}
-      ${never.length ? `<div class="fh-cbt-n"><b>Never in the bottom two:</b> ${never.map((a) => esc(a.name)).join(' · ')}</div>` : ''}
-      <p class="ffp-cap"><b>Nobody scores in these.</b> The two teams average
-      ${((cbW + cbL) / 2).toFixed(1)} a game — ${Math.abs(cbGap).toFixed(1)}
-      ${cbGap < 0 ? 'below' : 'above'} what the league was scoring that same
-      season — and it is usually one of them not turning up at all: the
-      winner puts up ${cbW.toFixed(1)}, the loser ${cbL.toFixed(1)}.
+      ${never.length ? `<div class="fh-cbt-n"><b>Never a bottom-two seed:</b> ${never.map((a) => esc(a.name)).join(' · ')}</div>` : ''}
+      <p class="ffp-cap"><b>${cbW - cbL > Math.abs(cbGap) ? 'One of them usually does not turn up.' : 'Nobody scores in these.'}</b>
+      The two teams average ${((cbW + cbL) / 2).toFixed(1)} a game —
+      ${Math.abs(cbGap).toFixed(1)} ${cbGap < 0 ? 'below' : 'above'} what the
+      league was scoring that same season — but they are
+      ${(cbW - cbL).toFixed(1)} apart: the winner puts up ${cbW.toFixed(1)},
+      the loser ${cbL.toFixed(1)}.
       ⚠️ <b>Read a PTS/G beside its own PLAYED.</b> These are
       ${Math.min(...cbN)} to ${Math.max(...cbN)} games each, so most of that
       column is a scoreline or two rather than a scoring average.</p>
@@ -2276,18 +2396,18 @@
     <details class="ffp-card fh-det">
       <summary><b>Every game</b><span>${CUMBOWL.length} seasons</span><i>▾</i></summary>
       <div class="fh-cb-wrap">
-      ${CUMBOWL.map((c) => {
+      ${CUMBOWL.map((c) => {   /* 11 seed on top, 12 below — the seeding, never the result. */
         const s = SEASON.find((x) => x.yr === c.yr);
         const lose = cbLoser(c), win = cbWinner(c);
         const r = (t, p, seed) => { const row = s.rows.find((x) => x.t === t) || { t, mgr: mgrOf(t) };
-          return `<div class="fh-cb-r${t === win ? ' w' : ' lose'}"><i>${seed}</i>${tap(row.mgr, who(row))}<u>${p.toFixed(1)}</u>${t === lose ? '<em>🚽</em>' : ''}</div>`; };
+          return `<div class="fh-cb-r${t === win ? ' w' : ' lose'}"><i>#${seed}</i>${tap(row.mgr, who(row))}<u>${p.toFixed(1)}</u>${t === lose ? '<em>🚽</em>' : ''}</div>`; };
         return `<div class="fh-cb">
           <span class="fh-cb-y">${c.yr}${c.recon ? '<i class="fh-recon">recon</i>' : ''}</span>
           <div class="fh-cb-g">${r(c.s11, c.p11, 11)}${r(c.s12, c.p12, 12)}</div>
         </div>`;
       }).join('')}
       </div>
-      <p class="ffp-cap"><b>This is the last game of the year</b> — the two teams that lost their way to the bottom of the consolation bracket, playing for 11th. Winning it does not make the season good; it makes somebody else the league's worst. <b>${CUMBOWL.filter((c) => c.recon).map((c) => c.yr).join(' and ')} is marked <i>recon</i></b>: Sleeper never paired them, so the two are taken head-to-head on their week-15 scores.</p>
+      <p class="ffp-cap"><b>#11 and #12 are the SEEDS</b> — where the two finished the regular season, which is how they got here. The result then settles the other end: the winner takes 11th and the loser is last, whatever either of them does in the six consolation games that follow. <b>${recon.join(' and ')} ${recon.length === 1 ? 'is' : 'are'} marked <i>recon</i></b>: Sleeper never paired #11 v #12, so the two are taken head-to-head on their real week-15 scores.</p>
     </details>`;
   }
 
