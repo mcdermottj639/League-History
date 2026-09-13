@@ -1686,11 +1686,34 @@
         const cut = Math.ceil(s.rows.length * 0.7);      // bottom third-ish, not a magic 9
         if (prev && prev.place && prev.place >= cut) (by[n.champ.mgr] = by[n.champ.mgr] || []).push({ from: prev.place, a: s.yr, b: n.yr });
       });
+      /* 🚨 "AS A PARTY TRICK" IS A CLAIM ABOUT REPETITION, AND IT HAS TO
+         COUNT (v80). It was written for two worst-to-first titles and shipped
+         as the only wording this detector had — so when v79's Cum Bowl
+         placings left every manager on exactly ONE run, the card went on
+         calling a single off-season a habit, over a body listing one line.
+         The head states what happened when it happened once and keeps the
+         party trick for a manager who genuinely does it again.
+         ⚠️ The single-run head carries NO number, deliberately. The
+         roll-call dedupes two managers making the identical claim by the head
+         with the name taken out (v66) — put the finish in it and "12th to
+         champion" and "11th to champion" stop looking like one claim, and
+         both cards render side by side saying the same thing. The number is
+         in the body, where it is detail rather than the claim. */
+      /* ⚠️ The single-run body says how rare it is LEAGUE-WIDE rather than
+         how many titles this manager has. "One of 4 titles" sat directly
+         above the GOAT card's "with 4 titles" on that manager's own page —
+         one fact printed twice on two adjacent cards, which the `stories()`
+         dedupe fingerprints DECIMALS and cannot see (the v8 rule). */
+      const runsAll = Object.values(by).reduce((x, r) => x + r.length, 0);
       return Object.entries(by).map(([m, runs]) => ({
         id: 'w2f', t: 'title', m, w: 70 + runs.length * 12, src: 'fin',
-        head: `${nm(m)} ${vb(m, 'do', 'does')} worst-to-first as a party trick.`,
+        head: runs.length > 1
+          ? `${nm(m)} ${vb(m, 'do', 'does')} worst-to-first as a party trick.`
+          : `${nm(m)} won a title straight off a bottom-four finish.`,
         body: runs.map((r) => `${ord(r.from)} → champion (${r.a}→${String(r.b).slice(2)}).`).join(' ') +
-          ` ${runs.length} of the ${pl(MGRS[m].t1, 'title')} came straight off a bottom-four finish.`,
+          (runs.length > 1
+            ? ` ${runs.length} of the ${pl(MGRS[m].t1, 'title')} came straight off a bottom-four finish.`
+            : ` Only ${plWord(runsAll, 'title')} in the archive ${runsAll === 1 ? 'has' : 'have'} come from that far down.`),
       }));
     },
 
@@ -1700,8 +1723,19 @@
          cut returned every manager with a 4+ repeat, so Buley (11th x7) and
          the champion (1st x4) BOTH claimed the record on the same page. A
          superlative that fires more than once is just wrong. */
+      /* 🚨 FIRST PLACE IS NOT A RUT, AND IT BELONGS TO `dynasty` (v80).
+         The comment above has always named the risk — "Buley (11th x7) and
+         the champion (1st x4)" — and only `leaders()` kept the champion off
+         the page, because 7 beat 4. v79's Cum Bowl placings took Buley to 4,
+         the tie surfaced, and the roll-call printed "McD has finished 1st
+         four times": the title count, on the slot the owner explicitly moved
+         it OFF in v16 (`dynasty` is `own: true` for exactly that reason).
+         One concept, one number, one place it prints (v14) — so the title
+         count is `dynasty`'s and this detector is about the finish a manager
+         cannot escape, which a championship is not. */
       const best = ALL.map((a) => {
-        const e = Object.entries(ST.places[a.m] || {}).sort((x, y) => y[1] - x[1])[0];
+        const e = Object.entries(ST.places[a.m] || {}).filter(([p]) => +p > 1)
+          .sort((x, y) => y[1] - x[1])[0];
         return e && e[1] >= 4 ? { a, place: +e[0], n: e[1] } : null;
       }).filter(Boolean);
       if (!best.length) return [];
@@ -2197,6 +2231,36 @@
   }
   const storiesFor = (m) => stories().filter((x) => x.m === m);
 
+  /* 🚨 THE DEDUPE KEY MUST NOT DEPEND ON WHO IS READING (v80).
+     `pickStories` skips a manager whose claim another manager has already
+     made, and it keyed on the head with the NAME taken out — which is only
+     ONE of the two things the voice changes. The other is the VERB: *"You do
+     worst-to-first as a party trick"* and *"Woods does worst-to-first as a
+     party trick"* are one claim spelled two ways, so the guard held for every
+     reader except the one person standing in the duplicate. The owner opened
+     his own app and found his card and Woods's making the same claim on the
+     one screen that is meant to be twelve different findings.
+     ⚠️ **And it is invisible to a stranger, which is who every render sweep
+     of this card has ever been.** A guard that only fails for the reader fails
+     for twelve people and nobody testing it.
+     The key is taken from a THIRD-PERSON build of the same detectors rather
+     than from string surgery on a verb — there is no list of verb pairs to
+     keep in step, and a detector added later is covered without being told.
+     Built once and kept: the detectors are pure over the archive, so only the
+     SENTENCES move when the reader does. */
+  let _stNeutral = null;
+  const stKey = (x) => x.m + '\u0000' + x.id + '\u0000' + x.w;
+  function neutralHeads() {
+    if (_stNeutral) return _stNeutral;
+    const wasMe = ME, wasCache = _stCache, wasFor = _stFor;
+    ME = null; _stCache = null; _stFor = '\u0000';
+    const map = {};
+    stories().forEach((x) => { map[stKey(x)] = x.head; });
+    ME = wasMe; _stCache = wasCache; _stFor = wasFor;
+    _stNeutral = map;
+    return map;
+  }
+
   /* 🚨 WHAT THE CARD SHOWS, and it is NOT just the top N.
      `stories()` ranks 18 storylines by weight and the card used to print
      `slice(0, 10)` — which covered 8 of the 12 managers. So four people
@@ -2252,7 +2316,12 @@
   function pickStories() {
     const all = stories();                 // already ranked by weight
     const best = {}, said = new Set();
-    const claim = (x) => x.head.replace(nm(x.m), '').replace(realNm(x.m), '').trim();
+    /* ⚠️ Off the third-person head (see `neutralHeads`), never off `x.head` —
+       the reader's own card is the one the old key could not see. With the
+       voice out of it `nm` IS `realNm`, so stripping the name is the whole of
+       what is left to strip. */
+    const heads = neutralHeads();
+    const claim = (x) => (heads[stKey(x)] || x.head).replace(realNm(x.m), '').trim();
     const take = (x) => { best[x.m] = x; said.add(claim(x)); };
     all.forEach((x) => { if (!x.own && !best[x.m] && !said.has(claim(x))) take(x); });
     all.forEach((x) => { if (!best[x.m] && !said.has(claim(x))) take(x); });

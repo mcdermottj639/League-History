@@ -461,6 +461,77 @@ window.LeagueHistory.roster().forEach((r) => {
   console.log(`  ${dupMark()} roll-call: ${card.length} cards, ${seen.size} distinct claims`);
 }
 
+/* 🚨 THE ROLL-CALL IS THE SAME TWELVE FINDINGS WHOEVER IS READING (v80),
+   AND THE LAW ABOVE COULD NOT SEE THAT IT WASN'T. It runs as a STRANGER, like
+   every render sweep this card has ever had, and it compares heads with only
+   the NAME stripped — so a duplicate that exists only in second person was
+   invisible to it twice over. `pickStories` keyed on the same string, so *"You
+   do worst-to-first as a party trick"* and *"Woods does worst-to-first as a
+   party trick"* were two different claims to the guard and one claim to the
+   reader, and the owner found his own card and Woods's making it side by side.
+   ⚠️ **Asserted as an OUTCOME, not by normalising the sentence.** A law that
+   stripped the verb the same way the code does would be the code agreeing with
+   itself. What has to be true is simpler and permanent: the voice is the only
+   thing a reader changes, so the twelve findings must be the same twelve —
+   same manager, same detector — for all twelve of them as for a stranger.
+   Fault-injected by keying `claim()` back on `x.head`: it names McD. */
+{
+  const voiceMark = block();
+  window.LeagueHistory.setMe(null);
+  const keys = () => window.LeagueHistory._cardStories().map((x) => x.m + '/' + x.id).sort();
+  const asStranger = keys();
+  window.LeagueHistory.roster().forEach((r) => {
+    window.LeagueHistory.setMe(r.m);
+    const theirs = keys();
+    const gained = theirs.filter((k) => !asStranger.includes(k));
+    const lost = asStranger.filter((k) => !theirs.includes(k));
+    if (gained.length || lost.length) {
+      console.log(`  ❌ the roll-call changes for ${r.name}: ${gained.join(', ') || 'nothing'} in place of ${lost.join(', ') || 'nothing'}`); bad++;
+    }
+  });
+  window.LeagueHistory.setMe(null);
+  console.log(`  ${voiceMark()} roll-call: the same ${asStranger.length} findings for every reader, voice aside`);
+}
+
+/* 🚨 A HEAD THAT CLAIMS A HABIT MUST HAVE THE INSTANCES BEHIND IT (v80).
+   "does worst-to-first as a party trick" was the only wording this detector
+   had, written when one manager had done it twice. v79's Cum Bowl placings
+   left three managers on exactly ONE run each, and the card went on calling a
+   single off-season a habit over a body listing one line. Counted off the body
+   the reader sees, not off the detector's own array. */
+{
+  const trickMark = block();
+  window.LeagueHistory.setMe(null);
+  const w2f = window.LeagueHistory._stories().filter((x) => x.id === 'w2f');
+  w2f.forEach((x) => {
+    const runs = (x.body.match(/→ champion/g) || []).length;
+    const habit = /party trick/.test(x.head);
+    if (habit && runs < 2) { console.log(`  ❌ "${x.m}" is called a party trick over ${runs} run`); bad++; }
+    if (!habit && runs > 1) { console.log(`  ❌ "${x.m}" has ${runs} worst-to-first runs and the head says one-off`); bad++; }
+  });
+  console.log(`  ${trickMark()} worst-to-first: ${w2f.length} cards, each claiming only what its body shows`);
+}
+
+/* 🚨 A REPEATED FIRST PLACE IS THE TITLE COUNT, AND THAT CARD IS
+   `dynasty` (v80). `stuckAt` is about a finish a manager cannot escape; a
+   championship is not one. Its own comment has always named the risk — "Buley
+   (11th x7) and the champion (1st x4)" — and only `leaders()` kept the
+   champion off, because 7 beat 4. v79 took Buley to 4, the tie surfaced, and
+   the roll-call printed "McD has finished 1st four times" into the slot the
+   owner moved the title count OFF in v16 (`dynasty` is `own: true` for exactly
+   that reason). One concept, one number, one place it prints (v14). */
+{
+  const stuckMark = block();
+  window.LeagueHistory.setMe(null);
+  const st = window.LeagueHistory._stories().filter((x) => x.id === 'stuck');
+  st.forEach((x) => {
+    if (/finished 1st/.test(x.head)) {
+      console.log(`  ❌ "${x.m}" is stuck at 1st: that is the title count, and it belongs to the GOAT card`); bad++;
+    }
+  });
+  console.log(`  ${stuckMark()} stuck-at: ${st.length} card(s), none of them a title count in disguise`);
+}
+
 /* 🚨 An `own` story is kept OFF the league card and must still be ON that
    manager's own pages — both halves, because either one failing silently is
    the whole point of the flag. Asserted against the RENDERED You page and the

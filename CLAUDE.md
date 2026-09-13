@@ -1601,6 +1601,11 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   which is exactly why it is asserted. ⚠️ The first law is about `power.html`
   only — `power.css` is legitimately in `index.html`, because the rankings view
   reuses the Lab's row styling so a member reads what the commissioner built. It
+  holds the **storyline voice laws** (v80 — the roll-call is the same twelve
+  findings for every reader as for a stranger, because a duplicate that exists
+  only in second person is invisible to a law that runs as nobody; a head
+  claiming a habit has more than one instance in its body; and no `stuckAt`
+  card is a title count in disguise). It
   runs the mascot law (v49 — every manager's team glyph is read off the
   RENDERED You heading and profile and must match, and a reader who has picked
   nobody must get the neutral 👤 rather than any manager's team), the
@@ -1969,6 +1974,54 @@ something computed is wrong the first time somebody changes it.
   title bracket", then "3 scoring titles and no ring"). **The owner caught the
   first; fixing that instance produced the second.** Fix the rule, not the
   instance. `checks.js` fails if any manager holds two slots.
+- 🚨 **TWO MANAGERS MUST NOT MAKE THE SAME CLAIM, AND THE GUARD FOR IT COULD
+  NOT SEE THE READER (v80).** `pickStories()` skips a manager whose claim
+  another manager has already made (v66), keyed on the head with the NAME
+  stripped — which is only ONE of the two things the voice changes. The other
+  is the VERB: *"You do worst-to-first as a party trick"* and *"Woods does
+  worst-to-first as a party trick"* are one claim spelled two ways, so the
+  guard held for everybody except the person standing in the duplicate. The
+  owner opened his own app and found his card and Woods's making the same
+  claim, on the one screen that is meant to be twelve different findings.
+  ⚠️ **It was invisible to a stranger, which is who every render sweep and
+  every law on this card had ever been.** Measured on v79's own render: three
+  managers each saw a duplicate on their own phone and a stranger saw none.
+  - **The key comes from a THIRD-PERSON build of the same detectors**
+    (`neutralHeads`), not from string surgery on a verb — there is no list of
+    verb pairs to keep in step and a detector added later is covered without
+    being told. Built once and kept: the detectors are pure over the archive,
+    so only the SENTENCES move when the reader does.
+  - 🚨 **The law for it asserts an OUTCOME, never a normalised sentence.** A
+    law that stripped the verb the same way the code does would be the code
+    agreeing with itself. What has to be true is simpler and permanent: **the
+    roll-call is the same twelve findings — same manager, same detector — for
+    all twelve readers as for a stranger.** Fault-injected back to v79's
+    keying, it names McD, Woods and Gotch.
+- 🚨 **A HEAD THAT CLAIMS A HABIT MUST HAVE THE INSTANCES BEHIND IT (v80).**
+  `worstToFirst` had exactly one wording — *"does worst-to-first as a party
+  trick"* — written when one manager had done it twice. v79's Cum Bowl
+  placings left **three** managers on exactly ONE run each, and the card went
+  on calling a single off-season a habit over a body listing one line. The
+  head states what happened when it happened once and keeps the party trick
+  for a manager who genuinely does it again.
+  ⚠️ **The single-run head carries NO number, deliberately.** Put the finish
+  in it and "12th to champion" and "11th to champion" stop looking like one
+  claim to the dedupe above, and the duplicate this version exists to end
+  comes straight back. The number is in the body, where it is detail rather
+  than the claim.
+  ⚠️ And the body says how rare it is LEAGUE-WIDE rather than how many titles
+  that manager has: *"One of 4 titles"* sat directly above the GOAT card's
+  *"with 4 titles"* on his own page — one fact on two adjacent cards, which
+  the `stories()` dedupe fingerprints DECIMALS and cannot see.
+- 🚨 **A REPEATED FIRST PLACE IS THE TITLE COUNT, AND THAT CARD IS `dynasty`
+  (v80).** `stuckAt` is about a finish a manager cannot escape; a championship
+  is not one. Its own comment has named the risk since v2 — *"Buley (11th x7)
+  and the champion (1st x4)"* — and only `leaders()` kept the champion off the
+  page, because 7 beat 4. v79's placings took Buley to 4, the tie surfaced,
+  and the roll-call printed *"McD has finished 1st four times"* into the slot
+  the owner explicitly moved the title count OFF in v16 (`dynasty` is
+  `own: true` for exactly that reason). **One concept, one number, one place
+  it prints** (v14), so `stuckAt` skips 1st and `checks.js` asserts it.
 - **`own: true` keeps a story on that manager's OWN pages only (v15).** Not
   every finding deserves one of fourteen slots on the league's roll-call —
   a second card that makes the same case about the same manager in a duller
@@ -2298,6 +2351,88 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
 
+- **v80 — the roll-call said the same thing twice, and only the reader could
+  see it (13 Sep 2026)** — the owner, with the Records storylines on screen:
+  *"Remove the fact that I have the party trick line and woods does in the
+  main storylines in record. Mine was unluckiest which was fine I never asked
+  u to change those."*
+  - 🚨 **HE IS RIGHT ON BOTH HALVES, AND v79 CAUSED BOTH — AS A KNOCK-ON OF
+    THE PLACINGS, NOT OF ANYTHING ANYBODY EDITED.** Moving the Cum Bowl back
+    to `GmC3` re-placed 41 finishes across 9 seasons, and two detectors read
+    placings: `worstToFirst` picked up **two new managers** (McD 11th in 2021
+    → champion in 2022, Gotch 11th in 2023 → champion in 2024) and lost one of
+    Woods's two runs, and `stuckAt` surfaced a tie it had never reached. **The
+    data was right, the detectors were right, and the roll-call was wrong** —
+    which is the derivation rule's standing bill: a card that re-derives will
+    re-derive into a sentence nobody chose.
+  - 🚨 **THE DUPLICATE WAS INVISIBLE TO EVERY LAW AND EVERY SWEEP, BECAUSE ALL
+    OF THEM READ THE APP AS A STRANGER.** `pickStories` has skipped a manager
+    whose claim another manager already made since v66, keyed on the head with
+    the NAME taken out — which is only ONE of the two things the voice
+    changes. The other is the VERB. *"You do worst-to-first as a party trick"*
+    and *"Woods does worst-to-first as a party trick"* are one claim spelled
+    two ways, so **the guard held for everybody except the person standing in
+    the duplicate.** Measured on v79's own render: McD, Woods and Gotch each
+    saw two cards making one claim on their own phone; a stranger saw one.
+    - **The key is taken from a THIRD-PERSON build of the same detectors**
+      rather than from string surgery on a verb — no list of verb pairs to
+      keep in step, and a detector added later is covered without being told.
+    - 🚨 **The law asserts an OUTCOME, not a normalised sentence**, because a
+      law that stripped the verb the way the code does would be the code
+      agreeing with itself: **the roll-call is the same twelve findings — same
+      manager, same detector — for every reader as for a stranger.** The v66
+      law is left exactly where it is and stays ✅ through the injection,
+      which is the clearest possible statement of what it could not see.
+    - ⚠️ **And the first fault injection did not reproduce the bug**, because
+      the new head is verb-free and the OLD key already dedupes it. A law
+      whose failure path has never run is not a law (v39), so it was injected
+      against the real v79 state — both the old key and the verb back in the
+      head — and it names all three managers.
+  - 🚨 **"AS A PARTY TRICK" IS A CLAIM ABOUT REPETITION AND NOBODY REPEATS IT
+    ANY MORE.** It was the detector's only wording, written when one manager
+    had done it twice; v79 left all three on exactly ONE run, so the card
+    called a single off-season a habit over a body listing one line. The head
+    says what happened when it happened once and keeps the party trick for a
+    manager who does it again.
+    ⚠️ **The single-run head carries no number, deliberately** — put the
+    finish in it and "12th to champion" and "11th to champion" stop looking
+    like one claim to the dedupe, and the duplicate comes straight back.
+    ⚠️ And its body says how rare this is LEAGUE-WIDE rather than how many
+    titles that manager has: the first cut read *"One of 4 titles"* directly
+    above the GOAT card's *"with 4 titles"* on his own page — one fact on two
+    adjacent cards, which the `stories()` dedupe fingerprints DECIMALS and
+    cannot see (v8).
+  - 🚨 **AND FIXING ONLY THE CARD HE POINTED AT WOULD HAVE MOVED THE FAULT
+    RATHER THAN ENDED IT — WHICH IS THE WHOLE OF WHY HIS SECOND SENTENCE
+    MATTERS.** With the duplicate gone his slot fell to `stuckAt`, reading
+    **"You have finished 1st four times"** — the title count, in the slot the
+    owner himself moved the title count OFF in v16 (`dynasty` is `own: true`
+    for exactly that reason). `stuckAt`'s own comment has named the risk since
+    v2, *"Buley (11th x7) and the champion (1st x4)"*, and only `leaders()`
+    kept the champion off the page because 7 beat 4; v79 took Buley to 4 and
+    the tie surfaced. **A championship is not a rut**, so the detector skips
+    1st and the title count stays `dynasty`'s — one concept, one number, one
+    place it prints (v14). *"Mine was unluckiest"* is what the card reads
+    again, and it is reached by two rules rather than by naming him.
+  - ⚠️ **Nothing in `DETECT` names a manager and nothing here changed that.**
+    Both fixes are about a shape: a claim two people can make, and a finish
+    that is not a rut. McD's worst-to-first is still detected, still true, and
+    still on his own You page and profile — it is only off the roll-call,
+    which is what `pickStories` has done with a shared claim since v66.
+  - **Verified:** `node --check` on every JS file; `node checks.js` green with
+    all three new laws fault-injected and each naming its own fault (and the
+    voice law injected against the true v79 state, not a half of it); the
+    twelve-reader sweep in node showing one card per manager, the same twelve
+    findings for all twelve readers, and no duplicate claim for anybody; and a
+    render of the real `index.html` over HTTP at 320 and 390px across
+    {Records, You, Honors} × {a stranger, McD, Woods, Gotch, Buley} — no
+    horizontal overflow, no clipped text, no type under 9px, no tap target
+    under 38px, no template hole, no rendered comment, no page error.
+    ⚠️ **The sweep was fault-injected by pointing it at a v79 checkout served
+    on its own port**, where it reports the duplicate for McD, Woods and Gotch
+    and nothing for a stranger — which is both the proof it can fail and the
+    measurement of the bug.
+
 - **v79 — the Cum Bowl is round one, and it decides last place (13 Sep 2026)**
   — the owner, with the whole 2022 consolation bracket on screen beside the
   app: *"Pic 2 is the actual cum bowl. U have it as the 3rd of consolidation
@@ -2389,6 +2524,12 @@ stale entry written in the present tense reads as current to anyone who greps.
     reported failures, every one about the harness. It re-queries now. **A
     sweep is only as trustworthy as its own setup**, which is v67's lesson and
     the third version running it has had something to say.
+  - ⚠️ **KNOCK-ONS IN THE STORYLINES, FOUND IN v80 AND NOT HERE.** Re-placing
+    41 finishes moved two detectors that read placings — `worstToFirst` gained
+    two managers and lost one of Woods's runs, `stuckAt` surfaced a tie — and
+    the roll-call started printing one claim twice. **Every law and every
+    sweep in this version was green over it, because all of them read the app
+    as a stranger and the duplicate only existed in second person.** See v80.
   - **Verified:** 24 Cum Bowl appearances and 11 losses (the v1-v65 figures,
     which the file header comment has said all along and which v66 silently
     contradicted at 25/13); `node --check` on every JS file; `node checks.js`
