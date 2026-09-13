@@ -820,6 +820,43 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       nothing — their leg is saved and their chat line is on screen
       underneath it. Four states, four sentences (checking · this many in ·
       the last list that came through · could not reach it).
+    - 🚨 **THE CHAT BOX DISAPPEARS ONLY WHEN THE PICK IS ACTUALLY OUT** (owner,
+      on the live store: *"Remove that send it to chat part that's big and
+      ugly nobodies ever doing that"*). He is right that it is clutter once
+      the store works — and it is also the ONLY route a leg has when the
+      store is off or the write is refused, so deleting it outright would
+      strand a pick silently, with the reader believing they had sent it.
+      `mineIsUp` asks whether the reader's own code is in the fetched list, so
+      the box renders in exactly the two states where it is the way through.
+      ⚠️ **Derived from the list, never a `sent: true` flag on `lh:pick`** —
+      that would be a second copy of a fact the store holds, and it would go
+      on claiming "sent" after a row was overwritten or the URL changed.
+      ⚠️ A successful `PUT` writes the row into `P.picks` immediately rather
+      than clearing and re-fetching: the 200 IS the confirmation, and clearing
+      first made the box flash back for one frame at the exact moment it had
+      been earned.
+    - 🚨 **THE CACHE IS PRIMED BEFORE THE FIRST PAINT, AND THE ORDER IN
+      `paint` IS LOAD-BEARING.** The first cut read `lh:picks` inside
+      `refreshPicks`, which `paint` calls AFTER `render()` — so the opening
+      paint always drew an empty list, and a cache younger than the 30s TTL
+      then returned early without rendering at all. **Five picks in
+      localStorage and "0 of 12 picks are in" on the screen.** This is the
+      Lab's v25 fault exactly (there the cache existed from v1 and was only
+      used when the fetch FAILED; here it was read and never drawn) — *a
+      fallback and a first choice are different jobs*. `checks.js` asserts it
+      twice, because neither half is enough on its own: the helper works, AND
+      `primePicks` appears before `render()` in `paint`'s source (the v41
+      hash-order precedent).
+    - 🚨 **A REPAINT HAPPENS ONLY WHEN THERE IS NEWS, AND THE FOCUS GUARD
+      COVERS ONLY A CARET.** The first cut skipped any repaint while a BUTTON
+      had focus — which is true of the tab button the reader has just tapped,
+      so **the answer to the very first fetch was thrown away** and the card
+      went on offering the chat box for a pick that was already shared. The
+      v25 rule was aimed at the wrong risk: the unrecoverable harm is a lost
+      caret (INPUT/TEXTAREA), and the thumb risk is removed at the source
+      instead — an answer identical to what is on screen does not render at
+      all (`sameRows`). `force` overrides both, because an explicit Refresh
+      has to clear its own "Checking…" even when nothing changed.
     - ⚠️ **Pulling the list into the ticket is a TAP with a count on it**, not
       a silent merge: it changes what somebody is about to put money on, and
       it reports what it did — including duplicates, which are still reported
@@ -2028,6 +2065,13 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v74 — the chat box goes, and two bugs come with it (13 Sep 2026)** —
+  folded into the v73 entry below, because it is the same feature reaching the
+  owner's phone: the store confirmed working both directions, the chat
+  fallback narrowed to the two states that need it, and the render sweep
+  turning up a discarded first fetch and a cache that was read and never
+  drawn. See the last four bullets of v73.
 
 - **v73 — the picks can land in everybody's app (13 Sep 2026)** — the owner,
   with the "picks travel through the group chat" card on screen: *"That apps
@@ -5438,6 +5482,39 @@ stale entry written in the present tense reads as current to anyone who greps.
     when they open or return to the app, or tap Refresh — not while staring at
     the page. A live socket is what would change that and it is not worth a
     dependency for twelve people picking once a week.
+  - ✅ **CONFIRMED WORKING ON HIS PHONE, both directions.** The who-card read
+    *"Updated just now"* against an empty store (which is the success line —
+    unreachable reads *"Couldn't reach the shared list"*), and saving a pick
+    read *"Saved — the others can see it on their Parlay tab"* with his row
+    appearing under **1 of 12 picks are in**. So CORS from GitHub Pages is
+    fine and both rules are live. **The gap this closed was the only thing
+    the sandbox could not test.**
+  - ⚠️ **Everything below this line shipped as v74**, an hour later, off his
+    read of the live tab — kept in this entry because it is one story.
+  - 🚨 **AND THEN HE ASKED FOR THE CHAT BOX GONE, WHICH FOUND TWO REAL BUGS.**
+    *"Remove that send it to chat part that's big and ugly nobodies ever doing
+    that"* — correct, once the store works it is clutter, and it is also the
+    only route a leg has when the store does not. It renders on `mineIsUp`
+    now (see `parlay.js`), and building that turned up:
+    - **The first fetch's answer was being thrown away.** `quietRender`
+      skipped a repaint while a BUTTON had focus, which is true of the tab
+      button the reader just tapped. Aimed at the wrong risk: the caret is
+      what cannot be recovered, and the thumb problem is better solved by not
+      repainting when nothing changed.
+    - 🚨 **FIVE PICKS IN THE CACHE AND "0 OF 12" ON THE SCREEN.** `paint`
+      rendered before it primed `lh:picks`, and a cache inside the 30s TTL
+      returned early without ever rendering. **The Lab's v25 fault, verbatim,
+      one file over** — a cache that is read and not drawn is not a cache.
+      Found by the render sweep reloading inside the TTL window, which is the
+      switch-away-and-come-back case, i.e. the common one.
+    - ⚠️ **And one of my new laws was vacuous.** "Priming must not load
+      another week's cache" cannot fail, because `syncLegs` already gates on
+      the week — fault injection said nothing, so it was deleted rather than
+      left looking like protection. The v39 rule ("a check whose failure path
+      has never run is not a check") extends to one that has no failure path.
+    - ⚠️ Also tidied in the same pass: the who card said *"0 of 12 picks are
+      in"* and *"Nobody has picked yet"* on one card — one fact twice, the v22
+      shape, which the owner's screenshot made obvious.
   The two routes NOT taken, kept because they are the alternatives if Firebase
   ever has to go:
   - **His own Render backend**, which already exists for the Lab's ESPN data.

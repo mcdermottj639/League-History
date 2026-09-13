@@ -741,6 +741,22 @@
   const syncLegs = (ow) => rowsToLegs(ow.k,
     (P.picks && Number(P.picks.k) === ow.k) ? P.picks.rows : null);
 
+  /* 🚨 "IS MY PICK ON THE SHARED LIST" IS THE QUESTION THE CHAT BOX ANSWERS,
+     AND IT IS DERIVED FROM THE LIST ITSELF (v73, owner: *"Remove that send it
+     to chat part that's big and ugly nobodies ever doing that"*). He is right
+     that with the store live it is clutter — and it is also the ONLY route a
+     pick has when the store is off or the write was refused, so it cannot
+     just be deleted. It renders when the pick is NOT up, which is exactly
+     when it is the way through.
+     ⚠️ Derived rather than flagged: a `saved: true` on `lh:pick` would be a
+     second copy of a fact the store already holds, and it would go on saying
+     "sent" after a manager's row was overwritten or the URL changed. The list
+     is the truth. */
+  const mineIsUp = (ow) => {
+    const me = LH && LH.me();
+    return !!(me && syncOn() && syncLegs(ow).legs.some((g) => g.m === me));
+  };
+
   async function getPicks(base, k) {
     const r = await fetch(weekPath(base, k), { cache: 'no-store' });
     if (!r.ok) throw new Error('http ' + r.status);
@@ -755,6 +771,24 @@
     });
     if (!r.ok) throw new Error('http ' + r.status);
     return true;
+  }
+
+  /* 🚨 THE CACHE IS READ BEFORE THE FIRST PAINT, NOT DURING THE REFRESH, AND
+     THAT DISTINCTION IS THE WHOLE POINT OF HAVING ONE. The first cut primed
+     `P.picks` inside `refreshPicks`, which `paint()` calls AFTER `render()` —
+     so the opening paint always drew an empty list, and a cache younger than
+     the TTL then returned early without rendering at all. Result: **five
+     picks sitting in localStorage and "0 of 12 picks are in" on the screen**,
+     for the whole time the reader was looking at it.
+     ⚠️ **This is the Lab's v25 fault exactly** — there the cache existed from
+     v1 and was only ever used when the fetch FAILED; here it was read and
+     never drawn. Both are "a fallback and a first choice are different jobs".
+     Found by the render sweep, which reloads inside the TTL window — the
+     switch-away-and-come-back case, which is the common one. */
+  function primePicks(ow) {
+    if (!ow || !syncOn()) return;
+    const c = read(SYNC_KEY);
+    if (c && Number(c.k) === ow.k) P.picks = c;
   }
 
   /* ⚠️ Cache first, then revalidate — the v25/v42 shape, for the same reason:
@@ -778,11 +812,16 @@
        reports the opposite of what it just did is worse than one that
        reports nothing (v30). Found by reading the flow, not by measuring. */
     const done = () => (force ? render() : quietRender());
+    const before = (P.picks && Number(P.picks.k) === ow.k) ? P.picks.rows : null;
     getPicks(base, ow.k).then((obj) => {
       P.busy = false; P.syncErr = false;
       if (P.where === 'who') say('', 'who');
-      P.picks = { k: ow.k, rows: (obj && typeof obj === 'object') ? obj : {}, at: Date.now() };
+      const rows = (obj && typeof obj === 'object') ? obj : {};
+      const news = !before || !sameRows(before, rows);
+      P.picks = { k: ow.k, rows, at: Date.now() };
       write(SYNC_KEY, P.picks);
+      /* Nothing new and nobody asked: leave the page alone entirely. */
+      if (!force && !news) return;
       done();
     }).catch((e) => {
       P.busy = false; P.syncErr = true;
@@ -792,14 +831,31 @@
     });
   }
 
-  /* ⚠️ A repaint while somebody is typing or mid-tap moves the control under
-     their thumb — the Lab's v25 rule, and it bites harder here than on the
-     board: these land unprompted, seconds apart, while eleven other people
-     are picking. */
+  /* 🚨 REPAINT ONLY WHEN THERE IS NEWS, AND NEVER EAT A CARET — and the first
+     cut of this got it backwards in a way only the browser showed. It skipped
+     any repaint while a BUTTON had focus, which is true of the tab button the
+     reader just tapped, so **the answer to the very first fetch was thrown
+     away**: the card stayed on its pre-fetch state and went on offering the
+     chat box for a pick that was already shared. The v25 rule ("do not move a
+     control under a thumb") aimed at the wrong risk.
+     - The unrecoverable harm is a lost CARET, so that is the only thing the
+       guard covers now.
+     - The thumb risk is real but it is about a repaint that changes nothing,
+       so it is removed at the source: an answer identical to what is already
+       on screen does not render at all. A list of twelve picks changes when
+       somebody picks, which is rare, and that is exactly when a repaint is
+       wanted.
+     `force` still overrides both — an explicit Refresh has to clear its own
+     "Checking…" even when the answer came back the same. */
+  const sameRows = (a, b) => {
+    try { return JSON.stringify(a || {}) === JSON.stringify(b || {}); }
+    catch (_) { return false; }
+  };
+
   function quietRender() {
     if (typeof document === 'undefined' || !P.host) return;
     const el = document.activeElement;
-    if (el && /^(INPUT|TEXTAREA|BUTTON|SUMMARY)$/.test(el.tagName || '')) return;
+    if (el && /^(INPUT|TEXTAREA)$/.test(el.tagName || '')) return;
     render();
   }
 
@@ -830,7 +886,11 @@
         <div class="lp-leg-p">${esc(g.p)}<b>${esc(oddsTxt(g.o))}</b></div>
       </div>`;
     }).join('');
-    const none = `<div class="ffp-empty"><b>Nobody has picked yet.</b>The first leg of ${esc(ow.l)} is going spare.</div>`;
+    /* ⚠️ It read "Nobody has picked yet." directly under a lead saying "0 of
+       12 picks are in" — one fact twice on one card, which is the v22 shape
+       and the one thing this app is otherwise careful about. The lead carries
+       the count; this carries the invitation. */
+    const none = `<div class="ffp-empty"><b>The first leg of ${esc(ow.l)} is going spare.</b></div>`;
     return `<h2 class="section-title">👥 ${esc(ow.l)} — who is in</h2>
       <div class="ffp-card">
         <p class="fh-lead"><b>${legs.length} of ${all.length} picks are in.</b> Everybody's leg lands here as they save it, so the twelve of you are looking at the same board.</p>
@@ -887,6 +947,9 @@
         </div>`;
     }
     const mine = myPick(ow.k);
+    /* ⚠️ Read once, before the branch, so the note and the controls under it
+       cannot disagree about whether the pick got out. */
+    const up = mine && mineIsUp(ow);
     /* ⚠️ 📝 rather than 🎯, and the render is what caught it: "Who carries the
        ticket" is already 🎯, so with picks open the jump row carried the same
        mark twice — and that row is scanned by its mark (the v50 clash, which
@@ -901,13 +964,15 @@
             <span class="lp-mine-p">${esc(mine.p)}</span>
             <span class="lp-mine-o">${esc(oddsTxt(mine.o))}</span>
           </div>
-          <p class="lp-note">${syncOn()
-            ? 'Up on the shared list, so the other eleven can see it. Sending it to the chat as well does no harm.'
-            : 'Saved on this phone. It is not on the ticket until somebody collects it, so send it to the chat.'}</p>
-          <textarea class="lp-out" data-lp-t="pick" readonly rows="3" aria-label="Your pick, ready to send">${esc(pickText(ow, LH.me(), mine.p, mine.o))}</textarea>
+          <p class="lp-note">${up
+            ? 'On the shared list — the other eleven can see it.'
+            : syncOn()
+              ? "Saved on this phone, but it has not reached the shared list. Send it to the chat so it still makes the ticket."
+              : 'Saved on this phone. It is not on the ticket until somebody collects it, so send it to the chat.'}</p>
+          ${up ? '' : `<textarea class="lp-out" data-lp-t="pick" readonly rows="3" aria-label="Your pick, ready to send">${esc(pickText(ow, LH.me(), mine.p, mine.o))}</textarea>`}
           <div class="lp-btns">
-            <button type="button" class="lg-sheet-go" data-lp="send" data-lp-for="pick">${navigator.share ? '📤 Send it to the chat' : '📋 Copy it for the chat'}</button>
-            <button type="button" class="lp-alt" data-lp="edit">Change my pick</button>
+            ${up ? '' : `<button type="button" class="lg-sheet-go" data-lp="send" data-lp-for="pick">${navigator.share ? '📤 Send it to the chat' : '📋 Copy it for the chat'}</button>`}
+            <button type="button" class="${up ? 'lg-sheet-go' : 'lp-alt'}" data-lp="edit">Change my pick</button>
           </div>
           ${noteFor('pick')}
         </div>`;
@@ -1227,7 +1292,15 @@
       render();
       putPick(base, ow.k, LH.me(), p, o, at).then(() => {
         say('Saved — the others can see it on their Parlay tab.', 'pick');
-        P.picks = null; refreshPicks(ow, true); render();
+        /* ⚠️ The 200 IS the confirmation that the row exists, so the list is
+           updated here rather than being emptied and re-fetched. Clearing it
+           first made the chat box flash back on for one frame between the
+           save and the refresh landing — the control the owner asked to
+           remove, reappearing at the exact moment it had just been earned. */
+        const rows = (P.picks && Number(P.picks.k) === ow.k) ? P.picks.rows : {};
+        rows[LH.me()] = { p, o, t: at };
+        P.picks = { k: ow.k, rows, at: Date.now() };
+        refreshPicks(ow, true); render();
       }).catch((e) => {
         console.warn('[parlay] that pick did not reach the shared list', e);
         say("Saved on this phone, but the shared list couldn't be reached. Send it to the chat instead.", 'pick');
@@ -1334,6 +1407,8 @@
     host.innerHTML = '<div class="ffp-card"><div class="ffp-empty">Loading this week\'s ticket…</div></div>';
     const got = await load();
     if (got.why) { P.err = got.why; P.file = null; } else { P.err = null; P.file = got.file; }
+    /* Before the paint, or the paint draws a list this device already has. */
+    primePicks(curOpen());
     render();
     /* Both behind the reader, deliberately not awaited: the page is already
        on screen from the file and the cache before either is asked. */
@@ -1363,6 +1438,7 @@
     _sel: (v) => { P.sel = v; },
     _collectHTML: (ow) => collectHTML(ow),
     _syncBase: syncBase, _rows: rowsToLegs, _takeLeg: takeLeg, _takeAll: takeAll,
+    _same: sameRows, _prime: (ow) => primePicks(ow),
     _whoHTML: (ow) => whoHTML(ow), _howto: () => howtoHTML(),
     _file: (v) => { P.file = v; }, _picks: (v) => { P.picks = v; P.syncErr = false; },
     _reset: () => { P.picks = null; P.syncErr = false; P.file = null;
