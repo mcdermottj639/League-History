@@ -1664,11 +1664,29 @@ is a hand-kept copy of that list, and it drifts.
   ⚠️ **It is deliberately not `lh:owner`.** A guest gets the Lab and nothing
   else: not his name on the picker, not the ability to invite anybody. Clearing
   site data, or 🔒 Sign out, ends it.
-- `lh:pick` — **this device's own leg for the open week** (v70): `{k, p, o,
+- `lh:pick` — **this device's own leg for the open week** (v70): `{k, m, p, o,
   at}`. ⚠️ Keyed by WEEK, so it is restored only for the week it belongs to —
   a new week gets an empty form rather than last week's bet, the same rule
   `powerlab:draft` follows and for the same reason: a stale draft is worse
   than none.
+  🚨 **AND KEYED BY MANAGER SINCE v82 — `m` IS NEW AND IT IS THE WHOLE OF THAT
+  VERSION.** Week alone was not enough, because "you" is a ROLE here: any of
+  the twelve can read as any other, so tapping a different name on the picker
+  handed that device's saved bet to the new reader as their own — *"your pick
+  is in"* over somebody else's leg, above a who-card listing that same reader
+  under **Still to pick**. ⚠️ **It was never only a viewing fault**, which is
+  why it is a law and not a tidy-up: `edit` and `save` write to `LH.me()`'s
+  row, so changing an inherited pick would have put one manager's bet on the
+  shared list under another's name, and `drop` would have cleared the real
+  owner's pick off their own phone while their row stayed on the ticket — the
+  exact split the v75 delete order exists to prevent, reached from the other
+  side. ⚠️ **A pick saved BEFORE v82 carries no `m`, and the shared list is
+  what says whose it is** (`legacyMine`): a matching row under the reader
+  makes it theirs, a matching row under somebody ELSE makes it not, and a
+  pick matching no row at all never got out — which is precisely the state
+  the chat box exists for, so that one stays. Resolved on every read rather
+  than stamped once, because a stamp taken before the list has arrived is a
+  guess written down.
 - `lh:tick` — **the picks somebody is collecting into a ticket** (v70):
   `{k, legs:[{m, p, o, t}]}`. Written on whichever phone is assembling, by
   pasting the chat or by opening a pick link. ⚠️ **It reaches nobody else's
@@ -1797,7 +1815,14 @@ correction, zero unresolved conflicts**.
   neither opens a played week nor carries that week's board forward** (v78 —
   the sort law because the roster rows made a non-transitive comparator
   reachable, and its first cut could not fail; the `open` law replaced one
-  that asserted the OLD answer, which is the v42 trap) · **the
+  that asserted the OLD answer, which is the v42 trap) · **a saved pick is
+  the reader's only when it is theirs — reading as another manager must be
+  offered the board rather than handed that device's bet, an ownerless
+  pre-v82 pick is resolved against the shared list rather than adopted, one
+  that reached no row still keeps its chat line, and a pick that IS up wears
+  no chat box** (v82 — asserted off the RENDERED card and in BOTH directions,
+  because a guard that always said "not yours" would hide the bug by never
+  showing anybody their own pick) · **the
   bracket resolves the
   standings** — the final decides 1st/2nd, the semi-final losers are 3rd/4th,
   the R1 losers 5th/6th (their pair plays TWICE on ESPN and the last game
@@ -2374,6 +2399,87 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v82 — a pick belongs to a person, not to a phone (14 Sep 2026)** — the
+  owner, with the Parlay tab open while reading as another manager: *"I did
+  view as another member and is this what they are seeing in the parlay? I
+  told u to sunset the send to group copy and paste and add in the games to
+  click"*.
+  - 🚨 **NO, IT IS NOT WHAT THEY ARE SEEING — AND ANSWERING THAT HONESTLY
+    MEANT RENDERING IT RATHER THAN ARGUING ABOUT IT.** Both things he was
+    looking at (a chat box that should be gone, no games to tap) shipped
+    correctly in v74 and v80. What he had was a state **only his own phone
+    can produce**: he saved a pick as McD, then tapped Hurd on the picker.
+    Driven in headless Chromium across seven ownership states, a real member
+    on their own phone with no pick gets **twelve tappable lines and no chat
+    box**, and his own McD view gets his pick with no chat box. The
+    screenshot reproduced byte-for-byte only in the identity-switch case.
+  - 🚨 **BUT THE ARTEFACT WAS A REAL BUG WEARING A HARMLESS COSTUME, AND IT IS
+    THE VERSION.** `lh:pick` was keyed by WEEK alone — written in v70, when
+    nothing about a pick had to know who made it. This app's founding premise
+    is that **"you" is a ROLE**, so the one thing a per-device key could not
+    be is anonymous. Reading as Hurd, the card said *"your pick is in"* over
+    McD's leg while the who-card two inches below listed **Hurd under "Still
+    to pick"** — one page, two answers, which is the v14 fault in its purest
+    form and the thing the owner actually caught.
+  - ⚠️ **AND IT WAS NEVER ONLY A VIEWING FAULT, WHICH IS WHY IT IS A LAW.**
+    `edit` and `save` write to `LH.me()`'s row, so changing an inherited pick
+    would have put one manager's bet on the shared list **under another
+    manager's name** — the one thing the whole ticket rests on not happening,
+    since what protects it is a person reading twelve legs with twelve names
+    on them. And `drop` would have cleared the real owner's pick off their
+    own phone while their row stayed on the ticket: **the exact split the v75
+    delete order exists to prevent, reached from the other side.**
+  - 🚨 **THE MIGRATION IS RESOLVED, NOT GUESSED, AND THE FIRST CUT GUESSED.**
+    A pick saved before v82 records no owner. Dropping every ownerless pick
+    outright takes a real leg off its owner's own screen mid-week while the
+    who-card still shows them in; **adopting it for whoever is reading is the
+    bug this version exists to end** — and that is what my first cut did,
+    stamping the reader's code on sight. It reproduced his exact symptom on
+    the very next open. The shared list is what can say whose a pick is: a
+    matching row under the reader makes it theirs, a matching row under
+    somebody ELSE makes it not, and **a pick matching no row at all never got
+    out** — which is precisely the state the chat box is for, so that one
+    survives. ⚠️ Resolved on every read rather than stamped once, because a
+    stamp taken before the list has arrived is a guess written down.
+  - 🚨 **THE LAW READS THE RENDERED CARD, NEVER `myPick`** (the v7 rule) — a
+    law that agreed with the resolver would go on passing over a view that
+    had stopped consulting it, and the rendered card is where he saw this.
+    **Both directions**, because a guard that always answered "not yours"
+    would "fix" the bug by never showing anybody their own pick, and nothing
+    on screen tells those two apart. Fault-injected three ways — the v81
+    keying restored (*"reading as another manager showed McD's saved pick as
+    the reader's own"*), the guard forced to no, and the ownerless survivor
+    dropped — and each is named by its own failure.
+  - ⚠️ **MY OWN FIXTURE WAS VACUOUS FIRST AND THE LAW SAID SO.** It set
+    `P.picks` and never `P.file`, so `syncOn()` was false, every ownerless
+    pick was the reader's by default, and half the law could not fail. Fourth
+    version running that a check needed its own setup proved (v67, v73, v77,
+    here) — **a sweep is only as trustworthy as its own setup.**
+  - ⚠️ **THE CHAT BOX STAYS, AND STAYS FOR ONE STATE.** He is right that it
+    is clutter, and v74 already narrowed it to *"this pick is not on the
+    shared list"*. Deleting it outright would strand a leg in silence
+    whenever a write is refused or `sync` is off, with the reader believing
+    they had sent it — so it renders in exactly the two states where it is
+    the way through, and a law now asserts it is **absent** from a pick that
+    is up.
+  - ⚠️ **One thing this cannot verify and it is on his phone: whether ESPN
+    answers.** `open.games` in `parlay/current.json` is `[]`, so the board a
+    member taps is whatever ESPN's public scoreboard returns — and this
+    sandbox cannot reach it (403 through the egress proxy), so the twelve
+    lines above are a fixture board. **If ESPN is blocked or unpriced, that
+    member gets the write-it-in field and a line saying the lines are not
+    posted** (v80), which is correct and is not a board. Worth a look on a
+    real phone before Sunday; see Open / next.
+  - **Verified:** `node --check` on every JS file; `node checks.js` green with
+    the new law fault-injected three ways; the seven ownership states driven
+    through the real `index.html` over HTTP; and a render sweep of 4 tabs ×
+    {a stranger, McD, Hurd, Woods} × {320, 390} with the store live — no
+    horizontal overflow, no clipped text, no type under 9px, no tap target
+    under 38px, no template hole, no rendered comment, no page error.
+    ⚠️ **The sweep was proved able to fail** by dropping its one exclusion,
+    at which point it reports the 76 pre-existing Season-tab clips that are
+    already in Open / next and are unchanged by this version.
 
 - **v81 — the roll-call said the same thing twice, and only the reader could
   see it (13 Sep 2026)** — the owner, with the Records storylines on screen:

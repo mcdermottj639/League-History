@@ -1011,7 +1011,48 @@
   const noteFor = (where) => (P.where === where && P.note
     ? `<p class="lp-say" role="status">${esc(P.note)}</p>` : '<p class="lp-say" role="status"></p>');
 
-  const myPick = (k) => { const j = read(PICK_KEY); return (j && Number(j.k) === k) ? j : null; };
+  /* 🚨 A PICK BELONGS TO A PERSON, NOT JUST TO A WEEK (v82, owner: *"I did
+     view as another member and is this what they are seeing"* — it was not).
+     `lh:pick` was keyed by WEEK alone, and this app's founding premise is
+     that "you" is a ROLE: any of the twelve can read as any other. So tapping
+     a different name on the picker inherited that device's saved bet as
+     though it were the new reader's own — the card read "your pick is in"
+     over somebody else's leg, with the who-card underneath it listing that
+     same reader under **Still to pick**. One page, two answers.
+     ⚠️ IT WAS NOT ONLY A VIEWING FAULT. `edit` and `save` write to
+     `LH.me()`'s row, so changing the inherited pick would have put one
+     manager's bet on the shared list under another manager's name — and
+     `drop` would have cleared the real owner's pick off their own phone
+     while their row stayed on the ticket. The exact split the v75 delete
+     order exists to prevent, reached from the other side. */
+  const myPick = (k) => {
+    const j = read(PICK_KEY); const me = LH && LH.me();
+    if (!j || Number(j.k) !== k || !me) return null;
+    return j.m ? (j.m === me ? j : null) : (legacyMine(j, me) ? j : null);
+  };
+
+  /* ⚠️ A PICK SAVED BEFORE v82 RECORDS NO OWNER, AND THE SHARED LIST IS WHAT
+     CAN SAY WHOSE IT IS. Dropping every ownerless pick outright would take a
+     real leg off its owner's own screen mid-week while the who-card still
+     showed them in; adopting it for whoever is reading is the bug this
+     version exists to end. So it is RESOLVED rather than guessed: a row on
+     the list for the reader that matches it makes it theirs, a row for
+     somebody ELSE that matches it makes it not theirs, and a pick that
+     matches no row at all is a pick whose write never landed — which is
+     exactly the state the chat box exists for, so that one stays.
+     ⚠️ Resolved on every read rather than stamped once, because a stamp
+     taken before the list has arrived is a guess written down. It costs
+     nothing to keep resolving: the moment that reader saves, the pick is
+     written with `m` and this stops being consulted, and `lh:pick` is keyed
+     by week so nothing ownerless survives into the next one. */
+  const legacyMine = (j, me) => {
+    if (!syncOn()) return true;
+    const rows = (P.picks && Number(P.picks.k) === Number(j.k)) ? P.picks.rows : null;
+    if (!rows || typeof rows !== 'object') return true;
+    const same = (r) => !!r && String(r.p) === String(j.p) && Number(r.o) === Number(j.o);
+    if (same(rows[me])) return true;
+    return !Object.keys(rows).some((m) => m !== me && same(rows[m]));
+  };
 
   /* 🚨 THE REAL NAME, NEVER `nm()`. This string is read by the other eleven
      in a group chat, and `nm()` answers "You" for whoever is holding the
@@ -1394,7 +1435,7 @@
          leg is saved and their chat line is on screen underneath it. The
          v42 doctrine, pointed at a write. */
       const at = Date.now();
-      write(PICK_KEY, { k: ow.k, p, o, at });
+      write(PICK_KEY, { k: ow.k, m: LH.me(), p, o, at });
       P.draftP = ''; P.draftO = ''; P.sel = null;
       const base = syncBase(P.file);
       if (!base) { say('Saved. Send it to the chat so it makes the ticket.', 'pick'); return render(); }

@@ -1390,6 +1390,61 @@ function parlayLaws() {
   LHIST.setMe('Buley');
   if (!LP._pickHTML(owB).includes('data-lp="opt"')) fail('a week that has a board rendered no lines to tap');
   LHIST.setMe(null);
+  /* 🚨 A SAVED PICK BELONGS TO A PERSON, SO SWITCHING NAMES MUST NOT INHERIT
+     ONE (v82). `lh:pick` was keyed by WEEK alone, and "you" is a ROLE here —
+     any of the twelve can read as any other — so tapping a different name on
+     the picker handed that device's saved bet to the new reader as their
+     own: "your pick is in" over somebody else's leg, above a who-card
+     listing that same reader under "Still to pick". It was not only a
+     viewing fault, which is why it gets a law rather than a tidy-up: `edit`
+     and `save` write to `LH.me()`'s row, so changing an inherited pick would
+     have put one manager's bet on the shared list under another's name, and
+     `drop` would have cleared the real owner's pick off their own phone
+     while their row stayed on the ticket.
+     ⚠️ ASSERTED OFF THE RENDERED CARD, never off `myPick` — the v7 rule. A
+     law that agreed with the resolver would go on passing over a view that
+     had stopped consulting it, and the rendered card is where the owner saw
+     this. Both directions, because a resolver that always said "not yours"
+     would "fix" this by never showing anybody their own pick. */
+  const owP = LP._open({ open: { k: 1, l: 'Week 1', games: [{ a: 'DAL', h: 'PHI', sp: { h: -3, a: 3 } }] } }, []);
+  const pickOf = (me, stored, rows) => {
+    /* The shared list only exists when `sync` does, so the fixture has to
+       stand the store up — without it `syncOn()` is false, every ownerless
+       pick is the reader's by default and the whole law passes vacuously.
+       (It did, first time round, and said so.) */
+    LP._file({ sync: 'https://nectars-bologna-default-rtdb.firebaseio.com' });
+    LP._picks(rows ? { k: 1, rows, at: Date.now() } : null);
+    if (stored) localStorage.setItem('lh:pick', JSON.stringify(stored));
+    else localStorage.removeItem('lh:pick');
+    LHIST.setMe(me);
+    const h = LP._pickHTML(owP);
+    LHIST.setMe(null);
+    return { h, mine: /your pick is in/.test(h), board: h.includes('data-lp="opt"') };
+  };
+  const OWNED_P = { k: 1, m: 'McD', p: 'BUF ML vs DET', o: -166, at: 1 };
+  const LEGACY_P = { k: 1, p: 'BUF ML vs DET', o: -166, at: 1 };
+  const ROWS_P = { McD: { p: 'BUF ML vs DET', o: -166, t: 1 } };
+  const owned = pickOf('Hurd', OWNED_P, ROWS_P);
+  if (owned.mine) fail('reading as another manager showed McD\'s saved pick as the reader\'s own');
+  if (!owned.board) fail('a reader with no pick of their own was not offered the board');
+  const his = pickOf('McD', OWNED_P, ROWS_P);
+  if (!his.mine) fail('a manager\'s own saved pick did not render as theirs — the guard says no to everybody');
+  /* A pick saved BEFORE v82 records no owner, and the shared list is what
+     says whose it is: a matching row under somebody else makes it not the
+     reader's, a matching row under the reader makes it theirs, and a pick on
+     no row at all never got out — which is the one state the chat box is
+     for, so it must survive. */
+  const legacyOther = pickOf('Hurd', LEGACY_P, ROWS_P);
+  if (legacyOther.mine) fail('an ownerless pick that matches McD\'s row on the shared list was handed to Hurd');
+  if (!pickOf('McD', LEGACY_P, ROWS_P).mine) fail('an ownerless pick that matches the reader\'s own row was taken off them');
+  const unsent = pickOf('Hurd', { k: 1, p: 'SEA -3 vs ARI', o: -110, at: 1 }, ROWS_P);
+  if (!unsent.mine) fail('an ownerless pick on nobody\'s row was dropped — a failed write must still leave the pick and its chat line');
+  if (!/data-lp="send"/.test(unsent.h)) fail('a pick that never reached the shared list offered no way to send it');
+  /* And a pick that IS up wears no chat box — v74's whole point, and the
+     state the owner thought he was looking at. */
+  if (/data-lp="send"/.test(his.h)) fail('a pick that is on the shared list still offered the chat box');
+  localStorage.removeItem('lh:pick'); LP._reset();
+
   const ow1 = LP._open({ open: { k: 1, l: 'Week 1' } }, []);
   if (!ow1 || ow1.k !== 1) fail('a stated open week was not honoured');
   if (LP._open({ open: { k: 9 } }, [{ k: 1 }, { k: 2 }]).k !== 9) fail('a stated open week must beat the derived one');
