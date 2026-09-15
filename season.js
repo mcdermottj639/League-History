@@ -105,33 +105,62 @@
      WAKING a sleeping service all week — and Render's free tier is metered in
      instance-hours, not requests, so keeping it awake is the actual cost.
 
-     During a game window the numbers really are moving, so 10 minutes. Every
-     other hour of the week nothing can change until the next kickoff, so
-     twelve hours — about one call a day per device, which is what the data
-     deserves.
+     During a game window the numbers really are moving, so 10 minutes.
+
+     🚨 EVERY OTHER HOUR OF THE WEEK IT IS TWO TIMES OF DAY, NOT A DURATION
+     (v83, owner: "Can we change it to 5 am and 5 pm"). Until v83 this was
+     "older than twelve hours", anchored to whenever THAT phone last managed a
+     fetch — so the refresh drifted with the reader rather than sitting at a
+     time of day, and every device sat on its own private schedule. A copy
+     saved at 1:17am then went stale at 1:17pm, which is how the owner came to
+     read the number off his own screen and ask when it moves.
+     Now a quiet-week copy is stale the moment it predates the most recent
+     **5am or 5pm**, so the first open after either one is fresh and the answer
+     to "when does it refresh" is a time anybody can say out loud.
+     ⚠️ It is the same load — at most one quiet call per half-day per device,
+     exactly what twelve hours bought — so the free-tier argument is untouched.
+     ⚠️ And it is still ASKED BY A READER, never scheduled: nothing in a static
+     site wakes up at 5am. What this pins is which side of the boundary a copy
+     is on, so the first open after 5am refreshes and the ones after that
+     do not.
 
      ⚠️ It reads the DEVICE's clock, so a phone in the wrong timezone (or a
-     reader abroad) shifts the window by those hours. The only consequence is
-     slightly more or slightly fewer refreshes, never wrong data — the
-     freshness line always says which copy is on screen. Not worth a timezone
-     library to fix.
+     reader abroad) gets its own 5am. The only consequence is slightly more or
+     slightly fewer refreshes, never wrong data — the freshness line always
+     says which copy is on screen. Not worth a timezone library to fix.
      ⚠️ Deliberately not derived from the scores instead: before week 1 every
      score is 0, which is indistinguishable from "games are pending", so the
      data alone would keep the short throttle running for days in preseason —
      exactly the case this is meant to quieten. */
   const LIVE_MS = 10 * 60 * 1000;
-  const QUIET_MS = 12 * 60 * 60 * 1000;
-  function throttleMs(now) {
+  const QUIET_HRS = [5, 17];       // the two times of day a quiet week refreshes
+  function playing(now) {
     const d = now || new Date();
     const day = d.getDay();          // 0 Sun … 6 Sat
     const h = d.getHours();
-    const playing =
-      (day === 0 && h >= 9) ||               // Sunday, from the early window on
-      (day === 1 && (h < 2 || h >= 17)) ||   // the Sunday-night tail, then MNF
-      (day === 2 && h < 2) ||                // the MNF tail
-      (day === 4 && h >= 17) ||              // Thursday night
-      (day === 5 && h < 2);                  // its tail
-    return playing ? LIVE_MS : QUIET_MS;
+    return (day === 0 && h >= 9) ||               // Sunday, from the early window on
+      (day === 1 && (h < 2 || h >= 17)) ||        // the Sunday-night tail, then MNF
+      (day === 2 && h < 2) ||                     // the MNF tail
+      (day === 4 && h >= 17) ||                   // Thursday night
+      (day === 5 && h < 2);                       // its tail
+  }
+  /* The most recent 5am/5pm boundary at or before `d`, on the device's clock.
+     Before 5am that is yesterday's 5pm — the boundary a 1am reader is behind. */
+  function quietAnchor(now) {
+    const d = now || new Date();
+    const a = new Date(d.getTime());
+    a.setMinutes(0, 0, 0);
+    const h = d.getHours();
+    if (h >= QUIET_HRS[1]) a.setHours(QUIET_HRS[1]);
+    else if (h >= QUIET_HRS[0]) a.setHours(QUIET_HRS[0]);
+    else { a.setDate(a.getDate() - 1); a.setHours(QUIET_HRS[1]); }
+    return a.getTime();
+  }
+  /* Is this phone allowed to ask? A copy it has never had always may. */
+  function mayAsk(at, now) {
+    const d = now || new Date();
+    if (!at) return true;
+    return playing(d) ? (d.getTime() - at) >= LIVE_MS : at < quietAnchor(d);
   }
   const readCache = () => { try { return JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch (_) { return null; } };
   const writeCache = (snap) => { try { localStorage.setItem(CACHE_KEY, JSON.stringify({ at: Date.now(), snap })); } catch (_) {} };
@@ -621,7 +650,7 @@
   async function revalidate() {
     if (S.checking) return;
     const c = readCache();
-    if (c && c.at && Date.now() - c.at < throttleMs() && S.snap) return;
+    if (S.snap && c && c.at && !mayAsk(c.at)) return;
     S.checking = true;
     S.failed = false;
     if (S.snap) render();
@@ -662,7 +691,9 @@
     paint,
     /* For the repo's own checks — nothing in the app reads these. */
     _derive: derive,
-    _throttleMs: throttleMs,
+    _mayAsk: mayAsk,
+    _quietAnchor: quietAnchor,
+    _playing: playing,
     _favourite: favourite,
     _placeTxt: placeTxt,
   };

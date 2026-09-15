@@ -844,20 +844,60 @@ function seasonLaws() {
   /* The live fetch must be throttled and must never be awaited before paint:
      twelve people share one free-tier backend, and a cold start in front of
      the render is a 30-60s spinner for whoever opens the app first. */
-  if (!/throttleMs/.test(sj0)) fail('season.js has no throttle on the live fetch');
+  if (!/mayAsk/.test(sj0)) fail('season.js has no throttle on the live fetch');
 
   /* 🚨 THE NFL PLAYS ON THREE DAYS. Asking a sleeping free-tier service on a
      Wednesday burns instance-hours for an answer that cannot have moved, so
-     the quiet-day throttle must be far longer than the game-window one. If
-     these ever invert, twelve phones would hammer the backend all week and
-     go quiet exactly when the scores are actually moving. */
-  const ts = window.LeagueSeason._throttleMs;
-  const at = (day, h) => { const d = new Date(2026, 8, 6 + day); d.setHours(h, 0, 0, 0); return d; };
-  const live = ts(at(0, 13)), quiet = ts(at(3, 15));
-  if (!(live < quiet)) fail(`the throttle is not schedule-aware (Sunday 1pm ${live}ms vs Wednesday 3pm ${quiet}ms)`);
-  if (quiet < 6 * 3600e3) fail(`the quiet-day throttle is only ${Math.round(quiet / 60000)} min — it should be hours, not minutes`);
-  [[0, 13], [1, 20], [4, 20]].forEach(([d, h]) => { if (ts(at(d, h)) !== live) fail(`a game window (day ${d}, ${h}:00) is not on the short throttle`); });
-  [[2, 11], [3, 15], [6, 14]].forEach(([d, h]) => { if (ts(at(d, h)) !== quiet) fail(`a quiet day (day ${d}, ${h}:00) is not on the long throttle`); });
+     the quiet-week rule must be far slower than the game-window one. If these
+     ever invert, twelve phones would hammer the backend all week and go quiet
+     exactly when the scores are actually moving. */
+  const ask = window.LeagueSeason._mayAsk;
+  const anchor = window.LeagueSeason._quietAnchor;
+  const at = (day, h, m) => { const d = new Date(2026, 8, 6 + day); d.setHours(h, m || 0, 0, 0); return d; };
+  const MIN = 60e3, HR = 3600e3;
+  [[0, 13], [1, 20], [4, 20]].forEach(([d, h]) => {
+    const now = at(d, h);
+    if (ask(now.getTime() - 5 * MIN, now)) fail(`a game window (day ${d}, ${h}:00) re-asks after 5 minutes`);
+    if (!ask(now.getTime() - 11 * MIN, now)) fail(`a game window (day ${d}, ${h}:00) is not on the 10-minute throttle`);
+  });
+  [[2, 11], [3, 15], [6, 14]].forEach(([d, h]) => {
+    const now = at(d, h);
+    if (ask(now.getTime() - 30 * MIN, now)) fail(`a quiet day (day ${d}, ${h}:00) re-asks after 30 minutes — the throttle has inverted`);
+  });
+
+  /* 🚨 AND THE QUIET RULE IS TWO TIMES OF DAY, NOT A DURATION (v83). Anchored
+     to whenever that phone last fetched, the refresh drifted with the reader —
+     a copy saved at 1:17am went stale at 1:17pm, and every device sat on its
+     own private schedule nobody could say out loud. The boundaries are what
+     is asserted, in both directions: a copy from just before one must refresh
+     past it, and a copy from just after it must NOT re-ask inside the same
+     window, or 5am/5pm would be a duration again wearing a clock's costume. */
+  [[4, 59, 5, 1], [16, 59, 17, 1]].forEach(([bh, bm, ah, am]) => {
+    const before = at(3, bh, bm).getTime();
+    const after = at(3, ah, am);
+    if (!ask(before, after)) fail(`a copy saved at ${bh}:${bm} does not refresh past the ${ah}:00 boundary`);
+    if (ask(after.getTime() - MIN, after)) fail(`a copy saved at ${ah}:00 re-asks one minute later`);
+  });
+  if (ask(at(3, 5, 1).getTime(), at(3, 11))) fail('a copy saved after 5am re-asks before 5pm');
+  if (!ask(at(3, 5, 1).getTime(), at(3, 17, 1))) fail('a copy saved after 5am does not refresh past 5pm');
+
+  /* The owner's own case, which is what this version is: before 5am the
+     boundary behind you is YESTERDAY's 5pm, so a 1:17am copy is ahead of it
+     and holds — then 5am arrives and it goes. Getting this branch wrong is
+     silent, because both symptoms look like "the tab just sits there". */
+  if (ask(at(3, 1, 17).getTime(), at(3, 4, 2))) fail('a 1:17am copy re-asks at 4:02am — the pre-dawn boundary is not yesterday 5pm');
+  if (!ask(at(3, 1, 17).getTime(), at(3, 5, 1))) fail('a 1:17am copy does not refresh once 5am has passed');
+
+  /* And whatever the hour, the boundary behind you is never in the future and
+     never more than half a day back — so this costs the backend exactly what
+     the twelve-hour rule it replaced did, which is the whole case for it. */
+  for (let h = 0; h < 24; h++) {
+    const now = at(3, h, 30);
+    const gap = now.getTime() - anchor(now);
+    if (gap < 0) fail(`the quiet anchor is in the future at ${h}:30`);
+    if (gap > 12 * HR) fail(`the quiet anchor at ${h}:30 is ${(gap / HR).toFixed(1)}h back — a copy could go stale longer than half a day`);
+  }
+
   if (/await revalidate\(\)/.test(sj0)) fail('season.js awaits the live fetch — that puts a cold start in front of the reader');
 
   /* A tab with no entry in HELP still lists itself in the ? sheet, but the one

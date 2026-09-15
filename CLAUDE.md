@@ -688,15 +688,37 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       reader. Never awaited before paint: measured, **first paint 297-357ms
       against a deliberately 2-second backend**, so nobody ever sees a spinner.
     - 🚨 **THROTTLED ON THE NFL SCHEDULE** (v43, the owner's point): **10
-      minutes inside a game window, 12 hours every other hour of the week.**
-      A flat throttle stops twelve phones stampeding but does not stop them
-      WAKING a sleeping service all week — and Render's free tier is metered
-      in instance-hours, not requests, so keeping it awake is the actual cost.
-      Nothing can change on a Wednesday. Verified: a cache one minute old
-      makes **zero** calls, and `checks.js` fails if the two throttles ever
-      invert.
-      ⚠️ It reads the DEVICE's clock, so a wrong timezone shifts the window by
-      those hours — the only consequence is slightly more or fewer refreshes,
+      minutes inside a game window; every other hour of the week it refreshes
+      at 5am and 5pm** (v83). A flat throttle stops twelve phones stampeding
+      but does not stop them WAKING a sleeping service all week — and Render's
+      free tier is metered in instance-hours, not requests, so keeping it
+      awake is the actual cost. Nothing can change on a Wednesday. Verified: a
+      cache one minute old makes **zero** calls, and `checks.js` fails if the
+      two throttles ever invert.
+      - 🚨 **THE QUIET RULE IS TWO TIMES OF DAY, NOT A DURATION (v83, owner:
+        *"Can we change it to 5 am and 5 pm"*).** It was "older than twelve
+        hours", anchored to whenever THAT phone last managed a fetch — so the
+        refresh drifted with the reader instead of sitting at a time of day,
+        and every device ran its own private schedule. A copy saved at 1:17am
+        went stale at 1:17pm, which is how the owner came to read the time off
+        his own screen and ask when it moves. `quietAnchor()` is the most
+        recent **5am/5pm** boundary and a quiet-week copy is stale the moment
+        it predates one, so the first open after either is fresh and the
+        answer to "when does it refresh" is a time a person can say out loud.
+        ⚠️ **Same load** — at most one quiet call per half-day per device,
+        exactly what twelve hours bought — so v43's free-tier argument is
+        untouched, and `checks.js` asserts the anchor is never in the future
+        and never more than 12h back.
+        ⚠️ **It is still ASKED BY A READER, never scheduled.** Nothing in a
+        static site wakes up at 5am; what the boundary pins is which side of
+        it a saved copy is on. **No open, no refresh** — which is the one
+        thing to say out loud when somebody asks why it has not moved.
+        ⚠️ **Before 5am the boundary behind you is YESTERDAY's 5pm**, so a
+        1:17am copy holds until 5am rather than refreshing at 4am. That branch
+        is asserted by name, because both ways of getting it wrong look
+        identical on screen: the tab just sits there.
+      ⚠️ It reads the DEVICE's clock, so a wrong timezone gives that phone its
+      own 5am — the only consequence is slightly more or fewer refreshes,
       never wrong data. ⚠️ And deliberately NOT derived from the scores
       instead: before week 1 every score is 0, which is indistinguishable from
       "games pending", so the data alone would hold the short throttle open
@@ -2399,6 +2421,82 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 **Write them in the present tense, never rewrite one, and when a later change
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
+
+- **v83 — the refresh is a time of day, not a stopwatch (15 Sep 2026)** — the
+  owner, having read "Saved on this phone Tue 1:17 AM" off his own Season tab
+  and asked when it moves: *"It's set for 1 am and 1 pm? Can we change it to 5
+  am and 5 pm"*.
+  - 🚨 **IT WAS NEVER SET FOR 1AM, AND THAT IS THE BUG HE FOUND WITHOUT
+    MEANING TO.** v43's quiet-week rule was *"older than twelve hours"* —
+    anchored to whenever THAT phone last managed a fetch, not to any clock. So
+    1:17am was simply when his own device last got an answer, and 1:17pm was
+    when that copy would expire. **Every one of the twelve was on its own
+    private schedule, drifting a little further each week**, and nobody —
+    including the app — could say when any of them would refresh. He read a
+    time off the screen and reasonably assumed it was the design. The honest
+    answer was that there was no answer, which is a worse thing for a tab to
+    say than a wrong time.
+  - **So the quiet rule is now two boundaries: 5am and 5pm.** A quiet-week copy
+    is stale the moment it predates the most recent one, so the first open
+    after either is fresh. ⚠️ **The game-window rule is untouched** — 10
+    minutes through Thursday night, Sunday and Monday night, because that is
+    the stretch where the numbers genuinely move and a duration is the right
+    shape for it.
+  - ⚠️ **IT COSTS THE BACKEND EXACTLY WHAT IT COST BEFORE, WHICH IS THE WHOLE
+    CASE FOR IT.** At most one quiet call per half-day per device — the same
+    ceiling twelve hours bought — so v43's instance-hours argument survives
+    intact rather than being traded away for tidiness. `checks.js` asserts the
+    bound directly: whatever the hour, the boundary behind you is never in the
+    future and never more than 12h back.
+  - 🚨 **AND IT DOES NOT MAKE ANYTHING HAPPEN AT 5AM, WHICH IS THE SENTENCE
+    MOST WORTH GETTING RIGHT.** This is a static site; nothing wakes up. What
+    the boundary pins is which side of it a saved copy is on, so **no open, no
+    refresh** — a phone that is not picked up until Thursday gets its first
+    fresh copy on Thursday. Saying "it refreshes at 5am" without that clause
+    would promise a cron this app has no way to run, and the next question
+    would be why it did not.
+  - 🚨 **THE PRE-DAWN BRANCH IS THE ONE THAT CAN BE SILENTLY WRONG, AND IT IS
+    HIS OWN CASE.** Before 5am the boundary behind you is YESTERDAY's 5pm, not
+    today's — so a 1:17am copy is *ahead* of it and holds until 5am. Get it
+    backwards and the anchor sits in the FUTURE, which makes every quiet copy
+    stale on sight and puts twelve phones back on a sleeping service all week.
+    ⚠️ **Both ways of getting it wrong look identical on screen** — the tab
+    just sits there — so it is asserted by name in both directions, with his
+    exact times in the law: a 1:17am copy must NOT ask at 4:02am and MUST ask
+    at 5:01am.
+  - ⚠️ **The old law asserted the old answer, which is the v42 trap and it was
+    seen coming this time.** `_throttleMs` returned a DURATION, so every
+    assertion about it was shaped like the design being replaced — the same
+    way v78's `open` law and v73's `sync` law encoded a release rather than an
+    invariant. It is rewritten to the permanent facts (a game window re-asks
+    in ten minutes and a quiet day does not; a copy either side of a boundary
+    behaves differently; the anchor is bounded) rather than relaxed.
+  - 🚨 **AND MY OWN RENDER SWEEP FAILED BY HANGING, WHICH IS THE LEAST USEFUL
+    FAILURE A CHECK CAN HAVE.** Fault-injected with a template hole, the first
+    cut sat for four minutes on Playwright's 30-second default timeouts and
+    then got killed — a sweep that reports nothing while it is going wrong.
+    Short timeouts, plus a law that the season head must render at all, and
+    the same injection now names it four ways. **A sweep is only as
+    trustworthy as its own setup** (v67, v73, v77, v82 — fifth version).
+  - ⚠️ **What this does NOT fix is why the tab still said Preseason on the
+    Tuesday after week 1.** The freshness line was the non-failed cache
+    branch, so a live fetch really did succeed at 1:17am and came back with
+    zero games scored — that is the Render backend's cached league snapshot or
+    ESPN itself, both unreachable from this sandbox. **A faster refresh of a
+    stale answer is still a stale answer**, and saying so beats letting a
+    version number imply it was fixed. The check is on his phone: if the line
+    reads "Straight from ESPN, just now" and the header still says PRESEASON,
+    the app is doing its job and the backend is not.
+  - **Verified:** `node --check` on every JS file; `node checks.js` green with
+    the new laws fault-injected three ways — the duration restored (the two
+    boundary laws and his 1:17am case speak), the pre-dawn branch pointed at
+    today's 5pm (the future-anchor law names five hours), and the quiet rule
+    inverted onto the 10-minute one (seven laws, including the stampede) —
+    each naming its own fault. Plus the real `index.html` driven over HTTP at
+    320 and 390px against a mocked backend, both sides of the rule: a
+    one-minute-old copy makes **zero** calls and holds on Preseason, a
+    20-hour-old copy makes **one** and the header moves to **After week 1** —
+    with the rule itself re-asked inside the page, not just in node.
 
 - **v82 — a pick belongs to a person, not to a phone (14 Sep 2026)** — the
   owner, with the Parlay tab open while reading as another manager: *"I did
@@ -4820,6 +4918,11 @@ stale entry written in the present tense reads as current to anyone who greps.
     **I sized the throttle against the wrong resource.**
   - **10 minutes inside a game window, 12 hours outside one.** Thursday night,
     Sunday, Monday night — everything else is a league that is not playing.
+    ⚠️ **SUPERSEDED in v83 in the quiet half only: it is 5am and 5pm, not
+    twelve hours.** The game-window rule and every word of the reasoning above
+    are unchanged — what v83 found is that a DURATION anchors to whenever that
+    phone last fetched, so the refresh drifts with the reader and no two
+    devices agree. Same number of calls; a time of day instead of a stopwatch.
   - ⚠️ **Deliberately NOT derived from the scores**, which was the more elegant
     idea and is wrong: before week 1 every score is 0, which is
     indistinguishable from "this week's games are still pending" — so a
