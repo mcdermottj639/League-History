@@ -85,6 +85,20 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   the team names — is world-readable. That was the owner's setting, not an
   accident, but weigh it before adding anything new about a person.
 
+## v89 — Parlay matchup availability (current state)
+
+Each shared pick hides its entire matchup from other readers' boards, including
+both sides, spreads, moneylines and totals. The picker can still edit their own
+matchup. Clearing or replacing the shared row releases the old game on refresh.
+Existing board picks are recognized by whole team-code tokens in their text;
+write-in props must include a team code to associate them with a game. Unlabelled
+player-only props cannot be reliably associated and are not guessed.
+Saving re-reads the shared week and refuses a taken game or an unavailable check.
+This supersedes the local-first save policy when the shared store is configured.
+No database rules are changed: this is board filtering plus preflight validation,
+not an atomic server reservation. Simultaneous saves can still race; a hard
+uniqueness guarantee requires a separately authorized backend/rules change.
+
 ## v88 — History taxonomy: numbers, stories and trophies (current state)
 
 The five history tabs are now **You · Trophy Case · Record Book · League Lore ·

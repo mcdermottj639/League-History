@@ -1723,6 +1723,19 @@ function parlayLaws() {
     { a: 'SEA', h: 'PIT', kick: '2026-09-20T17:05Z' },
     { a: 'LAR', h: 'TEN', kick: '2026-09-20T20:25Z', ml: { h: 145, a: -175 } }] };
   const mixHTML = LP._pickHTML(MIXED);
+  // A pick reserves the whole matchup, not merely its selected side/market.
+  const otherPicker = LHIST.roster().find(r => r.m !== LHIST.me()).m;
+  LP._picks({ k: 4, rows: { [otherPicker]: { p: 'NYG +3.5 at DAL', o: -102, t: 1 } } });
+  const lockedBoard = LP._pickHTML(MIXED);
+  if (/data-g="1"/.test(lockedBoard)) fail('a shared pick leaves its matchup on the board');
+  if (!/data-g="3"/.test(lockedBoard)) fail('locking one game hides unrelated games or renumbers options');
+  LP._sel({ g: 1, id: 'sh' });
+  if (/class="lp-bar"/.test(LP._pickHTML(MIXED))) fail('a stale selection still offers Save for a taken game');
+  LP._sel(null);
+  LP._picks({ k: 3, rows: { [otherPicker]: { p: 'NYG +3.5 at DAL', o: -102, t: 1 } } });
+  if (!/data-g="1"/.test(LP._pickHTML(MIXED))) fail('a previous week locks this week\'s matchup');
+  LP._picks({ k: 4, rows: {} });
+  if (!/data-g="1"/.test(LP._pickHTML(MIXED))) fail('clearing a pick does not release the matchup');
   const optBtns = mixHTML.match(/data-g="(\d+)" data-o="([a-z]+)"/g) || [];
   if (optBtns.length !== 4) fail(`a half-priced week rendered ${optBtns.length} lines against the 4 its two priced games carry`);
   optBtns.forEach((b) => {
