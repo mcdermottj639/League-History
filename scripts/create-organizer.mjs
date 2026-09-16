@@ -35,10 +35,11 @@ requires a new link. The ordinary app never receives a Supabase service key.
 ## Still required before activation
 
 1. Approve API deployment with gateway JWT checks disabled and app-level session/
-   capability checks enabled, plus organizer-hash installation. Automatic approval
-   review blocked both operations during preparation. Neither is complete.
-2. Verify the deployed API, private organizer access and scheduled public-data
-   collection. The prepared scheduler is inactive and frontend gate is disabled.
+   capability checks enabled, plus installing THIS new organizer hash. The existing
+   deployment does not automatically authorize or configure a newly generated key.
+2. Verify the deployed API and this private organizer link. Separately authorize
+   scheduled public-data collection before enabling its inactive job. The frontend
+   gate stays disabled until launch.
 3. Choose the actual current legacy week, including Week 1. Rehearse with an
    authorized offline export. Reading live private Firebase picks was previously
    blocked; this packet is not permission to bypass that decision.

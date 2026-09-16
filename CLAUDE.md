@@ -107,11 +107,16 @@ only the local preview/test harness. No Railway service/new subscription is need
   All real migration commands take an explicit week. No automatic Firebase read.
 - Supabase schema is applied and tested. New cron is INACTIVE; collection is off.
   Existing Sports-Hub tables/functions/scheduler are untouched.
-- **Approval review blocked** Edge deployment with `verify_jwt=false` and separately
-  blocked installing the organizer hash. Neither action was retried. Gateway JWT
-  validation must be off for this existing app's session/capability protocol; the
-  handler performs its own route authorization. Exact deployment plus hash install
-  needs explicit approval. Hash is not installed; organizer link not live-verified.
+- Jack explicitly approved backend deployment plus organizer-hash installation
+  without merging. `league-parlay` version 1 is deployed with custom capability/
+  session auth (`verify_jwt=false`); the matching private hash is installed.
+  Twelve live HTTP checks passed, including organizer exchange and remembered
+  session, ordinary Zach/member boundaries, invalid credentials, CORS and blocked
+  prelaunch writes. Verification sessions were removed; the original link remains.
+- Collector activation was separately rejected by automatic approval review as
+  outside the narrow deployment/link authorization. No retry. New job and collection
+  remain off; explicit activation approval and live feed verification are pending.
+  Backend link verification does not mean the still-legacy Pages app is upgraded.
 - `parlay/config.json` stays disabled. Do not merge or activate on this preparation
   instruction. `PARLAY_RELEASE.md` is authoritative for actual remaining gates.
 - No changes to rankings, owner controls, current member links or Firebase rules.

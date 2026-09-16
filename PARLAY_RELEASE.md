@@ -1,7 +1,7 @@
 # Parlay v2 — prepared, not launched
 
 Branch: `feature/parlay-live-organizer`. The committed `parlay/config.json` has
-`enabled: false`; the current Parlay continues using its existing code. No merge, Firebase mutation, frontend activation, or organizer invitation is part of this build. The isolated Supabase schema is prepared; its scheduler is inactive. API deployment and organizer-hash installation were blocked by automatic approval review (see below).
+`enabled: false`; the current Parlay continues using its existing code. No merge, Firebase mutation, frontend activation, or organizer invitation is part of this build. The isolated Supabase schema is prepared; its scheduler is inactive. API deployment and organizer-hash installation completed after Jack explicitly approved them; live access checks passed. Collector activation remains separately blocked (see below).
 
 ## What is built
 
@@ -125,14 +125,25 @@ reopening it. Share the packet's organizer link with Zach only after launch.
 - New 30-second cron job exists but is **inactive**, and `collection_enabled=false`.
   Existing `sports-hub-ai-capture` schedule remains `7,37 * * * *`, active.
 - Edge-compatible modules and canonical manager mapping load successfully in Deno.
-- **API not deployed:** automatic approval review rejected deploying the public
-  Edge Function with `verify_jwt=false` without explicit approval for that endpoint.
-- **Organizer hash not installed:** automatic approval review separately rejected
-  the credential installation without explicit approval. The private packet/link
-  remains unchanged; the hash is still null in the database. Do not say it is live.
+- **API deployed:** `league-parlay` version 1 is active, with the existing app's
+  custom session/capability authorization (`verify_jwt=false`). Jack explicitly
+  approved this backend-only setup without merging on 2026-09-16.
+- **Organizer hash installed:** it matches the unchanged private packet. The raw
+  link capability was never printed or committed. Its live exchange returned
+  organizer/Zach and its remembered session was verified with `/me`.
+- Twelve live HTTP checks passed: organizer exchange, remembered session,
+  ordinary Zach remains member, invalid key/session rejection, Week 1 read-only,
+  pick writes blocked, member actual-odds denied, organizer odds blocked until
+  cutover, unauthorized collector denied, wrong origin denied, allowed app CORS.
+  The two verification sessions were removed afterward; the link itself remains
+  valid. No league picks were migrated or modified by these checks.
+- **Collector activation blocked:** automatic approval review rejected enabling
+  recurring requests/database updates as beyond the narrowly approved deployment
+  and link setup. It was not retried. Collection and its new cron job remain off;
+  explicit collection activation approval is needed before live feed verification.
 - Frontend `enabled:false` remains the gate. Merging the branch as-is does not launch v2.
 
-Expected API base after approved deployment:
+Deployed API base (frontend still disabled):
 `https://oqrfdhoyyogjmiqmjhnp.supabase.co/functions/v1/league-parlay`
 This is a path-based API base, not just a hostname. No browser API key is required.
 
@@ -155,20 +166,20 @@ reconcile any archived weeks too if they exist when launch is authorized.
 
 ## Authorized backend preparation (still no merge)
 
-1. Obtain explicit approval for deploying `league-parlay` with gateway JWT checks
-   disabled and app-level capability/session checks enabled, and for installing
-   the prepared organizer hash. The exact implementation is in this branch.
-   Do not retry the rejected actions through another route.
-2. Deploy `supabase/functions/league-parlay/index.ts` plus its imported repo modules.
-   Preserve existing functions and project-wide auth/API settings. Store only the
-   prepared SHA-256 hash in `league_parlay.config.organizer_hash`; the raw link
-   capability never belongs in SQL, logs, source or browser config.
-3. Verify HTTPS health, allowed-origin CORS, private-link exchange, ordinary Zach's
-   lack of organizer authority, invalid/revoked sessions and write rejection before
-   migration. Keep `enabled:false` in the frontend throughout this verification.
-4. Enable only the new collector/job, verify its HTTP response and fresh data as
-   well as the scheduler result. A succeeded cron enqueue alone is not proof that
-   the collection request succeeded. Do not modify `sports-hub-ai-capture`.
+1. **Completed:** Jack explicitly approved deploying `league-parlay` with gateway
+   JWT checks disabled and app-level authorization enabled, and installing the
+   prepared organizer hash. Those formerly rejected actions succeeded after approval.
+2. **Completed:** deployed the exact prepared function and dependencies, preserving
+   other functions/project auth settings. Only the hash is stored in the private
+   configuration row; the actual link stays in the private launch packet.
+3. **Completed:** live HTTPS health, app CORS, organizer exchange, remembered access,
+   ordinary Zach/member boundaries, invalid sessions, and prelaunch write rejection.
+   No frontend activation or merge. This proves backend access, not a live Pages
+   organizer flow: the current main branch still serves the legacy page.
+4. **Pending approval:** enable only the new collector/job, verify its HTTP response
+   and fresh data as well as the scheduler result. Automatic approval review blocked
+   this separate activation. A succeeded cron enqueue alone does not prove data
+   collection succeeded. Do not modify `sports-hub-ai-capture`.
 
 Operator tooling uses a private `PARLAY_SUPABASE_SERVICE_KEY` environment value
 and the known project URL. Never put that key in command arguments, logs or repo.
@@ -244,8 +255,9 @@ Fixed during the review:
 
 ### Remaining gates — do not claim merge-only readiness
 
-Explicit endpoint/organizer-hash approval, deployed API and collector verification,
-mobile visual QA, and authorized real-pick migration rehearsal are still required.
+Collector activation approval and live feed verification, mobile visual QA, and
+authorized real-pick migration rehearsal are still required. API deployment and
+organizer access configuration/live HTTP verification are complete.
 The schema/job are prepared, the new job is inactive, the current app is unchanged,
 and no merge has occurred. Future launch additionally requires a fresh frozen
 export, reconciliation, backup, activation and Pages verification.
