@@ -51,7 +51,13 @@
     Object.entries(data || {}).forEach(([year, weeks]) => {
       if (!/^\d{4}$/.test(year) || (currentOnly && Number(year) !== c.year)) return;
       Object.entries(weeks || {}).forEach(([key, p]) => {
-        if (!valid(p) || String(p.k) !== key) throw new Error('A published week could not be read.');
+        // Firebase returns numeric week keys as arrays when dense enough.
+        // A missing preseason/deleted week is a null slot, not a bad snapshot.
+        if (p === null) return;
+        if (!valid(p) || String(p.k) !== key) {
+          const err = new Error('A published week could not be read.');
+          err.code = 'invalid-ranking'; throw err;
+        }
         result.push({ ...p, y: Number(year) });
       });
     });

@@ -5,6 +5,14 @@ const assert = require('node:assert/strict');
 const season={teams:Array.from({length:12},(_,i)=>({teamId:i+1,team:'Team '+(i+1),scores:[100+i],wins:1,losses:0,ties:0,isMe:i===0})),allPlay:{}};
 const UID = '34sUlXl2ZebtCJfR97Hz4R9N6Jw1';
 let weeks={}, oldWeeks={}, refreshGate=null, version=0, fail=false, conflict=false, revoked=false, refreshes=0;
+// Firebase serializes dense numeric keys as arrays, with nulls for missing keys.
+// Week 1 alone is [null, week1], not {"1": week1}; this is the production failure.
+function firebaseWeeks(value) {
+ const keys=Object.keys(value).map(Number);
+ if(!keys.length) return null;
+ const max=Math.max(...keys);
+ return keys.length > max/2 ? Array.from({length:max+1},(_,i)=>value[i] || null) : value;
+}
 function response(data,status=200,headers={}) {return {ok:status>=200&&status<300,status,headers:new Headers(headers),json:async()=>JSON.parse(JSON.stringify(data))};}
 async function fetchMock(input,options={}) {
  const url=new URL(input,'https://league.test');
@@ -13,7 +21,7 @@ async function fetchMock(input,options={}) {
  if(url.pathname==='/rankings/index.json')return response({weeks:[]});
  if(url.hostname==='identitytoolkit.googleapis.com')return response({idToken:'token',refreshToken:'refresh',expiresIn:3600,localId:UID});
  if(url.hostname==='securetoken.googleapis.com') { refreshes++; if(refreshGate) await refreshGate; return revoked ? response({},400) : response({id_token:'token',refresh_token:'refresh',expires_in:3600,user_id:UID}); }
- if(url.pathname==='/rankings.json')return response({2025:oldWeeks,2026:weeks});
+ if(url.pathname==='/rankings.json')return response({2025:firebaseWeeks(oldWeeks),2026:firebaseWeeks(weeks)});
  const match=url.pathname.match(/\/rankings\/(2025|2026)\/(\d+)\.json/);
  if(match) {
   const key=match[2], target=match[1]==='2025'?oldWeeks:weeks;
@@ -54,6 +62,12 @@ async function until(fn) { for(let i=0;i<100;i++){if(fn())return;await new Promi
  assert.equal(Object.keys(weeks).length,0);assert(!$('#pr-pubstate').textContent.includes('live for everyone'));
  fail=false;$('#pr-publish').click();await until(()=>$('#pr-share-out').textContent.includes('now live'));
  assert.equal(weeks[1].o.length,12);
+ weeks[3]={...JSON.parse(JSON.stringify(weeks[1])),k:3,l:'After Week 3'};
+ const gap=await w.RankingStore.list();assert.deepEqual(Array.from(gap,p=>p.k),[3,1]);
+ delete weeks[3];
+ weeks[0]={broken:true};await assert.rejects(w.RankingStore.list(),/could not be read/);delete weeks[0];
+ weeks[0]={...JSON.parse(JSON.stringify(weeks[1])),k:0,l:'Preseason'};
+ assert.equal((await w.RankingStore.list()).length,2,'a real preseason snapshot is retained');delete weeks[0];
  const saved = Object.fromEntries(Object.keys(w.localStorage).map(k=>[k,w.localStorage.getItem(k)]));
  assert(!saved['lh:publisher-session'].includes('password'));
  const ownerApp=app('index.html',saved), guest=app('index.html',{},false);

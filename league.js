@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v84';
+  const APP_VERSION = 'v85';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -405,7 +405,7 @@
       published.forEach(p => sharedWeeks.set("live-" + p.y + "-" + p.k, p));
       S.weeks = published.map(p => ({ k: p.k, l: p.y + " · " + p.l, d: p.d, f: "live-" + p.y + "-" + p.k }));
       return S.weeks;
-    } catch (_) { S.wkErr = "offline"; }
+    } catch (err) { S.wkErr = err.code === "invalid-ranking" ? "invalid" : "offline"; }
     try {
       const r = await fetch('rankings/index.json', { cache: 'no-store' });
       if (!r.ok) throw new Error('http ' + r.status);
@@ -503,6 +503,7 @@
      when a payload carries NO byline, which is exactly when the app knows
      least about who built it. `checks.js` asserts the whole set. */
   const WK_EMPTY = {
+    invalid: "<b>The saved rankings could not be read.</b>The rankings service answered, but a saved week has an unexpected format. Your published data has not been deleted.",
     offline: "<b>Can't reach the rankings right now.</b>You are offline, or the page didn't load properly. The league's history below works with no connection at all, so it is still all there.",
     missing: "<b>The rankings list didn't load.</b>The file that lists the published weeks is not there — which is a fault at our end, not yours. The league's thirteen seasons below are unaffected.",
     none: "<b>No rankings published yet.</b>A set is published each week during the season. When one lands it shows up here — every team, in order, with a take on each.",
@@ -552,7 +553,7 @@
     if (requestId !== rankingRequest || (host.dataset.view && host.dataset.view !== "rank")) return;
     if (!p || !Array.isArray(p.o) || !p.o.length) { host.innerHTML = wkBad(); return; }
     try {
-      host.innerHTML = (S.wkErr ? '<p class="pr-note">Shared rankings could not be reached. Showing the older published file.</p>' : '') + rankHTML(p, weeks);
+      host.innerHTML = (S.wkErr ? '<p class="pr-note">' + (S.wkErr === 'invalid' ? 'The shared rankings have an unreadable week.' : 'Shared rankings could not be reached.') + ' Showing the older published file.</p>' : '') + rankHTML(p, weeks);
     } catch (e) {
       console.error('[rankings] that week would not render', e);
       host.innerHTML = wkBad();

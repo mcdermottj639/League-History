@@ -85,6 +85,23 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   the team names — is world-readable. That was the owner's setting, not an
   accident, but weigh it before adding anything new about a person.
 
+## v85 — Firebase numeric-week arrays (current reader correction)
+
+The owner's recording showed v84 saying it could not reach rankings and refusing
+Publish with “A published week could not be read.” His real Week 1 was already
+saved correctly. A read of production returned `{"2026": [null, week1]}`:
+Firebase serializes dense numeric keys as arrays. `RankingStore.list()` was
+validating the null preseason slot as a ranking and throwing before Week 1.
+
+The reader now skips null slots and validates every non-null snapshot. This also
+handles gaps after unpublishing. It accepts both numeric-key objects and arrays;
+never delete or republish valid user content to repair this serialization shape.
+Malformed non-null weeks still fail validation and now receive a data-error
+message instead of an incorrect offline claim. Publishing tests use Firebase's
+array serialization, replacing the object-only mock that hid this failure.
+The recorded live payload was read locally for verification; no production
+rankings were changed and no additional rules or sign-in setup is required.
+
 ## v84 — Publishing with fewer steps (current state)
 
 **Standing UX preference from the owner: the less he has to do, the better.**
