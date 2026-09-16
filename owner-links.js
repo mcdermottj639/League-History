@@ -40,7 +40,7 @@
   function mount(host) {
     if (!host || !allowed()) return;
     host.innerHTML = `<section class="lg-sh"><h3>Links to share · owner only</h3>
-      <p>Public links go to the group. Private links go only to the named manager.</p>
+      <p>Private links go only to the named manager.</p>
       <div data-link-rows></div>
       <details><summary>Add a private link</summary><form data-link-form>
         <label>Name and access<input class="lg-share-u" name="label" required maxlength="80" placeholder="Zach · Parlay organizer"></label>
@@ -56,17 +56,17 @@
     function render() {
       check();
       const list = host.querySelector('[data-link-rows]'); list.replaceChildren();
-      const rows = [{label:'League app · public',url:home(),status:'ready'}, ...read()];
+      const rows = read();
       rows.forEach((row, index) => {
         const card = document.createElement('div'); card.className='lg-link-row';
         const title=document.createElement('b');title.textContent=row.label;card.append(title);
-        const note=document.createElement('p');note.textContent=(index?'Private · ':'Public · ')+({ready:'Ready to send',pending:'Not live yet',inactive:'Inactive — do not send'}[row.status]);card.append(note);
+        const note=document.createElement('p');note.textContent='Private · '+({ready:'Ready to send',pending:'Not live yet',inactive:'Inactive — do not send'}[row.status]);card.append(note);
         const button=document.createElement('button');button.type='button';button.className='lg-sheet-go';button.textContent='Copy link';button.disabled=row.status!=='ready';
         button.onclick=async()=>{try{check();await navigator.clipboard.writeText(row.url);status('Link copied.');}catch(e){if(allowed()){status('Copy unavailable. Select and copy the link below.');const input=document.createElement('textarea');input.readOnly=true;input.value=row.url;card.append(input);input.select();}}};card.append(button);
-        if(index){const select=document.createElement('select');select.setAttribute('aria-label','Status for '+row.label);for(const [value,label] of [['pending','Not live yet'],['ready','Ready to send'],['inactive','Inactive — do not send']]){const option=new Option(label,value);select.add(option);}select.value=row.status;select.onchange=()=>{try{check();const saved=read();saved[index-1].status=select.value;save(saved);render();status('List updated. This label does not activate or revoke access.');}catch(e){if(allowed())status(e.message);}};card.append(select);}
+        {const select=document.createElement('select');select.setAttribute('aria-label','Status for '+row.label);for(const [value,label] of [['pending','Not live yet'],['ready','Ready to send'],['inactive','Inactive — do not send']]){const option=new Option(label,value);select.add(option);}select.value=row.status;select.onchange=()=>{try{check();const saved=read();saved[index].status=select.value;save(saved);render();status('List updated. This label does not activate or revoke access.');}catch(e){if(allowed())status(e.message);}};card.append(select);}
         list.append(card);
       });
-      if(rows.length===1){const p=document.createElement('p');p.textContent='Zach’s private link has not been imported on this device yet. Import the private launch document below.';list.append(p);}
+      if(rows.length===0){const p=document.createElement('p');p.textContent='Zach’s private link has not been imported on this device yet. Import the private launch document below.';list.append(p);}
     }
     host.querySelector('form').onsubmit=e=>{e.preventDefault();try{check();const data=new FormData(e.target),row=validate(Object.fromEntries(data)),rows=read(),existing=rows.findIndex(r=>r.url===row.url);existing<0?rows.push(row):rows[existing]=row;save(rows);e.target.reset();render();status('Private link saved on this device.');}catch(error){if(allowed())status(error.message);}};
     host.querySelector('[data-export-links]').onclick=()=>{try{check();const blob=new Blob([JSON.stringify({version:1,links:read()},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='league-links-private.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);status('Private backup prepared. Keep it out of the group chat.');}catch(error){if(allowed())status(error.message);}};

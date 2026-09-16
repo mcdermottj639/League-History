@@ -87,6 +87,14 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   the team names — is world-readable. That was the owner's setting, not an
   accident, but weigh it before adding anything new about a person.
 
+## v98 — Single public sharing control
+
+The question-mark sheet keeps its existing public Share the link control. The
+owner directory renders saved private entries only, removing the duplicate
+League app public row. Saved labels, URLs and statuses remain untouched; private
+status controls use the correct zero-based storage index after removing the
+synthetic public row. Existing member links and organizer access are unchanged.
+
 ## v97 — One-tap owner link setup
 
 The private owner handoff uses an `owner-parlay-link` URL fragment, removed
@@ -161,8 +169,8 @@ The earlier v91/v92 preparation and no-merge instructions below are historical,
 superseded by Jack's explicit v93 launch approval and this cutover record.
 
 The question-mark help sheet mounts `owner-links.js` only for `LeagueOwner.is()`.
-Name selection and Zach's parlay organizer role do not grant this UI. It lists
-the clean public app URL and private links explicitly imported or saved on the
+Name selection and Zach's parlay organizer role do not grant this UI. As of v98, the public URL stays in the separate sharing section; this directory
+lists only private links explicitly imported or saved on the
 owner's device. Private capabilities must NEVER be bundled in this public repo.
 `lh:owner-links:v1` is a device-local, unencrypted address book, not cloud storage
 or a server authorization gate. Import the existing private organizer launch
