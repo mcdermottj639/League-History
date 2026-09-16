@@ -1,4 +1,4 @@
-import {ensure,ingest,lockDue,payerFromScores,writable} from './engine.mjs';
+import {ensure,ingest,lockDue,payerFromFantasy,writable} from './engine.mjs';
 import {transaction,randomToken} from './supabase-store.mjs';
 import {parseScoreboard} from './domain.mjs';
 export async function getJSON(url,fetcher=fetch){const r=await fetcher(url,{signal:AbortSignal.timeout(10000),headers:{Accept:'application/json','User-Agent':'League-History/Parlay'}});if(!r.ok)throw Error('Source HTTP '+r.status);return r.json();}
@@ -29,9 +29,8 @@ export async function collect(rpc,config,{clock=Date.now,fetchJSON=getJSON,manag
   if(now-(snapshot.collector?.lastFantasy||0)>=3600000&&snapshot.current>1){
    try{
     const p=await fetchJSON('https://sports-hub-fantasy-api.onrender.com/api/fantasy/football/season');
-    if(Number(p.year??p.season?.year)!==year)throw Error('Wrong fantasy season');
-    await transaction(rpc,store=>store.transact(s=>{const season=s.seasons[year];for(const w of Object.values(season.weeks)){const prev=season.weeks[w.week-1];if(!prev?.games.length||!prev.games.every(g=>g.completed&&g.status==='STATUS_FINAL'))continue;const payer=payerFromScores((p.teams||[]).map(t=>({member:managerFor(t.team,p.teams),score:t.scores?.[w.week-2]})),w.week-1);if(payer.status!=='pending')w.payer={...payer,observedAt:now};}season.collector.lastFantasy=now;}));
-   }catch{}
+    await transaction(rpc,store=>store.transact(s=>{const season=s.seasons[year];for(const w of Object.values(season.weeks)){const prev=season.weeks[w.week-1];if(!prev?.games.length||!prev.games.every(g=>g.completed&&g.status==='STATUS_FINAL'))continue;const payer=payerFromFantasy(p,year,w.week,managerFor,now);if(payer.status!=='pending')w.payer={...payer,observedAt:now};}season.collector.lastFantasy=now;delete season.collector.lastFantasyError;}));
+   }catch(e){await transaction(rpc,store=>store.transact(s=>{s.seasons[year].collector.lastFantasyError=String(e.message).slice(0,140);}));}
   }
   const final=(await rpc('read')).state.seasons[year],current=final.weeks[final.current];
   return {ok:!current.feedError&&current.updatedAt>0&&clock()-current.updatedAt<300000,weeks:weeks.length,...(current.feedError?{error:current.feedError}:{})};

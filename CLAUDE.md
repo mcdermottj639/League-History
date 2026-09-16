@@ -87,6 +87,21 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   the team names — is world-readable. That was the owner's setting, not an
   accident, but weigh it before adding anything new about a person.
 
+## v96 — Previous-week payer feed
+
+The existing fantasy season endpoint supplies week, scores and outcomes but no
+season year; the Edge collector's mandatory-year check had silently rejected it.
+Both collectors now share payerFromFantasy: explicit wrong years fail, missing
+years are accepted only in the configured active NFL calendar season (September
+through February), the source week must cover the ticket, and all twelve mapped
+members need valid scores and final W/L/T outcomes. The prior NFL board must
+still be fully final. Missing scores, in-progress outcomes and ties are retained
+as pending/tied rather than guessed. Edge fantasy fetch errors are recorded in
+collector.lastFantasyError. The current endpoint cannot independently attest its
+year when omitted; calendar/week checks bound that existing source limitation.
+When Zach is lowest, the line says he covers the $10 rather than owes himself.
+No pick, session, capability, rankings or payment-confirmation behavior changes.
+
 ## v95 — Parlay entry transition
 
 Jack's phone recording showed History shortcuts lingering during Parlay's first

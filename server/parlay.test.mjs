@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Store} from './store.mjs';
 import {parseScoreboard,ticket,result,ROSTER} from './domain.mjs';
-import {ensure,ingest,savePick,importLegacy,payerFromScores,publicWeek,activateRelease} from './engine.mjs';
+import {ensure,ingest,savePick,importLegacy,payerFromFantasy,payerFromScores,publicWeek,activateRelease} from './engine.mjs';
 import {createApp,hash} from './app.mjs';
 import {Collector} from './collector.mjs';
 const T=Date.UTC(2026,8,20,16,0),K=T+3600000;
@@ -71,4 +71,22 @@ test('actual ticket odds enforce organizer authority, validation and revision ch
  const negative=savePlacedOdds(s,2026,2,organizer,{odds:'−110',revision:1},K+2);assert.equal(negative.placedTicket.potentialReturn,19.09);
  savePlacedOdds(s,2026,2,organizer,{clear:true,revision:2},K+3);assert.equal(s.read().seasons[2026].weeks[2].placedTicket,null);assert.throws(()=>savePlacedOdds(s,2026,2,organizer,{odds:12500,revision:0},K+4),/changed/);assert.equal(JSON.stringify(s.read().seasons[2026].weeks[2].picks.McD),quote);
  }finally{s.close();}
+});
+
+
+test('payer accepts the current no-year fantasy feed only with final complete prior-week scores',()=>{
+ const p={week:2,teams:ROSTER.map((m,i)=>({team:m,scores:[m==='Zach'?70.9:100+i],outcomes:['L']}))};
+ const get=(p,year=2026,week=2,now=T)=>payerFromFantasy(p,year,week,m=>m,now);
+ assert.deepEqual(get(p),{status:'ready',members:['Zach'],score:70.9,previousWeek:1});
+ assert.throws(()=>get({...p,year:2025}),/season/);
+ assert.throws(()=>get(p,2025),/season/);
+ assert.throws(()=>get(p,2026,2,Date.UTC(2027,8,20)),/season/);
+ assert.equal(get(p,2026,2,Date.UTC(2027,0,2)).status,'ready');
+ assert.equal(get({...p,week:1}).status,'pending');
+ assert.equal(get(p,2026,1).status,'pending');
+ assert.equal(get({...p,teams:p.teams.slice(1)}).status,'pending');
+ const unfinished=structuredClone(p);unfinished.teams[0].outcomes[0]='U';assert.equal(get(unfinished).status,'pending');
+ const missing=structuredClone(p);missing.teams[0].scores[0]=null;assert.equal(get(missing).status,'pending');
+ const zero=structuredClone(p);zero.teams[0].scores[0]=0;assert.equal(get(zero).score,0);
+ const tie=structuredClone(p);tie.teams[0].scores[0]=70.9;assert.equal(get(tie).status,'tie');
 });

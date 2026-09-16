@@ -1,4 +1,4 @@
-import {ensure,ingest,lockDue,payerFromScores} from './engine.mjs';
+import {ensure,ingest,lockDue,payerFromFantasy} from './engine.mjs';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 const sandbox={window:{},localStorage:{getItem:()=>null,setItem:()=>{}}};
@@ -27,10 +27,9 @@ export class Collector {
     this.lastSource=now;
    }
    if(now-this.lastFantasy>3600000){
-    try{const payload=await this.fetchJSON(E.SEASON_URL);if((payload.year&&Number(payload.year)!==this.year)||(payload.season?.year&&Number(payload.season.year)!==this.year))throw Error('Wrong fantasy season');const season=this.store.read().seasons[this.year];
+    try{const payload=await this.fetchJSON(E.SEASON_URL);const season=this.store.read().seasons[this.year];
      for(const w of Object.values(season.weeks)){const prev=season.weeks[w.week-1];if(!prev?.games.length||!prev.games.every(g=>g.completed&&g.status==='STATUS_FINAL'))continue;
-      const scores=(payload.teams||[]).map(t=>({member:E.mgrFor(t.team,payload.teams),score:t.scores?.[w.week-2]}));
-      const payer=payerFromScores(scores,w.week-1);if(payer.status!=='pending')this.store.transact(s=>{ensure(s,this.year,w.week).payer={...payer,observedAt:now};});
+      const payer=payerFromFantasy(payload,this.year,w.week,E.mgrFor,now);if(payer.status!=='pending')this.store.transact(s=>{ensure(s,this.year,w.week).payer={...payer,observedAt:now};});
      }this.lastFantasy=now;
     }catch{}
    }

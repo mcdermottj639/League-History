@@ -55,6 +55,20 @@ export function payerFromScores(scores,previousWeek){
  const low=Math.min(...scores.map(x=>Number(x.score))),members=scores.filter(x=>Number(x.score)===low).map(x=>x.member);return {status:members.length===1?'ready':'tie',members,score:low,previousWeek};
 }
 
+
+// The existing current-season fantasy endpoint omits year. Accept that contract
+// only during the configured NFL season, with a compatible source week and
+// final outcomes for every member; explicit year mismatches always fail closed.
+export function payerFromFantasy(payload,year,ticketWeek,managerFor,now=Date.now()){
+ const years=[payload.year,payload.season?.year].filter(x=>x!=null);
+ const date=new Date(now),month=date.getUTCMonth(),currentYear=date.getUTCFullYear()-(month<2?1:0);
+ if(years.some(x=>Number(x)!==year)||(!years.length&&(currentYear!==year||(month>1&&month<8))))throw Error('Wrong or unverified fantasy season');
+ if(!Number.isInteger(ticketWeek)||ticketWeek<2||ticketWeek>18||!Number.isInteger(payload.week)||payload.week<ticketWeek||payload.week>18)return {status:'pending'};
+ const teams=payload.teams||[],index=ticketWeek-2;
+ if(teams.some(t=>!['W','L','T'].includes(t.outcomes?.[index])))return {status:'pending'};
+ return payerFromScores(teams.map(t=>({member:managerFor(t.team,teams),score:t.scores?.[index]})),ticketWeek-1);
+}
+
 // A successful import alone is never permission to switch the live write store.
 export function activateRelease(store,year,week,proof,now=Date.now()){
  return store.transact(s=>{const season=s.seasons[year],w=season?.weeks[week];
