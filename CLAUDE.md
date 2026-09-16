@@ -85,6 +85,48 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   the team names — is world-readable. That was the owner's setting, not an
   accident, but weigh it before adding anything new about a person.
 
+## v87 — Combined rankings and archive refinements (current state)
+
+The owner approved the cream-and-gold combined mockup: three weekly highlights,
+compact ranking cards, and expandable season details. Keep this design scoped;
+do not add features or change other tabs without a request. **Rankings must not
+name an author.** The subtitle is “League rankings. The numbers and the story.”
+and the commentary heading is “The write-up”. Saved write-ups are unchanged.
+The stored byline remains for backward compatibility but is not displayed here.
+
+`rankings-view.js` derives highlights, scoring ranks (including ties), movement,
+rank charts, PPG comparison bars, all-play and recent results. The first team is
+expanded initially. Rankings use saved snapshots only, isolate seasons, exclude
+future weeks and do not draw lines across missing publications. First editions
+show a single dot and no invented movement. Native details controls support
+keyboard navigation; long history charts scroll within their card.
+
+The Lab captures optional row index 8 `{scores, outcomes, allPlay}` when publishing.
+Only complete available facts are included: Firebase removes null/empty fields,
+so omitting them preserves save confirmation. Editing order/commentary preserves
+these facts. No new Firebase rules are needed. For pre-v87 Week 1 snapshots,
+PPG is the weekly score and a one-game record proves W/L/T. All-play can be
+recovered only when all twelve Week 1 scores differ; rounded ties are unknown.
+Older later weeks without these details show unavailable values, never invented
+history. If only cumulative PPG is available, the highlight says “Scoring leader”
+rather than pretending it is the latest week's score.
+
+Additional explicit owner requests in this release:
+- **All-time playoff PPG** has its own Leaders table and appears on career/profile
+  cards. `bPF / bG` uses only championship-bracket (`W`) games, the same population
+  as the playoff record. Each value includes its game count. Placement,
+  consolation and Cum Bowl scores are excluded. The existing January comparison
+  remains its separately labelled all-bracket population.
+- The `dynasty` / GOAT storyline detector is removed. Trophy counts stay intact.
+- **Seeds & upsets moves to Honors; Final fours moves to Leaders.** The help copy
+  and DOM-derived jump links follow those locations.
+
+Checks: `node checks.js`, `node rankings-view.test.cjs`, and
+`NODE_PATH=<jsdom directory> node publishing.test.cjs`. Never test authenticated
+writes against production. Publishing/member authorization remains unchanged.
+The browser's local-preview policy blocks localhost/file previews in this
+session; visual verification is performed against the deployed public page.
+
 ## v86 — Parlay quick-nav survives live refreshes
 
 The parlay's live board and shared-picks requests can repaint the tab after the
@@ -228,6 +270,8 @@ superseded. No model run happens in a member's Rankings view: these are snapshot
       outcomes for the reason `unlock` has three: a guest stuck at the gate has
       nobody to ask but the screen, and "ran out" and "arrived broken" send
       them to two different places.
+- `rankings-view.js` — saved-snapshot visual derivations and combined Rankings cards; loaded by the app and Lab.
+- `rankings-view.test.cjs` — numeric, history, tie, missing-data and safe-rendering regressions.
 - `league.js` — the shell: identity, router, jump nav, the rankings view, and
   the **? sheet** (`helpHTML` / `openHelp` / `closeHelp`).
   - 🚨 **`L1` IS FOUR TABS NOW (v69) AND THE EMOJI CAME OFF TO PAY FOR IT.**
@@ -405,24 +449,17 @@ superseded. No model run happens in a member's Rankings view: these are snapshot
       variation selector** — the exact ⚡ trap v49 found, where a font is free
       to draw the bare codepoint as a thin monochrome TEXT glyph. Verified on
       the render: `U+1F396 U+FE0F`, in colour.
-    - ⚠️ **🎖️ is also the Final fours section mark on Honors, and that is
+    - ⚠️ **🎖️ is also the Final fours section mark on Leaders, and that is
       checked rather than assumed.** They never share a page — the mascot is on
-      You and on a profile, Final fours is on Honors — so the v50 jump-nav
+      You and on a profile, Final fours is on Leaders — so the v50 jump-nav
       clash does not arise. It does mean the glyph carries two meanings across
       the app; the owner's call, and worth knowing before a future session
       "fixes" one of them.
     - ⚠️ Keyed by MANAGER CODE, like `MGR_LOGO` and for the same reason: the
       fantasy team names change every September, the twelve people do not.
-  - ⚠️ **The playoff résumé is split across two tabs (v48, owner's call), and
-    the split is by KIND.** 🎖️ **Final fours** — the funnel, final fours ·
-    finals · won — closes **Honors**, because it is an achievement and that is
-    the page of achievements. 📊 **Playoff appearances** — how often each
-    manager gets in, as a rate, **plus the championship-bracket record**
-    (v50) — is on **Leaders** since v65, because it is a leaderboard and that
-    is now the page of leaderboards (it sat on Records from v48 to v64).
-    Neither is on Cum Bowl (v9): that is the opposite bracket, for
-    the teams that missed, and filing the league's best achievement behind the
-    tab named for its worst was the original fault.
+  - **The playoff résumé is on Leaders (v87, owner's call).** Final fours,
+    playoff appearances/record and all-time playoff PPG are on Leaders.
+    Seeds & upsets is on Honors, swapped with Final fours in v87.
     - ⚠️ **`playoffHTML` was renamed on screen in the same edit.** It headed
       BOTH cards as "Playoff record", which covered the résumé; alone over an
       appearance rate, a heading promising a *record* describes something
@@ -430,7 +467,7 @@ superseded. No model run happens in a member's Rankings view: these are snapshot
       that makes a number sound like another number. It reads **Playoff
       appearances**, matching the career tile's `Playoff apps` since v10.
     - ⚠️ **Honors closes with 📉 The champion's curse (v50, owner's call),
-      under final fours.** It is about what happens to a CHAMPION, so it sits
+      under Seeds & upsets.** It is about what happens to a CHAMPION, so it sits
       with the champions rather than among the Records leaderboards. Its mark
       changed from 👑 to 📉 in the same edit: 👑 is the trophy case, two cards
       up, and the jump row is read by its mark.
@@ -652,8 +689,9 @@ superseded. No model run happens in a member's Rankings view: these are snapshot
       he circled four cards on a screenshot).** Records had grown to eight
       cards. It keeps what the archive turns UP — Storylines · the record book
       · **the luck index · Rivalries last** (v53, his words, still true) — and
-      the four that simply rank all twelve moved out: 🏅 All-time standings ·
-      📊 Playoff appearances · 🎯 Seeds & upsets · 🔥 Who shows up in January.
+      Leaders now holds 🏅 All-time standings · 🏈 All-time playoff PPG ·
+      📊 Playoff appearances · 🎖️ Final fours · 🔥 Who shows up in January.
+      Seeds & upsets is on Honors (v87).
     - 🚽 **`cb` LEADS WITH THE CUM BOWL AND THE SEASONS FOLLOW** (v65, owner:
       *"Cum bowl is the prize of those tab. When I click it I want cum bowl.
       Then seasons can be offered but out of the way"*). Nothing auto-expands
@@ -2148,15 +2186,9 @@ something computed is wrong the first time somebody changes it.
   that manager has: *"One of 4 titles"* sat directly above the GOAT card's
   *"with 4 titles"* on his own page — one fact on two adjacent cards, which
   the `stories()` dedupe fingerprints DECIMALS and cannot see.
-- 🚨 **A REPEATED FIRST PLACE IS THE TITLE COUNT, AND THAT CARD IS `dynasty`
-  (v81).** `stuckAt` is about a finish a manager cannot escape; a championship
-  is not one. Its own comment has named the risk since v2 — *"Buley (11th x7)
-  and the champion (1st x4)"* — and only `leaders()` kept the champion off the
-  page, because 7 beat 4. v79's placings took Buley to 4, the tie surfaced,
-  and the roll-call printed *"McD has finished 1st four times"* into the slot
-  the owner explicitly moved the title count OFF in v16 (`dynasty` is
-  `own: true` for exactly that reason). **One concept, one number, one place
-  it prints** (v14), so `stuckAt` skips 1st and `checks.js` asserts it.
+- **`stuckAt` skips championships.** Repeated first place is a trophy count,
+  not a finish somebody cannot escape. The GOAT/`dynasty` detector was removed
+  at the owner's request in v87; do not restore it through another storyline.
 - **`own: true` keeps a story on that manager's OWN pages only (v15).** Not
   every finding deserves one of fourteen slots on the league's roll-call —
   a second card that makes the same case about the same manager in a duller
@@ -2378,7 +2410,7 @@ itself into a different answer a week after it was written**.
   fires only when a payload carries NO byline — which is exactly when the app
   knows least about who built the week, so it was guessing hardest at the one
   moment it had nothing to go on. It reads "This week's rankings" now; a week
-  WITH a byline is unchanged and still leads with it (v33's whole point).
+  with a saved byline also uses neutral copy in v87; the saved field is preserved.
   ⚠️ The ? sheet's line also carried a pronoun (*"once **he** publishes"*) —
   the repo's no-pronouns rule reaching the help text rather than a storyline.
   ⚠️ **`checks.js` asserts all four by their own anchors AND that the promise
@@ -2626,7 +2658,7 @@ stale entry written in the present tense reads as current to anyone who greps.
     like one claim to the dedupe, and the duplicate comes straight back.
     ⚠️ And its body says how rare this is LEAGUE-WIDE rather than how many
     titles that manager has: the first cut read *"One of 4 titles"* directly
-    above the GOAT card's *"with 4 titles"* on his own page — one fact on two
+    ⚠️ SUPERSEDED in v87: the GOAT detector is removed. Previously above the GOAT card's *"with 4 titles"* on his own page — one fact on two
     adjacent cards, which the `stories()` dedupe fingerprints DECIMALS and
     cannot see (v8).
   - 🚨 **AND FIXING ONLY THE CARD HE POINTED AT WOULD HAVE MOVED THE FAULT
@@ -2941,7 +2973,7 @@ stale entry written in the present tense reads as current to anyone who greps.
     NOBODY WOULD HAVE FOUND FROM A SCREENSHOT.** `p.b ? … : "The
     commissioner's"` fires **only when the payload carries no byline at all** —
     so the app asserted authorship hardest in the single case where it knew
-    nothing about who built the week. A week WITH a byline is untouched and
+    nothing about who built the week. ⚠️ SUPERSEDED in v87: bylines are no longer shown in Rankings. Previously, a week WITH a byline is untouched and
     still leads with it, which is what v33 added it for.
   - ⚠️ **The ? sheet's line also said "only once *he* publishes a set".** This
     repo has banned pronouns in generated copy since v1 (a sentence that
@@ -4000,7 +4032,7 @@ stale entry written in the present tense reads as current to anyone who greps.
     drawn as a thin monochrome TEXT glyph — exactly what ⚡ did on v49's first
     render. Checked on the rendered heading rather than in the source:
     `U+1F396 U+FE0F`, in colour, on both the heading and its jump chip.
-  - ⚠️ **🎖️ is already the Final fours mark on Honors — checked, and they never
+  - ⚠️ **🎖️ is already the Final fours mark on Honors (⚠️ SUPERSEDED in v87: now Leaders) — checked, and they never
     share a page.** The mascot renders on You and on a profile; Final fours is
     on Honors. So the v50 clash (two identical marks in one jump row) does not
     arise. The glyph does now carry two meanings across the app, which is his
@@ -4655,7 +4687,7 @@ stale entry written in the present tense reads as current to anyone who greps.
     "fixing" it** — a repo rule applied to the wrong file would have produced
     "2025: 33rd".
   - Verified at 320 and 390px, as a reader and as a stranger: Honors renders
-    **👑 The trophy case · 🏆 Champions · 💔 Still waiting · 🎖️ Final fours ·
+    **👑 The trophy case · 🏆 Champions · 💔 Still waiting · 🎖️ Final fours (⚠️ SUPERSEDED in v87: Seeds & upsets takes this slot) ·
     📉 The champion's curse**, five distinct marks and five distinct chips, the
     curse last with twelve rows and the reader's own three title years lit;
     Records renders six sections with no curse rows; both ? sheet sentences
@@ -4752,7 +4784,7 @@ stale entry written in the present tense reads as current to anyone who greps.
     running that this is the only hand-edit a card move needs, which is the
     argument for keeping every other list derived.
   - Verified at 320 and 390px, as a reader and as a stranger: Honors renders
-    **👑 The trophy case · 🏆 Champions · 💔 Still waiting · 🎖️ Final fours**,
+    **👑 The trophy case · 🏆 Champions · 💔 Still waiting · 🎖️ Final fours (⚠️ SUPERSEDED in v87: Seeds & upsets takes this slot)**,
     the last of those closing the page with twelve rows and the reader's own
     row lit; Records keeps twelve appearance rows, zero final-four rows, and
     its three legitimate `.fh-sub` subheadings; the jump nav picked the new chip
@@ -6096,7 +6128,7 @@ stale entry written in the present tense reads as current to anyone who greps.
     answer to *"if winners bracket is final 4 call it final 4"* is that it
     **isn't**: the title bracket is six teams and the final four is the round
     after round 1. Both are named for what they are now.
-  - **The headings the owner named.** Most titles is the **GOAT argument**
+  - **The headings the owner named.** Most titles is the **GOAT argument** (⚠️ SUPERSEDED in v87: this detector is removed)
     (it fires for whoever leads titles — a shape, never a person). The
     collapse card was *"is the biggest story in the archive"*, which is
     billing rather than a finding; it says what it found now — outscores

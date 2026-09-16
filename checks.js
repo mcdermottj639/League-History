@@ -202,6 +202,33 @@ const apMark = block();
 ALL.forEach((x) => { if (x.bA !== x.po) {
   console.log(`  ❌ ${x.m}: ${x.bA} brackets on file but ${x.po} playoff appearances — the card's arithmetic claim is false`); bad++; } });
 console.log(`  ${apMark()} brackets == appearances     every playoff berth has its bracket on file`);
+
+/* Career playoff scoring uses exactly the title-bracket games for each
+   manager. Checking per person detects score-side or ownership swaps. */
+{
+  const mark = block();
+  ALL.forEach(a => {
+    const scores = PLAYOFF_GAMES.filter(g => g.br === 'W').flatMap(g => {
+      const season = SEASON.find(s => s.yr === g.yr);
+      return [[g.a,g.as],[g.b,g.bs]].filter(([team]) => season.rows.some(r => r.t === team && r.mgr === a.m)).map(([,score]) => score);
+    });
+    const sum = scores.reduce((n,s) => n+s,0);
+    if (a.bG !== scores.length || Math.abs(a.bPF-sum) > .000001 || Math.abs(a.bPpg-sum/scores.length) > .000001) {
+      console.log(`  ❌ ${a.m}: playoff PPG disagrees with championship-bracket scores`); bad++;
+    }
+    if (!window.LeagueHistory.profile(a.m).includes('All-time playoff PPG: '+a.bPpg.toFixed(1))) {
+      console.log(`  ❌ ${a.m}: career playoff PPG missing from profile`); bad++;
+    }
+  });
+  const honors = window.LeagueHistory.view('hon'), leaders = window.LeagueHistory.view('led');
+  if (!honors.includes('Seeds &amp; upsets') || leaders.includes('Seeds &amp; upsets') || !leaders.includes('Final fours') || honors.includes('🎖️ Final fours')) {
+    console.log('  ❌ Seeds & upsets / Final fours are not on the requested tabs'); bad++;
+  }
+  if (!leaders.includes('All-time playoff PPG') || /GOAT argument/.test(window.LeagueHistory.profile('McD'))) {
+    console.log('  ❌ requested playoff scoring or storyline change is missing'); bad++;
+  }
+  console.log(`  ${mark()} playoff PPG: each career, visible scoring, requested card locations and no GOAT story`);
+}
 /* 🚨 THE BRACKET MUST RESOLVE THE STANDINGS, EVERY SEASON (v66 audit — the
    owner: "Verify all the info for cum bowl and season stats"). The season
    tables and the bracket games came from DIFFERENT captures (ESPN's Standings
@@ -2156,8 +2183,8 @@ function rankVoiceLaws() {
     fail('the empty rankings card no longer says a set is published each week');
   }
   const sub = got['the byline line on a published week'] || '';
-  if (sub && !/p\.b \?/.test(sub)) {
-    fail('the published week no longer prefers the payload\'s own byline');
+  if (sub && (/p\.b/.test(sub) || !sub.includes('League rankings. The numbers and the story.'))) {
+    fail('the published rankings must use neutral copy without an author');
   }
 
   console.log(`  ${mark()} the rankings copy says a set is published, never who publishes it`);

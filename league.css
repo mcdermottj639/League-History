@@ -100,6 +100,95 @@
   padding: 3px 5px; border-radius: 4px; background: var(--grad); color: var(--on-ac);
   vertical-align: 1px; }
 
+/* Approved combined rankings: weekly overview with expandable team details.
+   Scoped to Rankings so the Lab, publishing controls and other tabs keep
+   their existing layouts. Colours come from the champagne palette. */
+:root[data-palette] [data-view="rank"] { max-width: 760px; margin: 0 auto; }
+:root[data-palette] .lg-rank-head { padding: 16px; }
+:root[data-palette] .lg-rank-head h2 { font-size: clamp(27px, 7vw, 34px); margin: 7px 0; line-height: 1.08; }
+:root[data-palette] .lg-rank-head .pr-sub { color: var(--gy); font-size: 14px; margin-bottom: 16px; }
+:root[data-palette] .rk-highlights { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+:root[data-palette] .rk-highlight { display: flex; flex-direction: column; align-items: center; text-align: center; min-width: 0; padding: 12px 5px; border: 1px solid var(--tr); border-radius: 12px; background: var(--sf); gap: 5px; }
+:root[data-palette] .rk-icon { width: 23px; height: 23px; flex: 0 0 auto; color: var(--ac7); }
+:root[data-palette] .rk-highlight span { font-size: 11px; font-weight: 600; color: var(--gy); line-height: 1.3; }
+:root[data-palette] .rk-highlight b { font-size: 12px; font-weight: 800; line-height: 1.3; overflow-wrap: anywhere; }
+:root[data-palette] .rk-highlight strong { margin-top: auto; font-size: clamp(15px, 4.2vw, 23px); line-height: 1.2; font-weight: 900; color: var(--ac7); font-variant-numeric: tabular-nums; }
+:root[data-palette] .rk-card { display: block; padding: 13px; background: var(--sf); border-radius: 17px; margin-bottom: 12px; }
+:root[data-palette] .rk-card.p1 { border: 2px solid var(--ac); box-shadow: none; }
+:root[data-palette] .rk-team-head { display: flex; align-items: center; gap: 9px; margin-bottom: 13px; }
+:root[data-palette] .rk-team-head .pr-n { flex: 0 0 32px; font-size: 33px; text-align: center; color: var(--gy); }
+:root[data-palette] .rk-card.p1 .pr-n { font-size: 40px; color: var(--ac); }
+:root[data-palette] .rk-team-head .fh-crest { flex-shrink: 0; }
+:root[data-palette] .rk-team-name { min-width: 0; flex: 1; }
+:root[data-palette] .rk-team-name h3 { margin: 0 0 3px; font-size: 17px; font-weight: 900; line-height: 1.15; letter-spacing: -.02em; overflow-wrap: anywhere; }
+:root[data-palette] .rk-team-name .pr-mgr { font-size: 12px; color: var(--gy); }
+:root[data-palette] .rk-movement { flex: 0 0 auto; text-align: center; }
+:root[data-palette] .rk-movement b { display: block; padding: 5px 8px; font-size: 11px; line-height: 1.2; font-weight: 900; border-radius: 20px; background: var(--gr); }
+:root[data-palette] .rk-movement small { display: block; font-size: 9px; color: var(--gy); margin-top: 4px; }
+:root[data-palette] .rk-up { color: var(--pos) !important; }
+:root[data-palette] .rk-down { color: var(--neg) !important; }
+:root[data-palette] .rk-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 10px 0; border: 1px solid var(--tr); border-radius: 10px; background: var(--sf); }
+:root[data-palette] .rk-stats > div { display: flex; flex-direction: column; text-align: center; gap: 4px; min-width: 0; }
+:root[data-palette] .rk-stats > div + div { border-left: 1px solid var(--tr); }
+:root[data-palette] .rk-stats b { font-size: 21px; font-weight: 900; line-height: 1.1; font-variant-numeric: tabular-nums; }
+:root[data-palette] .rk-stats span { font-size: 10px; color: var(--gy); text-transform: uppercase; letter-spacing: .06em; }
+:root[data-palette] .rk-writeup { display: flex; gap: 10px; margin: 12px 0; padding: 12px 0 2px; }
+:root[data-palette] .rk-writeup > .rk-icon { padding: 8px; box-sizing: content-box; background: rgba(var(--acRGB), .12); border-radius: 50%; width: 18px; height: 18px; }
+:root[data-palette] .rk-writeup > div { min-width: 0; flex: 1; }
+:root[data-palette] .rk-card h4 { margin: 0 0 7px; font-size: 13px; line-height: 1.3; font-weight: 800; color: var(--ink); }
+:root[data-palette] .rk-card .pr-take-ro { margin-top: 0; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; white-space: pre-wrap; }
+:root[data-palette] .rk-card .pr-moved { color: var(--gy); font-size: 12px; margin: 7px 0 0; }
+:root[data-palette] .rk-details { border-top: 1px solid var(--tr); margin-top: 12px; }
+:root[data-palette] .rk-details > summary { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 44px; padding: 5px 0; font-size: 13px; font-weight: 800; cursor: pointer; list-style: none; box-sizing: border-box; }
+:root[data-palette] .rk-details > summary::-webkit-details-marker { display: none; }
+:root[data-palette] .rk-details > summary i { width: 7px; height: 7px; border: solid var(--gy); border-width: 0 2px 2px 0; transform: rotate(45deg); margin-top: -4px; }
+:root[data-palette] .rk-details .rk-open-label { display: none; }
+:root[data-palette] .rk-details[open] > summary { justify-content: space-between; }
+:root[data-palette] .rk-details[open] > summary i { transform: rotate(225deg); margin-top: 4px; }
+:root[data-palette] .rk-details[open] > summary .rk-open-label { display: inline; }
+:root[data-palette] .rk-details[open] > summary .rk-closed-label { display: none; }
+:root[data-palette] .rk-chart, :root[data-palette] .rk-comparison, :root[data-palette] .rk-form-grid > section { padding: 12px; border: 1px solid var(--tr); border-radius: 10px; background: var(--sf); min-width: 0; }
+:root[data-palette] .rk-chart { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+:root[data-palette] .rk-chart-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+:root[data-palette] .rk-chart svg { width: 100%; display: block; font: 11px Archivo, system-ui, sans-serif; }
+:root[data-palette] .rk-chart svg text { fill: var(--gy); }
+:root[data-palette] .rk-chart svg line { stroke: var(--tr); stroke-width: 1; }
+:root[data-palette] .rk-chart svg .rk-trend { stroke: var(--ac7); stroke-width: 2.5; }
+:root[data-palette] .rk-chart svg circle { fill: var(--ac7); stroke: var(--sf); stroke-width: 1.5; }
+:root[data-palette] .rk-trend-note { font-size: 12px; font-weight: 600; line-height: 1.45; margin: 9px 0 0; color: var(--gy); }
+:root[data-palette] .rk-comparison { border-top: 0; border-top-left-radius: 0; border-top-right-radius: 0; }
+:root[data-palette] .rk-comparison h4 span { font-size: 11px; font-weight: 500; color: var(--gy); }
+:root[data-palette] .rk-bar { display: grid; grid-template-columns: minmax(42px, .8fr) minmax(40px, 2fr) 43px; align-items: center; gap: 9px; margin-top: 10px; font-size: 12px; }
+:root[data-palette] .rk-bar > span { overflow-wrap: anywhere; }
+:root[data-palette] .rk-bar b { font-variant-numeric: tabular-nums; font-size: 13px; text-align: right; }
+:root[data-palette] .rk-track { height: 11px; }
+:root[data-palette] .rk-track i { display: block; height: 100%; border-radius: 20px; background: var(--grad); }
+:root[data-palette] .rk-track .rk-league-bar { background: var(--tr2); }
+:root[data-palette] .rk-form-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; margin-top: 8px; }
+:root[data-palette] .rk-form-grid h4 { text-transform: uppercase; font-size: 11px; letter-spacing: .04em; }
+:root[data-palette] .rk-ap { font-size: 23px; font-weight: 900; font-variant-numeric: tabular-nums; }
+:root[data-palette] .rk-form-grid p, :root[data-palette] .rk-empty { font-size: 11px; line-height: 1.45; color: var(--gy); margin: 4px 0 0; }
+:root[data-palette] .rk-form { display: flex; gap: 5px; }
+:root[data-palette] .rk-result { display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 0; flex: 1; max-width: 36px; }
+:root[data-palette] .rk-result b { display: flex; justify-content: center; align-items: center; min-height: 29px; width: 100%; border-radius: 8px; font-size: 13px; background: var(--gr); color: var(--gy); }
+:root[data-palette] .rk-result .rk-W { background: var(--pos); color: var(--sf); }
+:root[data-palette] .rk-result .rk-L { background: var(--neg); color: var(--sf); }
+:root[data-palette] .rk-result small { color: var(--gy); font-size: 9px; }
+:root[data-palette] .rk-hide { width: 100%; min-height: 44px; border: 1px solid var(--tr); border-radius: 10px; background: var(--sf); color: var(--ink); font: 800 13px Archivo, system-ui, sans-serif; margin-top: 8px; cursor: pointer; }
+:root[data-palette] .rk-hide span { margin-left: 7px; }
+:root[data-palette] .rk-card :focus-visible { outline: 2px solid var(--ac7); outline-offset: 3px; }
+@media (max-width: 374px) {
+  :root[data-palette] .rk-card { padding: 10px; }
+  :root[data-palette] .rk-team-head { gap: 7px; flex-wrap: wrap; }
+  :root[data-palette] .rk-team-name h3 { font-size: 15px; }
+  :root[data-palette] .rk-team-name { min-width: 105px; }
+  :root[data-palette] .rk-movement { margin-left: auto; }
+  :root[data-palette] .rk-highlights { gap: 5px; }
+  :root[data-palette] .rk-highlight { padding: 10px 3px; }
+  :root[data-palette] .rk-highlight span { font-size: 10px; }
+  :root[data-palette] .rk-form-grid > section { padding: 9px; }
+}
+
 /* ── footer ─────────────────────────────────────────────────────────────── */
 :root[data-palette] .lg-foot {
   margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--tr); }

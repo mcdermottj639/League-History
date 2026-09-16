@@ -916,7 +916,7 @@
   SEASON.forEach((s) => s.rows.forEach((r) => {
     if (!r.mgr) return;
     const a = MGRS[r.mgr] || (MGRS[r.mgr] = { m: r.mgr, logo: MGR_LOGO[r.mgr],
-      seasons: 0, w: 0, l: 0, pf: 0, pa: 0, t1: 0, t2: 0, t3: 0, po: 0, fin: 0, f4: 0, bw: 0, bl: 0, bA: 0, cb: 0, cbA: 0, cbPF: 0,
+      seasons: 0, w: 0, l: 0, pf: 0, pa: 0, t1: 0, t2: 0, t3: 0, po: 0, fin: 0, f4: 0, bw: 0, bl: 0, bA: 0, bPF: 0, bG: 0, bPpg: null, cb: 0, cbA: 0, cbPF: 0,
       yrs: [], allW: 0, allL: 0, pfRankSum: 0, placeSum: 0 });
     a.seasons++; a.w += r.w; a.l += r.l; a.pf += r.pf; a.pa += r.pa;
     a.yrs.push(r);
@@ -1052,9 +1052,10 @@
   PLAYOFF_GAMES.forEach((g) => {
     if (g.br !== 'W') return;
     const aWon = g.as > g.bs;
-    [[mgrOf(g.a), aWon], [mgrOf(g.b), !aWon]].forEach(([m, won]) => {
+    [[mgrOf(g.a), aWon, g.as], [mgrOf(g.b), !aWon, g.bs]].forEach(([m, won, points]) => {
       const a = m && MGRS[m]; if (!a) return;
       if (won) a.bw++; else a.bl++;
+      a.bPF += points; a.bG++; a.bPpg = a.bPF / a.bG;
       /* 🚨 `bA` IS THE DENOMINATOR THE RECORD CANNOT BE READ WITHOUT, and it
          exists because the owner read the row and did the right arithmetic:
          *"Shouldn't I have 6 losses since 10 appearances and 4 titles"*. He
@@ -1347,6 +1348,22 @@
       </div>`).join('')}
       <p class="ffp-cap"><b>${esc(top.name)}</b> ${vb(top.m, 'have', 'has')} the best record in league history and ${top.t1 ? pl(top.t1, 'title') : '<b>no title</b>'} — the order here is the <b>regular season</b>, and it disagrees with the trophy case constantly. That gap is most of what this archive is about.<br><br>⚠️ <b>The two totals are not a ranking.</b> Seasons ran 13 games until 2021 and 14 since, and careers here run ${shortest.seasons} to ${SEASON.length} seasons, so a points total measures how long somebody has played as much as how well: <b>${esc(mostPf.name)}</b> ${vb(mostPf.m, 'have', 'has')} the most points of anyone, while <b>${esc(bestPpg.name)}</b> ${vb(bestPpg.m, 'score', 'scores')} the most per game. The rate columns are the comparison; the totals are the history.<br><br>⚠️ Scoring has climbed across the thirteen years, so a career average still flatters whoever played the recent ones. Nothing here is adjusted for that — the ⚑ playoff pages and the Season tab are where the era-relative numbers live.</p>
     </div>`;
+  }
+
+  /* Career scoring in the title bracket, from the same games as bw/bl.
+     It is a weighted average over games, never an average of season averages. */
+  function playoffScoringHTML() {
+    const rows = [...ALL].sort((a, b) => (b.bPpg ?? -Infinity) - (a.bPpg ?? -Infinity));
+    const place = a => 1 + rows.filter(x => x.bG && Math.round(x.bPpg * 10) > Math.round(a.bPpg * 10)).length;
+    return `<h2 class="section-title">🏈 All-time playoff PPG ${tag('po')}</h2>
+      <div class="ffp-card">
+        <p class="fh-lead">Career scoring in the <b>championship bracket</b>, ranked by points per game.</p>
+        ${rows.map(a => `<div class="fh-as${isMe(a.m) ? ' you' : ''}">
+          <div class="fh-as-top"><span class="fh-as-r">${a.bG ? place(a) : '—'}</span><span class="fh-as-n">${tap(a.m, esc(a.name))}</span><span class="fh-as-w mono">${a.bG ? one(a.bPpg) : '—'} <small>PPG</small></span></div>
+          <div class="fh-as-s">${a.bG} games · ${one(a.bPF)} total points · ${a.bA} playoff appearances</div>
+        </div>`).join('')}
+        <p class="ffp-cap"><b>Total points ÷ games played.</b> Championship-bracket games only, across ${BR_YRS.length} seasons (${BR_YRS[0]}–${BR_YRS[BR_YRS.length-1]}). Placement games, consolation games and Cum Bowls are excluded. The sample is shown for every manager; these averages are not adjusted for scoring changes across seasons.</p>
+      </div>`;
   }
 
   /* ══ 📕 THE RECORD BOOK ═══════════════════════════════════════════════ */
@@ -1863,41 +1880,6 @@
           return `${(a.pct * 100).toFixed(1)}%, the best of the ${ALL.length}, across ${pl(a.seasons, 'season')} — ${a.fin ? pl(a.fin, 'final') : 'no final'}. ` +
             `${bs.mgr === a.m ? `The best season ever recorded — ${bs.w}-${bs.l} in ${bs.yr} — finished ${ord(bs.place)}.` : ''}`;
         })() }));
-    },
-
-    /* ── most titles ────────────────────────────────────────────────────── */
-    function dynasty() {
-      const top = leaders(ALL.filter((a) => a.t1), (a) => a.t1); if (!top.length || top[0].t1 < 2) return [];
-      /* The GOAT card. It fires for whoever leads the league in titles — the
-         detector knows a SHAPE, not a person, which is the rule that stops
-         this feature turning back into a hand-written page. A tie has to read
-         differently: "is the GOAT discussion" is a claim about one person, so
-         when it is shared the sentence says shared. */
-      /* `own` (v16, owner's call): this one is a career card, not a Honors
-         card — and the reason is the page it was sitting on. The Storylines
-         strip opens Honors, and directly below it are the Champions card and
-         the trophy case, which ARE the title count, ranked. So "4 titles" as a
-         storyline told a reader something the next two screens tell them
-         better, and it spent the title-holder's one slot doing it. It stays on
-         that manager's own pages, where the surrounding page is about them
-         rather than about the trophies.
-         ⚠️ v44 moved the strip to Records, so the ADJACENCY argument above no
-         longer holds — the Champions card is not underneath it any more. The
-         flag stays because the owner picked which card holds his one slot
-         (*"Change my honors page storyline to this actually"*), and that
-         choice is about the card, not about which tab it renders on. */
-      return top.map((a) => {
-        const tied = tiedWith(top, a.m);
-        return { id: 'dynasty', t: 'title', m: a.m, w: 80, src: 'fin', own: true,
-          head: tied.length
-            ? `${nm(a.m)} ${vb(a.m, 'are', 'is')} in the GOAT argument with ${pl(a.t1, 'title')}${alsoTxt(tied)}.`
-            : `${nm(a.m)} ${vb(a.m, 'win', 'wins')} the GOAT argument with ${pl(a.t1, 'title')}.`,
-          body: (() => {
-            const next = Math.max(...ALL.filter((x) => x.m !== a.m).map((x) => x.t1));
-            return `${pl(a.fin, 'final')} and ${a.po} playoff appearances in ${pl(a.seasons, 'season')}.`
-              + (tied.length ? '' : ` Nobody else has more than ${pl(next, 'title')}.`);
-          })() };
-      });
     },
 
     /* ── record single-game scores ──────────────────────────────────────── */
@@ -2527,6 +2509,7 @@
           .map(([k, v]) => `<div class="fh-you-t"><b>${v}</b><i>${k}</i></div>`).join('')}
       </div>` : ''}
       ${full ? '<p class="ffp-cap">Squares are the <b>playoff finish</b>; the totals under them are the <b>regular season</b>. <b>Final fours</b> is places 1-4 — the four teams left after round one, which the final placings give for every season.</p>' : ''}
+      ${full ? `<p class="ffp-cap"><b>All-time playoff PPG: ${a.bG ? one(a.bPpg) : '—'}</b> · ${a.bG} championship-bracket games. Placement and consolation excluded.</p>` : ''}
       <div class="fh-car-f">
         <span><b>Best</b> ${bestPf.yr} · ${one(bestPf.ppg)} per game · finished ${bestPf.place ? ord(bestPf.place) : '?'}</span>
         <span><b>Worst</b> ${a.worst.yr} · ${ord(a.worst.place)} · ${rec(a.worst)}</span>
@@ -2662,7 +2645,7 @@
        rather than among the Records leaderboards: it is about what happens to
        a CHAMPION, and Honors is where the champions are. Self-contained — its
        copy names no neighbour — so this is one term moved out of `rec`. */
-    hon: () => heroHTML() + trophyHTML() + champsHTML() + ringlessHTML() + finalFoursHTML() + curseHTML(),
+    hon: () => heroHTML() + trophyHTML() + champsHTML() + ringlessHTML() + seedHTML() + curseHTML(),
     /* Playoff record + Finals reached sit HERE, not on Cum Bowl (v9, owner's
        call). They are career résumé — who gets in, who reaches the final —
        and the Cum Bowl is the opposite bracket, for the teams that missed.
@@ -2687,7 +2670,7 @@
        what leaves is every card that is simply all twelve managers ranked.
        ⚠️ The tab count is still five. Cum Bowl and Seasons merged to pay for
        this one, which is what keeps the bar off the v55 clipping ceiling. */
-    led: () => standingsHTML() + playoffHTML() + seedHTML() + januaryHTML(),
+    led: () => standingsHTML() + playoffScoringHTML() + playoffHTML() + finalFoursHTML() + januaryHTML(),
     /* 🚽 CUM BOWL, WITH THE SEASONS UNDER IT (v65, owner: *"Cum bowl is the
        prize of those tab. When I click it I want cum bowl. Then seasons can
        be offered but out of the way"*). The Cum Bowl leads; the thirteen

@@ -414,6 +414,7 @@ function payload() {
     o: S.order.map((id, i) => {
       const t = teamById(id);
       const row = (S.rows || {})[id];
+      const visuals = window.RankingVisuals.capture(S.season, id, S.key);
       return [
         t.team || '',
         recordOf(t),
@@ -428,6 +429,7 @@ function payload() {
            name (the "CC CC" rule), so keying off it would silently deny CC —
            and only CC — their own row. Same trap the crests hit in v208. */
         mgrFor(t.team) || '',
+        ...(visuals ? [visuals] : []),
       ];
     }),
   };

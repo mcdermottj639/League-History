@@ -86,6 +86,7 @@ async function until(fn) { for(let i=0;i<100;i++){if(fn())return;await new Promi
    assert.equal(weeks[1].o[1][3],'Updated on the shared view');
    assert.equal(weeks[1].o[1][0],original.o[0][0]);
    assert.equal(weeks[1].o[1][2],original.o[0][2],'historical PPG remains frozen');
+   assert.deepEqual(weeks[1].o[1][8],original.o[0][8],'saved scoring and form remain frozen when editing');
    assert.equal(weeks[1].d,original.d,'date remains frozen');
    // Direct Unpublish uses the selected snapshot; other members see the removal.
    const edited = JSON.parse(JSON.stringify(weeks[1]));

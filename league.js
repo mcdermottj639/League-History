@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v86';
+  const APP_VERSION = 'v87';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -284,10 +284,10 @@
     season: 'This year as it stands — the standings, ESPN\'s playoff odds, who you play next, and your season measured against your other thirteen.',
     rank: "The weekly power rankings — every team in order, with a take on each. Only during the season, and only once a set is published.",
     parlay: 'The weekly group parlay — one NFL bet each, all twelve on one ticket. Who picked what, how far it got, and who keeps landing their leg.',
-    hon: 'The trophy case, the champions, who is still waiting, every final four, and the champion\'s curse.',
+    hon: 'The trophy case, the champions, who is still waiting, seeds and upsets, and the champion\'s curse.',
     you: 'Your thirteen seasons — medals, Cum Bowls, your best and worst years.',
     rec: 'What the archive turns up on its own: the storylines, the record book, the luck index and the rivalries.',
-    led: 'The four tables that rank all twelve — all-time standings, how often each of you makes the playoffs, seeds and upsets, and who scores more once the bracket starts.',
+    led: 'Career leaderboards — all-time standings, playoff PPG, playoff appearances, final fours, and who scores more once the bracket starts.',
     cb: "The other bracket, and the one that decides the league's worst: the last game of the consolation ladder, where the winner takes 11th and the loser is the worst in the league. Every final standing since 2013 is underneath it.",
   };
 
@@ -405,7 +405,7 @@
       published.forEach(p => sharedWeeks.set("live-" + p.y + "-" + p.k, p));
       S.weeks = published.map(p => ({ k: p.k, l: p.y + " · " + p.l, d: p.d, f: "live-" + p.y + "-" + p.k }));
       return S.weeks;
-    } catch (err) { S.wkErr = err.code === "invalid-ranking" ? "invalid" : "offline"; }
+    } catch (err) { sharedWeeks.clear(); S.wkErr = err.code === "invalid-ranking" ? "invalid" : "offline"; }
     try {
       const r = await fetch('rankings/index.json', { cache: 'no-store' });
       if (!r.ok) throw new Error('http ' + r.status);
@@ -435,30 +435,6 @@
     return r.json();
   }
 
-  function rankRowsHTML(p) {
-    const me = LH.me();
-    return (p.o || []).map((row, i) => {
-      const [name, rec, ppg, note, modelRank, mv, own, code] = row;
-      const mine = !!me && code === me;
-      const stats = [];
-      if (rec) stats.push(rec);
-      if (ppg != null) stats.push(`${ppg} ppg`);
-      const moved = modelRank && modelRank !== i + 1;
-      return `<li class="pr-row ro${i < 3 ? ' podium p' + (i + 1) : ''}${mine ? ' lg-mine' : ''}">
-        <div class="pr-rank">
-          <span class="pr-n big">${i + 1}</span>
-          ${hasMove(mv) ? `<span class="pr-mv ${moveCls(mv)}">${moveStr(mv)}</span><span class="pr-lw">LW ${i + 1 + mv}</span>` : ''}
-        </div>
-        <div class="pr-body">
-          <div class="pr-team">${code ? crest(code, 40) : ''}<span class="pr-tn">${esc(name)}</span>${own ? ` <span class="pr-mgr">${esc(own)}</span>` : ''}${mine ? ' <span class="lg-you">YOU</span>' : ''}</div>
-          ${stats.length ? `<div class="pr-stats">${esc(stats.join(' · '))}</div>` : ''}
-          ${note ? `<div class="pr-take-ro">${esc(note)}</div>` : ''}
-          ${moved ? `<div class="pr-moved">The numbers had them ${modelRank}${ord(modelRank)}.</div>` : ''}
-        </div>
-      </li>`;
-    }).join('');
-  }
-
   /* Pulled out of `rankHTML` (v31) so the "that week didn't load" card can
      render it too. That card's own copy says "or pick another week", and it
      was saying it over a screen with no picker on it — a control named in a
@@ -472,16 +448,16 @@
 
   function rankHTML(p, weeks) {
     const pick = wkPick(weeks);
+    const data = window.RankingVisuals.facts(p, [...sharedWeeks.values()]);
     return `<div class="pr-card pr-head lg-rank-head">
         <div class="pr-week">${esc(p.l || '')}${p.d ? ` · ${esc(niceDate(p.d))}` : ''}</div>
         <h2>Power Rankings</h2>
-        <p class="pr-sub">${p.b ? `${esc(p.b)}'s rankings` : 'This week\'s rankings'} for the league. ${p.r
-          ? 'Built from all-play record, scoring and recent form, then argued with by hand.'
-          : 'Preseason — pure opinion, no games played yet.'}</p>
+        <p class="pr-sub">League rankings. The numbers and the story.</p>
+        ${window.RankingVisuals.highlights(data)}
       </div>
       ${pick}
       <div id="lg-ranking-controls"></div>
-      <ol class="pr-list">${rankRowsHTML(p)}</ol>
+      <ol class="pr-list rk-list">${window.RankingVisuals.rowsHTML(data, {crest, me:LH.me()})}</ol>
       <div class="ffp-card"><p class="ffp-cap">⚠️ <b>The order is one person's opinion.</b> The model that pre-builds it weights all-play win%, points per game and the last three weeks — but a power ranking has no graded outcome, so nothing here is validated the way a betting model would be. Rows that were moved say where the numbers had them.</p></div>`;
   }
 
@@ -559,6 +535,9 @@
       host.innerHTML = wkBad();
       return;
     }
+    host.querySelectorAll('.rk-hide').forEach(button => { button.onclick = () => {
+      const details = button.closest('details'); details.open = false; details.querySelector('summary').focus();
+    }; });
     mountRankingControls(p);
     const sel = $('#lg-wksel');
     if (sel) sel.onchange = () => { S.week = sel.value; paint(); };
