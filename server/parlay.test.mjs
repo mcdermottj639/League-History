@@ -60,3 +60,15 @@ test('authorized cutover command verifies a SQLite backup before enabling writes
  try{execFileSync(process.execPath,['scripts/activate-parlay.mjs','--db',db,'--year','2026','--week','2','--backup',backupPath,'--legacy-writes-frozen','--migration-reconciled'],{stdio:'pipe'});s=new Store(db);assert.equal(s.read().seasons[2026].release.cutoverWeek,2);s.close();const backup=new Store(backupPath);assert.equal(Object.keys(backup.read().seasons[2026].weeks[2].picks).length,4);assert.equal(backup.read().seasons[2026].release,undefined);backup.close();}
  finally{rmSync(dir,{recursive:true,force:true});}
 });
+
+test('actual ticket odds enforce organizer authority, validation and revision checks independently of kickoff quotes',async()=>{
+ const {savePlacedOdds}=await import('./engine.mjs');const s=setup(),organizer={role:'organizer',member:'Zach'};
+ try{savePick(s,2026,2,member('McD'),pick(),T);ingest(s,2026,2,payload(),K+1);const quote=JSON.stringify(s.read().seasons[2026].weeks[2].picks.McD);
+ assert.throws(()=>savePlacedOdds(s,2026,2,member('Zach'),{odds:12500,revision:0},K+1),/Organizer/);
+ for(const value of ['',0,99,'2.5','+12,34','NaN'])assert.throws(()=>savePlacedOdds(s,2026,2,organizer,{odds:value,revision:0},K+1),/odds/);
+ const saved=savePlacedOdds(s,2026,2,organizer,{odds:'+12,500',revision:0},K+1);assert.equal(saved.placedTicket.potentialReturn,1260);assert.equal(saved.placedTicket.potentialProfit,1250);
+ assert.throws(()=>savePlacedOdds(s,2026,2,organizer,{odds:14000,revision:0},K+2),/changed/);
+ const negative=savePlacedOdds(s,2026,2,organizer,{odds:'−110',revision:1},K+2);assert.equal(negative.placedTicket.potentialReturn,19.09);
+ savePlacedOdds(s,2026,2,organizer,{clear:true,revision:2},K+3);assert.equal(s.read().seasons[2026].weeks[2].placedTicket,null);assert.throws(()=>savePlacedOdds(s,2026,2,organizer,{odds:12500,revision:0},K+4),/changed/);assert.equal(JSON.stringify(s.read().seasons[2026].weeks[2].picks.McD),quote);
+ }finally{s.close();}
+});

@@ -78,3 +78,14 @@ test('save captures member and week before awaiting a session; late result canno
 test('existing shared-pick links display their original pick without silently changing the shared ticket',async()=>{
  const h=await app({shared:{v:1,k:2,m:'Gotch',p:'BUF ML vs DET',o:-225,t:Date.now()}});try{await until(()=>h.$('[data-tab="picks"]'));assert.equal(h.w.location.hash,'');assert.match(h.$('#lg-body').textContent,/Shared pick · Week 2/);assert.match(h.$('#lg-body').textContent,/BUF ML vs DET/);assert.equal(h.store.read().seasons[2026].weeks[2].picks.Gotch,undefined);assert.equal(h.$('[data-lp="save"]'),null);}finally{await h.close();}
 });
+
+test('organizer records and corrects actual odds; every member sees them without edit controls',async()=>{
+ const h=await app({invite:true,member:null});let memberApp;try{
+ await until(()=>h.$('#pn-target'));h.$('[data-tab="ticket"]').click();assert.ok(h.$('#pn-placed-odds'));h.$('#pn-placed-odds').value='+12,500';h.$('[data-pn="placed-odds"]').click();await until(()=>h.store.read().seasons[2026].weeks[2].placedTicket?.odds===12500);await until(()=>h.$('#lg-body').textContent.includes('$1,260.00 potential return'));assert.match(h.$('#lg-body').textContent,/\$1,250.00 potential profit/);assert.match(h.$('#lg-body').textContent,/Tracked odds/);
+ memberApp=await app({backend:h,member:'Gotch'});memberApp.$('[data-l1="parlay"]').click();await until(()=>memberApp.$('[data-tab="ticket"]'));memberApp.$('[data-tab="ticket"]').click();assert.match(memberApp.$('#lg-body').textContent,/\+12,500/);assert.equal(memberApp.$('#pn-placed-odds'),null);
+ const regular=await(await fetch(h.api+'/api/parlay/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({member:'Gotch'})})).json();
+ const denied=await fetch(h.api+'/api/parlay/placed-odds',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+regular.token},body:JSON.stringify({year:2026,week:2,odds:99999,revision:1})});assert.equal(denied.status,403);
+ // Corrections never alter tracked quotes/results; post-kickoff entry is covered by the service test.
+ const before=JSON.stringify(h.store.read().seasons[2026].weeks[2].picks);h.$('#pn-placed-odds').value='+14000';h.$('[data-pn="placed-odds"]').click();await until(()=>h.store.read().seasons[2026].weeks[2].placedTicket?.odds===14000);assert.equal(JSON.stringify(h.store.read().seasons[2026].weeks[2].picks),before);
+ }finally{if(memberApp)await memberApp.close();await h.close();}
+});

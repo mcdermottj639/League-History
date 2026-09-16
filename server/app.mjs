@@ -7,7 +7,7 @@ import {Store} from './store.mjs';
 import {seedPreview} from './preview.mjs';
 import {Collector} from './collector.mjs';
 import {ROSTER} from './domain.mjs';
-import {ensure,publicWeek,savePick,failure,lockDue,writable} from './engine.mjs';
+import {ensure,publicWeek,savePick,failure,lockDue,writable,savePlacedOdds} from './engine.mjs';
 export const hash=s=>createHash('sha256').update(String(s)).digest('hex');
 const ROOT=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 export function createApp({store,organizerHash,year=2026,startWeek=2,origins=[],preview=false,clock=Date.now,apiURL='',collectorEnabled=false,durableStorage=false}){
@@ -46,6 +46,12 @@ export function createApp({store,organizerHash,year=2026,startWeek=2,origins=[],
     const actor=session(req),b=await body(req);if(b.year!==year||!Number.isInteger(b.week)||b.week<startWeek||b.week>18)throw failure('Invalid season or week');
     const season=store.read().seasons[year],current=season?.current;if(!preview&&!writable(season))throw failure('Launch migration is not complete. Picking remains on the current app.',503);if(b.week!==current)throw failure('Only the current week is open for picks.',409);
     return json(res,200,savePick(store,year,b.week,actor,b,clock()));
+   }
+   if(path==='/api/parlay/placed-odds'&&req.method==='POST'){
+    const actor=session(req);if(actor.role!=='organizer')throw failure('Organizer access required',403);
+    if(!preview&&!writable(store.read().seasons[year]))throw failure('The parlay is read-only until cutover is complete.',503);
+    const b=await body(req);if(b.year!==year||!Number.isInteger(b.week)||b.week<startWeek||b.week>store.read().seasons[year].current)throw failure('Invalid season or week');
+    return json(res,200,savePlacedOdds(store,year,b.week,actor,b,clock()));
    }
    if(path==='/api/parlay/review'&&req.method==='POST'){
     if(!preview&&!writable(store.read().seasons[year]))throw failure('The parlay is read-only until cutover is complete.',503);const actor=session(req);if(actor.role!=='organizer')throw failure('Organizer access required',403);const b=await body(req);

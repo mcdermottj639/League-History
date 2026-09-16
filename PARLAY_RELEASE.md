@@ -21,6 +21,13 @@ production deployment, Firebase mutation, or organizer invitation is part of thi
   standard-market settlement, pushes and explicitly pending unsupported results.
 - Combined decimal-price multiplication converted to American odds; $10 tracked
   return/profit. Partial tickets are labeled and cannot become full-ticket wins.
+- A compact placed-ticket card shows actual DraftKings combined odds entered
+  by the organizer, with $10 potential return and profit. Only organizer sessions
+  can add/edit/clear them; ordinary members only see the saved figures. Supports
+  signed American odds including comma-separated values; rejects invalid prices
+  and stale edits. Entries remain editable after kickoff and persist per week.
+  Placement odds never overwrite tracked leg prices or season results. Potential
+  return includes stake and is before any pushes/voids, not a confirmed payout.
 - Prior week's lowest fantasy scorer reimburses Zach $10. Full precision and zero
   scores count; missing scores remain pending and ties are shown for resolution.
 - Member records, decided-pick denominators and previous tracked tickets.

@@ -102,6 +102,12 @@ All legacy parlay sections below continue to describe the currently active app.
 - Node 24 `server/app.mjs`, domain/engine/store/collector modules and persistent
   SQLite own v2 state. Atomic game reservations, revisions, role-checked writes,
   immutable last-observed pregame snapshots, public-source background collection.
+- Organizer-only “Add actual odds” / “Edit actual odds” on Ticket records the
+  placed DraftKings combined American odds per week. Everyone can see the $10
+  potential return/profit; tracked kickoff odds/results stay separate. Entries
+  can be corrected after kickoff, use monotonic revisions and append an audit
+  record. These are placement terms, not a confirmed settlement/payment; pushes
+  or voids can change the actual payout. Past tickets retain the entry.
 - Source: DraftKings **via ESPN**, not a direct/live-guaranteed DraftKings feed.
   No fabricated prices. Props/missing data need explicit review. Tracker amounts
   are not the actual placed ticket; Zach places the bet outside the app.

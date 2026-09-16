@@ -1,4 +1,4 @@
-import {ROSTER,STAKE,parseScoreboard,quoteFor,locked,ticket,migratePick,odds,number} from './domain.mjs';
+import {ROSTER,STAKE,parseScoreboard,quoteFor,locked,ticket,migratePick,odds,number,decimal} from './domain.mjs';
 export const failure=(message,status=400)=>Object.assign(new Error(message),{status});
 export function ensure(state,year,week){const s=state.seasons[year]??={weeks:{},current:week};return s.weeks[week]??={year,week,stake:STAKE,games:[],picks:{},revisions:{},unmapped:[],imported:false,audit:[],updatedAt:0,payer:{status:'pending'}};}
 export function ingest(store,year,week,payload,now=Date.now()){
@@ -48,7 +48,7 @@ export function importLegacy(store,year,week,rows,now=Date.now()){
  });
 }
 export function publicWeek(w,now=Date.now()){
- return {year:w.year,week:w.week,updatedAt:w.updatedAt,feedError:w.feedError||null,payer:w.payer,revisions:w.revisions||{},games:w.games,ticket:ticket(Object.values(w.picks),w.games,now,w.stake),unmapped:w.unmapped};
+ return {year:w.year,week:w.week,updatedAt:w.updatedAt,feedError:w.feedError||null,payer:w.payer,placedTicket:w.placedTicket||null,ticketOddsRevision:w.ticketOddsRevision||0,revisions:w.revisions||{},games:w.games,ticket:ticket(Object.values(w.picks),w.games,now,w.stake),unmapped:w.unmapped};
 }
 export function payerFromScores(scores,previousWeek){
  if(scores.length!==ROSTER.length||new Set(scores.map(x=>x.member)).size!==ROSTER.length||scores.some(x=>!ROSTER.includes(x.member)||number(x.score)===null))return {status:'pending'};
@@ -66,3 +66,20 @@ export function activateRelease(store,year,week,proof,now=Date.now()){
  });
 }
 export function writable(season){return !!(season?.release&&season.weeks[season.release.cutoverWeek]?.imported);}
+
+export function savePlacedOdds(store,year,week,actor,input,now=Date.now()){
+ if(actor.role!=='organizer')throw failure('Organizer access required',403);
+ return store.transact(s=>{const w=s.seasons[year]?.weeks[week];if(!w)throw failure('Unknown ticket',404);
+  if(input.revision!==(w.ticketOddsRevision||0))throw failure('The placed odds changed on another device. Refresh before editing.',409);
+  const previous=w.placedTicket?.odds??null;let value=null;
+  if(!input.clear){const text=String(input.odds??'').trim().replace(/[−–]/g,'-');
+   if(!/^[+-]?(?:\d+|\d{1,3}(?:,\d{3})+)$/.test(text))throw failure('Enter American odds, such as +12500 or -110.');
+   value=odds(text.replace(/,/g,''));if(value===null||!Number.isSafeInteger(value))throw failure('Enter valid whole-number American odds of +100 or higher, or -100 or lower.');
+  }
+  w.ticketOddsRevision=(w.ticketOddsRevision||0)+1;
+  const potentialReturn=value===null?null:Math.round(w.stake*decimal(value)*100)/100;
+  w.placedTicket=value===null?null:{odds:value,stake:w.stake,potentialReturn,potentialProfit:Math.round((potentialReturn-w.stake)*100)/100,updatedAt:now,revision:w.ticketOddsRevision};
+  w.audit.push({action:input.clear?'clear-placed-odds':'save-placed-odds',at:now,by:'organizer',previous,odds:value});
+  return {ok:true,placedTicket:w.placedTicket,revision:w.ticketOddsRevision};
+ });
+}
