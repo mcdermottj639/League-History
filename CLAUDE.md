@@ -87,6 +87,18 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   the team names — is world-readable. That was the owner's setting, not an
   accident, but weigh it before adding anything new about a person.
 
+## v95 — Parlay entry transition
+
+Jack's phone recording showed History shortcuts lingering during Parlay's first
+request and a false read-only alarm while validating the saved snapshot. The
+shell now clears those shortcuts immediately; Parlay replaces the prior body
+synchronously with its current data or a loading status before awaiting config.
+Cached picks stay disabled until verified, with a neutral checking status. Actual
+connection/config failures still show read-only warnings. No storage is cleared,
+no links or permissions change. Regression tests hold config/state requests open
+to check the intermediate screen and failure recovery. The iOS launch snapshot
+before the webpage resumes is controlled by the OS, not this transition fix.
+
 ## v94 — Parlay readability pass
 
 Based on Jack's phone recording, Parlay uses 20px/700 headings, a 15px body,

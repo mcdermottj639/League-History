@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v94';
+  const APP_VERSION = 'v95';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -688,6 +688,9 @@
        blank or wrong; say what happened instead. */
     if (S.view === 'parlay') {
       S.prof = null;
+      // History shortcuts must disappear before Parlay awaits its connection.
+      $('#lg-jump').hidden = true;
+      $('#lg-jump').innerHTML = '';
       if (!window.LeagueParlay) {
         host.innerHTML = '<div class="ffp-card"><div class="ffp-empty"><b>The parlay didn\'t load.</b>Reload the page — parlay.js ships as its own file and the browser didn\'t get it.</div></div>';
         buildJump(); return;

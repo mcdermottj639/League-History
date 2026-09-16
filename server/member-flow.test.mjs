@@ -46,7 +46,7 @@ test('ordinary Zach and all other member names have no organizer controls; membe
  }finally{await h.close();}
 });
 test('delayed parlay configuration never overwrites History after navigating away',async()=>{
- let release;const pending=new Promise(r=>release=r);const h=await app({slowConfig:pending,enabled:false});try{h.$('[data-l1="parlay"]').click();h.$('[data-l1="hist"]').click();const html=h.$('#lg-body').innerHTML;release();await new Promise(r=>setTimeout(r,30));assert.equal(h.$('#lg-body').dataset.view,'hist');assert.equal(h.$('#lg-body').innerHTML,html);
+ let release;const pending=new Promise(r=>release=r);const h=await app({slowConfig:pending,enabled:false});try{h.$('[data-l1="parlay"]').click();assert.match(h.$('#lg-body').textContent,/Loading the shared parlay/);assert.equal(h.$('#lg-jump').hidden,true);assert.equal(h.$('#lg-jump').innerHTML,'');h.$('[data-l1="hist"]').click();const html=h.$('#lg-body').innerHTML;release();await new Promise(r=>setTimeout(r,30));assert.equal(h.$('#lg-body').dataset.view,'hist');assert.equal(h.$('#lg-body').innerHTML,html);
  }finally{release();await h.close();}
 });
 test('config failure and offline refresh retain v2 read-only; never fall back to old writable list',async()=>{
@@ -118,4 +118,23 @@ test('full app uses the path-based Supabase API and preserves Week 1 picks with 
   h.$('#pn-placed-odds').value='+12500';h.$('[data-pn="placed-odds"]').click();await until(()=>store.read().seasons[2026].weeks[1].placedTicket?.odds===12500);
   assert.equal(Object.keys(store.read().seasons[2026].weeks[1].picks).length,5);
  }finally{await h.close();}
+});
+
+
+test('cached Parlay entry checks quietly, then reports a real connection failure',async()=>{
+ const h=await app();let reopened,release;
+ try{
+  h.$('[data-l1="parlay"]').click();await until(()=>h.w.localStorage.getItem('lh:parlay-state:v2'));
+  const storage={};for(let i=0;i<h.w.localStorage.length;i++){const k=h.w.localStorage.key(i);storage[k]=h.w.localStorage.getItem(k);}
+  reopened=await app({backend:h,storage});
+  const original=reopened.w.fetch,barrier=new Promise(r=>release=r);
+  reopened.w.fetch=async(u,o)=>{if(String(u).endsWith('/state')){await barrier;throw Error('offline');}return original(u,o);};
+  reopened.$('[data-l1="parlay"]').click();
+  await until(()=>reopened.$('#lg-body').textContent.includes('Checking for updates'));
+  assert.equal(reopened.$('#lg-jump').hidden,true);
+  assert.doesNotMatch(reopened.$('#lg-body').textContent,/Parlay is read-only/);
+  assert.ok([...reopened.w.document.querySelectorAll('[data-pn="select"]')].every(b=>b.disabled));
+  release();await until(()=>reopened.$('#lg-body').textContent.includes('Parlay is read-only'));
+  reopened.w.fetch=original;reopened.$('[data-pn="refresh"]').click();await until(()=>!reopened.$('.pn-error'));
+ }finally{release?.();if(reopened)await reopened.close();await h.close();}
 });
