@@ -1,7 +1,7 @@
 # Parlay v2 — prepared, not launched
 
 Branch: `feature/parlay-live-organizer`. The committed `parlay/config.json` has
-`enabled: false`; the current Parlay continues using its existing code. No merge, Firebase mutation, frontend activation, or organizer invitation is part of this build. The isolated Supabase schema is prepared; its scheduler is inactive. API deployment and organizer-hash installation completed after Jack explicitly approved them; live access checks passed. Collector activation remains separately blocked (see below).
+`enabled: false`; the current Parlay continues using its existing code. No merge, Firebase mutation, frontend activation, or organizer invitation is part of this build. The isolated Supabase schema is prepared; its scheduler is active. API deployment and organizer-hash installation completed after Jack explicitly approved them; live access checks passed. Collector activation is explicitly approved and the live feed now passes verification (see below).
 
 ## What is built
 
@@ -90,7 +90,7 @@ npm ci --ignore-scripts
 npm test
 ```
 
-Latest verification: **40 Parlay tests passed**, including full-app Supabase-path
+Latest verification: **41 Parlay tests passed**, including full-app Supabase-path
 Week 1 organizer flows, plus conservation checks, storylines, rankings and
 publishing suites. Real Postgres CAS/lease/backup/privilege checks passed in a
 rolled-back transaction. Repeatable SQL is in `supabase/tests-readiness.sql`.
@@ -122,10 +122,10 @@ reopening it. Share the packet's organizer link with Zach only after launch.
 - Applied additive schema migration; verified actual Postgres CAS conflicts,
   collector leases, backup readback and denied browser-role privileges. Tests ran
   inside a rolled-back transaction; no league picks were read or written.
-- New 30-second cron job exists but is **inactive**, and `collection_enabled=false`.
+- New 30-second cron job is **active**, and `collection_enabled=true`.
   Existing `sports-hub-ai-capture` schedule remains `7,37 * * * *`, active.
 - Edge-compatible modules and canonical manager mapping load successfully in Deno.
-- **API deployed:** `league-parlay` version 1 is active, with the existing app's
+- **API deployed:** `league-parlay` version 3 is active, with the existing app's
   custom session/capability authorization (`verify_jwt=false`). Jack explicitly
   approved this backend-only setup without merging on 2026-09-16.
 - **Organizer hash installed:** it matches the unchanged private packet. The raw
@@ -137,10 +137,19 @@ reopening it. Share the packet's organizer link with Zach only after launch.
   cutover, unauthorized collector denied, wrong origin denied, allowed app CORS.
   The two verification sessions were removed afterward; the link itself remains
   valid. No league picks were migrated or modified by these checks.
-- **Collector activation blocked:** automatic approval review rejected enabling
-  recurring requests/database updates as beyond the narrowly approved deployment
-  and link setup. It was not retried. Collection and its new cron job remain off;
-  explicit collection activation approval is needed before live feed verification.
+- **Collector approved and active:** Jack explicitly approved recurring collection.
+  Initial live validation found upstream HTTP 403: the port lacked the explicit
+  JSON Accept and honest `League-History/Parlay` User-Agent headers used by the
+  original collector. Restoring those headers fixed the request. No proxy, alternate
+  identity or unrelated service was used. Source failures now return HTTP 502/ok=false
+  rather than a misleading successful collector response.
+- Verified live source data: 16 Week 1 games saved, no feed error, successful HTTP
+  response and fresh `lastSuccess`; discovery found Week 2 and 32 DraftKings quotes
+  in EACH of moneyline, spread and total markets (both sides across 16 games).
+  These are observed ESPN prices, not a direct guaranteed DraftKings closing feed.
+  Discovery leaves the selected prelaunch Week 1 unchanged. No picks were imported.
+  A subsequent cron-triggered call (no browser/manual invocation) advanced
+  `lastSuccess`, returned HTTP 200/ok=true and retained a clean feed state.
 - Frontend `enabled:false` remains the gate. Merging the branch as-is does not launch v2.
 
 Deployed API base (frontend still disabled):
@@ -176,10 +185,10 @@ reconcile any archived weeks too if they exist when launch is authorized.
    ordinary Zach/member boundaries, invalid sessions, and prelaunch write rejection.
    No frontend activation or merge. This proves backend access, not a live Pages
    organizer flow: the current main branch still serves the legacy page.
-4. **Pending approval:** enable only the new collector/job, verify its HTTP response
-   and fresh data as well as the scheduler result. Automatic approval review blocked
-   this separate activation. A succeeded cron enqueue alone does not prove data
-   collection succeeded. Do not modify `sports-hub-ai-capture`.
+4. **Completed after explicit approval:** the separate collector/job is active.
+   Live function response and persisted source data were verified, beyond a
+   succeeded scheduler enqueue. The existing `sports-hub-ai-capture` job and
+   other app functions remain unchanged. Recheck freshness at the actual launch.
 
 Operator tooling uses a private `PARLAY_SUPABASE_SERVICE_KEY` environment value
 and the known project URL. Never put that key in command arguments, logs or repo.
@@ -255,9 +264,9 @@ Fixed during the review:
 
 ### Remaining gates — do not claim merge-only readiness
 
-Collector activation approval and live feed verification, mobile visual QA, and
-authorized real-pick migration rehearsal are still required. API deployment and
-organizer access configuration/live HTTP verification are complete.
-The schema/job are prepared, the new job is inactive, the current app is unchanged,
+Mobile visual QA and authorized real-pick migration rehearsal are still required.
+API deployment, organizer access and live feed verification are complete. Recheck
+the live feed and current week again at launch.
+The backend/collector are running, the frontend is still disabled, the current app is unchanged,
 and no merge has occurred. Future launch additionally requires a fresh frozen
 export, reconciliation, backup, activation and Pages verification.

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {MemoryStore,digest,transaction} from './supabase-store.mjs';
 import {edgeApp} from './supabase-runtime.mjs';
-import {collect} from './supabase-collector.mjs';
+import {collect,getJSON} from './supabase-collector.mjs';
 import {seedPreview} from './preview.mjs';
 import {ROSTER} from './domain.mjs';
 import {importLegacy,activateRelease,savePick} from './engine.mjs';
@@ -80,6 +80,14 @@ test('Week 1 collector never fetches Week 0 or advances the selected prelaunch w
  const b=await backend(),urls=[];
  await collect(b.rpc,b.config,{clock:()=>T,fetchJSON:async url=>{urls.push(url);if(!url.includes('?'))return {season:{year:2026,type:2},week:{number:2}};throw Error('offline');}});
  assert.equal(b.store.read().seasons[2026].current,1);assert.ok(!urls.some(u=>u.includes('week=0')||u.includes('football/season')));assert.equal(b.store.read().seasons[2026].weeks[1].feedError,'offline');
+});
+test('Collector uses honest identifying headers and reports source failure instead of a false success',async()=>{
+ await getJSON('https://source.example',async(url,options)=>{assert.equal(options.headers.Accept,'application/json');assert.equal(options.headers['User-Agent'],'League-History/Parlay');return Response.json({ok:true});});
+ const b=await backend();const result=await collect(b.rpc,b.config,{clock:()=>T,fetchJSON:async()=>{throw Error('Source HTTP 403');}});
+ assert.equal(result.ok,false);assert.equal(result.error,'Source HTTP 403');assert.equal(b.store.read().seasons[2026].collector.lastSuccess,undefined);
+ const handler=edgeApp(b.rpc,{clock:()=>T,fetchJSON:async()=>{throw Error('Source HTTP 403');}});
+ const response=await handler(new Request('https://example.test/functions/v1/league-parlay/collect',{method:'POST',headers:{Authorization:'Bearer collector-test-key'}}));
+ assert.equal(response.status,502);assert.equal((await response.json()).ok,false);
 });
 test('Concurrent collector changes do not overwrite picks saved during fetch; outage locks due picks',async()=>{
  const b=await backend();activate(b.store);let now=T;

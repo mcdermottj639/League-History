@@ -34,7 +34,8 @@ export function edgeApp(rpc,{clock=Date.now,fetchJSON,managerFor}={}){
     const token=(req.headers.get('authorization')||'').replace(/^Bearer /,'');
     if(!config.collector_secret||!constantEqual(token,config.collector_secret))throw failure('Not authorized',401);
     if(!config.collection_enabled)return json({ok:true,disabled:true});
-    return json(await collect(rpc,config,{clock,fetchJSON,managerFor}));
+    const result=await collect(rpc,config,{clock,fetchJSON,managerFor});
+    return json(result,result.ok?200:502);
    }
    if(path==='/api/parlay/session'&&req.method==='POST'){
     // Persisted limit spans workers; no raw IP addresses are saved.

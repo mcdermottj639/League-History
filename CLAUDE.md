@@ -105,17 +105,22 @@ only the local preview/test harness. No Railway service/new subscription is need
 - `scripts/supabase-parlay.mjs` provides operator status, public-feed preparation,
   read-only rehearsal, frozen-export import, verified private backups and activation.
   All real migration commands take an explicit week. No automatic Firebase read.
-- Supabase schema is applied and tested. New cron is INACTIVE; collection is off.
+- Supabase schema is applied and tested. New cron is ACTIVE after explicit approval; frontend writes remain off.
   Existing Sports-Hub tables/functions/scheduler are untouched.
 - Jack explicitly approved backend deployment plus organizer-hash installation
-  without merging. `league-parlay` version 1 is deployed with custom capability/
+  without merging. `league-parlay` version 3 is deployed with custom capability/
   session auth (`verify_jwt=false`); the matching private hash is installed.
   Twelve live HTTP checks passed, including organizer exchange and remembered
   session, ordinary Zach/member boundaries, invalid credentials, CORS and blocked
   prelaunch writes. Verification sessions were removed; the original link remains.
-- Collector activation was separately rejected by automatic approval review as
-  outside the narrow deployment/link authorization. No retry. New job and collection
-  remain off; explicit activation approval and live feed verification are pending.
+- Jack subsequently explicitly approved collector activation. It is running.
+  Live checks saved 16 Week 1 games and found 32 DraftKings prices per market
+  (moneyline/spread/total) on the discovered Week 2 board, without changing the
+  selected prelaunch week. Sports-Hub's existing job/function remain untouched.
+- Fixed missing JSON Accept and truthful client-identification headers in the
+  Supabase port after upstream 403; successful live responses confirmed the fix.
+  Source failures now return HTTP 502/ok=false; never equate an enqueued cron call
+  with a successful feed refresh. Forty-one Parlay tests plus existing suites pass.
   Backend link verification does not mean the still-legacy Pages app is upgraded.
 - `parlay/config.json` stays disabled. Do not merge or activate on this preparation
   instruction. `PARLAY_RELEASE.md` is authoritative for actual remaining gates.
