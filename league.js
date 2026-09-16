@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v90';
+  const APP_VERSION = 'v93';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -239,6 +239,12 @@
     window.scrollTo({ top: 0 });
   }
 
+  window.addEventListener('parlay-organizer-ready', () => {
+    writeMe('Zach');
+    LH.setMe('Zach');
+    paintHead();
+  });
+
   function choose(m) {
     writeMe(m);
     LH.setMe(m);
@@ -331,6 +337,7 @@
           <p class="lg-share-n" id="lg-share-n" role="status"></p>
         </section>
 
+        ${isOwner() ? '<div id="lg-owner-links"></div>' : ''}
         <section class="lg-sh">
           <h3>The tabs</h3>
           <div class="lg-sh-l">
@@ -365,6 +372,7 @@
        names the reader, and both answer differently after `setMe`. The v1
        fault — a value derived at init cannot answer a question asked later. */
     box.innerHTML = helpHTML();
+    window.LeagueOwnerLinks?.mount(box.querySelector('#lg-owner-links'));
     box.hidden = false;
     document.body.style.overflow = 'hidden';
     const x = box.querySelector('.lg-sheet-x');
@@ -814,7 +822,8 @@
     /* First ever open with nobody picked → the picker IS the front door.
        After that it never asks again, even with no name chosen, because a
        prompt that returns every visit is a nag rather than an invitation. */
-    if (!me && !skipped()) showPicker(false);
+    if (window.ParlayNext?.entry) S.view = 'parlay';
+    if (!me && !skipped() && !window.ParlayNext?.entry) showPicker(false);
     else { $('#lg-app').hidden = false; paint(); }
     paintHead();
     labLink();

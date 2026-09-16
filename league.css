@@ -913,3 +913,10 @@
   .lp-opt { flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px; }
   .lp-opt-o { font-size: 11px; }
 }
+.lg-link-row { padding: 14px 0; border-bottom: 1px solid #ccc8bb; }
+#lg-owner-links label { display: block; margin: 12px 0; }
+#lg-owner-links select, #lg-owner-links button { min-height: 44px; margin: 4px 8px 4px 0; max-width: 100%; }
+#lg-owner-links input, #lg-owner-links textarea { box-sizing: border-box; max-width: 100%; width: 100%; }
+#lg-owner-links details { margin-top: 16px; }
+#lg-owner-links summary { cursor: pointer; padding: 10px 0; }
+#lg-owner-links button:disabled { opacity: .5; cursor: default; }

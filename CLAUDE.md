@@ -8,7 +8,9 @@ The **Nectars Bolonga** fantasy football league's own app: thirteen seasons of
 history (2013–2025), the **season being played right now** (v39), the
 **weekly power rankings** the commissioner publishes, and the **weekly group
 parlay** the twelve of them put on together (v69). It is a **pure static browser app** — HTML/CSS/vanilla JS, no build
-step, no framework, no backend, no API keys — served from GitHub Pages.
+step and no framework — served from GitHub Pages. The active parlay uses the
+isolated Supabase Parlay v2 backend (v93). Firebase still serves rankings;
+legacy pick paths remain readable but read-only after the Week 2 cutover.
 
 Live URL: **https://mcdermottj639.github.io/League-History/**
 (⚠️ Pages must be enabled by hand: Settings → Pages → Deploy from branch →
@@ -84,6 +86,128 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 - ⚠️ **This repo is PUBLIC.** Everything in it — real first names, the takes,
   the team names — is world-readable. That was the owner's setting, not an
   accident, but weigh it before adding anything new about a person.
+
+## v93 — Week 2 launch and owner link directory
+
+Jack explicitly authorized launch and preserving all existing links. On
+2026-09-16, Firebase's ONLY changed rule was `picks/$week/$mgr/.write=false`;
+rankings rules and data were preserved. An ETag-guarded same-value write probe
+returned 401. The frozen export contained exactly four Week 2 picks (Hurd, McD,
+Slemp, Zach), no other pick weeks or published ticket archives. All four mapped
+without unresolved rows; original text, price and timestamps remain in the
+legacy export. Durable private backups and Supabase pre/post-import backups
+were verified. Backend activation and readiness passed for Week 2. Config is
+now enabled. Do not re-import or switch back to legacy after new writes.
+Public app URL, old `#p=` shared picks, member-name storage, owner access and
+the existing private organizer capability are unchanged. Backend/DOM tests
+pass; mobile visual QA was blocked locally, so do not claim it was performed.
+
+The earlier v91/v92 preparation and no-merge instructions below are historical,
+superseded by Jack's explicit v93 launch approval and this cutover record.
+
+The question-mark help sheet mounts `owner-links.js` only for `LeagueOwner.is()`.
+Name selection and Zach's parlay organizer role do not grant this UI. It lists
+the clean public app URL and private links explicitly imported or saved on the
+owner's device. Private capabilities must NEVER be bundled in this public repo.
+`lh:owner-links:v1` is a device-local, unencrypted address book, not cloud storage
+or a server authorization gate. Import the existing private organizer launch
+Markdown to seed Zach's link; JSON export/import provides portable private backups.
+No network requests, automatic capability creation, or backend changes occur.
+Labels “Not live yet”, “Ready to send”, and “Inactive” are operator-maintained;
+only ready entries can be copied. Changing a label does NOT launch, grant or
+revoke access. Existing entries are preserved on import. Future feature links
+can be added once their permission system exists; this does not implement it.
+
+## v92 — Supabase preparation (historical; superseded by v93 launch)
+
+Supersedes v91's proposed Node/SQLite production hosting. Production target is
+existing free Supabase `sports-hub` (`oqrfdhoyyogjmiqmjhnp`), with isolated
+`league_parlay` tables, `league-parlay` Edge Function, and its own cron job.
+Shared domain/engine modules retain the tested pick behavior. Node/SQLite remains
+only the local preview/test harness. No Railway service/new subscription is needed.
+
+- PostgreSQL CAS retries enforce atomic game claims across Edge workers; hashed
+  persistent sessions, private service-only invoker RPC, RLS default-deny tables,
+  collector leases and secret scheduler calls. No service keys in the static app.
+- Weeks 1–18 supported. Prelaunch discovery cannot override the chosen legacy
+  week. Empty/partial/full Week 1 imports and midgame locks are tested. Preserve
+  originals and block on unresolved/duplicate imports; do not invent closing odds.
+- Week 1 reimbursement is undecided, not an endless wait for a nonexistent Week 0.
+- `scripts/supabase-parlay.mjs` provides operator status, public-feed preparation,
+  read-only rehearsal, frozen-export import, verified private backups and activation.
+  All real migration commands take an explicit week. No automatic Firebase read.
+- Supabase schema is applied and tested. New cron is ACTIVE after explicit approval; frontend writes remain off.
+  Existing Sports-Hub tables/functions/scheduler are untouched.
+- Jack explicitly approved backend deployment plus organizer-hash installation
+  without merging. `league-parlay` version 3 is deployed with custom capability/
+  session auth (`verify_jwt=false`); the matching private hash is installed.
+  Twelve live HTTP checks passed, including organizer exchange and remembered
+  session, ordinary Zach/member boundaries, invalid credentials, CORS and blocked
+  prelaunch writes. Verification sessions were removed; the original link remains.
+- Jack subsequently explicitly approved collector activation. It is running.
+  Live checks saved 16 Week 1 games and found 32 DraftKings prices per market
+  (moneyline/spread/total) on the discovered Week 2 board, without changing the
+  selected prelaunch week. Sports-Hub's existing job/function remain untouched.
+- Fixed missing JSON Accept and truthful client-identification headers in the
+  Supabase port after upstream 403; successful live responses confirmed the fix.
+  Source failures now return HTTP 502/ok=false; never equate an enqueued cron call
+  with a successful feed refresh. Forty-one Parlay tests plus existing suites pass.
+  Backend link verification does not mean the still-legacy Pages app is upgraded.
+- `parlay/config.json` stays disabled. Do not merge or activate on this preparation
+  instruction. `PARLAY_RELEASE.md` is authoritative for actual remaining gates.
+- No changes to rankings, owner controls, current member links or Firebase rules.
+
+## v91 — Prepared Parlay v2 (historical; superseded by v93 launch)
+
+**Do not merge or enable without Jack's launch instruction.** This section
+supersedes v89's parlay architecture only when `parlay/config.json` enables v2.
+All legacy parlay sections below continue to describe the currently active app.
+
+- `parlay-next.js` wraps `LeagueParlay.paint`; explicit disabled config delegates
+  to the legacy implementation only on devices that have never enabled v2.
+  Config failures stay read-only/retryable. `data-parlay-mode` also prevents
+  legacy background renders/writes from taking over an upgraded view. New CSS is scoped under `.pn`.
+- Picks → Ticket → Season. Compact spread/total/moneyline board; live tracking;
+  $10 stake, prior week's low-score reimbursement, individual/weekly history.
+- Node 24 `server/app.mjs`, domain/engine/store/collector modules and persistent
+  SQLite own v2 state. Atomic game reservations, revisions, role-checked writes,
+  immutable last-observed pregame snapshots, public-source background collection.
+- Organizer-only “Add actual odds” / “Edit actual odds” on Ticket records the
+  placed DraftKings combined American odds per week. Everyone can see the $10
+  potential return/profit; tracked kickoff odds/results stay separate. Entries
+  can be corrected after kickoff, use monotonic revisions and append an audit
+  record. These are placement terms, not a confirmed settlement/payment; pushes
+  or voids can change the actual payout. Past tickets retain the entry.
+- Source: DraftKings **via ESPN**, not a direct/live-guaranteed DraftKings feed.
+  No fabricated prices. Props/missing data need explicit review. Tracker amounts
+  are not the actual placed ticket; Zach places the bet outside the app.
+- Organizer capability links are private, hash-verified by the service, exchanged
+  for random sessions and removed from the URL. Selecting Zach's name is never
+  authorization. Ordinary members keep the existing trusted name-selection model.
+- New localStorage keys: `lh:parlay-session:v2` (role/token/expiry) and
+  `lh:parlay-state:v2` (read-only last snapshot, API-scoped), and
+  `lh:parlay-enabled:v2` (last enabled config; prevents unsafe legacy fallback).
+  Sessions are scoped to the service/season and organizer controls wait for
+  server verification. No capability key
+  lives in repo/config/storage. `league.js` routes invite entry to Parlay.
+- `scripts/preview-parlay.mjs` runs isolated fixtures; `server/*.test.mjs` covers
+  both service behavior and frontend rendering. `scripts/create-organizer.mjs`
+  writes private launch packets OUTSIDE the repo; `scripts/import-parlay.mjs`
+  imports an authorized offline legacy export. No automatic private-source reads.
+- `scripts/activate-parlay.mjs` makes a verified SQLite backup, requires explicit
+  frozen-legacy/reconciled-migration assertions and activates only the current
+  imported week with zero unresolved rows. Import alone never enables writes.
+  `scripts/check-parlay-launch.mjs`, `server/Dockerfile`, `server/railway.json`
+  and `PARLAY_RELEASE.md` document deployment, durable storage and safe cutover.
+- `npm ci --ignore-scripts` then `npm test` runs reproducible pinned jsdom
+  whole-app member/organizer tests, service tests and all existing suites. Tests
+  use fixtures only. Clear/re-add revisions remain monotonic; delayed saves
+  capture their member/week; shared pick links keep their original entry visible.
+- No merge/deployment/live data change occurred. Private Firebase migration read
+  was blocked by approval review and was not retried. Browser localhost was
+  blocked; mobile visual QA remains pending. A read-only Railway agent capability
+  query scoped to Sports-Hub was also blocked by automatic approval review; it
+  was not retried. Separate hosting needs explicit approval. See release gates.
 
 ## v90 — Accurate season narratives and member storylines (current state)
 

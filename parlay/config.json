@@ -1,0 +1,7 @@
+{
+  "enabled": true,
+  "api": "https://oqrfdhoyyogjmiqmjhnp.supabase.co/functions/v1/league-parlay",
+  "year": 2026,
+  "preview": false,
+  "note": "Live Parlay v2. Week 2 cutover verified on 2026-09-16: legacy writes frozen, all four existing picks preserved, private backups verified."
+}

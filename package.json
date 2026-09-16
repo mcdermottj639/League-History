@@ -1,0 +1,12 @@
+{
+  "name": "league-history",
+  "private": true,
+  "description": "Static league app; Supabase parlay backend and Node 24 preview/test tooling",
+  "engines": { "node": ">=24 <25" },
+  "scripts": {
+    "test": "node scripts/test-release.mjs",
+    "test:parlay": "node --test server/*.test.mjs",
+    "preview:parlay": "node scripts/preview-parlay.mjs"
+  },
+  "devDependencies": { "jsdom": "30.0.1" }
+}

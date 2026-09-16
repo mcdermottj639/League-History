@@ -1367,7 +1367,7 @@
      not told when its view is torn down, so a local "am I visible" boolean
      would have to be maintained from the outside anyway — and the moment it
      drifted, this would be back to painting over other people's pages. */
-  const ownsHost = () => !!(P.host && P.host.dataset && P.host.dataset.view === 'parlay');
+  const ownsHost = () => !!(P.host && P.host.dataset && P.host.dataset.view === 'parlay' && P.host.dataset.parlayMode !== 'next');
 
   function render() {
     const host = P.host;
@@ -1425,7 +1425,7 @@
   function wire() {
   document.addEventListener('click', async (e) => {
     const b = e.target && e.target.closest ? e.target.closest('[data-lp]') : null;
-    if (!b) return;
+    if (!b || (P.host && P.host.dataset.parlayMode === 'next')) return;
     const act = b.dataset.lp;
     const ow = curOpen();
     if (act === 'opt') {
@@ -1599,7 +1599,7 @@
      picked, so that is when it asks — rather than a timer running down a
      battery all Sunday for a list that changes twelve times a week. */
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && P.host) refreshPicks(curOpen(), true);
+    if (document.visibilityState === 'visible' && P.host && P.host.dataset.parlayMode !== 'next') refreshPicks(curOpen(), true);
   });
 
   /* `toggle` does not bubble, so it is caught on the way down. */
