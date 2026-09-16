@@ -3,6 +3,19 @@
 (() => {
   'use strict';
   const KEY = 'lh:owner-links:v1';
+  // Private handoff only: never bundle a real capability in public assets.
+  let setupToken = null, setupRequested = false;
+  try {
+    const fragment = new URLSearchParams(location.hash.slice(1));
+    if (fragment.has('owner-parlay-link')) {
+      setupRequested = true;
+      const token = fragment.get('owner-parlay-link');
+      if (/^[A-Za-z0-9_-]{43}$/.test(token)) setupToken = token;
+      fragment.delete('owner-parlay-link');
+      history.replaceState(null, '', location.pathname + location.search + (fragment.size ? '#' + fragment.toString() : ''));
+    }
+  } catch (_) {}
+
   const allowed = () => !!window.LeagueOwner?.is();
   const home = () => new URL('./', location.href).href;
   function validate(row) {
@@ -62,7 +75,15 @@
       else {const packet=JSON.parse(text);if(packet.version!==1||!Array.isArray(packet.links))throw Error('Choose a valid private links backup.');incoming=packet.links;}
       const rows=read();for(const item of incoming){const row=validate(item);if(!rows.some(r=>r.url===row.url))rows.push(row);}save(rows);render();status('Private links imported. Existing entries were preserved.');
     }catch(error){if(allowed())status(error.message);}finally{e.target.value='';}};
-    try{render();}catch(error){status(error.message);}
+    try {
+      if (setupToken) {
+        const rows = read(), row = validate({label:'Zach · Parlay organizer',url:home()+'#parlay-organizer='+setupToken,status:'ready'});
+        const existing = rows.findIndex(item => item.url === row.url);
+        if (existing < 0) rows.push(row); else rows[existing] = {...rows[existing],status:'ready'};
+        save(rows); setupToken = null;
+        render(); status('Zach’s link is ready. Find it here anytime: ? → Links to share.');
+      } else render();
+    } catch(error) { status(error.message); }
   }
-  window.LeagueOwnerLinks={mount};
+  window.LeagueOwnerLinks={mount,setupRequested};
 })();

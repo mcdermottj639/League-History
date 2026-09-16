@@ -87,6 +87,19 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   the team names — is world-readable. That was the owner's setting, not an
   accident, but weigh it before adding anything new about a person.
 
+## v97 — One-tap owner link setup
+
+The private owner handoff uses an `owner-parlay-link` URL fragment, removed
+immediately by owner-links.js before shell boot. On an already unlocked owner
+device, the help sheet opens and saves the SAME Zach organizer capability as a
+ready-to-copy directory row. Existing other entries remain; repeat setup does
+not duplicate rows. The handoff does not grant owner or organizer access and
+never automatically sends the link. A non-owner device gets an explanation,
+not a saved or displayed secret. No actual capability is shipped in repo assets.
+The directory remains device-local; the setup link can be reopened on another
+unlocked owner browser. Keep that handoff private, just like the organizer link.
+The original manual import and JSON backup remain supported.
+
 ## v96 — Previous-week payer feed
 
 The existing fantasy season endpoint supplies week, scores and outcomes but no

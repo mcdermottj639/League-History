@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v96';
+  const APP_VERSION = 'v97';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -337,7 +337,7 @@
           <p class="lg-share-n" id="lg-share-n" role="status"></p>
         </section>
 
-        ${isOwner() ? '<div id="lg-owner-links"></div>' : ''}
+        ${isOwner() ? '<div id="lg-owner-links"></div>' : window.LeagueOwnerLinks?.setupRequested ? '<section class="lg-sh"><h3>Private link setup</h3><p>Open this setup link on your unlocked owner device to save Zach’s link. Selecting a name does not unlock owner access.</p></section>' : ''}
         <section class="lg-sh">
           <h3>The tabs</h3>
           <div class="lg-sh-l">
@@ -830,6 +830,7 @@
     else { $('#lg-app').hidden = false; paint(); }
     paintHead();
     labLink();
+    if (window.LeagueOwnerLinks?.setupRequested) openHelp();
   }
 
   if ('serviceWorker' in navigator) {
