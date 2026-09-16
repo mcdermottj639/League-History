@@ -85,6 +85,43 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   the team names — is world-readable. That was the owner's setting, not an
   accident, but weigh it before adding anything new about a person.
 
+## v90 — Accurate season narratives and member storylines (current state)
+
+Season write-ups describe observed results, never extrapolate a one-game record
+to 0–14 or 14–0. Week 1 compares the actual score with all other teams (including
+ties); later weeks use complete weekly all-play records. Historical comparisons
+name the games played and finished-season baseline, with ties at displayed
+precision. The personal odds are explicitly ESPN's. Schedule gap is a weekly
+rate difference, distinct from History's season-total all-play proxy.
+
+All playoff scoring stories, record ranks, and **Playoff scoring lift** use the
+championship bracket (`br === 'W'`). The lift baseline matches each playoff game
+to that year's regular-season PPG, weighting both averages by the same games.
+The result agrees with all-time playoff PPG and excludes placement/consolation.
+The broader postseason record book and head-to-head meetings still include those
+games and label their population. No raw historical scores were changed.
+
+Stories remain generated for every manager, with one league card and at least
+two on each personal/profile view. New detectors identify deep playoff runs and
+unbeaten championship-game records; scoring-title stories add finals context.
+Ranks, shared records, scoring titles, titleless-manager comparisons and podium
+uniqueness derive their scope/ties. No GOAT/dynasty story is restored. Deduplicate
+claim identities rather than coincidentally equal decimals; a podium story
+explicitly absorbs the single-score records it already states.
+
+The odds explanation distinguishes completed results from future scoring
+estimates. It never declares records pure luck, either forecast necessarily
+wrong, or an absent 50% target equivalent to elimination. The target means at
+least 50% in a sufficiently sampled simulation bucket, not a clinching rule.
+The simulation itself is unchanged. Its view cache keys on **reader plus full
+snapshot**, preventing stale what-if narratives after name switches or same-date
+score updates. Last-three form waits for three scores; tied games render as T.
+
+Verification: `node checks.js`, `node storylines.test.cjs`, JS syntax checks and
+mobile render inspection. The narrative suite checks all twelve identities,
+independent championship-game arithmetic, Week 1/ties/missing samples, cache
+invalidation and future shared records. Keep these guards when adding stories.
+
 ## v89 — Parlay matchup availability (current state)
 
 Each shared pick hides its entire matchup from other readers' boards, including
@@ -615,35 +652,12 @@ superseded. No model run happens in a member's Rankings view: these are snapshot
       full-width second) because five columns on a phone squeeze the name —
       the v39/v52 finding. `checks.js` conserves career W, L and points-for
       against the season rows they were summed from.
-  - 🔥 **`januaryHTML` — WHO SHOWS UP IN JANUARY (v58).** Every manager's
-    regular-season ppg against their own playoff ppg, over the same seasons.
-    - 🚨 **It reads `ST.era`, the SAME object the storyline detectors read,
-      and that is the whole of why it is safe.** `januaryGap()` has computed
-      this for every manager since v2 and only ever printed the biggest faller
-      and the biggest riser. Computing it again here — even correctly — would
-      be the v14 fault exactly: one concept, two numbers, each right, and the
-      page lying because nothing says which is which.
-    - ⚠️ **Why it earns a card now:** the ±5/±4 gate was written when brackets
-      existed for 7 seasons. Over 13 the spread widened and **ten of twelve
-      managers now sit more than two points from their regular-season
-      scoring** while the card still named two. The v7 coverage fault in a new
-      costume, landing again on the managers the extreme-hunting detectors
-      have least to say about.
-    - ⚠️ **No denominator trap, which is rare here:** both numbers are the same
-      manager over the same seasons, so scoring inflation moves the pair
-      together and cancels. Only the cross-manager ranking spans eras, so
-      **every row names its own game count** (the v51 rule).
-      🚨 **"The same seasons" is PER MANAGER since v59, and v58 shipped it
-      wrong.** `ST.era`'s `reg` filtered a manager's seasons by `PO_YEARS` —
-      seasons with ANY bracket on file — which did real work while that was 7
-      of 13 and filters nothing now that it is all 13. 2025 is winner's-bracket
-      only, so the six managers who missed its playoffs had a 2025 regular
-      season in `reg` with no game opposite it in `po`: Hurd read −9.1 and is
-      −10.1. `reg` now covers exactly the seasons THAT manager played a
-      bracket game in — the only reading under which the caption is true.
-      `PO_YEARS` was left with no reader and is deleted (the v8 `STATS` rule).
-    - ⚠️ It reuses `.fh-lx` wholesale — no new CSS — so it wraps exactly as the
-      luck index does (checked at 320px: both go to two lines, identically).
+  - 🔥 **`januaryHTML` — PLAYOFF SCORING LIFT (v90).** Reads the same
+    `ST.era` as the scoring story detectors. Championship bracket only; each
+    playoff score is matched to that manager's regular-season PPG in that year.
+    Both averages use identical playoff-game weights, avoiding different era
+    mixes. Each row names its sample size and agrees with the playoff PPG card.
+    This is descriptive scoring evidence, not proof of repeatable clutch skill.
   - 🚨 **NO OTHER BRACKET W-L EXISTS (v19, owner's call:
     *"Title brackets have to be changed to final 4s everywhere"*).** A
     manager's playoff résumé is **final fours**, then finals, then titles.
@@ -874,6 +888,9 @@ superseded. No model run happens in a member's Rankings view: these are snapshot
     this file compares `rel` to `rel`. A raw 2026 ppg against raw 2013-25 ppgs
     ranks seasons by WHEN they happened, because scoring has climbed; that is
     the `relPpg` rule the storyline detectors already follow.
+  - **v90 narrative rules:** observed records plus weekly all-play; no projected
+    final record. Historical scoring ties are stated. Odds caches include reader
+    and full snapshot; missing 50% targets never establish elimination.
   - ⚠️ **Season-level facts only.** The archive holds season totals, not
     week-by-week scores, so nothing here can say "your best START" or "you
     have never lost three in a row" — those are facts about a shape the data
@@ -1766,6 +1783,7 @@ superseded. No model run happens in a member's Rankings view: these are snapshot
 - `rankings/` — legacy fallback weeks (v83: Firebase is authoritative). `index.json` lists them; one JSON file each.
 - `logos/` — the league's own twelve crests, keyed by manager.
 - `sw.js` — network-first service worker. Bump `CACHE` on every release.
+- `storylines.test.cjs` — narrative regression checks; see v90 above.
 - `checks.js` — **run `node checks.js` after ANY data or detector change.**
   ⚠️ **A summary line reports ITS OWN block — use `block()`** (v49). Three of
   them read the running `bad` counter, so any failure above turned them ❌
@@ -2032,8 +2050,7 @@ untrustworthy. Every view carries a badge saying which it is.
 
 ## 📌 Storylines — detected, never written
 
-The cards at the top of Records, on the You page and on every profile (v44 —
-they opened Honors from v13 until then) started life as
+The cards in League Lore, on the You page and on every profile started life as
 paragraphs typed into a chat. **They are not typed in now, and that is the
 whole point:** a sentence like "Buley has finished 11th seven times" is wrong
 the moment a season lands. A detector looks for a SHAPE in the data and fills
@@ -2042,8 +2059,8 @@ Same rule as the Sports-Hub model card — a hand-written description of
 something computed is wrong the first time somebody changes it.
 
 - **Each detector is about a shape, not a person.** `worstToFirst` fires for
-  anyone who wins a title off a bottom-four finish; it happens to be Woods
-  twice today. **Nothing in `DETECT` names a manager**, which is what stops
+  anyone who wins a title immediately after a bottom-four finish; its current
+  one-off runs belong to McD, Gotch and Woods. **Nothing in `DETECT` names a manager**, which is what stops
   the feature quietly turning back into a hand-written page.
 - **Every sentence must read in second person too**, because any of them can be
   about whoever is holding the phone. Use `nm()` and **`vb(m, 'have', 'has')`**;
@@ -2056,11 +2073,9 @@ something computed is wrong the first time somebody changes it.
   never displaces a real find or changes the roll-call.
   - ⚠️ **It is NOT in the `DETECT` array any more.** It runs as a second phase
     inside `stories()`, because it has to count what a reader will SEE — the
-    list *after* the decimal dedupe, not what the detectors emitted. Christel
-    proved why: `cbscore` fired for him so he counted as covered, then the
-    dedupe dropped it (its 153.6 was already quoted inside his zero-podium
-    card) and left him on one card with the backstop none the wiser.
-    **Assert what renders — and derive from what renders too.**
+    list after claim deduplication, not what the detectors emitted. `bigScores`
+    omits a record already carried by that manager's podium story. Equal decimal
+    numbers in unrelated stories do not delete a finding.
   - ⚠️ **This also retired `DETECT.slice(0, -1)`**, which meant "every detector
     except the backstop" only while the backstop stayed last in the array.
     Appending one below it would have silently broken coverage.
@@ -2072,8 +2087,8 @@ something computed is wrong the first time somebody changes it.
   - The career line under a claim is carried by the FIRST top-up only, and it
     **drops any clause already on the page** (`held[m].txt`): the floor card
     said "with 2 finals and no title" and this one said "with 2 finals but no
-    title" directly beneath it. The `stories()` dedupe fingerprints DECIMALS
-    and cannot see a whole number.
+    title" directly beneath it. Claim identity is deduplicated separately; shared numbers alone do not
+    establish duplicate facts.
   - `checks.js` asserts **two on the rendered You page AND the rendered
     profile**, per manager.
 - **🚨 COVERAGE IS SELECTED FOR, NOT HOPED FOR (v7).** `signature` guaranteed
@@ -2508,7 +2523,7 @@ guaranteed to break rendering in ways no assertion catches.
    pages on ONE number each — `checks.js` fails if the two pages disagree. ⚠️ **`owner.js` is in BOTH pages on one shared
    `?v=` — bump it in both or one of them serves a stale gate.**
 3. Bump `CACHE` in `sw.js`.
-4. `node --check` every JS file, then `node checks.js` — there is no test
+4. `node --check` every JS file, then `node checks.js` and `node storylines.test.cjs` — there is no test
    suite; syntax check, the conservation and gate laws, plus a headless
    render are the gate. ⚠️ **If you touched `odds.js`, also run
    `node calibrate.js`** (~90s): the suite cannot see a miscalibrated model,
@@ -2548,6 +2563,13 @@ Claude-Session: https://claude.ai/code/session_01To1PtAzu7JTpCEQj8EiV9D
   what they're running. They verify on iPhone (Safari + home-screen PWA).
 
 ## Changelog
+
+- **v90 — Season/storyline accuracy audit (16 Sep 2026).** Removes misleading
+  one-game full-season pace, narrows playoff stories to championship games,
+  matches scoring baselines, adds conversion stories, corrects luck/odds
+  explanations and ties, and isolates cached what-ifs by reader/snapshot.
+  Every member retains two or more personal stories and one league card.
+
 
 Same convention as Sports-Hub's, and for the same reason: entries record the
 REASONING, not just the change, so the next session does not repeat a mistake.
@@ -4238,6 +4260,8 @@ stale entry written in the present tense reads as current to anyone who greps.
     comment above the code instead of the code — the comment was true when
     written and had gone stale the same way every caption in v58 had.
     - `reg` is per manager now: exactly the seasons THAT manager played a
+    ⚠️ **SUPERSEDED in v90:** championship-only matched baselines and
+    descriptive rate gaps replace the former sample/interpretation.
       bracket game in. Both the card and the detector read the same `ST.era`,
       so they moved together (McD/Hyman/Gotch/Woods/Wolff/Zach unchanged; the
       six 2025 non-playoff teams moved 0.2-1.0). `PO_YEARS` lost its last
@@ -5136,6 +5160,8 @@ stale entry written in the present tense reads as current to anyone who greps.
     the third is the one that mattered: last season's scoring predicts this
     season's at `r = +0.14`, career average at `r = +0.17`, and **win rate
     above .500 predicts next season's at `r = −0.02` — zero.** A manager's
+    ⚠️ **SUPERSEDED in v90:** championship-only matched baselines and
+    descriptive rate gaps replace the former sample/interpretation.
     RECORD is pure luck. That is the app's oldest instinct (all-play over
     standings, the luck index) with a number under it at last, and it is why
     every input here is points.

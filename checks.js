@@ -247,7 +247,7 @@ console.log(`  ${apMark()} brackets == appearances     every playoff berth has i
   if (!hasInOrder('hon', ['The trophy case','Champions','Still waiting','Seeds & upsets',"The champion's curse"])) {
     console.log('  ❌ Trophy Case is missing a card or its approved order'); bad++;
   }
-  if (!hasInOrder('rec', ['All-time standings','The record book','All-time playoff PPG','Playoff appearances','Final fours','Who shows up in January'])) {
+  if (!hasInOrder('rec', ['All-time standings','The record book','All-time playoff PPG','Playoff appearances','Final fours','Playoff scoring lift'])) {
     console.log('  ❌ Record Book is missing a numerical card or its approved order'); bad++;
   }
   if (!hasInOrder('lore', ['Storylines','The luck index','Rivalries'])) {
@@ -970,28 +970,16 @@ function seasonLaws() {
   const over = LS._derive({ rw: 2, pt: 6, t: t.map((x) => ({ ...x, s: [100, 101] })) });
   if (over.nextWk !== null) fail('past the last week the app still offered a next one');
 
-  /* 🚨 THE RANK MUST NEVER OUTRUN ITS DENOMINATOR. `placeTxt` is handed a
-     rank running 1..seasons+1 and a count of finished seasons, and printing
-     one against the other produced "your 14th-best win rate in thirteen
-     seasons". Walk every rank and assert no phrase quotes a number larger
-     than the seasons it counts against. */
-  const SEAS = 13;
-  for (let r = 1; r <= SEAS + 1; r++) {
-    const txt = LS._placeTxt(r, SEAS, 'seasons', 'your');
-    /* ⚠️ ANY numeral at all is the failure, and the first version of this
-       check missed it: `\b\d+\b` never matches "14th", because there is no
-       word boundary between the digits and the suffix — so the exact fault
-       that shipped walked straight past the assertion written to catch it.
-       Every count in this phrase is spelled, so a digit means a rank leaked
-       into the prose. Verified by reinstating the fault. */
-    if (/\d/.test(txt)) fail(`placeTxt(${r}) prints a numeral: "${txt}"`);
-    if (/\b(fourteen|fifteen|sixteen)\b/.test(txt)) fail(`placeTxt(${r}) quotes a count past ${SEAS}: "${txt}"`);
-    if (!/thirteen/.test(txt)) fail(`placeTxt(${r}) lost its denominator: "${txt}"`);
-  }
+  // v90: compare actual values, including ties at the displayed precision.
+  const compare = LS._comparisonTxt;
+  if (!compare(3, [1, 2, 3], 'your').includes('level with one')) fail('equal scoring is called better');
+  if (!compare(3.04, [1, 2, 3], 'your').includes('level with one')) fail('displayed scoring tie is hidden');
+  if (!compare(4, [1, 2, 3], 'your').includes('above all three')) fail('best scoring comparison is wrong');
+  if (!compare(0, [1, 2, 3], 'your').includes('below all three')) fail('worst scoring comparison is wrong');
 
   /* The favourite must name its basis, and must not pick one in preseason
      from scoring that does not exist. */
-  const A = { n: 'A', ppg: 120, l3: 110, pct: 60 }, B = { n: 'B', ppg: 100, l3: 130, pct: 40 };
+  const A = { n: 'A', ppg: 120, l3: 110, pct: 60, played: [110, 110, 110] }, B = { n: 'B', ppg: 100, l3: 130, pct: 40, played: [130, 130, 130] };
   const inSeason = LS._favourite(A, B, false);
   if (!inSeason || !/Favoured on scoring/.test(inSeason.why)) fail('in-season favourite does not state its basis');
   if (!/Recent form disagrees/.test(inSeason.why)) fail('form disagreeing with scoring went unsaid');

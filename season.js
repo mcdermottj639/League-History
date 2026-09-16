@@ -254,7 +254,7 @@
          between the win rate the scoring deserved and the one that happened.
          Both sides are RATES, never two records with different denominators
          printed side by side — that is the v3 fault this stat was born from. */
-      t.luck = (t.winPct == null || t.allPct == null) ? null : (t.winPct - t.allPct) * 100;
+      t.luck = (t.winPct == null || t.allPct == null || t.apw + t.apl !== t.g * (teams.length - 1)) ? null : (t.winPct - t.allPct) * 100;
     });
 
     /* 🚨 Never rely on array order for a tie (the v202 lesson, inherited).
@@ -310,59 +310,67 @@
     }
     const w = a.ppg > b.ppg ? a : b, o = w === a ? b : a;
     let why = `Favoured on scoring: <b>${esc(w.n)}</b>, ${one(w.ppg)} a game against ${one(o.ppg)}.`;
-    if (w.l3 != null && o.l3 != null && o.l3 > w.l3) {
+    if (w.played?.length >= 3 && o.played?.length >= 3 && w.l3 != null && o.l3 != null && o.l3 > w.l3) {
       why += ` Recent form disagrees — ${esc(o.n)} ${one(o.l3)} to ${one(w.l3)} over the last three.`;
     }
     return { w, why };
   }
 
-  /* 🚨 THE RANK AND THE DENOMINATOR HAVE TO COUNT THE SAME THING, and the
-     first cut did not: the rank places this season among the finished ones
-     PLUS itself, so it runs 1 to seasons+1, and printing that against the
-     finished count rendered "your 14th-best win rate in thirteen seasons" —
-     which is not a sentence about anything. Only finished seasons can be
-     ranked against, so the comparison is stated as how many of THEM this one
-     beats. One population, one denominator, true at both ends.
-
-     ⚠️ Module-level and exported so `checks.js` can walk every rank from 1 to
-     seasons+1 and assert no phrasing ever quotes a position larger than the
-     seasons it is counting against. That fault was invisible until a manager
-     actually had the worst season of their career, which is exactly the case
-     nobody builds a fixture for. */
-  function placeTxt(r, seasons, what, poss) {
-    if (r <= 1) return `better than any of ${poss} ${spell(seasons)} ${what}`;
-    if (r > seasons) return `below all ${spell(seasons)} of ${poss} finished ${what}`;
-    return `ahead of ${spell(seasons + 1 - r)} of ${poss} ${spell(seasons)} ${what}`;
+  // Compare at displayed precision. Equal values must never become "better".
+  function comparisonTxt(value, values, poss) {
+    const v = Math.round(value * 10);
+    const rounded = values.map((x) => Math.round(x * 10));
+    const below = rounded.filter((x) => x < v).length;
+    const equal = rounded.filter((x) => x === v).length;
+    if (equal) return `ahead of ${spell(below)} and level with ${spell(equal)} of ${poss} ${spell(values.length)} finished seasons`;
+    if (below === values.length) return `above all ${spell(values.length)} of ${poss} finished seasons`;
+    if (!below) return `below all ${spell(values.length)} of ${poss} finished seasons`;
+    return `ahead of ${spell(below)} of ${poss} ${spell(values.length)} finished seasons`;
   }
 
-  /* ══ THE READER'S OWN SEASON, AGAINST THEIR OTHER THIRTEEN ═════════════
-     The reason this tab lives in this app rather than being a link to ESPN.
-     ⚠️ Every sentence goes through `vb()` — second person changes the verb,
-     and a sentence that agrees with the wrong person is the first thing a
-     reader notices. There are no pronouns in these strings at all. */
+  // Describe results, never extrapolate 0-1 or 1-0 to a full-season record.
+  function performanceLine(d, mine) {
+    if (d.pre || !mine.g) return '';
+    const vb = LH.voice.vb, m = mine.m;
+    const record = `${mine.w}-${mine.l}${mine.ti ? `-${mine.ti}` : ''}`;
+    const poss = vb(m, 'your', 'their');
+    if (mine.g === 1 && d.wp === 1) {
+      const opponents = d.teams.filter((t) => t.id !== mine.id && Number.isFinite(t.scores[0]) && t.g > 0);
+      const score = mine.scores[0];
+      if (Number.isFinite(score) && opponents.length === d.teams.length - 1) {
+        const beaten = opponents.filter((t) => score > t.scores[0]).length;
+        const tied = opponents.filter((t) => score === t.scores[0]).length;
+        const context = mine.l && beaten > opponents.length / 2 ? ` — ${poss} scoring was better than ${poss} record`
+          : mine.w && opponents.filter((t) => t.scores[0] > score).length > opponents.length / 2 ? ' — a win despite a below-median score' : '';
+        return `A <b>${record} start</b>; ${poss} Week 1 score would have beaten <b>${beaten} of ${opponents.length} opponents</b>${tied ? ` and tied ${spell(tied)}` : ''}${context}.`;
+      }
+    }
+    const expectedComparisons = mine.g * (d.teams.length - 1);
+    // The snapshot's all-play fields have no tie count. Only make the rate
+    // comparison when they account for the full set of weekly comparisons.
+    if (mine.allPct != null && mine.apw + mine.apl === expectedComparisons) {
+      const gap = mine.winPct - mine.allPct;
+      const context = gap < -0.05 ? `Scoring has outpaced ${poss} record so far.`
+        : gap > 0.05 ? `${Cap(poss)} record has outpaced the weekly scoring results so far.`
+        : `${Cap(poss)} record and weekly scoring results are broadly in line.`;
+      return `<b>${record} through ${spell(mine.g)} games</b>, with a <b>${mine.apw}-${mine.apl} weekly all-play record</b>. ${context}`;
+    }
+    return `<b>${record} through ${spell(mine.g)} games</b>. ${mine.g < d.rw ? `${Cap(spell(d.rw - mine.g))} regular-season games remain.` : 'The regular season is complete.'}`;
+  }
+
   function careerLines(d, mine) {
     const c = LH.career(mine.m);
-    if (!c) return [];
     const vb = LH.voice.vb, m = mine.m;
     const out = [];
-    const rank = (v, arr) => 1 + arr.filter((x) => x > v).length;
-
-    const place = (r, what) => placeTxt(r, c.seasons, what, vb(m, 'your', 'their'));
-
-    if (!d.pre && mine.rel != null) {
+    if (c && !d.pre && mine.rel != null && c.yrs.length) {
       const rels = c.yrs.map((y) => y.rel);
-      const r = rank(mine.rel, rels);
       const best = Math.max(...rels);
-      const bestYr = c.yrs.find((y) => y.rel === best);
-      out.push(`<b>${sgn(mine.rel)} a game on the league</b> — ${place(r, 'seasons')}. The best was ${sgn(best)} in ${bestYr.yr}.`);
+      const bestYears = c.yrs.filter((y) => Math.round(y.rel * 10) === Math.round(best * 10)).map((y) => y.yr);
+      out.push(`<b>${sgn(mine.rel)} a game on the league</b> through ${spell(mine.g)} game${mine.g === 1 ? '' : 's'} — ${comparisonTxt(mine.rel, rels, vb(m, 'your', 'their'))}. The best finished-season mark was ${sgn(best)} in ${bestYears.join(', ')}.`);
     }
-
-    if (!d.pre && mine.winPct != null) {
-      const projW = Math.round(mine.winPct * d.rw);
-      const rates = c.yrs.map((y) => (y.games ? y.w / y.games : 0));
-      const r = rank(mine.winPct, rates);
-      out.push(`At this rate that is <b>${projW}-${d.rw - projW}</b> — a win rate ${place(r, 'seasons')}.`);
-    }
+    const performance = performanceLine(d, mine);
+    if (performance) out.push(performance);
+    if (!c) return out;
 
     /* Always true, always worth saying — and in preseason it is the only
        career fact there is anything to say. Finishes are era-neutral. */
@@ -383,7 +391,7 @@
      for a number that cannot have changed. */
   let OURS = null, OURS_KEY = null;
   function ourOdds(d) {
-    const key = `${d.p.d}|${d.wp}`;
+    const key = JSON.stringify([LH.me(), d.p]);
     if (OURS_KEY === key) return OURS;
     if (!window.LeagueOdds) return null;
     const priors = {};
@@ -434,16 +442,16 @@
       ? [['Playoff odds', pc(mine.pct)], ['Odds rank', `${ordN(d.odds.indexOf(mine) + 1)}`]]
       : [['Record', `${mine.w}-${mine.l}${mine.ti ? `-${mine.ti}` : ''}`], ['Place', `${ordN(mine.seed)}`],
         ['Points/gm', one(mine.ppg)], ['vs league', sgn(mine.rel)],
-        ['All-play', `${mine.apw}-${mine.apl}`], ['Luck', sgn(mine.luck)]];
+        ['All-play', `${mine.apw}-${mine.apl}`], ['Schedule gap', sgn(mine.luck)]];
     const lines = careerLines(d, mine);
     return `<h2 class="section-title">🙋 Your season</h2>
       <div class="ffp-card ls-me">
         <div class="ls-me-h">${crestOf(cr, mine, 54)}<div><h3>${esc(mine.n)}</h3>
-          <p>${d.pre ? `${pc(mine.pct)} to make the playoffs` : `${mine.w}-${mine.l}${mine.ti ? `-${mine.ti}` : ''} · ${ordN(mine.seed)} of ${spell(d.teams.length)} · ${pc(mine.pct)} to make the playoffs`}</p></div></div>
+          <p>${d.pre ? `${pc(mine.pct)} ESPN playoff odds` : `${mine.w}-${mine.l}${mine.ti ? `-${mine.ti}` : ''} · ${ordN(mine.seed)} of ${spell(d.teams.length)} · ${pc(mine.pct)} ESPN playoff odds`}</p></div></div>
         <div class="fh-you-g">${tiles.map(([k, v]) =>
           `<div class="fh-you-t"><b>${v}</b><i>${k}</i></div>`).join('')}</div>
         ${lines.length ? `<div class="ls-lines">${lines.map((x) => `<p>${x}</p>`).join('')}</div>` : ''}
-        ${d.pre ? '' : '<p class="ffp-cap"><b>vs league</b> is points a game against this season\'s league average, which is what makes it comparable with the thirteen seasons on the History tab — raw scoring has climbed over the years, so raw numbers would rank seasons by when they happened. <b>Luck</b> is the same gap the archive\'s luck index measures: the win rate the scoring deserved against the one that happened.</p>'}
+        ${d.pre ? '' : '<p class="ffp-cap"><b>vs league</b> is points a game against this season\'s league average, which is what makes it comparable with the thirteen seasons on the History tab — raw scoring has climbed over the years, so raw numbers would rank seasons by when they happened. <b>Schedule gap</b> is actual win rate minus weekly all-play win rate, in percentage points. A negative value means stronger weekly scoring than the record suggests. History uses season-total comparisons instead; the two measures are different. Early results are a small sample, not a final-record forecast.</p>'}
       </div>`;
   }
 
@@ -457,7 +465,7 @@
       const f = favourite(a, b, d.pre);
       const side = (t) => `<div class="ls-side${mineCls(t, me)}">${crestOf(cr, t, 34)}
         <div class="ls-side-b"><span class="ls-side-n">${esc(t.n)}${youTag(t, me)}</span>
-        <span class="ls-side-s">${d.pre ? pc(t.pct) + ' playoffs' : `${t.w}-${t.l}${t.ti ? `-${t.ti}` : ''} · ${one(t.ppg)} ppg${t.l3 != null ? ` · L3 ${one(t.l3)}` : ''}`}</span></div></div>`;
+        <span class="ls-side-s">${d.pre ? pc(t.pct) + ' playoffs' : `${t.w}-${t.l}${t.ti ? `-${t.ti}` : ''} · ${one(t.ppg)} ppg${t.played.length >= 3 && t.l3 != null ? ` · L3 ${one(t.l3)}` : ''}`}</span></div></div>`;
       return `<div class="ffp-card ls-mu${(me && (a.m === me || b.m === me)) ? ' ls-mu-me' : ''}">
         ${side(a)}<div class="ls-v">v</div>${side(b)}
         ${f ? `<p class="ls-why">${f.why}</p>` : ''}
@@ -468,13 +476,13 @@
         ? `<b>${esc(mineGame[0].m === me ? mineGame[1].n : mineGame[0].n)}</b> is next for you.`
         : `The ${spell(d.games.length)} games of week ${d.nextWk}.`} ${d.pre
         ? 'Nothing has been played, so the favourite is ESPN\'s preseason projection and nothing else.'
-        : 'The favourite is taken on season scoring, with recent form beside it — they disagree often, and where they do the line says so.'}</p>
+        : 'The scoring favourite has the higher average so far; this is not a matchup prediction. Last-three form appears after three games.'}</p>
       ${rows || '<div class="ffp-card"><div class="ffp-empty"><b>No matchups on file for this week.</b>The schedule that came with this snapshot doesn\'t cover it.</div></div>'}`;
   }
 
   function oddsHTML(d, cr, me) {
-    if (!d.teams.some((t) => t.pct != null)) return '';
     const o = ourOdds(d);
+    if (!o && !d.teams.some((t) => t.pct != null)) return '';
     const ours = o ? o.odds : null;
     const rows = [...d.teams].sort((a, b) =>
       (ours ? ours[b.id] - ours[a.id] : 0) || (b.pct || 0) - (a.pct || 0) || b.pf - a.pf);
@@ -484,14 +492,17 @@
        noise of two different simulations and a marker would be reading
        tea leaves. */
     const BIG = 12;
-    const gaps = ours ? rows.filter((t) => Math.abs(ours[t.id] - t.pct) >= BIG) : [];
+    const gaps = ours ? rows.filter((t) => t.pct != null && Math.abs(ours[t.id] - t.pct) >= BIG) : [];
+    const value = (t) => ours ? ours[t.id] : t.pct;
+    const topTeams = rows.filter((t) => value(t) === value(top));
+    const topNames = topTeams.map((t) => esc(t.n)).join(', ');
 
     return `<h2 class="section-title">🎯 Playoff odds</h2>
       <p class="fh-lead">${ours
-        ? `<b>${esc(top.n)} ${pct0(ours[top.id])}</b> — the best shot in the league by our numbers. ${Cap(spell(d.pt))} of ${spell(d.teams.length)} make it, so the twelve add up to ${d.pt * 100}%.${d.pre
-          ? ' <b>Before a ball is thrown, ESPN should be better than us</b> — they can see twelve rosters and all we have is thirteen years of history. Our edge, if we have one, arrives with real scoring.'
+        ? `<b>${topNames} ${pct0(ours[top.id])}</b> — ${topTeams.length > 1 ? 'joint-highest odds' : 'highest odds'} in our simulation. ${Cap(spell(d.pt))} of ${spell(d.teams.length)} make it, so the unrounded probabilities add up to ${d.pt * 100}%.${d.pre
+          ? ' Before Week 1, our model uses manager scoring history; ESPN provides a separate preseason forecast.'
           : ''}`
-        : `<b>${esc(top.n)} ${pct0(top.pct)}</b> — the best shot in the league. ${Cap(spell(d.pt))} of ${spell(d.teams.length)} make it.`}</p>
+        : `<b>${topNames} ${pct0(top.pct)}</b> — ${topTeams.length > 1 ? 'joint-highest' : 'highest'} ESPN playoff odds. ${Cap(spell(d.pt))} of ${spell(d.teams.length)} make it.`}</p>
       <div class="ffp-card">
         <div class="ls-odd ls-oh"><span></span><span></span><span>Team</span><span>Ours</span><span>ESPN</span></div>
         ${rows.map((t, i) => {
@@ -501,17 +512,17 @@
             <span class="ls-odd-n">${i + 1}</span>
             ${crestOf(cr, t, 28)}
             <span class="ls-odd-t">${esc(t.n)}${youTag(t, me)}</span>
-            <span class="ls-odd-v mono">${pct0(mine == null ? t.pct : mine)}</span>
+            <span class="ls-odd-v mono">${pct0(mine)}</span>
             <span class="ls-odd-e mono${Math.abs(gap) >= BIG ? ' ls-gap' : ''}">${pct0(t.pct)}</span>
           </div>`;
         }).join('')}
       </div>
-      ${ours ? `<p class="ffp-cap"><b>Ours</b> plays the rest of the schedule out ${o.sims.toLocaleString()} times. It uses points and never records — measured across the thirteen seasons, a manager's win rate carries <b>no</b> predictive signal at all (r = −0.02) while their scoring carries a little (r = +0.17), so a record is the one number here that is pure luck. ${o.est.lambda > 0
-        ? `After ${spell(d.wp)} week${d.wp === 1 ? '' : 's'} it trusts what teams have actually scored <b>${Math.round(o.est.lambda * 100)}%</b> and their thirteen-year history the rest — weekly scores swing ${one(o.est.sigma)} points, which is far wider than the teams truly are, so early scoring is mostly noise.`
-        : 'With no games played it is thirteen years of scoring history and nothing else.'}<br><br>⚠️ <b>These are two different forecasts of the same thing, and one of them is wrong.</b> ESPN\'s comes with the league data and is the number their app shows. Neither has been proven better here — that takes seasons of keeping score, not one page.${gaps.length
+      ${ours ? `<p class="ffp-cap"><b>Ours</b> plays the rest of the schedule out ${o.sims.toLocaleString()} times. Completed results count toward the standings. Future scoring estimates blend this season’s scores with manager scoring history; a good or bad record alone does not establish team strength. ${o.est.lambda > 0
+        ? `After ${spell(d.wp)} week${d.wp === 1 ? '' : 's'} the scoring estimate weights this season’s results <b>${Math.round(o.est.lambda * 100)}%</b> and the historical prior the rest. The model estimates weekly scoring variation of ${one(o.est.sigma)} points, so early results carry substantial uncertainty.`
+        : 'With no games played it is thirteen years of scoring history and nothing else.'}<br><br>⚠️ <b>Different models can reasonably produce different probabilities.</b> ESPN\'s comes with the league data and is the number their app shows. Neither has been proven better here — that takes seasons of keeping score, not one page.${gaps.length
         ? (gaps.length > 3
-          ? ` Right now they are more than ${BIG} points apart on <b>${spell(gaps.length)} of the ${spell(d.teams.length)}</b>.`
-          : ` Right now they are more than ${BIG} points apart on <b>${gaps.map((t) => esc(t.n)).join(', ')}</b>.`)
+          ? ` Right now they are at least ${BIG} percentage points apart on <b>${spell(gaps.length)} of the ${spell(d.teams.length)}</b>.`
+          : ` Right now they are at least ${BIG} percentage points apart on <b>${gaps.map((t) => esc(t.n)).join(', ')}</b>.`)
         : ''}</p>`
         : `<p class="ffp-cap">⚑ <b>ESPN\'s numbers, not this app\'s.</b> They come through with the league data and are the same percentages the ESPN app shows.</p>`}
       ${hingeHTML(d, o, me)}`;
@@ -534,19 +545,19 @@
     const oppName = (id) => { const t = d.teams.find((x) => x.id === id); return t ? t.n : '?'; };
     return `<h2 class="section-title">🔑 What yours hinges on</h2>
       <p class="fh-lead">${o.need != null
-        ? `<b>Win ${spell(o.need)} of your last ${spell(o.myGames.length)}</b> and you are better than even money to make it.`
-        : `<b>Nothing left to play for on paper</b> — the remaining games barely move your number either way.`} ${o.sos != null
-        ? `Your remaining opponents are <b>${sgn(o.sos)} points a game</b> against the league — ${o.sos > 1 ? 'a hard run' : o.sos < -1 ? 'a kind one' : 'about average'}.`
+        ? `<b>${o.need === 0 ? 'Even with no more wins' : `With ${spell(o.need)} wins from your remaining ${spell(o.myGames.length)}`}</b>, at least half of the sufficiently sampled simulations reach the playoffs. This is an estimate, not a clinching scenario.`
+        : `<b>No reliable 50% win target yet.</b> The simulation did not find a sufficiently sampled remaining-win total at or above even odds. That does not establish elimination; the game-by-game estimates are below.`} ${o.sos != null
+        ? `The model rates your remaining opponents <b>${sgn(o.sos)} points a game</b> against its league baseline — ${o.sos > 1 ? 'a hard run' : o.sos < -1 ? 'a kind one' : 'about average'}.`
         : ''}</p>
       <div class="ffp-card">
-        ${biggest && biggest.ifWin != null ? `<p class="ls-hinge-h">Your biggest week is <b>${esc(oppName(biggest.opp))}</b> in week ${biggest.week} — <b>${pct0(biggest.ifWin)}</b> if you win it, <b>${pct0(biggest.ifLose)}</b> if you don't.</p>` : ''}
+        ${biggest && biggest.ifWin != null && biggest.ifLose != null ? `<p class="ls-hinge-h">The largest estimated swing is <b>${esc(oppName(biggest.opp))}</b> in week ${biggest.week} — <b>${pct0(biggest.ifWin)}</b> if you win it, <b>${pct0(biggest.ifLose)}</b> if you don't.</p>` : ''}
         ${o.swings.map((g) => `<div class="ls-sw">
           <span class="ls-sw-w">wk ${g.week}</span>
           <span class="ls-sw-n">${esc(oppName(g.opp))}</span>
           <span class="ls-sw-v mono pos">${pct0(g.ifWin)}</span>
           <span class="ls-sw-v mono neg">${pct0(g.ifLose)}</span>
         </div>`).join('')}
-        <p class="ffp-cap">Each row is the same ${o.sims.toLocaleString()} simulated seasons split by whether you won that week — win on the left, lose on the right. They are read off one set of seasons rather than re-run per game, so they cannot disagree with each other or with the number above.</p>
+        <p class="ffp-cap">Each row is the same ${o.sims.toLocaleString()} simulated seasons split by whether you won that week — win on the left, lose on the right. They are read off one set of seasons rather than re-run per game, so the overall odds and these estimates share one simulation sample. Small differences between weeks may reflect sampling noise.</p>
       </div>`;
   }
 
@@ -567,7 +578,7 @@
           </div>
         </div>`).join('')}
       </div>
-      <p class="ffp-cap">The line falls after ${ordN(d.pt)} — ${spell(d.pt)} teams make the bracket. Ties are broken on points, the same way the archive breaks them.</p>`;
+      <p class="ffp-cap">The line falls after ${ordN(d.pt)} — ${spell(d.pt)} teams make the bracket. This table sorts by wins, then points. The odds simulation also applies its head-to-head tiebreak when projecting playoff qualification.</p>`;
   }
 
   function schedHTML(d, cr, me) {
@@ -578,12 +589,13 @@
       const o = d.byId[oid];
       const done = i < d.wp;
       const mySc = mine.scores[i], oSc = o ? o.scores[i] : 0;
+      const tied = done && mySc === oSc;
       const won = done && mySc > oSc;
-      return `<div class="ls-sc${done ? (won ? ' won' : ' lost') : ''}">
+      return `<div class="ls-sc${done ? (tied ? '' : won ? ' won' : ' lost') : ''}">
         <span class="ls-sc-w">${i + 1}</span>
         ${o ? crestOf(cr, o, 26) : ''}
         <span class="ls-sc-n">${esc(o ? o.n : '?')}</span>
-        <span class="ls-sc-r mono">${done ? `${won ? 'W' : 'L'} ${one(mySc)}-${one(oSc)}` : ''}</span>
+        <span class="ls-sc-r mono">${done ? `${tied ? 'T' : won ? 'W' : 'L'} ${one(mySc)}-${one(oSc)}` : ''}</span>
       </div>`;
     }).join('');
     return `<h2 class="section-title">🗓️ Your schedule</h2>
@@ -664,6 +676,13 @@
     _derive: derive,
     _throttleMs: throttleMs,
     _favourite: favourite,
-    _placeTxt: placeTxt,
+    _comparisonTxt: comparisonTxt,
+    _careerLines: careerLines,
+    _performanceLine: performanceLine,
+    _ourOdds: ourOdds,
+    _meHTML: meHTML,
+    _hingeHTML: hingeHTML,
+    _oddsHTML: oddsHTML,
+    _schedHTML: schedHTML,
   };
 })();
