@@ -1,0 +1,19 @@
+{
+  "rules": {
+    "rankings": {
+      ".read": true,
+      "$year": {
+        "$week": {
+          ".write": "auth != null && auth.uid === 'REPLACE_WITH_PUBLISHER_UID'",
+          ".validate": "newData.hasChildren(['v','k','l','d','o']) && newData.child('v').val() === 1 && newData.child('k').isNumber() && newData.child('k').val() >= 0 && newData.child('k').val() <= 25 && $week === '' + newData.child('k').val() && newData.child('l').isString() && newData.child('l').val().length <= 80 && newData.child('d').isString() && newData.child('d').val().length === 10",
+          "o": {
+            ".validate": "newData.hasChildren(['0','1','2','3','4','5','6','7','8','9','10','11'])",
+            "$row": {
+              ".validate": "$row.matches(/^(0|1|2|3|4|5|6|7|8|9|10|11)$/) && newData.child('0').isString() && newData.child('0').val().length <= 160 && newData.child('3').isString() && newData.child('3').val().length <= 420"
+            }
+          }
+        }
+      }
+    }
+  }
+}

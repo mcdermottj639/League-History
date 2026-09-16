@@ -74,7 +74,7 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   network), so a dead backend costs freshness and nothing else. It still has
   no ESPN cookies and never will.
 - **Deploys from `main`** via GitHub Pages (root).
-- **The rankings are FILES, not a live model run.** See below.
+- **Rankings are saved snapshots, never a live model run.** v83 publishes directly to Firebase with authenticated, per-week writes. See the v83 section below.
 - **No model identifier** (exact model name/ID) in commits, code, PRs or any
   pushed artifact. Chat only.
 - Don't create PRs unless explicitly asked.
@@ -84,6 +84,39 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 - ⚠️ **This repo is PUBLIC.** Everything in it — real first names, the takes,
   the team names — is world-readable. That was the owner's setting, not an
   accident, but weigh it before adding anything new about a person.
+
+## v83 — Direct ranking publishing (current state)
+
+User requested edit → Publish entirely in the app. `ranking-store.js` now reads
+and writes `/rankings/{parlay/current.json.y}/{week}` in the existing Firebase
+project. The full twelve-team snapshot is a single conditional PUT; overwrites
+and unpublishing require confirmation and ETag checks. Firebase Authentication
+email/password ID tokens authorize writes, with in-memory refresh and no stored
+password/token. Only the API key (public) is remembered locally. The local Lab
+gate is NOT server authorization. `rankings.rules.json` is an additive rules
+fragment with a publisher UID placeholder; preserve all existing picks rules.
+
+**Activation still required:** see `PUBLISHING_SETUP.md`. This session cannot
+administer Firebase. Do not describe direct publishing as operational until the
+publisher account/rules are configured and an actual save succeeds. Tests use
+mocked Firebase responses, not production credentials. `node checks.js` and
+`publishing.test.cjs` passed (jsdom, mocked network and canvas); real browser
+visual QA was unavailable because the Chromium download timed out. A read of
+the real `/rankings.json` returned HTTP 401, confirming activation is pending.
+
+The Lab keeps drafts, publishes after server success only, confirms replacements,
+and supports direct unpublish. Old `powerlab:pub` file marks no longer claim a
+week is live. Live status comes from Firebase; movement is refreshed from the
+last shared snapshot before publishing and matched by manager code. Readers
+refresh on tab entry, repeated Rankings taps, and foreground return. All seasons remain selectable. Failed shared reads fall back to
+legacy files with an explicit warning; empty Firebase is authoritative, so a
+removed week cannot return from a legacy file during a successful read.
+
+**Supersedes file-export publishing descriptions below:** older sections about
+`pr-publish`, `pubStateHTML`, the three copy fields, repo commits, and file-based
+unpublishing are historical. Sharing a link/text/image remains supported. The
+legacy JSON/export helpers remain for backward compatibility but are no longer
+wired to Publish. `rankings/index.json` is only an outage fallback.
 
 ## Files
 
@@ -1602,7 +1635,7 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
       lines he has to act on immediately; an offer to undo, wedged between the
       button he pressed and the JSON it made, pushes the thing he needs off
       screen to make room for the thing he probably does not.
-- `rankings/` — published weeks. `index.json` lists them; one JSON file each.
+- `rankings/` — legacy fallback weeks (v83: Firebase is authoritative). `index.json` lists them; one JSON file each.
 - `logos/` — the league's own twelve crests, keyed by manager.
 - `sw.js` — network-first service worker. Bump `CACHE` on every release.
 - `checks.js` — **run `node checks.js` after ANY data or detector change.**

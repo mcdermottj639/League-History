@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v82';
+  const APP_VERSION = 'v83';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -396,8 +396,16 @@
   const moveStr = (mv) => (mv > 0 ? `▲${mv}` : mv < 0 ? `▼${-mv}` : '—');
   const moveCls = (mv) => (mv > 0 ? 'up' : mv < 0 ? 'dn' : 'hold');
 
+  const sharedWeeks = new Map();
   async function loadWeeks() {
-    if (S.weeks) return S.weeks;
+    S.wkErr = null;
+    try {
+      const published = await window.RankingStore.list();
+      sharedWeeks.clear();
+      published.forEach(p => sharedWeeks.set("live-" + p.y + "-" + p.k, p));
+      S.weeks = published.map(p => ({ k: p.k, l: p.y + " · " + p.l, d: p.d, f: "live-" + p.y + "-" + p.k }));
+      return S.weeks;
+    } catch (_) { S.wkErr = "offline"; }
     try {
       const r = await fetch('rankings/index.json', { cache: 'no-store' });
       if (!r.ok) throw new Error('http ' + r.status);
@@ -421,6 +429,7 @@
   }
 
   async function loadWeek(f) {
+    if (sharedWeeks.has(f)) return sharedWeeks.get(f);
     const r = await fetch('rankings/' + f, { cache: 'no-store' });
     if (!r.ok) throw new Error('http ' + r.status);
     return r.json();
@@ -501,9 +510,12 @@
   const wkBad = () => `<h2 class="section-title">🏆 Power Rankings</h2>
       <div class="ffp-card"><div class="ffp-empty"><b>That week's data doesn't look right.</b>The file is there but the rankings inside it could not be read, so nothing is shown rather than a half of one. The league's history below is unaffected.</div></div>`;
 
+  let rankingRequest = 0;
   async function paintRankings(host) {
+    const requestId = ++rankingRequest;
     host.innerHTML = '<div class="ffp-card"><div class="ffp-empty">Loading this week…</div></div>';
     const weeks = await loadWeeks();
+    if (requestId !== rankingRequest || (host.dataset.view && host.dataset.view !== "rank")) return;
     if (!weeks.length) {
       host.innerHTML = `<h2 class="section-title">🏆 Power Rankings</h2>
       <div class="ffp-card"><div class="ffp-empty">${WK_EMPTY[S.wkErr] || WK_EMPTY.none}</div></div>`;
@@ -512,6 +524,7 @@
     if (!S.week || !weeks.some((w) => w.f === S.week)) S.week = weeks[0].f;
     let p;
     try { p = await loadWeek(S.week); } catch (e) {
+      if (requestId !== rankingRequest || (host.dataset.view && host.dataset.view !== 'rank')) return;
       /* ⚠️ The offer and the control have to agree. With other weeks on file
          the picker is rendered right under the sentence that points at it;
          with only one, the sentence does not make an offer it cannot keep. */
@@ -534,9 +547,10 @@
        a confident, complete, empty ranking with nobody in it.
        Both are the same fault — the file is readable and its contents are not
        a week — so both get the same honest sentence. */
+    if (requestId !== rankingRequest || (host.dataset.view && host.dataset.view !== "rank")) return;
     if (!p || !Array.isArray(p.o) || !p.o.length) { host.innerHTML = wkBad(); return; }
     try {
-      host.innerHTML = rankHTML(p, weeks);
+      host.innerHTML = (S.wkErr ? '<p class="pr-note">Shared rankings could not be reached. Showing the older published file.</p>' : '') + rankHTML(p, weeks);
     } catch (e) {
       console.error('[rankings] that week would not render', e);
       host.innerHTML = wkBad();
@@ -623,6 +637,8 @@
      at each width — nothing else can.
      The ? sheet builds its tab list FROM this array, so it follows a rename
      with no second edit. */
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && S.view === 'rank') paint(); });
+
   const L1 = [['hist', 'History'], ['season', 'Season'], ['rank', 'Rankings'], ['parlay', 'Parlay']];
 
   function paint() {
@@ -737,7 +753,7 @@
          out was there ("‹ Back to the league") but a control that is on
          screen, highlighted, and silent when tapped reads as a broken app
          rather than as the wrong control. */
-      if (l1.dataset.l1 !== S.view || S.prof) {
+      if (l1.dataset.l1 !== S.view || S.prof || S.view === 'rank') {
         S.view = l1.dataset.l1; S.prof = null; paint(); window.scrollTo({ top: 0 });
       }
       return;

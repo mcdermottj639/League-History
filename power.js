@@ -250,6 +250,14 @@ function formOf(t) {
    week means no arrows at all — inventing movement against the model's own
    previous guess would be movement the league never saw. */
 function prevOrder() {
+  if (liveWeeks !== null) {
+    const previous = liveWeeks.filter(p => p.k < S.key).sort((a,b) => b.k-a.k)[0];
+    if (!previous) return null;
+    return { label: previous.l, order: previous.o.map(row => {
+      const team = S.season.teams.find(t => row[7] ? mgrFor(t.team) === row[7] : t.team === row[0]);
+      return team ? team.teamId : null;
+    }) };
+  }
   const pub = load(K_PUB, {});
   for (let k = S.key - 1; k >= 0; k--) {
     if (pub[k] && Array.isArray(pub[k].order) && pub[k].order.length) return pub[k];
@@ -620,51 +628,75 @@ function unpublish() {
    `[hidden]` element under this repo's palette layer is (0,1,0) against
    (0,2,1) and stays on screen — the trap that has bitten the app three times
    (.lg-jump, .lg-sheet, .ai-sub). An empty container cannot have that bug. */
+let liveWeeks = null;
+let publishBusy = false;
 function pubStateHTML() {
-  const rec = pubRec();
-  if (!rec) return '';
-  const when = rec.at ? new Date(rec.at).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }) : '';
-  const what = rec.file
-    ? `published to the app${when ? ` on ${esc(when)}` : ''} as <b>rankings/${esc(rec.file)}</b>`
-    : `sent as a link or a text copy${when ? ` on ${esc(when)}` : ''}, never published to the app`;
-  return `<div class="pr-pubstate">
-    <p class="pr-note">✅ <b>${esc(rec.label || keyLabel(S.key))}</b> is ${what}. Next week's ▲▼ movement is measured against this order.</p>
-    <button type="button" class="pr-btn ghost" id="pr-unpublish">↩️ Unpublish this week</button>
-    <p class="pr-note">Take it back if it went out wrong. That clears the mark here — so next week's arrows go back to measuring against the last week the league actually kept — and hands you the two lines to remove from the repo.</p>
-  </div>`;
+  const live = liveWeeks && liveWeeks.find(p => p.k === S.key);
+  return `<div class="pr-pubstate"><p class="pr-note">${live ? '✅ ' + esc(live.l) + ' is live for everyone. Your edits stay private until you publish again.' : liveWeeks ? 'This week is not published to the app yet.' : 'Live publishing status has not been checked.'}</p>
+  ${live ? '<button type="button" class="pr-btn ghost" id="pr-unpublish">↩️ Unpublish this week</button>' : ''}${window.RankingStore.signedIn() ? '<button type="button" class="pr-btn ghost" id="pr-signout">Sign out of publishing</button>' : ''}</div>`;
 }
-
+async function refreshPublished() {
+  liveWeeks = await window.RankingStore.list(true);
+  if (publishBusy || !S.season) paintPubState(); else repaintUnlessTyping();
+}
 function paintPubState() {
   const host = $('#pr-pubstate');
   if (!host) return;
   host.innerHTML = pubStateHTML();
   const btn = $('#pr-unpublish');
-  if (!btn) return;
-  btn.onclick = async () => {
-    const rec = pubRec();
-    const label = (rec && rec.label) || keyLabel(S.key);
-    if (!confirm(`Unpublish ${label}?\n\nThis un-marks it here, so next week's ▲▼ stop being measured against it. The file in the repo comes out with the two steps shown next.`)) return;
-    const was = unpublish();
-    paintPubState();
-    const out = $('#pr-share-out');
-    const instr = unpublishInstruction(was, S.key);
-    if (out) {
-      out.innerHTML = instr
-        ? `<div class="pr-share-out">
-            <div class="t">Unmarked here. Now take it out of the repo — ① delete <b>rankings/${esc(was.file)}</b>, ② remove the <b>"k": ${S.key}</b> entry from <b>rankings/index.json</b>:</div>
-            <textarea readonly rows="6"></textarea>
-            <p class="pr-note">Or just paste that line to a Claude session — it is the whole instruction. Until it reaches <b>main</b>, the league still sees the old week.</p>
-          </div>`
-        : `<div class="pr-share-out">
-            <div class="t">Unmarked here.</div>
-            <p class="pr-note">There is nothing to take out of the repo — ${esc(label)} was only ever sent as a link or a text copy, so it was never on anyone's app. Next week's ▲▼ now measure against the last week you actually published.</p>
-          </div>`;
-    }
-    const ta = out && out.querySelector('textarea');
-    if (ta) { ta.value = instr; ta.focus(); ta.select(); }
-    if (instr && await copyText(instr)) toast('Copied — paste it to a Claude session');
-    else toast(`${label} unpublished`);
+  if (btn) btn.onclick = () => saveLiveWeek(true);
+  const signout = $('#pr-signout');
+  if (signout) signout.onclick = () => { window.RankingStore.signOut(); paintPubState(); };
+}
+function publishingSignIn() {
+  const host = $('#pr-share-out');
+  host.innerHTML = `<form id="pr-login" class="pr-share-out">
+    <b>Sign in to publish</b><p class="pr-note">Use your Firebase publisher account. Your password stays out of the rankings and is not saved on this device.</p>
+    <label>Firebase Web API key<input id="pr-api" required autocomplete="off" style="font-size:16px;width:100%"></label>
+    <label>Email<input id="pr-email" type="email" required autocomplete="username" style="font-size:16px;width:100%"></label>
+    <label>Password<input id="pr-password" type="password" required autocomplete="current-password" style="font-size:16px;width:100%"></label>
+    <button class="pr-btn" type="submit">Sign in</button><p id="pr-login-status" role="status"></p>
+    <p class="pr-note">First time? <a href="PUBLISHING_SETUP.md" target="_blank">One-time publisher setup</a>.</p></form>`;
+  try { $('#pr-api').value = localStorage.getItem('lh:publisher-api') || ''; } catch (_) {}
+  $('#pr-login').onsubmit = async e => {
+    e.preventDefault(); const btn = e.target.querySelector('button'); btn.disabled = true;
+    try {
+      await window.RankingStore.signIn($('#pr-api').value.trim(), $('#pr-email').value.trim(), $('#pr-password').value);
+      try { localStorage.setItem('lh:publisher-api', $('#pr-api').value.trim()); } catch (_) {}
+      host.innerHTML = '<p class="pr-note">Signed in. Tap Publish when your rankings are ready.</p>';
+      paintPubState();
+    } catch (err) { $('#pr-login-status').textContent = err.message; }
+    finally { btn.disabled = false; }
   };
+}
+async function saveLiveWeek(remove = false) {
+  if (publishBusy) return;
+  if (!window.LeagueOwner.is()) { toast('Only the publisher can publish to the app. Share your draft with them.'); return; }
+  if (!window.RankingStore.signedIn()) { publishingSignIn(); return; }
+  publishBusy = true;
+  const button = $('#pr-publish'); if (button) button.disabled = true;
+  const key = S.key, p = remove ? null : payload();
+  const out = $('#pr-share-out');
+  try {
+    await refreshPublished();
+    if (!remove) {
+      const previous = prevOrder();
+      p.o.forEach((row, i) => {
+        const t = S.season.teams.find(t => row[7] ? mgrFor(t.team) === row[7] : t.team === row[0]);
+        row[5] = t ? moveFor(previous, t.teamId, i) : null;
+      });
+    }
+    const current = await window.RankingStore.current(key);
+    if ((remove || current.data) && !confirm(remove ? 'Remove this week from everyone’s Rankings tab?' : 'Replace the published rankings for this week with your current draft?')) return;
+    out.textContent = remove ? 'Removing…' : 'Publishing…';
+    await window.RankingStore.write(key, p, current.etag);
+    if (remove) { const pub = load(K_PUB, {}); delete pub[key]; save(K_PUB, pub); } else if (S.key === key) publish();
+    liveWeeks = (liveWeeks || []).filter(w => w.k !== key);
+    if (p) liveWeeks.push(p);
+    paintPubState();
+    out.textContent = remove ? 'Removed from the league’s Rankings tab. Your draft is still here.' : '✅ Saved. These rankings are now live for everyone in the Rankings tab.';
+  } catch (err) { out.textContent = 'Could not confirm the change. ' + err.message + ' Your draft is still saved on this device.'; }
+  finally { publishBusy = false; if (button) button.disabled = false; }
 }
 
 async function doShare(kind) {
@@ -1710,7 +1742,7 @@ function inviteHTML() {
     <details>
       <summary>👥 Let someone else build a week</summary>
       <div class="pr-inv-b">
-        <p class="pr-note">They get the whole tool — the model's order, the pre-written takes, and 📤 📋 🖼️ to send it to the league. 🚀 Publish hands them the file to pass back to you, because only you can put a week in the app.</p>
+        <p class="pr-note">They get the whole tool — the model's order, the pre-written takes, and 📤 📋 🖼️ to send it to the league. They can share a draft link with you. Only the signed-in publisher can put a week in the app.</p>
         <label class="pr-inv-f"><span>Who</span>
           <select id="pr-inv-who">${who.map((r) => `<option value="${esc(r.code)}">${esc(r.code)} — ${esc(r.team)}</option>`).join('')}</select>
         </label>
@@ -1858,8 +1890,8 @@ function paintRank() {
       <button type="button" class="pr-btn" id="pr-share">📤 Share as a link</button>
       <button type="button" class="pr-btn" id="pr-copy">📋 Copy as text</button>
       <button type="button" class="pr-btn" id="pr-image">🖼️ Save the one-pager</button>
-      <p class="pr-note"><b>Publishing</b> is the one that puts this week on everyone's app — it hands you the file to commit. The other three are messages: the <b>link</b> is the thing you send, the <b>text</b> is what pastes into the group chat, and the <b>one-pager</b> is a single image — save it to Photos and post it.</p>
-      <p class="pr-note">Sharing also locks this week in, so next week's ▲▼ movement is measured against what the league actually saw.</p>
+      <p class="pr-note"><b>Publishing</b> is the one that puts this week on everyone's app — it saves the complete week to the shared rankings history after you sign in. The other three are messages: the <b>link</b> is the thing you send, the <b>text</b> is what pastes into the group chat, and the <b>one-pager</b> is a single image — save it to Photos and post it.</p>
+      <p class="pr-note">Movement is measured against the last week saved in the app. Sharing a link, text or image does not publish it to the Rankings tab.</p>
       <div id="pr-share-out"></div>
       <!-- ⚠️ BELOW the output, not above it. Publishing produces two lines he
            has to act on immediately; an offer to undo, wedged between the
@@ -1939,32 +1971,7 @@ function paintRank() {
   wireInvite();
 
   const pubBtn = $('#pr-publish');
-  if (pubBtn) pubBtn.onclick = async () => {
-    /* Filename FIRST, then publish — the mark records which file went out, so
-       unpublishing can name it and a republish can spot a stale one. */
-    const json = publishJSON(), file = publishFilename();
-    const stale = (pubRec() || {}).file;
-    publish(file);
-    paintPubState();
-    const out = $('#pr-share-out');
-    /* 🚨 The filename is half the instruction. A session handed only a blob of
-       JSON has to guess where it goes and what to call it, and a guess here
-       silently produces a week nobody can see. */
-    if (out) out.innerHTML = `<div class="pr-share-out">
-      <div class="t">① Save as <b>rankings/${esc(file)}</b> — copied to your clipboard:</div>
-      <textarea readonly rows="10"></textarea>
-      <div class="t">② Add this to the top of the <b>weeks</b> list in <b>rankings/index.json</b>:</div>
-      <textarea class="pr-idx" readonly rows="2">${esc(publishIndexEntry())}</textarea>
-      <div class="t">③ Overwrite <b>season/current.json</b> with this — it is what the league app's <b>This Season</b> tab reads:</div>
-      <textarea class="pr-idx pr-seas" readonly rows="4">${esc(seasonSnapshotJSON())}</textarea>
-      ${stale && stale !== file ? `<div class="t">④ You are republishing ${esc(keyLabel(S.key))}, and it went out under a different name last time — delete the old <b>rankings/${esc(stale)}</b>, and REPLACE the "k": ${S.key} line rather than adding a second.</div>` : ''}
-      <p class="pr-note">Or just paste the whole lot to a Claude session and say nothing else — it knows every step.</p>
-    </div>`;
-    const ta = out && out.querySelector('textarea');
-    if (ta) { ta.value = json; ta.focus(); ta.select(); }
-    if (await copyText(json)) toast(`Copied — save as rankings/${file}`);
-    else toast('Select the text below and copy it');
-  };
+  if (pubBtn) pubBtn.onclick = () => saveLiveWeek();
 
   $('#pr-share').onclick = () => doShare('link');
   $('#pr-copy').onclick = () => doShare('text');
@@ -2309,6 +2316,7 @@ async function boot() {
      further invites; those are different questions and stay different. */
   if (!window.LeagueOwner || !window.LeagueOwner.mayLab()) { paintGate(''); return; }
   guestBanner();
+  refreshPublished().catch(() => { liveWeeks = null; paintPubState(); });
 
   /* 🚨 CACHE FIRST, THEN REVALIDATE (v25). The device has held the last good
      payload since v1 (`powerlab:season`) — but only as a FALLBACK for a failed
@@ -2374,6 +2382,7 @@ async function revalidate() {
 }
 
 function repaintUnlessTyping() {
+  if (publishBusy || $('#pr-login')) return;
   const a = document.activeElement;
   if (a && a.classList && a.classList.contains('pr-take')) {
     a.addEventListener('blur', () => paintRank(), { once: true });

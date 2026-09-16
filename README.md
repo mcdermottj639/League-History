@@ -6,8 +6,8 @@ Thirteen seasons of the league (2013–2025), plus the weekly power rankings.
 
 Open it, tap your name, and the whole thing starts talking to you: your
 seasons, your medals, your final fours, your Cum Bowls, your row highlighted
-wherever it appears. Nothing is sent anywhere and there is no account — the
-name you pick is stored on your own phone.
+wherever it appears. The name you pick is stored on your own phone. Shared parlay picks and
+published rankings use Firebase; reading the app needs no account.
 
 ### What's in it
 
@@ -21,4 +21,8 @@ name you pick is stored on your own phone.
 Every finish is mapped to a person and cross-checked against ESPN's own owner
 column. Where a number comes from playoff games only, it says so.
 
-Static site — HTML, CSS and vanilla JavaScript. No backend, no tracking.
+Static site — HTML, CSS and vanilla JavaScript, with Firebase for shared data.
+
+Publisher setup: [PUBLISHING_SETUP.md](PUBLISHING_SETUP.md).
+Validation: `node checks.js`; install `jsdom` in a separate test directory and
+run `NODE_PATH=<test-directory>/node_modules node publishing.test.cjs`. No build step.
