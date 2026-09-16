@@ -9,4 +9,5 @@ if(health.preview||state.preview)throw Error('Launch blocked: preview service ca
 const current=state.weeks.find(w=>w.week===state.current);
 if(!current||Date.now()-current.updatedAt>300000||current.feedError)throw Error('Launch blocked: no fresh live board.');
 const ready=await get('/api/parlay/readiness');if(!ready.imported||!ready.writable||ready.unresolved||!ready.collectorEnabled||!ready.durableStorage)throw Error('Launch blocked: migration, background collector or durable storage not ready.');
-console.log('Service readiness checks passed. Organizer access, restart persistence, authorized migration reconciliation and cutover rules still require release verification. No merge performed.');
+if(health.storage==='supabase'&&(!ready.organizerConfigured||!ready.lastCollection||Date.now()-ready.lastCollection>300000))throw Error('Launch blocked: organizer configuration or verified background collection missing.');
+console.log('Service readiness checks passed. Organizer access, persistence, authorized migration reconciliation and cutover rules still require release verification. No merge performed.');

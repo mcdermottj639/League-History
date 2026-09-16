@@ -12,3 +12,6 @@ _drv.html
 .env*
 parlay-private/
 node_modules/
+
+# Local Supabase CLI metadata
+supabase/.temp/

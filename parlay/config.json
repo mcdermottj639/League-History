@@ -1,7 +1,7 @@
 {
   "enabled": false,
-  "api": "",
+  "api": "https://oqrfdhoyyogjmiqmjhnp.supabase.co/functions/v1/league-parlay",
   "year": 2026,
   "preview": false,
-  "note": "Launch gate. Enable only after durable service, organizer link, migration and background collector checks pass. The local preview server overrides this response."
+  "note": "Disabled until approved Supabase deployment, organizer verification, authorized current-week migration and launch checks pass. Weeks 1\u201318 supported. Local preview overrides this response."
 }

@@ -9,8 +9,8 @@ history (2013–2025), the **season being played right now** (v39), the
 **weekly power rankings** the commissioner publishes, and the **weekly group
 parlay** the twelve of them put on together (v69). It is a **pure static browser app** — HTML/CSS/vanilla JS, no build
 step and no framework — served from GitHub Pages. The currently active parlay
-uses its legacy Firebase flow; an optional, disabled Node/SQLite Parlay v2 service
-is prepared in v91 (see below).
+uses its legacy Firebase flow; an optional, disabled Supabase Parlay v2 backend
+is prepared in v92 (see below).
 
 Live URL: **https://mcdermottj639.github.io/League-History/**
 (⚠️ Pages must be enabled by hand: Settings → Pages → Deploy from branch →
@@ -86,6 +86,35 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 - ⚠️ **This repo is PUBLIC.** Everything in it — real first names, the takes,
   the team names — is world-readable. That was the owner's setting, not an
   accident, but weigh it before adding anything new about a person.
+
+## v92 — Supabase Parlay preparation (unmerged; not launched)
+
+Supersedes v91's proposed Node/SQLite production hosting. Production target is
+existing free Supabase `sports-hub` (`oqrfdhoyyogjmiqmjhnp`), with isolated
+`league_parlay` tables, `league-parlay` Edge Function, and its own cron job.
+Shared domain/engine modules retain the tested pick behavior. Node/SQLite remains
+only the local preview/test harness. No Railway service/new subscription is needed.
+
+- PostgreSQL CAS retries enforce atomic game claims across Edge workers; hashed
+  persistent sessions, private service-only invoker RPC, RLS default-deny tables,
+  collector leases and secret scheduler calls. No service keys in the static app.
+- Weeks 1–18 supported. Prelaunch discovery cannot override the chosen legacy
+  week. Empty/partial/full Week 1 imports and midgame locks are tested. Preserve
+  originals and block on unresolved/duplicate imports; do not invent closing odds.
+- Week 1 reimbursement is undecided, not an endless wait for a nonexistent Week 0.
+- `scripts/supabase-parlay.mjs` provides operator status, public-feed preparation,
+  read-only rehearsal, frozen-export import, verified private backups and activation.
+  All real migration commands take an explicit week. No automatic Firebase read.
+- Supabase schema is applied and tested. New cron is INACTIVE; collection is off.
+  Existing Sports-Hub tables/functions/scheduler are untouched.
+- **Approval review blocked** Edge deployment with `verify_jwt=false` and separately
+  blocked installing the organizer hash. Neither action was retried. Gateway JWT
+  validation must be off for this existing app's session/capability protocol; the
+  handler performs its own route authorization. Exact deployment plus hash install
+  needs explicit approval. Hash is not installed; organizer link not live-verified.
+- `parlay/config.json` stays disabled. Do not merge or activate on this preparation
+  instruction. `PARLAY_RELEASE.md` is authoritative for actual remaining gates.
+- No changes to rankings, owner controls, current member links or Firebase rules.
 
 ## v91 — Prepared Parlay v2 (disabled; not launched)
 

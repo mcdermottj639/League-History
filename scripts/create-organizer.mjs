@@ -1,10 +1,57 @@
 // Generates a private capability link without printing its token or committing it.
 import {randomBytes,createHash} from 'node:crypto';
-import {writeFileSync,mkdirSync} from 'node:fs';
+import {writeFileSync,mkdirSync,realpathSync} from 'node:fs';
 import {resolve,dirname} from 'node:path';
 const at=process.argv.indexOf('--out');if(at<0||!process.argv[at+1])throw Error('Use --out /private/path/parlay-organizer-launch.md');
 const target=resolve(process.argv[at+1]),key=randomBytes(32).toString('base64url'),digest=createHash('sha256').update(key).digest('hex');
-const link='https://mcdermottj639.github.io/League-History/#parlay-organizer='+key;
 mkdirSync(dirname(target),{recursive:true});
-writeFileSync(target,`# Parlay organizer — private launch packet\n\nStatus: PREPARED, NOT ACTIVATED. Do not send until launch is verified.\n\n## Link for Zach\n\n[Open the league parlay with organizer access](${link})\n\nThis is the existing app. Opening this private link exchanges its capability for a remembered organizer session. No username/password is needed. Keep it private. A new device or cleared browser data requires opening it again.\n\n## Launch configuration (for the implementation session)\n\nPARLAY_ORGANIZER_HASH=${digest}\nPARLAY_YEAR=2026\nPARLAY_START_WEEK=2\nPARLAY_ORIGINS=https://mcdermottj639.github.io\nPARLAY_DB=/data/parlay.sqlite\nPARLAY_DURABLE_STORAGE=1\nPARLAY_COLLECT=1\nPARLAY_PREVIEW=0\n\nOnly the hash goes into the service environment. The raw capability is in the link above, never in the public repository. Changing the hash revokes organizer sessions and requires a new private link.\n\n## Still required before activation\n\n1. Deploy the isolated service with an actual persistent volume at /data and automatic backups; do not set the durable flag without a mounted volume.\n2. Authorize and complete the live shared-pick migration; automatic approval review blocked the build session from reading those private Firebase picks. Use the prepared import script only after that access is authorized.\n3. Freeze legacy direct pick writes during cutover; route supported clients to the new service so old cached clients cannot create a second writable list. Preserve other Firebase branches/rules.\n4. Verify live collector freshness, snapshot capture, restart persistence and the organizer link against the service.\n5. Set parlay/config.json enabled=true and api to the verified service origin; run the launch checks and merge only when explicitly instructed.\n6. Send Zach only the organizer link above. Do not send him this implementation packet.\n\nNo service is deployed and no production writes or rules have changed as part of generating this file.\n`,{mode:0o600,flag:'wx'});
+const root=realpathSync(new URL('..',import.meta.url)),parent=realpathSync(dirname(target));
+if(parent===root||parent.startsWith(root+'/'))throw Error('Private organizer packets must be outside the public repository.');
+const link='https://mcdermottj639.github.io/League-History/#parlay-organizer='+key;
+writeFileSync(target,`# Parlay organizer — private launch packet
+
+Status: PREPARED, NOT ACTIVATED. Do not send until launch is verified.
+
+## Link for Zach
+
+[Open the league parlay with organizer access](${link})
+
+This is the existing app. Opening the private link creates a remembered organizer
+session. No username/password or separate app. Keep it private. A new device or
+cleared browser data needs this link again. Send Zach only this link after launch.
+
+## Private configuration
+
+PARLAY_ORGANIZER_HASH=${digest}
+PARLAY_YEAR=2026
+SUPABASE_PROJECT=oqrfdhoyyogjmiqmjhnp
+PARLAY_API=https://oqrfdhoyyogjmiqmjhnp.supabase.co/functions/v1/league-parlay
+
+Production uses Supabase, not Railway or SQLite. Install only the hash in the
+private league_parlay.config row after explicit approval. Never commit the link,
+its capability, or this file. Replacing the hash revokes organizer sessions and
+requires a new link. The ordinary app never receives a Supabase service key.
+
+## Still required before activation
+
+1. Approve API deployment with gateway JWT checks disabled and app-level session/
+   capability checks enabled, plus organizer-hash installation. Automatic approval
+   review blocked both operations during preparation. Neither is complete.
+2. Verify the deployed API, private organizer access and scheduled public-data
+   collection. The prepared scheduler is inactive and frontend gate is disabled.
+3. Choose the actual current legacy week, including Week 1. Rehearse with an
+   authorized offline export. Reading live private Firebase picks was previously
+   blocked; this packet is not permission to bypass that decision.
+4. On the future merge instruction, freeze legacy writes, export the final picks,
+   preserve every row, reconcile migration and verify private backups. Partial and
+   full pick lists are supported. Started games stay locked; never invent missing
+   historical kickoff lines. Do not import early and discard later submissions.
+5. Follow PARLAY_RELEASE.md: run scripts/supabase-parlay.mjs with the explicit
+   actual week, activate only after reconciliation, verify mobile and API flows,
+   enable frontend config, merge only when instructed, and verify Pages.
+
+Nothing here places a bet or asks Zach to verify placement. His controls include
+adding picks for others and recording the actual DraftKings combined ticket odds.
+Those actual odds remain separate from the tracked kickoff lines.
+`,{mode:0o600,flag:'wx'});
 console.log('Private organizer launch packet created. Token was not printed.');

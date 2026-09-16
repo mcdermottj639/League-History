@@ -1,21 +1,20 @@
 # Parlay v2 — prepared, not launched
 
 Branch: `feature/parlay-live-organizer`. The committed `parlay/config.json` has
-`enabled: false`; the current Parlay continues using its existing code. No merge,
-production deployment, Firebase mutation, or organizer invitation is part of this build.
+`enabled: false`; the current Parlay continues using its existing code. No merge, Firebase mutation, frontend activation, or organizer invitation is part of this build. The isolated Supabase schema is prepared; its scheduler is inactive. API deployment and organizer-hash installation were blocked by automatic approval review (see below).
 
 ## What is built
 
 - Picks, Ticket, Season, in that order. Compact six-choice matchup cards for
   spreads, totals and moneylines, with a reachable Save bar and Change/Clear.
-- One member per game across all markets, enforced in a SQLite transaction.
+- One member per game across all markets, enforced by atomic Postgres revision checks across Edge workers.
   Replacement failures retain the old pick; revision checks reject stale edits.
 - DraftKings prices supplied by ESPN's public NFL scoreboard. The chosen market
   follows line movement until its individual kickoff; then the last observed
   pregame quote is immutable. Scheduled kickoffs also lock during feed outages.
-- Background collection independent of open browsers: 15-second target polling
-  near kickoff/during games, five minutes otherwise; a ten-second scheduler means
-  actual near-kickoff requests usually occur every 20 seconds. The UI refreshes
+- Background collection independent of open browsers: a 30-second scheduled check
+  near kickoff/during games, five-minute collection otherwise. Timing is best effort;
+  stale quotes are labeled, never represented as exact closing prices. The UI refreshes
   every 20 seconds when visible and not editing.
 - Live score/progress rows, upcoming legs and collapsed completed legs; automatic
   standard-market settlement, pushes and explicitly pending unsupported results.
@@ -52,10 +51,26 @@ source failures disable stale-board saves and retain last observations.
 ## Files and runtime
 
 `parlay-next.js` / `.css` wrap the legacy parlay behind the config gate.
-`server/` is a Node 24 service with built-in SQLite, HTTP and crypto; no npm
-installation or browser is required for it. `server/collector.mjs` uses existing
-`espn.js` manager aliases for fantasy scores. Docker and Railway configuration
-are supplied, but no hosting resource has been deployed for this feature.
+`server/domain.mjs` and `engine.mjs` are shared between local Node fixtures and
+Supabase Edge Functions. `supabase/functions/league-parlay/index.ts` loads the
+Web Request handler, Postgres storage adapter and scheduled collector. Node/SQLite
+is retained only for the existing isolated local preview/test harness.
+
+Production target: existing free `sports-hub` project `oqrfdhoyyogjmiqmjhnp`.
+Private schema: `league_parlay`. Function: `league-parlay`. New job:
+`league-parlay-collect`. No existing Sports-Hub tables, functions or jobs change.
+No Railway service, new Supabase project or paid plan is required by this design.
+Existing apps still share the project's quota/compute; monitor usage before release.
+
+The service-only RPC is SECURITY INVOKER, denied to PUBLIC/anon/authenticated.
+Private tables have RLS with no browser policies by design. The five informational
+"RLS enabled, no policy" notices are expected default-deny protection, not a
+request to add public policies. Atomic CAS retries re-run the domain checks;
+collector leases prevent overlapping fetch cycles and stale-worker commits.
+Secrets and session hashes never appear in public state. Collector calls require
+a separate server-held capability. `verify_jwt=false` is required because this
+app uses its existing private-link/session protocol rather than Supabase Auth.
+The handler independently verifies authority for every protected route.
 
 Local fixture-only preview:
 
@@ -74,6 +89,11 @@ Validation (Node 24; pinned development-only jsdom dependency):
 npm ci --ignore-scripts
 npm test
 ```
+
+Latest verification: **40 Parlay tests passed**, including full-app Supabase-path
+Week 1 organizer flows, plus conservation checks, storylines, rankings and
+publishing suites. Real Postgres CAS/lease/backup/privilege checks passed in a
+rolled-back transaction. Repeatable SQL is in `supabase/tests-readiness.sql`.
 
 The browser tool in the build environment blocked localhost with
 `ERR_BLOCKED_BY_CLIENT`; mobile visual verification remains an explicit launch
@@ -97,80 +117,111 @@ session token. Replacing the hash invalidates previous organizer sessions and
 links. A new device needs the private link again; clearing storage also requires
 reopening it. Share the packet's organizer link with Zach only after launch.
 
-## Hosting preparation — required before activation
+## Supabase preparation status
 
-Create an isolated, always-on service from this branch (never repoint an existing
-Sports-Hub service). Run one replica with a persistent volume mounted at `/data`.
-Configure backups and verify a restart retains data before enabling any writes.
-A container's ordinary filesystem is not durable storage.
+- Applied additive schema migration; verified actual Postgres CAS conflicts,
+  collector leases, backup readback and denied browser-role privileges. Tests ran
+  inside a rolled-back transaction; no league picks were read or written.
+- New 30-second cron job exists but is **inactive**, and `collection_enabled=false`.
+  Existing `sports-hub-ai-capture` schedule remains `7,37 * * * *`, active.
+- Edge-compatible modules and canonical manager mapping load successfully in Deno.
+- **API not deployed:** automatic approval review rejected deploying the public
+  Edge Function with `verify_jwt=false` without explicit approval for that endpoint.
+- **Organizer hash not installed:** automatic approval review separately rejected
+  the credential installation without explicit approval. The private packet/link
+  remains unchanged; the hash is still null in the database. Do not say it is live.
+- Frontend `enabled:false` remains the gate. Merging the branch as-is does not launch v2.
 
-Environment:
+Expected API base after approved deployment:
+`https://oqrfdhoyyogjmiqmjhnp.supabase.co/functions/v1/league-parlay`
+This is a path-based API base, not just a hostname. No browser API key is required.
 
-```text
-PARLAY_DB=/data/parlay.sqlite
-PARLAY_DURABLE_STORAGE=1
-PARLAY_ORGANIZER_HASH=<hash from private packet>
-PARLAY_YEAR=2026
-PARLAY_START_WEEK=2
-PARLAY_COLLECT=1
-PARLAY_ORIGINS=https://mcdermottj639.github.io
-PARLAY_API_URL=https://<new-service-domain>
+## Week 1 and existing picks
+
+The production handler accepts Weeks **1–18**. There is no Week 2 floor. Before
+activation, automatic NFL discovery cannot move the chosen legacy week forward.
+At launch, explicitly select the then-current legacy week; never infer it from a
+hard-coded date or from this document. Empty, partial and twelve-pick Week 1
+exports are covered, including a midgame import. All original rows/text/prices
+are retained. Started games stay locked; historical kickoff quotes cannot be
+reconstructed from a current feed, so those imported legs remain marked missing
+for review. Unmatched/duplicate entries block activation. Week 1 reimbursement
+is explicitly undecided because there is no prior week in the season.
+
+Do not import early and then overwrite picks added between preparation and merge.
+Rehearsal is read-only. The final export must occur **after** legacy writes are
+frozen and must be reconciled before the one-time real import. Preserve and
+reconcile any archived weeks too if they exist when launch is authorized.
+
+## Authorized backend preparation (still no merge)
+
+1. Obtain explicit approval for deploying `league-parlay` with gateway JWT checks
+   disabled and app-level capability/session checks enabled, and for installing
+   the prepared organizer hash. The exact implementation is in this branch.
+   Do not retry the rejected actions through another route.
+2. Deploy `supabase/functions/league-parlay/index.ts` plus its imported repo modules.
+   Preserve existing functions and project-wide auth/API settings. Store only the
+   prepared SHA-256 hash in `league_parlay.config.organizer_hash`; the raw link
+   capability never belongs in SQL, logs, source or browser config.
+3. Verify HTTPS health, allowed-origin CORS, private-link exchange, ordinary Zach's
+   lack of organizer authority, invalid/revoked sessions and write rejection before
+   migration. Keep `enabled:false` in the frontend throughout this verification.
+4. Enable only the new collector/job, verify its HTTP response and fresh data as
+   well as the scheduler result. A succeeded cron enqueue alone is not proof that
+   the collection request succeeded. Do not modify `sports-hub-ai-capture`.
+
+Operator tooling uses a private `PARLAY_SUPABASE_SERVICE_KEY` environment value
+and the known project URL. Never put that key in command arguments, logs or repo.
+The static app never receives it. Commands use an explicit week; below, `1` is
+only an example and is correct if Week 1 is the actual legacy week at launch:
+
+```sh
+node scripts/supabase-parlay.mjs status
+node scripts/supabase-parlay.mjs prepare --year 2026 --week 1
+node scripts/supabase-parlay.mjs rehearse --year 2026 --week 1 --export /private/authorized-week.json
 ```
 
-`PARLAY_PREVIEW` must be absent in production. The entrypoint is
-`node server/app.mjs`, with host `0.0.0.0` and platform `PORT`. Health: `/health`.
-The durable-storage flag is an operator assertion, not proof of a mounted volume.
-Readiness requires current-week migration, explicit cutover activation, zero
-unresolved entries, collector and storage flags; manually verify the
-volume and collector freshness too. The GitHub Pages app will continue to serve
-static assets while the configured HTTPS service owns shared state and writes.
+`prepare` collects public schedule data and selects the launch week; it refuses
+existing imported picks or an active release. `rehearse` only uses a local copy
+and prints counts, not private picks. Offline export must be a member-keyed object.
 
-## Authorized launch order
+## Future launch order — only when Jack says merge/go live
 
-Only after Jack explicitly says to launch/merge:
-
-1. Complete 320px/390px visual checks and organizer/member flows in isolated
-   preview. Verify all existing suites and service tests against the final commit.
-2. Provision the above service and durable volume; verify public data collection,
-   correct season/week, backups and persistence. Keep the frontend gate off.
-3. Obtain explicit authorization for reading the current shared Firebase picks.
-   Automatic approval review blocked this read during development because it is
-   private league data in a separate source. It was not retried. Fixture migration
-   tests passed, but migration against the actual current shared list is unverified.
-4. Freeze legacy Firebase writes for the active week, preserve a private backup,
-   export that week's rows with authorized access and run the offline importer
-   against the service's persistent DB after its schedule has been collected:
+1. Recheck current `main`, reconcile any concurrent changes/version numbers, and
+   rerun all tests. Complete real mobile visual checks at 320px/390px and test the
+   deployed API privately. Do not claim merge-only readiness before these pass.
+2. Obtain authorized access to the live Firebase pick export. A private-source
+   read was previously blocked by automatic approval review and not retried.
+   Current fixtures do not substitute for reconciling the real shared list.
+3. Freeze legacy writes for the relevant Parlay paths only, leaving other app
+   rules unchanged. Export the then-current list and all relevant archives; retain
+   a private original. Confirm old cached apps cannot keep writing the old list.
+4. Rehearse against that final export, reconcile every source row, then import:
 
    ```sh
-   node scripts/import-parlay.mjs --db /data/parlay.sqlite --export /private/current-picks.json --year 2026 --week 2
+   node scripts/supabase-parlay.mjs import --year 2026 --week 1 --export /private/authorized-week.json --backup /private/pre-import-UNIQUE.json --legacy-writes-frozen
    ```
 
-   Inspect counts, original text, unmatched entries and duplicate games before
-   continuing. The importer retains ambiguous/duplicate originals and never
-   invents historical kickoff quotes. Existing archived weeks require explicit
-   import/reconciliation if any have been added since this branch was prepared.
-   Do not overwrite newer picks with an older export. The importer is one-time.
-5. With explicit launch authorization and legacy writes already frozen, back up
-   and activate service writes (import alone remains read-only):
+   The importer saves a remote backup, verifies readback and saves a matching
+   private local backup; it refuses reused filenames and repeated imports.
+   Unresolved entries remain retained and prevent activation. Do not discard them.
+5. Verify the live collector and backup, then activate with explicit attestations:
 
    ```sh
-   node scripts/activate-parlay.mjs --db /data/parlay.sqlite --year 2026 --week 2 --backup /data/backups/pre-cutover.sqlite --legacy-writes-frozen --migration-reconciled
+   node scripts/supabase-parlay.mjs activate --year 2026 --week 1 --backup /private/pre-activation-UNIQUE.json --legacy-writes-frozen --migration-reconciled
+   node scripts/check-parlay-launch.mjs https://oqrfdhoyyogjmiqmjhnp.supabase.co/functions/v1/league-parlay
    ```
 
-   This command verifies the new backup and refuses an old imported week,
-   unresolved original rows, or a stale board. Use a new backup filename.
-   It does not freeze Firebase itself: the flags attest to verified cutover work.
-   Run `node scripts/check-parlay-launch.mjs https://<new-service-domain>` and
-   verify organizer access privately, member boundaries and current-week state.
-6. Set `parlay/config.json` to `enabled: true`, the service's HTTPS `api` origin,
-   and `year: 2026`; rerun checks. Merge only with the user's launch authorization.
-7. Verify Pages serves the final version, config, shared picks and scores.
-   Confirm the private organizer URL works before sending Zach that URL alone.
+   Automatic backups are not included on the free plan. The private downloaded
+   backup is required in addition to the in-project snapshot; keep it safely.
+   Do not falsely attest to frozen writes, reconciliation, or backup verification.
+6. Enable frontend config with the verified API base and year; merge only under
+   the explicit launch instruction. Verify Pages, original member links, shared
+   picks, score updates and private organizer access. Zach receives only his link.
 
-If the season/week changes before launch, review the start-week and import plan;
-do not blindly import Week 2 or drop interim weeks. Do not launch with two writable
-pick stores. Rollback after new-service edits needs a reconciled export back to
-the old store; simply flipping the frontend gate would lose sight of newer picks.
+After new-service edits, rollback requires a reconciled export back to legacy;
+merely flipping the frontend gate would hide newer picks. Never allow two writable
+pick stores. Production import/cutover always uses the actual week at launch.
 
 ## Second-pass release audit
 
@@ -189,23 +240,12 @@ Fixed during the review:
 - Delayed NFL games continue being collected across weekly rollovers. Discovery
   cannot move the open week backwards. Wrong-year fantasy responses are rejected.
 - An earlier week's import cannot unlock a later launch. Service writes need
-  explicit cutover evidence plus a verified SQLite backup.
+  explicit cutover evidence plus a verified private backup.
 
-### Actual remaining blockers — do not claim merge-only readiness
+### Remaining gates — do not claim merge-only readiness
 
-No production service, volume, domain, or organizer session has been created.
-Automatic approval review rejected a read-only Railway agent capability query
-because it was scoped to the existing Sports-Hub production project and the
-open-ended agent can mutate that project. It was not retried or routed around.
-Ask for explicit approval to provision a **separate** League-History service;
-do not mutate Sports-Hub. The earlier private Firebase read rejection also
-still stands: an authorized read is needed to rehearse the real migration.
-
-Before calling this merge-ready: provision isolated hosting with a persistent
-volume/backups, verify the private link on that service, check mobile rendering,
-and rehearse migration against an explicitly authorized read-only export. Do
-not freeze live writes or activate cutover until the future launch instruction.
-At that instruction, refresh/reconcile the export for the then-current week,
-perform the verified cutover, enable frontend config, merge, and check Pages.
-A future merge must recheck current main/version numbers so concurrent work is
-preserved. Merging this branch unchanged today leaves v2 disabled.
+Explicit endpoint/organizer-hash approval, deployed API and collector verification,
+mobile visual QA, and authorized real-pick migration rehearsal are still required.
+The schema/job are prepared, the new job is inactive, the current app is unchanged,
+and no merge has occurred. Future launch additionally requires a fresh frozen
+export, reconciliation, backup, activation and Pages verification.

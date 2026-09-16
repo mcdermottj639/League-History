@@ -4,7 +4,7 @@ export function ensure(state,year,week){const s=state.seasons[year]??={weeks:{},
 export function ingest(store,year,week,payload,now=Date.now()){
  const incoming=parseScoreboard(payload,now);if(!incoming.length)throw failure('Empty scoreboard',502);
  return store.transact(state=>{const w=ensure(state,year,week);
-  for(const game of incoming){const old=w.games.find(g=>g.id===game.id);const index=w.games.findIndex(g=>g.id===game.id);if(index<0)w.games.push(game);else w.games[index]=game;
+  for(const game of incoming){const old=w.games.find(g=>g.id===game.id);const index=w.games.findIndex(g=>g.id===game.id);if(old&&old.seenAt>game.seenAt)continue;if(index<0)w.games.push(game);else w.games[index]=game;
    for(const p of Object.values(w.picks).filter(p=>p.gameId===game.id)){
     if(p.lockedAt)continue;
     if(locked(game,now)||(old&&locked(old,now))){p.lockedAt=now;p.scheduledKick=old?.kick||game.kick;p.missingQuote=p.market!=='prop'&&(!p.quote||p.quote.provider!=='DraftKings via ESPN'||p.quote.observedAt>=p.scheduledKick);p.staleQuote=!!p.quote?.observedAt&&p.scheduledKick-p.quote.observedAt>120000;}

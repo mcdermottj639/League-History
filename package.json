@@ -1,7 +1,7 @@
 {
   "name": "league-history",
   "private": true,
-  "description": "Static league app; Node 24 test tooling and optional parlay service",
+  "description": "Static league app; Supabase parlay backend and Node 24 preview/test tooling",
   "engines": { "node": ">=24 <25" },
   "scripts": {
     "test": "node scripts/test-release.mjs",

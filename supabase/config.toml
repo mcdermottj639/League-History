@@ -1,0 +1,4 @@
+# Parlay's existing capability/session protocol performs authorization in the handler.
+# No Supabase keys are shipped to the static league app.
+[functions.league-parlay]
+verify_jwt = false
