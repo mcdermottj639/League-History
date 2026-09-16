@@ -1558,14 +1558,14 @@
   }
 
   /* ══ 🎖️ FINAL FOURS ═══════════════════════════════════════════════════
-     🚨 ITS OWN SECTION, AT THE BOTTOM OF HONORS (v48, owner's call: *"Put
-     final fours at the bottom of honors instead of records"*). It was the
-     second card inside `playoffHTML`, under a `.fh-sub` subheading — so it
+     🚨 ITS OWN SECTION. It was the second card inside `playoffHTML`, under a
+     `.fh-sub` subheading, then moved between Honors and Leaders before v88
+     put the complete numerical playoff résumé together in Record Book. It
      was a sub-card of Playoff record and could not be moved without being
      promoted first. As a `.section-title` it is a jump chip like every other
      card, which is the whole reason the nav picks it up with no edit.
-     ⚠️ The 🎖️ is not decoration: Honors is the page of 🏆 / 👑 / 💔 and a
-     fourth card needs a mark of its own to be findable in the jump row.
+     ⚠️ The 🎖️ is not decoration: this card needs a mark of its own to be
+     findable in the jump row.
      ⚠️ AND IT IS THE FUNNEL, NOT A W-L (v19) — final fours · finals · won,
      three numbers from one source, each a subset of the one before it. The
      caption says why there is no bracket record and must not be trimmed into
@@ -1578,7 +1578,7 @@
         <span class="fh-fr-f">${a.f4 ? `${a.f4} final four${a.f4 > 1 ? 's' : ''}` : '<i>no final fours</i>'}${a.fin ? ` · ${a.fin} final${a.fin > 1 ? 's' : ''}` : ''}</span>
         <span class="fh-fr-g">${a.t1 ? `<span class="mono">${a.t1}</span> won` : '<i>none won</i>'}</span>
       </div>`).join('')}
-      <p class="ffp-cap"><b>The final four is places 1-4</b>: the two teams that lose in the final four play each other for 3rd, so the four left after round one <b>are</b> the top four finishers. Verified against every bracket on file — all ${SEASON.length} seasons.<br><br>Six teams make the playoffs, so getting to the last four is the cut that means something. This is a count of <b>finishes</b>, not a record: the championship-bracket <b>win-loss record</b> is a different population and lives on <b>Playoff appearances</b> under ${subName('led')}. Placement games and the consolation ladder decide places rather than records — that is how 7th to 10th are settled, with the Cum Bowl taking 11th and 12th — and every game in them is kept as a meeting, never totalled into a W-L.</p>
+      <p class="ffp-cap"><b>The final four is places 1-4</b>: the two teams that lose in the final four play each other for 3rd, so the four left after round one <b>are</b> the top four finishers. Verified against every bracket on file — all ${SEASON.length} seasons.<br><br>Six teams make the playoffs, so getting to the last four is the cut that means something. This is a count of <b>finishes</b>, not a record: the championship-bracket <b>win-loss record</b> is a different population and lives on <b>Playoff appearances</b> on ${subName('rec')}. Placement games and the consolation ladder decide places rather than records — that is how 7th to 10th are settled, with the Cum Bowl taking 11th and 12th — and every game in them is kept as a meeting, never totalled into a W-L.</p>
     </div>`;
   }
 
@@ -2608,69 +2608,38 @@
     return out.sort((a, b) => b.n - a.n || (b.w - b.l) - (a.w - a.l));
   }
   /* ── The public surface. app.js knows these five keys and nothing else. ── */
-  /* ⚠️ DISPLAY ORDER, and it is this array alone (v45, owner's call: You
-     first, Honors second). `VIEWS` is a map and `league.js` just walks this,
+  /* ⚠️ DISPLAY ORDER, and it is this array alone. `VIEWS` is a map and
+     `league.js` just walks this,
      so a reorder needs no other edit — the sub-tab bar, the ? sheet's tab list
      and `checks.js` all read it. ⚠️ What a reorder does NOT decide is which
      tab the app LANDS on: `league.js` lands a reader who has picked on `you`
      and everybody else on `hon`, because the You page with nobody picked is an
      invitation card and a stranger must get a whole app. */
-  /* ⚠️ The LABEL is "Honors" (v47, owner's call) and the KEY stays `hon`.
-     Renaming the key would have been a second edit in `VIEWS`, in `HELP`, in
-     `S.sub`'s default and in every comment that names a view — for a word on
-     screen. The label is the only thing a reader sees, and `checks.js`, the
-     sub-tab bar and the ? sheet's tab list all read it from here.
-     ⚠️ Older comments and changelog entries say "Honors": same tab. */
-  const SUBS = [['you', 'You'], ['hon', 'Honors'], ['rec', 'Records'],
-                ['led', 'Leaders'], ['cb', 'Cum Bowl']];
+  /* ⚠️ `hon` is the stable internal key for Trophy Case. It remains because
+     the label is the public contract and the shell's safe stranger landing
+     already points at this key. v88 removes the old `led` key entirely: the
+     fifth concept is now League Lore, not a renamed Leaders page. */
+  const SUBS = [['you', 'You'], ['hon', 'Trophy Case'], ['rec', 'Record Book'],
+                ['lore', 'League Lore'], ['cb', 'Cum Bowl']];
   const VIEWS = {
-    /* 🚨 Storylines opens RECORDS (v44, owner's call), back where it lived
-       before v13. v13 moved it to Honors on the reasoning that it was the
-       best thing the archive produces and was buried third-of-five — that
-       argument was about REACH, and reach is no longer the problem: the ?
-       sheet names it and the jump nav on Records chips straight to it. What
-       Honors lost by holding it is that the page is now the champions, the
-       trophy case and who is waiting — three views of the same trophy —
-       while Records is the page of derived findings, which is what a
-       storyline IS. ⚠️ It is ONE TERM, moved: nothing else about the feature
-       changes, and `LH.SUBS` order is untouched. */
-    /* ⚠️ Card order on Honors is this line (v46, owner's call: the trophy
+    /* ⚠️ Card order on Trophy Case is this line: the trophy
        case first, Champions second). Neither card's copy refers to the other's
        position and the jump nav reads the rendered DOM, so a swap is this one
        term — but `heroHTML()` stays first: it is the page's standfirst and
        stat strip, not one of the cards, and it carries no heading so it is not
        a jump chip either. */
-    /* ⚠️ The champion's curse closes the page, UNDER final fours (v50, owner's
-       call: *"Put champions curse below that"*). It belongs with these four
-       rather than among the Records leaderboards: it is about what happens to
-       a CHAMPION, and Honors is where the champions are. Self-contained — its
-       copy names no neighbour — so this is one term moved out of `rec`. */
+    /* The champion's curse closes the page. It belongs with these cards rather
+       than among the Record Book leaderboards: it is about what happens to a
+       CHAMPION, and Trophy Case is where the champions are. */
     hon: () => heroHTML() + trophyHTML() + champsHTML() + ringlessHTML() + seedHTML() + curseHTML(),
-    /* Playoff record + Finals reached sit HERE, not on Cum Bowl (v9, owner's
-       call). They are career résumé — who gets in, who reaches the final —
-       and the Cum Bowl is the opposite bracket, for the teams that missed.
-       Filing them there put the league's best achievement behind the tab
-       named for its worst. Ordered baseline-first: who makes the playoffs,
-       then the two cards that comment on what happens once you are in. */
-    /* ⚠️ ORDER IS THE OWNER'S CALL (v51: "move luck index and rivalries to
-       bottom of records"). The page runs findings → the record book → the
-       playoff cards → the two pairwise/derived cards last. Nothing reads this
-       order but the page itself; the jump nav is built from the rendered DOM,
-       so the chips re-order with no second edit.
-       ⚠️ `curseHTML()` is NOT here — it closes Honors instead (the owner's
-       other call, landed in parallel). Both moves are his and they compose:
-       this one says where luck and rivalries sit, that one says the curse is
-       an honour. Merged rather than either one winning. */
-    rec: () => storiesHTML() + recordHTML() + luckHTML() + rivalsHTML(),
-    /* 🏅 LEADERS — the four ranked tables, split off Records (v65, owner's
-       call, four cards circled on a screenshot): all-time standings, playoff
-       appearances, seeds & upsets, who shows up in January. Records had eight
-       cards and was two pages of scrolling; what it keeps is the FINDINGS —
-       the storylines, the record book, the luck index and rivalries — and
-       what leaves is every card that is simply all twelve managers ranked.
-       ⚠️ The tab count is still five. Cum Bowl and Seasons merged to pay for
-       this one, which is what keeps the bar off the v55 clipping ceiling. */
-    led: () => standingsHTML() + playoffScoringHTML() + playoffHTML() + finalFoursHTML() + januaryHTML(),
+    /* 📕 RECORD BOOK — every numerical career table and record in one place.
+       v88 removes the artificial Records/Leaders split. The order reads like
+       a sports record book: career standings, league records, playoff scoring,
+       playoff access/record, postseason finishes, then postseason performance. */
+    rec: () => standingsHTML() + recordHTML() + playoffScoringHTML() + playoffHTML() + finalFoursHTML() + januaryHTML(),
+    /* 📌 LEAGUE LORE — what the archive turns up rather than the raw ranked
+       numbers: generated storylines, schedule luck and playoff rivalries. */
+    lore: () => storiesHTML() + luckHTML() + rivalsHTML(),
     /* 🚽 CUM BOWL, WITH THE SEASONS UNDER IT (v65, owner: *"Cum bowl is the
        prize of those tab. When I click it I want cum bowl. Then seasons can
        be offered but out of the way"*). The Cum Bowl leads; the thirteen

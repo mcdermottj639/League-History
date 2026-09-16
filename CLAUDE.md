@@ -85,7 +85,32 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   the team names — is world-readable. That was the owner's setting, not an
   accident, but weigh it before adding anything new about a person.
 
-## v87 — Combined rankings and archive refinements (current state)
+## v88 — History taxonomy: numbers, stories and trophies (current state)
+
+The five history tabs are now **You · Trophy Case · Record Book · League Lore ·
+Cum Bowl**. This is a refiling and rename only; no archive card was removed.
+
+- **Trophy Case** is the former Honors page: trophy case, champions, still
+  waiting, Seeds & upsets, and the champion's curse.
+- **Record Book** combines the former numerical parts of Records and Leaders,
+  ordered Career → league records → playoff scoring → playoff access/record →
+  Final fours → January scoring.
+- **League Lore** contains the derived narrative views: Storylines, Luck Index,
+  and Rivalries.
+- **Cum Bowl** still leads with the Cum Bowl and keeps the collapsed season
+  archive underneath. **You** is unchanged.
+
+The public key `led` is removed and replaced with `lore`. This is safe because
+the selected history sub-tab is memory-only; boot still sets `you` or `hon`.
+The legacy `hon` key remains the stable internal key for Trophy Case and the
+stranger landing page. `SUBS` remains the single source of truth for labels and
+order, and the help sheet derives its tab list from it.
+
+## v87 — Combined rankings and archive refinements
+
+⚠️ **SUPERSEDED in v88 for history tab names and card locations only.** The
+rankings design, playoff-PPG definition, GOAT-storyline removal, and all data
+rules below remain current.
 
 The owner approved the cream-and-gold combined mockup: three weekly highlights,
 compact ranking cards, and expandable season details. Keep this design scoped;
@@ -449,26 +474,26 @@ superseded. No model run happens in a member's Rankings view: these are snapshot
       variation selector** — the exact ⚡ trap v49 found, where a font is free
       to draw the bare codepoint as a thin monochrome TEXT glyph. Verified on
       the render: `U+1F396 U+FE0F`, in colour.
-    - ⚠️ **🎖️ is also the Final fours section mark on Leaders, and that is
+    - ⚠️ **🎖️ is also the Final fours section mark on Record Book, and that is
       checked rather than assumed.** They never share a page — the mascot is on
-      You and on a profile, Final fours is on Leaders — so the v50 jump-nav
+      You and on a profile, Final fours is on Record Book — so the v50 jump-nav
       clash does not arise. It does mean the glyph carries two meanings across
       the app; the owner's call, and worth knowing before a future session
       "fixes" one of them.
     - ⚠️ Keyed by MANAGER CODE, like `MGR_LOGO` and for the same reason: the
       fantasy team names change every September, the twelve people do not.
-  - **The playoff résumé is on Leaders (v87, owner's call).** Final fours,
-    playoff appearances/record and all-time playoff PPG are on Leaders.
-    Seeds & upsets is on Honors, swapped with Final fours in v87.
+  - **The playoff résumé is on Record Book (v88).** Final fours, playoff
+    appearances/record and all-time playoff PPG are together there. Seeds &
+    upsets remains on Trophy Case.
     - ⚠️ **`playoffHTML` was renamed on screen in the same edit.** It headed
       BOTH cards as "Playoff record", which covered the résumé; alone over an
       appearance rate, a heading promising a *record* describes something
       **this app deliberately does not keep** (v19) — the v14 fault, a name
       that makes a number sound like another number. It reads **Playoff
       appearances**, matching the career tile's `Playoff apps` since v10.
-    - ⚠️ **Honors closes with 📉 The champion's curse (v50, owner's call),
+    - ⚠️ **Trophy Case closes with 📉 The champion's curse,
       under Seeds & upsets.** It is about what happens to a CHAMPION, so it sits
-      with the champions rather than among the Records leaderboards. Its mark
+      with the champions rather than among the Record Book leaderboards. Its mark
       changed from 👑 to 📉 in the same edit: 👑 is the trophy case, two cards
       up, and the jump row is read by its mark.
     - ⚠️ **Final fours became a `.section-title`, not a `.fh-sub`.** It was a
@@ -660,10 +685,9 @@ superseded. No model run happens in a member's Rankings view: these are snapshot
     out 55px against row 1's 46px) and the ⚑ is bound to "record" with a
     non-breaking space, because a provenance flag alone on a line reads as a
     stray mark rather than a badge.
-  - `SUBS` — the five history sub-tabs, **in display order**: You · Honors ·
-    Records · **Leaders · Cum Bowl** (v65 — Leaders is new and Cum Bowl
-    absorbed Seasons; "You" was fifth, then second from v6, and is first since
-    v45; the owner's call each time).
+  - `SUBS` — the five history sub-tabs, **in display order**: You · Trophy Case ·
+    Record Book · League Lore · Cum Bowl (v88). Cum Bowl still absorbs Seasons;
+    "You" remains first.
     - 🚨 **IT STAYS AT FIVE, AND THAT IS THE CONSTRAINT, NOT A COINCIDENCE.**
       v55 measured this bar clipping silently at 320px and had to move to
       `flex: 1 1 auto` to fit the labels it already had. So v65 paid for the
@@ -680,18 +704,17 @@ superseded. No model run happens in a member's Rankings view: these are snapshot
       a reader who HAS picked on `you` (the v1 rule, which `choose()` already
       followed) and everybody else on `hon`. **Reordering `SUBS` does not
       change where the app opens**; that is one line in boot.
-  - `view(key)` — `hon` · `you` · `rec` · `led` · `cb`. **Storylines opens
-    `rec`** (v44, owner's call), back where it sat before v13. ⚠️ **`sea` is
-    gone** (v65): the seasons render under `cb`. Safe to delete because `S.sub`
-    lives in memory and boot only ever sets it to `you` or `hon`, so no device
-    can hold a pointer at a view that no longer exists.
-    - 🚨 **RECORDS IS THE FINDINGS, LEADERS IS THE TABLES (v65, owner's call —
-      he circled four cards on a screenshot).** Records had grown to eight
-      cards. It keeps what the archive turns UP — Storylines · the record book
-      · **the luck index · Rivalries last** (v53, his words, still true) — and
-      Leaders now holds 🏅 All-time standings · 🏈 All-time playoff PPG ·
-      📊 Playoff appearances · 🎖️ Final fours · 🔥 Who shows up in January.
-      Seeds & upsets is on Honors (v87).
+  - `view(key)` — `hon` · `you` · `rec` · `lore` · `cb`. `hon` is the stable
+    internal key for Trophy Case; `rec` is Record Book; `lore` is League Lore.
+    ⚠️ **`sea` is gone** (v65): the seasons render under `cb`. The old `led`
+    key is also gone (v88). Both are safe to delete because `S.sub` lives in
+    memory and boot only ever sets it to `you` or `hon`, so no device can hold
+    a pointer at a removed view.
+    - 🚨 **RECORD BOOK IS THE NUMBERS; LEAGUE LORE IS THE STORIES (v88).**
+      Record Book holds 🏅 All-time standings · 📕 The record book · 🏈 All-time
+      playoff PPG · 📊 Playoff appearances · 🎖️ Final fours · 🔥 Who shows up
+      in January. League Lore holds 📌 Storylines · 🎲 The luck index ·
+      ⚔️ Rivalries. Seeds & upsets stays on Trophy Case.
     - 🚽 **`cb` LEADS WITH THE CUM BOWL AND THE SEASONS FOLLOW** (v65, owner:
       *"Cum bowl is the prize of those tab. When I click it I want cum bowl.
       Then seasons can be offered but out of the way"*). Nothing auto-expands
@@ -2518,6 +2541,24 @@ REASONING, not just the change, so the next session does not repeat a mistake.
 invalidates an entry add an inline `⚠️ SUPERSEDED in vN` marker to it** — a
 stale entry written in the present tense reads as current to anyone who greps.
 
+- **v88 — the history tabs answer five different questions (16 Sep 2026)** —
+  the owner approved the workshopped structure without removing any cards.
+  - **You** answers how the reader did. **Trophy Case** answers who won.
+    **Record Book** answers who owns the numbers. **League Lore** answers what
+    the league's stories are. **Cum Bowl** answers who lost and preserves the
+    season archive underneath.
+  - 🚨 **Records vs Leaders was a code distinction, not a reader distinction.**
+    Every numerical table now lives together in Record Book, while derived
+    narrative findings live in League Lore. The former Honors page becomes
+    Trophy Case with its contents and order intact.
+  - No card is deleted: all-time standings, record book, playoff PPG, playoff
+    appearances, Final fours and January scoring make up Record Book;
+    Storylines, Luck Index and Rivalries make up League Lore.
+  - The old `led` key is removed rather than retained as a dead alias. Sub-tab
+    state is memory-only, so a browser cannot reopen holding it. `hon` stays as
+    the stable internal Trophy Case key because boot deliberately sends a
+    stranger there.
+
 - **v82 — a pick belongs to a person, not to a phone (14 Sep 2026)** — the
   owner, with the Parlay tab open while reading as another manager: *"I did
   view as another member and is this what they are seeing in the parlay? I
@@ -3922,6 +3963,8 @@ stale entry written in the present tense reads as current to anyone who greps.
     `node checks.js` green, with each new law fault-injected.
 
 - **v65 — Records splits, and the Cum Bowl swallows Seasons (12 Sep 2026)** —
+  ⚠️ **SUPERSEDED in v88 for the Records/Leaders split; the five-tab constraint
+  and Cum Bowl/Seasons merge remain current.**
   the owner, with the Records jump nav on screen and four chips circled in
   red: *"I want cum bowl added to seasons as two sub tabs but call it cum bowl
   and then the 4 I drew on here slice off and make there own page"*.

@@ -220,14 +220,43 @@ console.log(`  ${apMark()} brackets == appearances     every playoff berth has i
       console.log(`  ❌ ${a.m}: career playoff PPG missing from profile`); bad++;
     }
   });
-  const honors = window.LeagueHistory.view('hon'), leaders = window.LeagueHistory.view('led');
-  if (!honors.includes('Seeds &amp; upsets') || leaders.includes('Seeds &amp; upsets') || !leaders.includes('Final fours') || honors.includes('🎖️ Final fours')) {
+  const trophy = window.LeagueHistory.view('hon'), book = window.LeagueHistory.view('rec');
+  if (!trophy.includes('Seeds &amp; upsets') || book.includes('Seeds &amp; upsets') || !book.includes('Final fours') || trophy.includes('🎖️ Final fours')) {
     console.log('  ❌ Seeds & upsets / Final fours are not on the requested tabs'); bad++;
   }
-  if (!leaders.includes('All-time playoff PPG') || /GOAT argument/.test(window.LeagueHistory.profile('McD'))) {
+  if (!book.includes('All-time playoff PPG') || /GOAT argument/.test(window.LeagueHistory.profile('McD'))) {
     console.log('  ❌ requested playoff scoring or storyline change is missing'); bad++;
   }
   console.log(`  ${mark()} playoff PPG: each career, visible scoring, requested card locations and no GOAT story`);
+}
+/* v88 taxonomy: five reader questions, with the numerical and narrative cards
+   separated. Assert both labels/order and every moved card so a later rename
+   cannot silently recreate the Records/Leaders split or drop a section. */
+{
+  const mark = block();
+  const wantTabs = [['you','You'],['hon','Trophy Case'],['rec','Record Book'],['lore','League Lore'],['cb','Cum Bowl']];
+  if (JSON.stringify(window.LeagueHistory.SUBS) !== JSON.stringify(wantTabs)) {
+    console.log('  ❌ history tabs do not match the approved five-tab order'); bad++;
+  }
+  const sections = (key) => [...window.LeagueHistory.view(key).matchAll(/class="section-title"[^>]*>(.*?)<\/h2>/g)]
+    .map((m) => m[1].replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').trim());
+  const hasInOrder = (key, labels) => {
+    const got = sections(key); let at = -1;
+    return labels.every((label) => (at = got.findIndex((x, i) => i > at && x.includes(label))) > -1);
+  };
+  if (!hasInOrder('hon', ['The trophy case','Champions','Still waiting','Seeds & upsets',"The champion's curse"])) {
+    console.log('  ❌ Trophy Case is missing a card or its approved order'); bad++;
+  }
+  if (!hasInOrder('rec', ['All-time standings','The record book','All-time playoff PPG','Playoff appearances','Final fours','Who shows up in January'])) {
+    console.log('  ❌ Record Book is missing a numerical card or its approved order'); bad++;
+  }
+  if (!hasInOrder('lore', ['Storylines','The luck index','Rivalries'])) {
+    console.log('  ❌ League Lore is missing a narrative card or its approved order'); bad++;
+  }
+  if (!hasInOrder('cb', ['The Cum Bowl','Season by season'])) {
+    console.log('  ❌ Cum Bowl no longer leads its season archive'); bad++;
+  }
+  console.log(`  ${mark()} history taxonomy: five approved tabs, every card present and ordered`);
 }
 /* 🚨 THE BRACKET MUST RESOLVE THE STANDINGS, EVERY SEASON (v66 audit — the
    owner: "Verify all the info for cum bowl and season stats"). The season

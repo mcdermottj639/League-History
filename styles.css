@@ -3543,13 +3543,12 @@ tr.fav td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .fh-cb-r .fh-tap { min-height: 38px; }
 
 /* ── the second-level sub-tab row carries FIVE labels, not four ─────────
-   .ai-sub's 12.5px leaves ~52px of text per tab at 390px and "Cum Bowl"
-   needs ~58 — it clipped silently (nowrap + overflow, so it never wrapped
-   and a wrap check could not see it). */
+   v88's three two-word labels (Trophy Case, Record Book and League Lore) are
+   longer than the old Honors/Records/Leaders set. Content-sized flex shares
+   the row by label width; nowrap + overflow would otherwise clip silently. */
 :root[data-palette] .fh-sub2 { margin-top: -4px; }
-/* ⚠️ FIVE tabs across a 390px phone. "Cum Bowl" is the widest label and it
-   clipped by 4px at 11.5px — and clipped, not wrapped, so a wrap check was
-   blind to it (the v218 lesson). Measured, not guessed. */
+/* ⚠️ FIVE tabs across a phone. Keep the compact size: all five full labels
+   must remain visible at 320px, and clipping does not create a wrap signal. */
 :root[data-palette] .fh-sub2 button { font-size: 11px; padding: 11px 1px; letter-spacing: -.015em;
   font-weight: 700; }
 

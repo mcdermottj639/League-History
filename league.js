@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v87';
+  const APP_VERSION = 'v88';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -284,10 +284,10 @@
     season: 'This year as it stands — the standings, ESPN\'s playoff odds, who you play next, and your season measured against your other thirteen.',
     rank: "The weekly power rankings — every team in order, with a take on each. Only during the season, and only once a set is published.",
     parlay: 'The weekly group parlay — one NFL bet each, all twelve on one ticket. Who picked what, how far it got, and who keeps landing their leg.',
-    hon: 'The trophy case, the champions, who is still waiting, seeds and upsets, and the champion\'s curse.',
+    hon: 'Championships and achievement — the trophy case, every champion, who is still waiting, seeds and upsets, and the champion\'s curse.',
     you: 'Your thirteen seasons — medals, Cum Bowls, your best and worst years.',
-    rec: 'What the archive turns up on its own: the storylines, the record book, the luck index and the rivalries.',
-    led: 'Career leaderboards — all-time standings, playoff PPG, playoff appearances, final fours, and who scores more once the bracket starts.',
+    rec: 'The league\'s numbers in one place — career standings, season and game records, playoff PPG, playoff appearances, final fours, and postseason scoring.',
+    lore: 'The stories behind the numbers — generated storylines, the luck index, rivalries, streaks and historical oddities.',
     cb: "The other bracket, and the one that decides the league's worst: the last game of the consolation ladder, where the winner takes 11th and the loser is the worst in the league. Every final standing since 2013 is underneath it.",
   };
 
@@ -805,7 +805,7 @@
        on a nag with no archive behind it. The hard rule is that picking is an
        invitation and never a gate, so: a reader who has picked lands on their
        own thirteen seasons (the v1 rule, which already lands `choose()` there),
-       and everybody else lands on Honors. */
+       and everybody else lands on Trophy Case. */
     if (me) { LH.setMe(me); S.sub = 'you'; }
     /* A tapped pick link is a request to look at the parlay, so land there —
        otherwise the leg is quietly collected behind the archive and the tap

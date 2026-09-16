@@ -615,11 +615,12 @@
    `clientWidth` across nine widths, which is the only thing that can see it.
    🚨 **`flex: 1 1 auto` REPLACES `flex: 1`, AND IT IS A BUG FIX, NOT A
    TUNING.** Equal thirds/fifths gave "You" (three letters) exactly as much
-   room as "Cum Bowl" (eight) — so the bar was starving its longest label to
+   room as a two-word label — so the bar was starving its longest label to
    subsidise its shortest, and **"Cum Bowl" was ALREADY being clipped at 320
    and 360px**, on sizing measured only at 390. Content-width plus an equal
    share of the leftover fixes that and buys the headroom this version spends:
-   at 320px the ceiling goes 9px → 12px on level 2.
+   at 320px the ceiling goes 9px → 12px on level 2. v88 relies on that same
+   rule for Trophy Case, Record Book and League Lore.
    ⚠️ **Sized against the FALLBACK font, not Archivo.** Measured both: real
    Archivo is narrower, so its ceilings are 2-4px higher. A phone that cannot
    reach Google Fonts renders the fallback — so the fallback is the number
