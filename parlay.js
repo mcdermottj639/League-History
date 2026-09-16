@@ -409,7 +409,7 @@
      is a sentence that goes wrong the moment the feature above it works. */
   function ticketHTML(t, cr, last) {
     const [word, cls] = STAT[t.status] || STAT.empty;
-    return `<h2 class="section-title">🎲 ${last ? 'The last ticket' : "This week's ticket"}</h2>
+    return `<h2 class="section-title" id="lp-sec-ticket">🎲 ${last ? 'The last ticket' : "This week's ticket"}</h2>
       <div class="ffp-card lp-hero">
         <div class="lp-k">${esc(t.label)}${t.date ? ` · ${esc(niceDate(t.date))}` : ''}${t.book ? ` · ${esc(t.book)}` : ''}</div>
         <div class="lp-top">
@@ -448,7 +448,7 @@
       : s.best && s.best.lost.length
         ? `The closest the league has come is <b>${s.best.won.length} of ${s.best.counted}</b>, ${esc(s.best.label.toLowerCase())}.`
         : '';
-    return `<h2 class="section-title">📋 The season so far</h2>
+    return `<h2 class="section-title" id="lp-sec-season">📋 The season so far</h2>
       <div class="fh-lead"><p>${dn
         ? `${Cap(spell(dn))} ticket${dn === 1 ? '' : 's'} ${dn === 1 ? 'has' : 'have'} been settled${running ? ` and ${spell(running)} ${running === 1 ? 'is' : 'are'} still running` : ''}. Every leg has to land for any of it to pay, which is the whole joke: <b>${s.legsW} of ${s.legsD}</b> individual bets have won.`
         : `Nothing has settled yet. Every leg has to land for any of it to pay, which is the whole joke.`} ${closest}</p></div>
@@ -488,7 +488,7 @@
     const thin = s.decided.length <= 2
       ? ` With ${spell(s.decided.length)} ticket${s.decided.length === 1 ? '' : 's'} settled this is a tally, not a record.`
       : '';
-    return `<h2 class="section-title">🎯 Who carries the ticket</h2>
+    return `<h2 class="section-title" id="lp-sec-records">🎯 Who carries the ticket</h2>
       <div class="fh-lead"><p>Every leg anybody has had on this season, ranked by how often it lands. <b>All twelve are here</b> whether or not they have put one in. <b>An = means joint</b>, and every row names how many settled legs that rate is over — somebody who sat a week out has fewer, and two rates over two different denominators is not a comparison. A push counts as neither.${thin}</p></div>
       <div class="ffp-card">${rows}</div>`;
   }
@@ -497,7 +497,7 @@
     const past = s.ts.slice(1);
     if (!past.length) return '';
     const me = LH ? LH.me() : null;
-    return `<h2 class="section-title">📖 Every ticket</h2>
+    return `<h2 class="section-title" id="lp-sec-history">📖 Every ticket</h2>
       ${past.map((t) => {
         const [, cls, tag] = STAT[t.status] || STAT.empty;
         return `<details class="ffp-card fh-det">
@@ -986,7 +986,7 @@
        and the one thing this app is otherwise careful about. The lead carries
        the count; this carries the invitation. */
     const none = `<div class="ffp-empty"><b>The first leg of ${esc(ow.l)} is going spare.</b></div>`;
-    return `<h2 class="section-title">👥 ${esc(ow.l)} — who is in</h2>
+    return `<h2 class="section-title" id="lp-sec-who">👥 ${esc(ow.l)} — who is in</h2>
       <div class="ffp-card">
         <p class="fh-lead"><b>${legs.length} of ${all.length} picks are in.</b> Everybody's leg lands here as they save it, so the twelve of you are looking at the same board.</p>
         ${legs.length ? `<div class="lp-legs">${rows}</div>` : none}
@@ -1073,7 +1073,7 @@
        anonymous is the one thing that asks. The picker is one tap away and
        the wording is an invitation, the same as everywhere else. */
     if (!me) {
-      return `<h2 class="section-title">📝 ${esc(ow.l)} — the picks are open</h2>
+      return `<h2 class="section-title" id="lp-sec-pick">📝 ${esc(ow.l)} — the picks are open</h2>
         <div class="ffp-card lp-you">
           <p><b>Everybody puts one NFL bet in and the twelve go on together.</b>
           Tap your name and you can put your leg in from here — it writes the line
@@ -1092,7 +1092,7 @@
        arrived there the same way, as a knock-on of something else moving).
        ⚠️ U+1F4DD is `Emoji_Presentation=Yes`, so unlike ⚡ and 🎖️ it needs no
        variation selector — checked on the render rather than assumed. */
-    const head = `<h2 class="section-title">📝 ${esc(ow.l)} — ${mine ? 'your pick is in' : 'your pick'}</h2>`;
+    const head = `<h2 class="section-title" id="lp-sec-pick">📝 ${esc(ow.l)} — ${mine ? 'your pick is in' : 'your pick'}</h2>`;
     if (mine) {
       return `${head}
         <div class="ffp-card lp-you">
@@ -1335,7 +1335,7 @@
     bad: "<b>That ticket doesn't look right.</b>The file is there but what is in it isn't a parlay, so nothing is shown rather than half of one. The rest of the app is unaffected.",
   };
 
-  const emptyHTML = (why) => `<h2 class="section-title">🎲 The group parlay</h2>
+  const emptyHTML = (why) => `<h2 class="section-title" id="lp-sec-empty">🎲 The group parlay</h2>
     <div class="ffp-card"><div class="ffp-empty">${EMPTY[why] || EMPTY.none}</div></div>`;
 
   async function load() {
@@ -1381,6 +1381,12 @@
     const has = !!(s2 && s2.ts.length);
     if (!ow && !has) { host.innerHTML = emptyHTML('none'); return; }
     try {
+      /* 🚨 THESE HEADINGS CARRY STABLE IDS. The shell builds the quick-nav
+         once after paint(), then the live board and shared-picks requests can
+         call render() again and replace every node in this host. Generated
+         `lg-sec-*` ids belonged to the discarded nodes, so the still-visible
+         buttons often pointed at nothing. Stable ids let every repaint put
+         the same destinations back before the next tap. */
       let out = '';
       if (ow) out += pickHTML(ow) + whoHTML(ow) + collectHTML(ow) + howtoHTML();
       if (has) out += ticketHTML(s2.ts[0], P.cr, !!ow) + tallyHTML(s2) + boardHTML(s2) + pastHTML(s2, P.cr);

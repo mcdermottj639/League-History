@@ -1687,10 +1687,33 @@ function parlayLaws() {
      declaration of the same name silently WINS in the same scope, which is
      how the "Who carries the ticket" leaderboard vanished when the game board
      was added — nothing threw, and the tie law caught it by accident. */
-  const full = LP._html([{ k: 1, l: 'Week 1', legs: R2.map((m, i) => ({ m, p: `p${i}`, o: -110, r: i ? 'W' : 'L' })) }]);
+  const full = LP._html(FIX);
   ['Who carries the ticket', 'The season so far'].forEach((h) => {
     if (!full.includes(h)) fail(`the parlay page has lost its "${h}" card`);
   });
+
+  /* 🚨 THE PARLAY REPAINTS AFTER THE SHELL BUILDS ITS QUICK-NAV. Shared-pick
+     and live-board answers both replace the host's innerHTML, so ids assigned
+     by buildJump() to the old heading nodes disappear. The visible buttons
+     then point at nothing. Every parlay heading owns a stable id instead, and
+     the same id must survive different render states. */
+  const sectionIds = (h) => [...String(h).matchAll(/<h2 class="section-title" id="([^"]+)"/g)].map((m) => m[1]);
+  const stableSections = [
+    LP._pickHTML({ k: 4, l: 'Week 4' }),
+    LP._whoHTML({ k: 4, l: 'Week 4' }),
+    full,
+    LP._empty('offline'),
+  ].flatMap(sectionIds);
+  if (new Set(stableSections).size !== stableSections.length) fail('two parlay sections share a quick-nav destination id');
+  const parlaySrc = fs.readFileSync('./parlay.js', 'utf8');
+  const declaredSections = new Set([...parlaySrc.matchAll(/class="section-title" id="([^"]+)"/g)].map((m) => m[1]));
+  ['pick', 'who', 'ticket', 'season', 'records', 'history', 'empty'].forEach((id) => {
+    if (!declaredSections.has(`lp-sec-${id}`)) fail(`the parlay's ${id} section has no stable quick-nav destination`);
+  });
+  if (declaredSections.size !== 7) fail(`the parlay declares ${declaredSections.size} quick-nav destinations instead of 7`);
+  if ((parlaySrc.match(/class="section-title"(?! id=)/g) || []).length) {
+    fail('a parlay section heading has no stable id — a live repaint would strand its quick-nav button');
+  }
 
   /* 🚨 A STATUS LINE BELONGS TO ONE CARD. One shared string rendered into
      every `.lp-say` printed "Saved. Send it to the chat" under the collector

@@ -85,6 +85,20 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   the team names — is world-readable. That was the owner's setting, not an
   accident, but weigh it before adding anything new about a person.
 
+## v86 — Parlay quick-nav survives live refreshes
+
+The parlay's live board and shared-picks requests can repaint the tab after the
+shell has already built its quick-nav. `render()` replaces `#lg-body` wholesale,
+so the shell-generated `lg-sec-*` ids vanished with the old headings while the
+visible buttons kept pointing at them. This is why the same buttons worked on
+one tap and did nothing on another.
+
+Every parlay `.section-title` now owns a stable, unique `lp-sec-*` id. Any live
+repaint recreates the exact destinations the quick-nav already targets. The
+parlay laws reject a missing or duplicate destination. The real page was also
+driven through the failure sequence: build the nav, force a shared-picks refresh,
+and click a chip; every target remained live and the click scrolled to it.
+
 ## v85 — Firebase numeric-week arrays (current reader correction)
 
 The owner's recording showed v84 saying it could not reach rankings and refusing
@@ -807,6 +821,13 @@ superseded. No model run happens in a member's Rankings view: these are snapshot
 - `parlay.js` — **the weekly group parlay** (v69), `window.LeagueParlay`, one
   entry point `paint(host, crest)`. Twelve managers, one NFL bet each, all on
   one ticket.
+  - 🚨 **EVERY `.section-title` HAS A STABLE `lp-sec-*` ID.** The shell builds
+    the quick-nav after `paint()` returns, but the live board and shared-picks
+    requests finish later and `render()` replaces every node in `#lg-body`.
+    The generated `lg-sec-*` ids were attached to the discarded headings, so
+    the still-visible quick-nav buttons often pointed at nothing. A parlay
+    repaint now recreates the same destinations before the reader can tap;
+    `checks.js` refuses an unkeyed or duplicate parlay heading.
   - 🚨 **`render()` REFUSES A BODY IT NO LONGER OWNS (`ownsHost()`, v76), AND
     THIS FILE IS WHERE THE OWNER SAW IT.** Every write to `#lg-body` goes
     through `render`, so the guard only has to be there — and it has to be
