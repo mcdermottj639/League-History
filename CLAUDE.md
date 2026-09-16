@@ -85,38 +85,53 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   the team names — is world-readable. That was the owner's setting, not an
   accident, but weigh it before adding anything new about a person.
 
-## v83 — Direct ranking publishing (current state)
+## v84 — Publishing with fewer steps (current state)
 
-User requested edit → Publish entirely in the app. `ranking-store.js` now reads
-and writes `/rankings/{parlay/current.json.y}/{week}` in the existing Firebase
-project. The full twelve-team snapshot is a single conditional PUT; overwrites
-and unpublishing require confirmation and ETag checks. Firebase Authentication
-email/password ID tokens authorize writes, with in-memory refresh and no stored
-password/token. Only the API key (public) is remembered locally. The local Lab
-gate is NOT server authorization. `rankings.rules.json` is an additive rules
-fragment with a publisher UID placeholder; preserve all existing picks rules.
+**Standing UX preference from the owner: the less he has to do, the better.**
+Remember setup and sign-in, resume the action that requested sign-in, and put
+routine controls beside the content. Avoid manual export/copy loops.
 
-**Activation still required:** see `PUBLISHING_SETUP.md`. This session cannot
-administer Firebase. Do not describe direct publishing as operational until the
-publisher account/rules are configured and an actual save succeeds. Tests use
-mocked Firebase responses, not production credentials. `node checks.js` and
-`publishing.test.cjs` passed (jsdom, mocked network and canvas); real browser
-visual QA was unavailable because the Chromium download timed out. A read of
-the real `/rankings.json` returned HTTP 401, confirming activation is pending.
+`ranking-store.js` reads saved ranking snapshots from Firebase and writes one
+week atomically with an ETag. `lh:publisher-session` stores the Firebase refresh
+token, public API key and UID on this device. Access tokens stay in memory;
+passwords are NEVER stored. Reopening either page restores the publisher session
+and renews it automatically. Sign-out removes the stored session; storage events
+propagate sign-out across tabs, and an in-flight refresh cannot undo sign-out.
+Invalid/revoked refresh tokens clear the session; temporary network failures do
+not. The UI publisher UID is `34sUlXl2ZebtCJfR97Hz4R9N6Jw1`, supplied by the
+owner. Firebase rules remain the actual authority. Updating the allowed publisher
+requires updating the rules and this UID together.
 
-The Lab keeps drafts, publishes after server success only, confirms replacements,
-and supports direct unpublish. Old `powerlab:pub` file marks no longer claim a
-week is live. Live status comes from Firebase; movement is refreshed from the
-last shared snapshot before publishing and matched by manager code. Readers
-refresh on tab entry, repeated Rankings taps, and foreground return. All seasons remain selectable. Failed shared reads fall back to
-legacy files with an explicit warning; empty Firebase is authoritative, so a
-removed week cannot return from a legacy file during a successful read.
+`rankings-editor.js` adds Edit rankings / Unpublish to the members' Rankings tab
+only on the publisher's device (or offers sign-in on a locally unlocked owner
+device). Ordinary members read the same table and have no controls. Edits open
+the selected saved snapshot, including its season, and preserve stats/date.
+Changing order recalculates movement against the preceding published week.
+Writes and deletions explicitly target the selected year/week and require the
+ETag, so old-season edits cannot overwrite the current year's same-numbered week.
+Draft edits use `lh:ranking-edit:{year}:{week}` and restore only when the original
+published revision still matches. Foreground refresh never destroys an editor.
+Unpublishing still requires confirmation; routine saving is one action.
 
-**Supersedes file-export publishing descriptions below:** older sections about
-`pr-publish`, `pubStateHTML`, the three copy fields, repo commits, and file-based
-unpublishing are historical. Sharing a link/text/image remains supported. The
-legacy JSON/export helpers remain for backward compatibility but are no longer
-wired to Publish. `rankings/index.json` is only an outage fallback.
+The Lab uses the same remembered session and reusable sign-in form. The initial
+sign-in continues the pending publish; subsequent weeks need only Publish.
+Clearing site data, signing out, private-session expiry or account revocation can
+require sign-in again. No additional database-rules change is needed for v84.
+
+User was guided through publisher rules/account setup in this conversation.
+Production authenticated writes are not performed by development tests.
+`node checks.js` and `publishing.test.cjs` pass with jsdom/mocked Firebase,
+including login restoration, refresh/revocation, shared-view edits/unpublish,
+member controls, conflict handling, and original snapshot preservation.
+
+### v83 — Direct ranking publishing (historical; sign-in superseded in v84)
+
+v83 replaced the manual JSON/commit workflow with authenticated Firebase writes
+and corrected false published confirmations. Its session was memory-only;
+v84 replaces that part. `rankings/index.json` remains an outage fallback with an
+explicit stale-data message. Firebase is authoritative whenever reachable.
+Older sections below describing file exports or copying publish data to chat are
+superseded. No model run happens in a member's Rankings view: these are snapshots.
 
 ## Files
 

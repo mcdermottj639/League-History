@@ -413,3 +413,12 @@ body.pr-page {
 .pr-np .pr-btn { width: 100%; margin-top: 10px; }
 .pr-np-n { font-size: 12px; color: var(--accent); font-weight: 700; margin: 8px 0 0; }
 .pr-np-n:empty { display: none; }
+
+/* Shared-view publishing controls: thumb-sized buttons and iOS-safe fields. */
+.pr-publisher-login { text-align: left; }
+.pr-publisher-login input { box-sizing: border-box; font-size: 16px; width: 100%; }
+.lg-ranking-edit .pr-row { display: block; }
+.lg-ranking-edit textarea { box-sizing: border-box; width: 100%; font-size: 16px; }
+.lg-ranking-move { display: flex; gap: 8px; margin-top: 8px; }
+.lg-ranking-move .pr-btn { flex: 1; width: auto; margin: 0; }
+.lg-ranking-edit button:disabled { opacity: .5; cursor: default; }

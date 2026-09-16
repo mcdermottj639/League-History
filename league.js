@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v83';
+  const APP_VERSION = 'v84';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -480,6 +480,7 @@
           : 'Preseason — pure opinion, no games played yet.'}</p>
       </div>
       ${pick}
+      <div id="lg-ranking-controls"></div>
       <ol class="pr-list">${rankRowsHTML(p)}</ol>
       <div class="ffp-card"><p class="ffp-cap">⚠️ <b>The order is one person's opinion.</b> The model that pre-builds it weights all-play win%, points per game and the last three weeks — but a power ranking has no graded outcome, so nothing here is validated the way a betting model would be. Rows that were moved say where the numbers had them.</p></div>`;
   }
@@ -518,7 +519,8 @@
     if (requestId !== rankingRequest || (host.dataset.view && host.dataset.view !== "rank")) return;
     if (!weeks.length) {
       host.innerHTML = `<h2 class="section-title">🏆 Power Rankings</h2>
-      <div class="ffp-card"><div class="ffp-empty">${WK_EMPTY[S.wkErr] || WK_EMPTY.none}</div></div>`;
+      <div class="ffp-card"><div class="ffp-empty">${WK_EMPTY[S.wkErr] || WK_EMPTY.none}</div></div><div id="lg-ranking-controls"></div>`;
+      mountRankingControls(null);
       return;
     }
     if (!S.week || !weeks.some((w) => w.f === S.week)) S.week = weeks[0].f;
@@ -556,9 +558,18 @@
       host.innerHTML = wkBad();
       return;
     }
+    mountRankingControls(p);
     const sel = $('#lg-wksel');
     if (sel) sel.onchange = () => { S.week = sel.value; paint(); };
   }
+
+  function mountRankingControls(p) {
+    const host = $('#lg-ranking-controls');
+    if (host && window.RankingsEditor) window.RankingsEditor.mount(host, p && sharedWeeks.has(S.week) ? p : null, async () => { if (S.view !== 'rank') return; await paintRankings($('#lg-body')); buildJump(); });
+  }
+  window.addEventListener('publisher-session-changed', () => {
+    if (S.view === 'rank' && !(window.RankingsEditor && window.RankingsEditor.editing())) paint();
+  });
 
   /* ══ JUMP NAV ══════════════════════════════════════════════════════════
      One chip per card on the page, tapping straight to it.
@@ -637,7 +648,7 @@
      at each width — nothing else can.
      The ? sheet builds its tab list FROM this array, so it follows a rename
      with no second edit. */
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && S.view === 'rank') paint(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && S.view === 'rank' && !(window.RankingsEditor && window.RankingsEditor.editing())) paint(); });
 
   const L1 = [['hist', 'History'], ['season', 'Season'], ['rank', 'Rankings'], ['parlay', 'Parlay']];
 
@@ -753,6 +764,8 @@
          out was there ("‹ Back to the league") but a control that is on
          screen, highlighted, and silent when tapped reads as a broken app
          rather than as the wrong control. */
+      if (l1.dataset.l1 === 'rank' && S.view === 'rank' && window.RankingsEditor && window.RankingsEditor.editing()) return;
+      if (window.RankingsEditor) window.RankingsEditor.reset();
       if (l1.dataset.l1 !== S.view || S.prof || S.view === 'rank') {
         S.view = l1.dataset.l1; S.prof = null; paint(); window.scrollTo({ top: 0 });
       }

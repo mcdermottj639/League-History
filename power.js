@@ -648,31 +648,19 @@ function paintPubState() {
   const signout = $('#pr-signout');
   if (signout) signout.onclick = () => { window.RankingStore.signOut(); paintPubState(); };
 }
-function publishingSignIn() {
-  const host = $('#pr-share-out');
-  host.innerHTML = `<form id="pr-login" class="pr-share-out">
-    <b>Sign in to publish</b><p class="pr-note">Use your Firebase publisher account. Your password stays out of the rankings and is not saved on this device.</p>
-    <label>Firebase Web API key<input id="pr-api" required autocomplete="off" style="font-size:16px;width:100%"></label>
-    <label>Email<input id="pr-email" type="email" required autocomplete="username" style="font-size:16px;width:100%"></label>
-    <label>Password<input id="pr-password" type="password" required autocomplete="current-password" style="font-size:16px;width:100%"></label>
-    <button class="pr-btn" type="submit">Sign in</button><p id="pr-login-status" role="status"></p>
-    <p class="pr-note">First time? <a href="PUBLISHING_SETUP.md" target="_blank">One-time publisher setup</a>.</p></form>`;
-  try { $('#pr-api').value = localStorage.getItem('lh:publisher-api') || ''; } catch (_) {}
-  $('#pr-login').onsubmit = async e => {
-    e.preventDefault(); const btn = e.target.querySelector('button'); btn.disabled = true;
-    try {
-      await window.RankingStore.signIn($('#pr-api').value.trim(), $('#pr-email').value.trim(), $('#pr-password').value);
-      try { localStorage.setItem('lh:publisher-api', $('#pr-api').value.trim()); } catch (_) {}
-      host.innerHTML = '<p class="pr-note">Signed in. Tap Publish when your rankings are ready.</p>';
-      paintPubState();
-    } catch (err) { $('#pr-login-status').textContent = err.message; }
-    finally { btn.disabled = false; }
-  };
+function publishingSignIn(remove = false) {
+  window.RankingStore.signInForm($('#pr-share-out'), async () => { paintPubState(); await saveLiveWeek(remove); });
 }
 async function saveLiveWeek(remove = false) {
   if (publishBusy) return;
-  if (!window.LeagueOwner.is()) { toast('Only the publisher can publish to the app. Share your draft with them.'); return; }
-  if (!window.RankingStore.signedIn()) { publishingSignIn(); return; }
+  if (!window.LeagueOwner.is() && !window.RankingStore.signedIn()) { toast('Only the publisher can publish to the app. Share your draft with them.'); return; }
+  if (!window.RankingStore.signedIn()) {
+    await window.RankingStore.restore();
+    if (!window.RankingStore.signedIn()) {
+      if (window.RankingStore.hasSession()) { $('#pr-share-out').textContent = 'Could not reconnect your saved sign-in. Check your connection and try again.'; return; }
+      publishingSignIn(remove); return;
+    }
+  }
   publishBusy = true;
   const button = $('#pr-publish'); if (button) button.disabled = true;
   const key = S.key, p = remove ? null : payload();
@@ -2316,6 +2304,7 @@ async function boot() {
      further invites; those are different questions and stay different. */
   if (!window.LeagueOwner || !window.LeagueOwner.mayLab()) { paintGate(''); return; }
   guestBanner();
+  window.RankingStore.restore().then(paintPubState);
   refreshPublished().catch(() => { liveWeeks = null; paintPubState(); });
 
   /* 🚨 CACHE FIRST, THEN REVALIDATE (v25). The device has held the last good
@@ -2382,7 +2371,7 @@ async function revalidate() {
 }
 
 function repaintUnlessTyping() {
-  if (publishBusy || $('#pr-login')) return;
+  if (publishBusy || $('.pr-publisher-login')) return;
   const a = document.activeElement;
   if (a && a.classList && a.classList.contains('pr-take')) {
     a.addEventListener('blur', () => paintRank(), { once: true });
