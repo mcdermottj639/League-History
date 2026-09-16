@@ -5,3 +5,10 @@ _drive.html
 # rebuilt from index.html on every run. Never committed — a second copy of
 # the app in the repo is exactly the thing this project has a rule against.
 _drv.html
+
+# Parlay service data / private organizer launch material
+*.sqlite*
+*.db*
+.env*
+parlay-private/
+node_modules/

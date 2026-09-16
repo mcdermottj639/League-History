@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v90';
+  const APP_VERSION = 'v91';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -238,6 +238,12 @@
     $('#lg-app').hidden = true;
     window.scrollTo({ top: 0 });
   }
+
+  window.addEventListener('parlay-organizer-ready', () => {
+    writeMe('Zach');
+    LH.setMe('Zach');
+    paintHead();
+  });
 
   function choose(m) {
     writeMe(m);
@@ -814,7 +820,8 @@
     /* First ever open with nobody picked → the picker IS the front door.
        After that it never asks again, even with no name chosen, because a
        prompt that returns every visit is a nag rather than an invitation. */
-    if (!me && !skipped()) showPicker(false);
+    if (window.ParlayNext?.entry) S.view = 'parlay';
+    if (!me && !skipped() && !window.ParlayNext?.entry) showPicker(false);
     else { $('#lg-app').hidden = false; paint(); }
     paintHead();
     labLink();

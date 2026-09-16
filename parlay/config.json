@@ -1,0 +1,7 @@
+{
+  "enabled": false,
+  "api": "",
+  "year": 2026,
+  "preview": false,
+  "note": "Launch gate. Enable only after durable service, organizer link, migration and background collector checks pass. The local preview server overrides this response."
+}

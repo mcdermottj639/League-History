@@ -8,7 +8,9 @@ The **Nectars Bolonga** fantasy football league's own app: thirteen seasons of
 history (2013–2025), the **season being played right now** (v39), the
 **weekly power rankings** the commissioner publishes, and the **weekly group
 parlay** the twelve of them put on together (v69). It is a **pure static browser app** — HTML/CSS/vanilla JS, no build
-step, no framework, no backend, no API keys — served from GitHub Pages.
+step and no framework — served from GitHub Pages. The currently active parlay
+uses its legacy Firebase flow; an optional, disabled Node/SQLite Parlay v2 service
+is prepared in v91 (see below).
 
 Live URL: **https://mcdermottj639.github.io/League-History/**
 (⚠️ Pages must be enabled by hand: Settings → Pages → Deploy from branch →
@@ -84,6 +86,38 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 - ⚠️ **This repo is PUBLIC.** Everything in it — real first names, the takes,
   the team names — is world-readable. That was the owner's setting, not an
   accident, but weigh it before adding anything new about a person.
+
+## v91 — Prepared Parlay v2 (disabled; not launched)
+
+**Do not merge or enable without Jack's launch instruction.** This section
+supersedes v89's parlay architecture only when `parlay/config.json` enables v2.
+All legacy parlay sections below continue to describe the currently active app.
+
+- `parlay-next.js` wraps `LeagueParlay.paint`; disabled/missing config delegates
+  unchanged to the legacy implementation. New CSS is scoped under `.pn`.
+- Picks → Ticket → Season. Compact spread/total/moneyline board; live tracking;
+  $10 stake, prior week's low-score reimbursement, individual/weekly history.
+- Node 24 `server/app.mjs`, domain/engine/store/collector modules and persistent
+  SQLite own v2 state. Atomic game reservations, revisions, role-checked writes,
+  immutable last-observed pregame snapshots, public-source background collection.
+- Source: DraftKings **via ESPN**, not a direct/live-guaranteed DraftKings feed.
+  No fabricated prices. Props/missing data need explicit review. Tracker amounts
+  are not the actual placed ticket; Zach places the bet outside the app.
+- Organizer capability links are private, hash-verified by the service, exchanged
+  for random sessions and removed from the URL. Selecting Zach's name is never
+  authorization. Ordinary members keep the existing trusted name-selection model.
+- New localStorage keys: `lh:parlay-session:v2` (role/token/expiry) and
+  `lh:parlay-state:v2` (read-only last snapshot, API-scoped). No capability key
+  lives in repo/config/storage. `league.js` routes invite entry to Parlay.
+- `scripts/preview-parlay.mjs` runs isolated fixtures; `server/*.test.mjs` covers
+  both service behavior and frontend rendering. `scripts/create-organizer.mjs`
+  writes private launch packets OUTSIDE the repo; `scripts/import-parlay.mjs`
+  imports an authorized offline legacy export. No automatic private-source reads.
+- `scripts/check-parlay-launch.mjs`, `server/Dockerfile`, `server/railway.json`
+  and `PARLAY_RELEASE.md` document deployment, durable storage and safe cutover.
+- No merge/deployment/live data change occurred. Private Firebase migration read
+  was blocked by approval review and was not retried. Browser localhost was
+  blocked; mobile visual QA remains pending. See release document for gates.
 
 ## v90 — Accurate season narratives and member storylines (current state)
 
