@@ -93,8 +93,10 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 supersedes v89's parlay architecture only when `parlay/config.json` enables v2.
 All legacy parlay sections below continue to describe the currently active app.
 
-- `parlay-next.js` wraps `LeagueParlay.paint`; disabled/missing config delegates
-  unchanged to the legacy implementation. New CSS is scoped under `.pn`.
+- `parlay-next.js` wraps `LeagueParlay.paint`; explicit disabled config delegates
+  to the legacy implementation only on devices that have never enabled v2.
+  Config failures stay read-only/retryable. `data-parlay-mode` also prevents
+  legacy background renders/writes from taking over an upgraded view. New CSS is scoped under `.pn`.
 - Picks → Ticket → Season. Compact spread/total/moneyline board; live tracking;
   $10 stake, prior week's low-score reimbursement, individual/weekly history.
 - Node 24 `server/app.mjs`, domain/engine/store/collector modules and persistent
@@ -107,17 +109,29 @@ All legacy parlay sections below continue to describe the currently active app.
   for random sessions and removed from the URL. Selecting Zach's name is never
   authorization. Ordinary members keep the existing trusted name-selection model.
 - New localStorage keys: `lh:parlay-session:v2` (role/token/expiry) and
-  `lh:parlay-state:v2` (read-only last snapshot, API-scoped). No capability key
+  `lh:parlay-state:v2` (read-only last snapshot, API-scoped), and
+  `lh:parlay-enabled:v2` (last enabled config; prevents unsafe legacy fallback).
+  Sessions are scoped to the service/season and organizer controls wait for
+  server verification. No capability key
   lives in repo/config/storage. `league.js` routes invite entry to Parlay.
 - `scripts/preview-parlay.mjs` runs isolated fixtures; `server/*.test.mjs` covers
   both service behavior and frontend rendering. `scripts/create-organizer.mjs`
   writes private launch packets OUTSIDE the repo; `scripts/import-parlay.mjs`
   imports an authorized offline legacy export. No automatic private-source reads.
-- `scripts/check-parlay-launch.mjs`, `server/Dockerfile`, `server/railway.json`
+- `scripts/activate-parlay.mjs` makes a verified SQLite backup, requires explicit
+  frozen-legacy/reconciled-migration assertions and activates only the current
+  imported week with zero unresolved rows. Import alone never enables writes.
+  `scripts/check-parlay-launch.mjs`, `server/Dockerfile`, `server/railway.json`
   and `PARLAY_RELEASE.md` document deployment, durable storage and safe cutover.
+- `npm ci --ignore-scripts` then `npm test` runs reproducible pinned jsdom
+  whole-app member/organizer tests, service tests and all existing suites. Tests
+  use fixtures only. Clear/re-add revisions remain monotonic; delayed saves
+  capture their member/week; shared pick links keep their original entry visible.
 - No merge/deployment/live data change occurred. Private Firebase migration read
   was blocked by approval review and was not retried. Browser localhost was
-  blocked; mobile visual QA remains pending. See release document for gates.
+  blocked; mobile visual QA remains pending. A read-only Railway agent capability
+  query scoped to Sports-Hub was also blocked by automatic approval review; it
+  was not retried. Separate hosting needs explicit approval. See release gates.
 
 ## v90 — Accurate season narratives and member storylines (current state)
 

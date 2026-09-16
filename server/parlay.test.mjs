@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Store} from './store.mjs';
 import {parseScoreboard,ticket,result,ROSTER} from './domain.mjs';
-import {ensure,ingest,savePick,importLegacy,payerFromScores,publicWeek} from './engine.mjs';
+import {ensure,ingest,savePick,importLegacy,payerFromScores,publicWeek,activateRelease} from './engine.mjs';
 import {createApp,hash} from './app.mjs';
 import {Collector} from './collector.mjs';
 const T=Date.UTC(2026,8,20,16,0),K=T+3600000;
@@ -35,7 +35,28 @@ test('disk restart preserves picks and hashed organizer sessions; capability rot
 test('production blocks picks before offline migration; competing requests reserve one game only',async()=>{
  const s=setup(),app=createApp({store:s,organizerHash:hash('key'),clock:()=>T});await new Promise(r=>app.listen(0,'127.0.0.1',r));const base=`http://127.0.0.1:${app.address().port}/api/parlay/`;
  const post=(path,b,token)=>fetch(base+path,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify(b)});
- try{const a=await(await post('session',{member:'McD'})).json(),b=await(await post('session',{member:'Hurd'})).json();assert.equal((await post('pick',{year:2026,week:2,...pick()},a.token)).status,503);importLegacy(s,2026,2,{},T);
+ try{const a=await(await post('session',{member:'McD'})).json(),b=await(await post('session',{member:'Hurd'})).json();assert.equal((await post('pick',{year:2026,week:2,...pick()},a.token)).status,503);importLegacy(s,2026,2,{},T);activateRelease(s,2026,2,{legacyWritesFrozen:true,migrationReconciled:true,backupVerified:true},T);
  const results=await Promise.all([post('pick',{year:2026,week:2,...pick()},a.token),post('pick',{year:2026,week:2,...pick('Hurd')},b.token)]);assert.deepEqual(results.map(r=>r.status).sort(),[200,409]);assert.equal(Object.keys(s.read().seasons[2026].weeks[2].picks).length,1);assert.equal((await post('demo',{stage:'won'})).status,404);
  }finally{await new Promise(r=>app.close(r));s.close();}
+});
+
+test('clearing and re-adding does not allow stale edits to reuse an old revision',()=>{
+ const s=setup();savePick(s,2026,2,member('McD'),pick(),T);savePick(s,2026,2,member('McD'),pick('McD',{clear:true,revision:1}),T);
+ assert.throws(()=>savePick(s,2026,2,member('McD'),pick(),T),/changed/);savePick(s,2026,2,member('McD'),pick('McD',{revision:2}),T);assert.throws(()=>savePick(s,2026,2,member('McD'),pick('McD',{clear:true,revision:1}),T),/changed/);assert.equal(s.read().seasons[2026].weeks[2].picks.McD.revision,3);s.close();
+});
+test('missing game in a fresh board cannot use its stale price',()=>{
+ const s=setup();const p=payload([event('g2',K+3600000)]);ingest(s,2026,2,p,T+300001);assert.throws(()=>savePick(s,2026,2,member('McD'),pick(),T+300002),/stale/);s.close();
+});
+test('legacy props are never classified as game totals; unknown original rows retained',()=>{
+ const s=setup();importLegacy(s,2026,2,{McD:{p:'PHI Hurts over 60.5 rushing yards',o:-110},Unknown:{p:'Keep original',o:100}},T);const w=s.read().seasons[2026].weeks[2];assert.equal(w.picks.McD.market,'prop');assert.equal(w.legacyExport.Unknown.p,'Keep original');assert.equal(w.unmapped.length,1);assert.throws(()=>activateRelease(s,2026,2,{legacyWritesFrozen:true,migrationReconciled:true,backupVerified:true},T),/Resolve/);s.close();
+});
+test('delayed launch cannot activate using an imported earlier week',()=>{
+ const s=setup();importLegacy(s,2026,2,{},T);s.transact(state=>{ensure(state,2026,3);state.seasons[2026].current=3;});assert.throws(()=>activateRelease(s,2026,2,{legacyWritesFrozen:true,migrationReconciled:true,backupVerified:true},T),/current week/);assert.throws(()=>activateRelease(s,2026,3,{},T),/Import/);s.close();
+});
+
+test('authorized cutover command verifies a SQLite backup before enabling writes',async()=>{
+ const {mkdtempSync,rmSync}=await import('node:fs');const {tmpdir}=await import('node:os');const {join}=await import('node:path');const {execFileSync}=await import('node:child_process');const {seedPreview}=await import('./preview.mjs');
+ const dir=mkdtempSync(join(tmpdir(),'parlay-cutover-')),db=join(dir,'state.sqlite'),backupPath=join(dir,'backup.sqlite');let s=new Store(db);seedPreview(s);s.close();
+ try{execFileSync(process.execPath,['scripts/activate-parlay.mjs','--db',db,'--year','2026','--week','2','--backup',backupPath,'--legacy-writes-frozen','--migration-reconciled'],{stdio:'pipe'});s=new Store(db);assert.equal(s.read().seasons[2026].release.cutoverWeek,2);s.close();const backup=new Store(backupPath);assert.equal(Object.keys(backup.read().seasons[2026].weeks[2].picks).length,4);assert.equal(backup.read().seasons[2026].release,undefined);backup.close();}
+ finally{rmSync(dir,{recursive:true,force:true});}
 });

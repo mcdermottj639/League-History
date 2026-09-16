@@ -8,5 +8,5 @@ const health=await get('/health'),state=await get('/api/parlay/state');
 if(health.preview||state.preview)throw Error('Launch blocked: preview service cannot be production.');
 const current=state.weeks.find(w=>w.week===state.current);
 if(!current||Date.now()-current.updatedAt>300000||current.feedError)throw Error('Launch blocked: no fresh live board.');
-const ready=await get('/api/parlay/readiness');if(!ready.imported||!ready.collectorEnabled||!ready.durableStorage)throw Error('Launch blocked: migration, background collector or durable storage not ready.');
+const ready=await get('/api/parlay/readiness');if(!ready.imported||!ready.writable||ready.unresolved||!ready.collectorEnabled||!ready.durableStorage)throw Error('Launch blocked: migration, background collector or durable storage not ready.');
 console.log('Service readiness checks passed. Organizer access, restart persistence, authorized migration reconciliation and cutover rules still require release verification. No merge performed.');

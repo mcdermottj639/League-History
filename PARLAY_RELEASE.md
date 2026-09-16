@@ -61,20 +61,18 @@ The preview scenario selector switches before/live/lost/won fixtures. It has no
 production reads/writes. Organizer behavior is covered by service tests; the
 preview's test-only capability is defined in that script. Never use it in hosting.
 
-Validation (the existing publishing suite also requires the `jsdom` test dependency):
+Validation (Node 24; pinned development-only jsdom dependency):
 
 ```sh
-node --test server/*.test.mjs
-node checks.js
-node storylines.test.cjs
-node rankings-view.test.cjs
-node publishing.test.cjs
+npm ci --ignore-scripts
+npm test
 ```
 
 The browser tool in the build environment blocked localhost with
 `ERR_BLOCKED_BY_CLIENT`; mobile visual verification remains an explicit launch
-check. DOM-level frontend tests cover tab order, six-market rendering, legacy
-fallback and preview scenario repaint, but do not substitute for visual QA.
+check. Whole-app jsdom tests exercise all twelve member identities, organizer link
+exchange, remembered/revoked access, member-attributed saves, offline/retry
+behavior and late navigation responses. These do not substitute for visual QA.
 
 ## Private organizer link
 
@@ -115,7 +113,8 @@ PARLAY_API_URL=https://<new-service-domain>
 `PARLAY_PREVIEW` must be absent in production. The entrypoint is
 `node server/app.mjs`, with host `0.0.0.0` and platform `PORT`. Health: `/health`.
 The durable-storage flag is an operator assertion, not proof of a mounted volume.
-Readiness requires migration, collector and storage flags; manually verify the
+Readiness requires current-week migration, explicit cutover activation, zero
+unresolved entries, collector and storage flags; manually verify the
 volume and collector freshness too. The GitHub Pages app will continue to serve
 static assets while the configured HTTPS service owns shared state and writes.
 
@@ -144,7 +143,17 @@ Only after Jack explicitly says to launch/merge:
    invents historical kickoff quotes. Existing archived weeks require explicit
    import/reconciliation if any have been added since this branch was prepared.
    Do not overwrite newer picks with an older export. The importer is one-time.
-5. Run `node scripts/check-parlay-launch.mjs https://<new-service-domain>` and
+5. With explicit launch authorization and legacy writes already frozen, back up
+   and activate service writes (import alone remains read-only):
+
+   ```sh
+   node scripts/activate-parlay.mjs --db /data/parlay.sqlite --year 2026 --week 2 --backup /data/backups/pre-cutover.sqlite --legacy-writes-frozen --migration-reconciled
+   ```
+
+   This command verifies the new backup and refuses an old imported week,
+   unresolved original rows, or a stale board. Use a new backup filename.
+   It does not freeze Firebase itself: the flags attest to verified cutover work.
+   Run `node scripts/check-parlay-launch.mjs https://<new-service-domain>` and
    verify organizer access privately, member boundaries and current-week state.
 6. Set `parlay/config.json` to `enabled: true`, the service's HTTPS `api` origin,
    and `year: 2026`; rerun checks. Merge only with the user's launch authorization.
@@ -155,3 +164,41 @@ If the season/week changes before launch, review the start-week and import plan;
 do not blindly import Week 2 or drop interim weeks. Do not launch with two writable
 pick stores. Rollback after new-service edits needs a reconciled export back to
 the old store; simply flipping the frontend gate would lose sight of newer picks.
+
+## Second-pass release audit
+
+Fixed during the review:
+
+- No silent fallback to an old writable list when config/network fails; a
+  previously upgraded device keeps its cached tracker read-only until recovery.
+- Slow config and save responses cannot repaint History or write a different
+  member/week after navigation. Legacy listeners yield to the upgraded view.
+- Organizer controls require server validation, sessions are API/season scoped,
+  temporary invite failures can retry, and the link identifies Zach automatically.
+- Clear/re-add revisions cannot reuse an old version and accept stale edits.
+- A missing game in an otherwise fresh scoreboard cannot reuse a stale quote.
+- Props are not misread as game totals by migration. Original exports are retained,
+  including unknown/conflicting rows; unresolved rows prevent cutover activation.
+- Delayed NFL games continue being collected across weekly rollovers. Discovery
+  cannot move the open week backwards. Wrong-year fantasy responses are rejected.
+- An earlier week's import cannot unlock a later launch. Service writes need
+  explicit cutover evidence plus a verified SQLite backup.
+
+### Actual remaining blockers — do not claim merge-only readiness
+
+No production service, volume, domain, or organizer session has been created.
+Automatic approval review rejected a read-only Railway agent capability query
+because it was scoped to the existing Sports-Hub production project and the
+open-ended agent can mutate that project. It was not retried or routed around.
+Ask for explicit approval to provision a **separate** League-History service;
+do not mutate Sports-Hub. The earlier private Firebase read rejection also
+still stands: an authorized read is needed to rehearse the real migration.
+
+Before calling this merge-ready: provision isolated hosting with a persistent
+volume/backups, verify the private link on that service, check mobile rendering,
+and rehearse migration against an explicitly authorized read-only export. Do
+not freeze live writes or activate cutover until the future launch instruction.
+At that instruction, refresh/reconcile the export for the then-current week,
+perform the verified cutover, enable frontend config, merge, and check Pages.
+A future merge must recheck current main/version numbers so concurrent work is
+preserved. Merging this branch unchanged today leaves v2 disabled.

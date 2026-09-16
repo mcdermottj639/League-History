@@ -1,7 +1,7 @@
 // Parlay domain logic. Shared calculations never assume a missing price or result.
 export const ROSTER = ['McD','CC','Hurd','Hyman','Christel','Woods','Zach','Buley','Wolff','Riz','Slemp','Gotch'];
 export const STAKE = 10;
-export const number = v => v === null || v === undefined || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null;
+export const number = v => v === null || v === undefined || (typeof v==='string'&&v.trim()==='') ? null : Number.isFinite(Number(v)) ? Number(v) : null;
 export const odds = v => { const n=number(String(v ?? '').replace(/[−–]/g,'-')); return n!==null && Math.abs(n)>=100 ? n : null; };
 export const decimal = n => n>0?1+n/100:1+100/-n;
 export const sign = n => n>0?'+'+n:String(n);
@@ -53,7 +53,7 @@ export function progress(p,g){
   return margin>0?`Leading by ${margin}`:margin<0?`Trailing by ${-margin}`:'Tied';
 }
 export function ticket(picks,games,now=Date.now(),stake=STAKE){
-  const legs=picks.map(p=>{const g=games.find(g=>g.id===p.gameId);return {...p,result:result(p,g),game:g?{away:g.away,home:g.home,awayScore:g.awayScore,homeScore:g.homeScore,kick:g.kick,detail:g.detail,seenAt:g.seenAt}:null,progress:progress(p,g)};});
+  const legs=picks.map(p=>{const g=games.find(g=>g.id===p.gameId);return {...p,result:result(p,g),game:g?{away:g.away,home:g.home,awayScore:g.awayScore,homeScore:g.homeScore,kick:g.kick,state:g.state,completed:g.completed,status:g.status,detail:g.detail,seenAt:g.seenAt}:null,progress:progress(p,g)};});
   const hit=legs.filter(l=>l.result==='hit').length,miss=legs.filter(l=>l.result==='miss').length,push=legs.filter(l=>l.result==='push').length;
   const settled=legs.length>0&&legs.every(l=>['hit','miss','push'].includes(l.result));
   const priced=legs.filter(l=>l.result!=='push'),known=priced.every(l=>odds(l.quote?.odds)!==null&&!l.missingQuote);
@@ -67,7 +67,7 @@ export function migratePick(m,row,games){
   const text=String(row.p||''),tokens=text.toUpperCase().split(/[^A-Z0-9]+/),matches=games.filter(g=>tokens.includes(g.away)||tokens.includes(g.home));
   if(matches.length!==1)return {member:m,original:{label:text,odds:odds(row.o)},unmapped:true};
   const g=matches[0];let market='prop',side='',line=null;
-  const total=/\b(OVER|UNDER)\s*(\d+(?:\.\d+)?)/i.exec(text),ml=/\b([A-Z]{2,3})\s*(?:ML|MONEYLINE)\b/i.exec(text),spread=/\b([A-Z]{2,3})\s*([+-]\d+(?:\.\d+)?)/i.exec(text);
+  const total=/^[A-Z]{2,3}\/[A-Z]{2,3}\s+(OVER|UNDER)\s+(\d+(?:\.\d+)?)$/i.exec(text.trim()),ml=/^([A-Z]{2,3})\s+(?:ML|MONEYLINE)(?:\s+(?:vs|at)\s+[A-Z]{2,3})?$/i.exec(text.trim()),spread=/^([A-Z]{2,3})\s+([+-]\d+(?:\.\d+)?)(?:\s+(?:vs|at)\s+[A-Z]{2,3})?$/i.exec(text.trim());
   if(total){market='total';side=total[1].toLowerCase();line=+total[2];}else if(ml&&[g.home,g.away].includes(ml[1].toUpperCase())){market='ml';side=ml[1].toUpperCase();}else if(spread&&[g.home,g.away].includes(spread[1].toUpperCase())){market='spread';side=spread[1].toUpperCase();line=+spread[2];}
   return {member:m,gameId:g.id,market,side,description:market==='prop'?text:'',original:{label:text,odds:odds(row.o),line},quote:{label:text,odds:odds(row.o),line,observedAt:Number(row.t)||null,provider:'Legacy saved pick'},createdAt:Number(row.t)||null,imported:true,revision:1};
 }

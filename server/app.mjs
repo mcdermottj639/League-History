@@ -7,7 +7,7 @@ import {Store} from './store.mjs';
 import {seedPreview} from './preview.mjs';
 import {Collector} from './collector.mjs';
 import {ROSTER} from './domain.mjs';
-import {ensure,publicWeek,savePick,failure,lockDue} from './engine.mjs';
+import {ensure,publicWeek,savePick,failure,lockDue,writable} from './engine.mjs';
 export const hash=s=>createHash('sha256').update(String(s)).digest('hex');
 const ROOT=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 export function createApp({store,organizerHash,year=2026,startWeek=2,origins=[],preview=false,clock=Date.now,apiURL='',collectorEnabled=false,durableStorage=false}){
@@ -27,7 +27,7 @@ export function createApp({store,organizerHash,year=2026,startWeek=2,origins=[],
   try{
    const u=new URL(req.url,'http://local'),path=u.pathname;
    if(path==='/health')return json(res,200,{ok:true,preview,year});
-   if(path==='/api/parlay/readiness'){const s=store.read().seasons[year];return json(res,200,{preview,collectorEnabled,durableStorage,imported:!!s?.weeks[startWeek]?.imported});}
+   if(path==='/api/parlay/readiness'){const s=store.read().seasons[year];return json(res,200,{preview,collectorEnabled,durableStorage,imported:!!s?.weeks[s?.release?.cutoverWeek??s?.current]?.imported,writable:writable(s),cutoverWeek:s?.release?.cutoverWeek??null,unresolved:(s?.weeks[s?.current]?.unmapped||[]).length});}
    if(path==='/parlay/config.json')return json(res,200,{enabled:true,api:apiURL,year,preview});
    if(path==='/api/parlay/session'&&req.method==='POST'){
     const ip=req.socket.remoteAddress,now=clock(),lim=limits.get(ip)||{n:0,at:now};if(now-lim.at>60000){lim.n=0;lim.at=now;}lim.n++;limits.set(ip,lim);if(lim.n>40)throw failure('Too many attempts. Try again in a minute.',429);
@@ -39,16 +39,16 @@ export function createApp({store,organizerHash,year=2026,startWeek=2,origins=[],
    if(path==='/api/parlay/me') {const s=session(req);return json(res,200,{role:s.role,member:s.member,expires:s.expires});}
    if(path==='/api/parlay/state'&&req.method==='GET'){
     store.transact(s=>{const season=s.seasons[year];for(const w of Object.values(season.weeks))lockDue(w,clock());});
-    const s=store.read().seasons[year];return json(res,200,{v:2,year,current:s.current,roster:ROSTER,preview,weeks:Object.values(s.weeks).filter(w=>w.week>=startWeek).sort((a,b)=>b.week-a.week).map(w=>publicWeek(w,clock()))});
+    const s=store.read().seasons[year];return json(res,200,{v:2,year,current:s.current,roster:ROSTER,preview,writable:preview||writable(s),weeks:Object.values(s.weeks).filter(w=>w.week>=startWeek).sort((a,b)=>b.week-a.week).map(w=>publicWeek(w,clock()))});
    }
    if(path==='/api/parlay/demo'&&preview&&req.method==='POST'){const b=await body(req);if(!['before','live','lost','won'].includes(b.stage))throw failure('Unknown scenario');seedPreview(store,b.stage,clock());return json(res,200,{ok:true});}
    if(path==='/api/parlay/pick'&&req.method==='POST'){
     const actor=session(req),b=await body(req);if(b.year!==year||!Number.isInteger(b.week)||b.week<startWeek||b.week>18)throw failure('Invalid season or week');
-    const season=store.read().seasons[year],current=season?.current;if(!preview&&!season.weeks[startWeek]?.imported)throw failure('Launch migration is not complete. Picking remains on the current app.',503);if(b.week!==current)throw failure('Only the current week is open for picks.',409);
+    const season=store.read().seasons[year],current=season?.current;if(!preview&&!writable(season))throw failure('Launch migration is not complete. Picking remains on the current app.',503);if(b.week!==current)throw failure('Only the current week is open for picks.',409);
     return json(res,200,savePick(store,year,b.week,actor,b,clock()));
    }
    if(path==='/api/parlay/review'&&req.method==='POST'){
-    const actor=session(req);if(actor.role!=='organizer')throw failure('Organizer access required',403);const b=await body(req);
+    if(!preview&&!writable(store.read().seasons[year]))throw failure('The parlay is read-only until cutover is complete.',503);const actor=session(req);if(actor.role!=='organizer')throw failure('Organizer access required',403);const b=await body(req);
     if(b.year!==year||!Number.isInteger(b.week)||!ROSTER.includes(b.member)||!['hit','miss','push','pending'].includes(b.result))throw failure('Invalid review');
     const note=String(b.note||'').trim();if(note.length<5||note.length>300)throw failure('Include a short reason for this result.');
     store.transact(s=>{const w=s.seasons[year]?.weeks[b.week],p=w?.picks[b.member];if(!p?.lockedAt)throw failure('Only locked selections can be settled manually.');const g=w.games.find(g=>g.id===p.gameId);if(g?.state==='in'||(g?.state==='pre'&&clock()<g.kick))throw failure('Wait until the game finishes.');if(p.market!=='prop'&&!p.missingQuote&&g?.status==='STATUS_FINAL')throw failure('Standard final results are calculated automatically.');p.manualResult=b.result;p.reviewNote=note;w.audit.push({at:clock(),action:'review',member:b.member,result:b.result,note,by:'organizer'});});return json(res,200,{ok:true});
