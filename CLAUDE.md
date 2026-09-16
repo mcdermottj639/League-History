@@ -87,6 +87,21 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   the team names — is world-readable. That was the owner's setting, not an
   accident, but weigh it before adding anything new about a person.
 
+## v94 — Parlay readability pass
+
+Based on Jack's phone recording, Parlay uses 20px/700 headings, a 15px body,
+13px secondary copy and at least 44px controls. Picks combines the two member
+lists into one card, retaining every member and native expandable rows. Ticket
+puts tracked figures first, with reimbursement and clearly separated actual
+DraftKings odds inside the same summary card. Organizer inputs remain available.
+Upcoming games show kickoff times, not placeholder 0–0 scores. Shared freshness
+copy replaces repetitive per-pick timestamps; stale/missing quotes, delayed live
+scores, review notes and organizer attribution remain visible. Season displays
+one empty-record explanation and compact accessible dashes for unrecorded members.
+No backend, auth, links, saved picks, odds calculations or data migration changes.
+All 43 Parlay tests and the conservation, narrative, rankings and publishing
+suites pass. Jack authorized merge; this pass has not had a browser visual review.
+
 ## v93 — Week 2 launch and owner link directory
 
 Jack explicitly authorized launch and preserving all existing links. On
