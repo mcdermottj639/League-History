@@ -1,5 +1,5 @@
-Warning: truncated output (original token count: 123516)
-Total output lines: 6978
+Warning: truncated output (original token count: 123680)
+Total output lines: 6989
 
 # CLAUDE.md — Nectars Bolonga (League History)
 
@@ -116,6 +116,17 @@ records, a write-up and confidence. The owner-only link directory accepts a
 one-time `#owner-oracle-link=` handoff and saves **Hurd · Hurdstradamus
 editor** locally, exactly as it does Zach's private organizer link. Private
 capabilities never ship in this repository.
+
+## v101 — Oracle editor hardening
+
+The primary tab order is History → Season → Oracle → Rankings → Parlay. Before
+Hurd publishes, public readers see an explicit waiting-to-be-published state,
+like unpublished Rankings—not draft controls or a broken tab. Drafts may be
+saved incomplete; publishing is independently locked until all six scheduled
+matchups have valid winner, scores, records, write-up and confidence. This
+release bumps the app and service-worker cache version so all phones fetch the
+new Oracle behavior. The Hurd capability, Zach capability, owner-link entries,
+and normal league URL remain stable across later visual changes.
 
 ## v98 — Single public sharing control
 
@@ -875,16 +886,7 @@ superseded. No model run happens in a member's Rankings view: these are snapshot
     Both averages use identical playoff-game weights, avoiding different era
     mixes. Each row names its sample size and agrees with the playoff PPG card.
     This is descriptive scoring evidence, not proof of repeatable clutch skill.
-  - 🚨 **NO OTHER BRACKET W-L EXISTS (v19, owner's call:
-    *"Title brackets have to be changed to final 4s everywhere"*).** A
-    manager's playoff résumé is **final fours**, then finals, then titles.
-    - The data still files three brackets as `br`: **W** the championship
-      bracket (six teams — round 1, the final four, the final), **WC** the
-      placement ladder below it, **C** the consolation ladder for the six that
-      missed (GmC1-9, of which **GmC3 is the Cum Bowl** — round one, the 11
-      seed against the 12. ⚠️ **v66 moved it to `GmC9` and v79 moved it back
-      on the owner's word**; see the Cum Bowl section below).
-      None of them produces a W-L on a …93516 tokens truncated…e has at
+  - 🚨 **NO OTHER BRACKET W-L EXISTS (v…93680 tokens truncated…e has at
   least 2 storylines"*.
   - **Eight of the twelve had exactly one**, so eight people's own page was a
     single line — and, as always with this feature, the eight were the ones the
