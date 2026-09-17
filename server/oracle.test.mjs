@@ -40,3 +40,11 @@ test('private Hurd link is stripped, drafts save incomplete, and publish unlocks
  }
  assert.equal(a.host.querySelector('[data-or="publish"]').disabled,false);a.dom.window.close();
 });
+
+test('Hurd can privately preview unsaved work and return to the editor',async()=>{
+ const a=app('#oracle-editor='+'x'.repeat(43));await a.w.LeagueOracle.paint(a.host,()=> '');
+ a.host.querySelector('[data-or="preview"]').click();await new Promise(r=>setTimeout(r,0));
+ assert.match(a.host.textContent,/Private preview/i);assert.match(a.host.textContent,/Only Hurd can see this draft/i);assert.doesNotMatch(a.host.textContent,/Save draft/);
+ a.host.querySelector('[data-or="edit"]').click();await new Promise(r=>setTimeout(r,0));
+ assert.match(a.host.textContent,/Hurd editor/);assert.match(a.host.textContent,/Save draft/);a.dom.window.close();
+});

@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v101';
+  const APP_VERSION = 'v102';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -705,6 +705,8 @@
       S.prof = null;
       $('#lg-jump').hidden = true; $('#lg-jump').innerHTML = '';
       if (!window.LeagueOracle) { host.innerHTML = '<div class="ffp-card"><div class="ffp-empty"><b>Hurdstradamus did not load.</b>Reload the app and try again.</div></div>'; buildJump(); return; }
+      // Replace the previous tab synchronously while Oracle fetches its state.
+      host.innerHTML = '<div class="oracle"><section class="or-empty"><b>Opening Hurdstradamus…</b><p>Loading this week’s prophecies.</p></section></div>';
       window.LeagueOracle.paint(host, crest).then(buildJump, (e) => { console.error('[oracle] paint failed', e); buildJump(); });
       return;
     }
