@@ -1168,10 +1168,9 @@ function parlayLaws() {
      question is always which version they are running. The element and its
      one writer are asserted together; either alone would pass over a move
      that dropped the other. */
-  if (!/id="lg-ver"/.test(html0)) fail('index.html has no #lg-ver — the app cannot say which version it is running');
-  if (!/\$\('#lg-ver'\)/.test(fs.readFileSync('./league.js', 'utf8'))) {
-    fail('nothing in league.js writes the version into #lg-ver, so the slot renders empty');
-  }
+  if (/id="lg-ver"/.test(html0)) fail('Version must not appear in the main app footer');
+  const helpSource = fs.readFileSync('./league.js', 'utf8').split('function helpHTML()')[1]?.split('function openHelp()')[0] || '';
+  if (!helpSource.includes('id="lg-ver">${esc(APP_VERSION)}</span>')) fail('Help must show the current version at its bottom');
   if (!html0.includes(`parlay.js?v=${ver}`)) fail(`index.html does not load parlay.js?v=${ver}`);
 
   /* ── the arithmetic ─────────────────────────────────────────────────────

@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v98';
+  const APP_VERSION = 'v99';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -360,8 +360,9 @@
         <section class="lg-sh">
           <h3>Small print</h3>
           <p>Two managers are deliberately untracked, so a podium place held by one of them reads <b>not tracked</b> rather than a team name — the standings still show all twelve teams, because a 12-team league that renders 10 rows is lying.</p>
-          <p>The app works with no connection at all once it has loaded. You are on <b>${esc(APP_VERSION)}</b>.</p>
+          <p>The app works with no connection at all once it has loaded.</p>
         </section>
+        <p class="lg-ver-l">League History <span id="lg-ver">${esc(APP_VERSION)}</span></p>
       </div>
     </div>`;
   }
@@ -802,7 +803,6 @@
   }
 
   /* ══ BOOT ══════════════════════════════════════════════════════════════ */
-  const ver = $('#lg-ver'); if (ver) ver.textContent = APP_VERSION;
 
   if (!LH) {
     $('#lg-app').hidden = false;

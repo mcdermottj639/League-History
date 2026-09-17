@@ -87,6 +87,13 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   the team names — is world-readable. That was the owner's setting, not an
   accident, but weigh it before adding anything new about a person.
 
+## v99 — Version only in help
+
+The version stamp is removed from the main app footer and appears once, after
+Small print at the bottom of the question-mark help sheet. It still derives
+from APP_VERSION; deployment/cache versioning is unchanged. This supersedes
+v75's decision to show the stamp on every screen.
+
 ## v98 — Single public sharing control
 
 The question-mark sheet keeps its existing public Share the link control. The
@@ -3333,7 +3340,8 @@ stale entry written in the present tense reads as current to anyone who greps.
   the owner, two asks: *"Allow option to clear pick from selection just like
   the change pick option"* and *"Move the v75 or whatever v we are on to the
   bottom of page"*.
-  - 🔢 **The version leaves the masthead for the footer**, and the only
+  - ⚠️ SUPERSEDED in v99: version now appears only at the bottom of help.
+    🔢 **The version leaves the masthead for the footer**, and the only
     property that had to survive is that it is still on **every** screen —
     v12 exists because a "this looks wrong" report turned out to be a cached
     build, and the first question is always which one they are running.
