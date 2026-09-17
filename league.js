@@ -640,7 +640,7 @@
      with no second edit. */
   document.addEventListener('visibilitychange', () => { if (!document.hidden && S.view === 'rank' && !(window.RankingsEditor && window.RankingsEditor.editing())) paint(); });
 
-  const L1 = [['hist', 'History'], ['season', 'Season'], ['rank', 'Rankings'], ['parlay', 'Parlay'], ...(window.LeagueOracle?.available ? [['oracle', 'Oracle']] : [])];
+  const L1 = [['hist', 'History'], ['season', 'Season'], ...(window.LeagueOracle?.available ? [['oracle', 'Oracle']] : []), ['rank', 'Rankings'], ['parlay', 'Parlay']];
 
   function paint() {
     paintHead();

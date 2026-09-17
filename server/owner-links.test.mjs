@@ -35,3 +35,10 @@ test('private setup cannot grant owner access or expose a link to ordinary membe
  assert.equal(h.w.location.hash,'');assert.equal(h.host.innerHTML,'');assert.equal(h.w.localStorage.getItem('lh:owner-links:v1'),null);assert.equal(h.w.LeagueOwner.is(),false);h.dom.window.close();
  const invalid=setup(true,'#owner-parlay-link=invalid');assert.equal(invalid.w.location.hash,'');assert.equal(invalid.w.localStorage.getItem('lh:owner-links:v1'),null);invalid.dom.window.close();
 });
+test('Oracle owner setup saves Hurd separately and leaves Zach’s saved organizer link untouched',()=>{
+ const zach={label:'Zach · Parlay organizer',url:'https://league.test/League-History/#parlay-organizer='+'z'.repeat(43),status:'ready'};
+ const token='h'.repeat(43),h=setup(true,'#owner-oracle-link='+token,[zach]);
+ const rows=JSON.parse(h.w.localStorage.getItem('lh:owner-links:v1'));
+ assert.equal(rows.length,2);assert.deepEqual(rows[0],zach);assert.equal(rows[1].label,'Hurd · Hurdstradamus editor');assert.equal(rows[1].url,'https://league.test/League-History/#oracle-editor='+token);assert.equal(rows[1].status,'ready');
+ assert.match(h.host.textContent,/Hurd’s link is ready/);h.dom.window.close();
+});
