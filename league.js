@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v99';
+  const APP_VERSION = 'v100';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -290,6 +290,7 @@
     season: 'This year as it stands — the standings, ESPN\'s playoff odds, who you play next, and your season measured against your other thirteen.',
     rank: "The weekly power rankings — every team in order, with a take on each. Only during the season, and only once a set is published.",
     parlay: 'The weekly group parlay — one NFL bet each, all twelve on one ticket. Who picked what, how far it got, and who keeps landing their leg.',
+    oracle: 'Hurdstradamus — Hurd’s weekly matchup calls, projected scores, and the prophecy record.',
     hon: 'Championships and achievement — the trophy case, every champion, who is still waiting, seeds and upsets, and the champion\'s curse.',
     you: 'Your thirteen seasons — medals, Cum Bowls, your best and worst years.',
     rec: 'The league\'s numbers in one place — career standings, season and game records, playoff PPG, playoff appearances, final fours, and postseason scoring.',
@@ -337,7 +338,7 @@
           <p class="lg-share-n" id="lg-share-n" role="status"></p>
         </section>
 
-        ${isOwner() ? '<div id="lg-owner-links"></div>' : window.LeagueOwnerLinks?.setupRequested ? '<section class="lg-sh"><h3>Private link setup</h3><p>Open this setup link on your unlocked owner device to save Zach’s link. Selecting a name does not unlock owner access.</p></section>' : ''}
+        ${isOwner() ? '<div id="lg-owner-links"></div>' : window.LeagueOwnerLinks?.setupRequested ? `<section class="lg-sh"><h3>Private link setup</h3><p>Open this setup link on your unlocked owner device to save ${esc(window.LeagueOwnerLinks.setupLabel || 'the private link')}. Selecting a name does not unlock owner access.</p></section>` : ''}
         <section class="lg-sh">
           <h3>The tabs</h3>
           <div class="lg-sh-l">
@@ -639,7 +640,7 @@
      with no second edit. */
   document.addEventListener('visibilitychange', () => { if (!document.hidden && S.view === 'rank' && !(window.RankingsEditor && window.RankingsEditor.editing())) paint(); });
 
-  const L1 = [['hist', 'History'], ['season', 'Season'], ['rank', 'Rankings'], ['parlay', 'Parlay']];
+  const L1 = [['hist', 'History'], ['season', 'Season'], ['rank', 'Rankings'], ['parlay', 'Parlay'], ...(window.LeagueOracle?.available ? [['oracle', 'Oracle']] : [])];
 
   function paint() {
     paintHead();
@@ -698,6 +699,13 @@
       }
       window.LeagueParlay.paint(host, crest, { share: shareThing, url: appURL })
         .then(buildJump, (e) => { console.error('[parlay] paint failed', e); buildJump(); });
+      return;
+    }
+    if (S.view === 'oracle') {
+      S.prof = null;
+      $('#lg-jump').hidden = true; $('#lg-jump').innerHTML = '';
+      if (!window.LeagueOracle) { host.innerHTML = '<div class="ffp-card"><div class="ffp-empty"><b>Hurdstradamus did not load.</b>Reload the app and try again.</div></div>'; buildJump(); return; }
+      window.LeagueOracle.paint(host, crest).then(buildJump, (e) => { console.error('[oracle] paint failed', e); buildJump(); });
       return;
     }
     /* A profile is a drill-down out of the sub-tabs, not one of them — showing
@@ -826,6 +834,7 @@
        After that it never asks again, even with no name chosen, because a
        prompt that returns every visit is a nag rather than an invitation. */
     if (window.ParlayNext?.entry) S.view = 'parlay';
+    if (window.LeagueOracle?.entry) S.view = 'oracle';
     if (!me && !skipped() && !window.ParlayNext?.entry) showPicker(false);
     else { $('#lg-app').hidden = false; paint(); }
     paintHead();

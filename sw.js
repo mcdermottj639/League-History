@@ -3,7 +3,7 @@
 // app's own files pass through here; ESPN/X requests go straight to the network.
 // CACHE is versioned (bump it with APP_VERSION) so each deploy starts clean and
 // the activate handler can purge stale caches instead of letting them pile up.
-const CACHE = 'leaguehistory-v99';
+const CACHE = 'leaguehistory-v100';
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(
@@ -17,7 +17,7 @@ self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  if (url.pathname.includes('/api/parlay/')) return; // Never cache sessions or live parlay state.
+  if (url.pathname.includes('/api/parlay/') || url.pathname.includes('/api/oracle/')) return; // Never cache private sessions or live state.
   if (url.origin !== self.location.origin) return; // let ESPN/X/etc. hit the network directly
 
   e.respondWith(

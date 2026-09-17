@@ -2,3 +2,7 @@
 # No Supabase keys are shipped to the static league app.
 [functions.league-parlay]
 verify_jwt = false
+
+# Oracle uses a private capability exchanged for a server-verified editor session.
+[functions.league-oracle]
+verify_jwt = false

@@ -1,0 +1,5 @@
+{
+  "enabled": true,
+  "api": "https://oqrfdhoyyogjmiqmjhnp.supabase.co/functions/v1/league-oracle",
+  "year": 2026
+}
