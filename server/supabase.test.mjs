@@ -60,6 +60,10 @@ test('Edge organizer link, member boundaries, actual odds, revocation and inacti
  assert.equal((await b.request('api/parlay/placed-odds',{year:2026,week:1,odds:'+12,500',revision:0},admin.token)).status,200);
  assert.equal(b.store.read().seasons[2026].weeks[1].placedTicket.potentialReturn,1260);assert.equal(JSON.stringify(b.store.read().seasons[2026].weeks[1].picks),before);
  assert.equal((await b.request('api/parlay/placed-odds',{year:2026,week:1,odds:14000,revision:0},admin.token)).status,409);
+ b.store.transact(state=>{const w=state.seasons[2026].weeks[1],p=w.picks.Hurd,g=w.games.find(x=>x.id===p.gameId);g.kick=Date.UTC(2026,8,18,0,15);g.state='post';g.completed=true;g.status='STATUS_FINAL';g.homeScore=20;g.awayScore=24;p.lockedAt=g.kick;});
+ assert.equal((await b.request('api/parlay/reset',{year:2026,week:1},regular.token)).status,403);
+ assert.equal((await b.request('api/parlay/reset',{year:2026,week:1},admin.token)).status,200);
+ assert.equal(Object.keys(b.store.read().seasons[2026].weeks[1].picks).length,0);
  b.config.organizer_hash=await digest('replacement');assert.equal((await b.request('api/parlay/me',null,admin.token)).status,401);
  assert.equal((await b.request('api/parlay/me',null,regular.token)).status,200);
  assert.equal((await b.request('collect',{})).status,401);

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Store} from './store.mjs';
 import {parseScoreboard,ticket,result,ROSTER} from './domain.mjs';
-import {ensure,ingest,savePick,importLegacy,payerFromFantasy,payerFromScores,publicWeek,activateRelease} from './engine.mjs';
+import {ensure,ingest,savePick,resetParlay,importLegacy,payerFromFantasy,payerFromScores,publicWeek,activateRelease} from './engine.mjs';
 import {createApp,hash} from './app.mjs';
 import {Collector} from './collector.mjs';
 const T=Date.UTC(2026,8,20,16,0),K=T+3600000;
@@ -14,6 +14,28 @@ const member=m=>({member:m,role:'member'}),pick=(m='McD',extra={})=>({member:m,g
 test('exact six DK markets; unknown bookmaker, opening-only, missing prices never fabricated',()=>{assert.equal(parseScoreboard(payload(),T)[0].markets.length,6);const p=payload();p.events[0].competitions[0].odds[0].provider.name='Other';assert.equal(parseScoreboard(p,T)[0].markets.length,0);p.events[0].competitions[0].odds[0].provider.name='DraftKings';delete p.events[0].competitions[0].odds[0].total.over.close.odds;assert.equal(parseScoreboard(p,T)[0].markets.length,5);assert.equal(parseScoreboard(payload(),K+1)[0].markets.length,0);});
 test('reservations are game-wide; replacement preserves old until transaction succeeds; revision conflicts',()=>{const s=setup();savePick(s,2026,2,member('McD'),pick(),T);assert.throws(()=>savePick(s,2026,2,member('Hurd'),pick('Hurd',{market:'total',side:'under'}),T),/just picked/);assert.throws(()=>savePick(s,2026,2,member('McD'),pick('McD',{revision:1,gameId:'unknown'}),T),/closed/);assert.equal(s.read().seasons[2026].weeks[2].picks.McD.gameId,'g1');assert.throws(()=>savePick(s,2026,2,member('McD'),pick(),T),/changed/);savePick(s,2026,2,member('McD'),pick('McD',{revision:1,clear:true}),T);savePick(s,2026,2,member('Hurd'),pick('Hurd'),T);s.close();});
 test('organizer attribution, member boundary, kickoff denies edits and clears even with stale feed',()=>{const s=setup();assert.throws(()=>savePick(s,2026,2,member('McD'),pick('Hurd'),T),/own pick/);savePick(s,2026,2,{role:'organizer',member:'Zach'},pick('Hurd'),T);assert.equal(s.read().seasons[2026].weeks[2].picks.Hurd.addedBy,'organizer');assert.throws(()=>savePick(s,2026,2,member('Hurd'),pick('Hurd',{revision:1,clear:true}),K),/locked/);s.close();});
+test('first kickoff locks the whole ticket; only an organizer can reset after a final Thursday miss',()=>{
+ const s=newStore(),thu=Date.UTC(2026,8,18,0,15),before=thu-60000,after=thu+10800000,organizer={role:'organizer',member:'Zach'};
+ try{
+  const sunday=thu+259200000;ingest(s,2026,2,payload([event('thu',thu),event('sun',sunday)]),before);savePick(s,2026,2,member('McD'),{...pick('McD'),gameId:'thu'},before);
+  const final=payload([event('thu',thu),event('sun',sunday)]),c=final.events[0].competitions[0];c.status.type={state:'post',completed:true,name:'STATUS_FINAL'};c.competitors.find(x=>x.homeAway==='home').score='20';c.competitors.find(x=>x.homeAway==='away').score='24';ingest(s,2026,2,final,after);
+  const w=publicWeek(s.read().seasons[2026].weeks[2],after);assert.equal(w.ticket.locked,true);assert.equal(w.ticket.resetEligible,true);
+  assert.throws(()=>savePick(s,2026,2,member('Hurd'),{...pick('Hurd'),gameId:'sun'},after),/parlay is locked/);
+  assert.throws(()=>resetParlay(s,2026,2,member('McD'),after),/Organizer/);
+  resetParlay(s,2026,2,organizer,after);const reset=s.read().seasons[2026].weeks[2];assert.deepEqual(reset.picks,{});assert.equal(reset.resets.length,1);assert.equal(reset.audit.at(-1).action,'reset-parlay');
+  const history=publicWeek(reset,after).priorTickets;assert.equal(history.length,1);assert.equal(history[0].ticket.legs[0].member,'McD');assert.equal(history[0].ticket.miss,1);
+  assert.equal(publicWeek(reset,after).ticket.locked,false);savePick(s,2026,2,member('Hurd'),{...pick('Hurd'),gameId:'sun'},after);
+ }finally{s.close();}
+});
+test('a non-Thursday loss never opens the reset route',()=>{
+ const s=newStore(),sun=Date.UTC(2026,8,20,17,0),before=sun-60000,after=sun+10800000,organizer={role:'organizer',member:'Zach'};
+ try{
+  ingest(s,2026,2,payload([event('sun',sun)]),before);savePick(s,2026,2,member('McD'),{...pick('McD'),gameId:'sun'},before);
+  const final=payload([event('sun',sun)]),c=final.events[0].competitions[0];c.status.type={state:'post',completed:true,name:'STATUS_FINAL'};c.competitors.find(x=>x.homeAway==='home').score='20';c.competitors.find(x=>x.homeAway==='away').score='24';ingest(s,2026,2,final,after);
+  assert.equal(publicWeek(s.read().seasons[2026].weeks[2],after).ticket.resetEligible,false);
+  assert.throws(()=>resetParlay(s,2026,2,organizer,after),/Thursday leg misses/);
+ }finally{s.close();}
+});
 test('pregame prices move; kickoff captures prior observation, never an in-game quote; locks immutable',()=>{const s=setup();savePick(s,2026,2,member('McD'),pick(),T);const p=payload();p.events[0].competitions[0].odds[0].pointSpread.home.close={line:'-4.5',odds:'-120'};ingest(s,2026,2,p,K-10000);assert.equal(s.read().seasons[2026].weeks[2].picks.McD.quote.line,-4.5);p.events[0].competitions[0].status.type.state='in';p.events[0].competitions[0].odds[0].pointSpread.home.close.line='-9.5';ingest(s,2026,2,p,K+1000);let x=s.read().seasons[2026].weeks[2].picks.McD;assert.equal(x.quote.line,-4.5);assert.equal(x.original.line,-3.5);assert.equal(x.missingQuote,false);ingest(s,2026,2,p,K+60000);assert.equal(s.read().seasons[2026].weeks[2].picks.McD.quote.odds,-120);s.close();});
 test('live lead is not a win; final spreads, totals and tie pushes grade saved quote',()=>{const g={home:'PHI',away:'DAL',homeScore:24,awayScore:20,state:'in',completed:false,status:'STATUS_IN_PROGRESS'},p={side:'PHI',market:'spread',quote:{line:-3.5},lockedAt:K};assert.equal(result(p,g),'live');g.completed=true;g.status='STATUS_FINAL';assert.equal(result(p,g),'hit');p.quote.line=-4;assert.equal(result(p,g),'push');p.quote.line=-4.5;assert.equal(result(p,g),'miss');assert.equal(result({...p,market:'total',side:'over',quote:{line:44.5}},g),'miss');assert.equal(result({...p,market:'total',side:'under',quote:{line:44.5}},g),'hit');assert.equal(result({...p,missingQuote:true},g),'pending');});
 test('partial tickets cannot become wins; pushes remove price; full all-push refunds',()=>{const make=(m,r)=>({member:m,manualResult:r,quote:{odds:100},lockedAt:K});assert.equal(ticket([make('McD','hit')],[]).status,'incomplete');const legs=ROSTER.map(m=>make(m,'push'));let t=ticket(legs,[]);assert.equal(t.status,'refunded');assert.equal(t.returned,10);legs[0]=make('McD','hit');t=ticket(legs,[]);assert.equal(t.returned,20);legs[1]=make('Hurd','miss');t=ticket(legs,[]);assert.equal(t.status,'lost');assert.equal(t.returned,0);});
