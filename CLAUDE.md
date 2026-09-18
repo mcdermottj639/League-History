@@ -166,6 +166,54 @@ for tests. Missing score/confidence inputs must keep Publish disabled.
 
 ## v110 — Faster Rankings loading
 
+## v112 — Season odds tracking
+
+**Who carries the ticket** now records the PRICES each member has been taking,
+not just whether their leg hit. Every member row carries `avg · total` beside
+their record, and two season tiles carry the same pair for the weekly ticket.
+
+🚨 **THE ODDS ARE ADDED UP, AND THAT IS THE OWNER'S EXPLICIT CALL, NOT A
+SHORTCUT.** *"Why would we do parlay truly it's the season tracking so we want
+to see the odds they've been doing… we do add them up u can the total and then
+the avg for each weeks. Avg example -153 while total is -740."* So +100 and
+-150 reads **-50**, where the same two legs multiplied as a real parlay would
+pay **+233**. This is a record of what the league has been betting, not a
+payout, and the copy says so in as many words (**"Added, not parlay math"**) —
+⚠️ an average landing between -100 and +100 is an artifact of adding American
+prices and is NOT a quotable line. The v3 fault is two figures side by side
+with nothing saying they are different things, and this number sits one tab
+from **Tracked odds**, which IS the parlay product.
+
+- **A price only counts once the kickoff lock froze it** — `lockedAt` set,
+  `missingQuote` false, and a real observed quote. An unlocked, unpriced or
+  flagged leg is left OUT, and each row prints its own `N priced` so the tally
+  **names its own population** rather than quietly running short (the v51 rule).
+  ⚠️ `priced` and `decided` print together only when they DISAGREE — a leg can
+  be priced and still live. Equal, the second count is the same number said
+  twice (the v22 shape) and it spilled the row onto a third line.
+- **Zach's entered placed odds beat the tracked kickoff combination** for the
+  weekly ticket, because that is what the ticket actually went in at. The note
+  under the tiles names the split (how many weeks came from each source)
+  instead of blending two populations in silence.
+- ⚠️ **Derived in `parlay-next.js` beside `records`, in ONE place.** It is a
+  display derivation over the public week payload, exactly like the record it
+  sits next to; a second copy in `domain.mjs` would be a second source of truth
+  for the same fact and would drift.
+- `.pn-record` gained a flex basis. Without one the right column wrapped under
+  short names and sat beside long ones — one row rendering two different shapes
+  down a twelve-name table.
+- Four regression tests in `server/frontend.test.mjs` fix every price by hand,
+  so the arithmetic is checked against numbers that file states rather than
+  whatever the preview seed produces. ⚠️ **Both guards were fault-injected**:
+  removing the lock/quote condition and reversing the placed-odds preference
+  each fail the test written for them (the v39 rule — a check whose failure
+  path has never run is not a check).
+- Verified: 77 tests pass, `node checks.js` green, and the real generated
+  markup rendered in headless Chromium at 390px with the real stylesheets — no
+  overflow, consistent rows. ⚠️ **Not verified on his phone**, and the sandbox
+  cannot reach the live Supabase parlay, so the numbers were rendered from
+  fixtures rather than a live week.
+
 ## v111 — Ticket-wide Parlay lock and Thursday reset
 
 The first scheduled kickoff locks the entire current parlay at both the server
