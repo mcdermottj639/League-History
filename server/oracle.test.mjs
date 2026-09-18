@@ -151,7 +151,27 @@ test('published cards preserve Hurd’s saved team-score order and separate matc
  const reversed={t:[structuredClone(season.t[1]),structuredClone(season.t[0]),...season.t.slice(2)]};
  const a=app('',[],{season:reversed,state:{current:1,weeks:[{week:1,published:true,publishedAt:new Date().toISOString(),predictions:[stored]}]}});
  await a.w.LeagueOracle.paint(a.host,()=> '');const card=a.host.querySelector('.or-card'),sides=card.querySelectorAll('.or-side');
- assert.equal(sides.length,2);assert.match(sides[0].textContent,/Aarogant Fraudgers.*Projected record 0-1.*117\.2.*Projected score/s);assert.match(sides[1].textContent,/Mortal Wombats.*Projected record 1-0.*128\.3.*Projected score/s);
- assert.equal(card.querySelector('.or-matchup .or-call b').textContent,'Mortal Wombats');assert.equal(card.querySelector('.or-analysis p').textContent,'The matchup analysis.');assert.equal(card.querySelector('.or-analysis>b').textContent,'Hurd’s breakdown');
+ assert.equal(sides.length,2);assert.match(sides[0].textContent,/Aarogant Fraudgers.*117\.2.*Projected score.*Projected record 0-1/s);assert.match(sides[1].textContent,/Mortal Wombats.*128\.3.*Projected score.*Projected record 1-0/s);
+ assert.equal(card.querySelector('.or-matchup .or-call b').textContent,'Mortal Wombats by 11.1');assert.equal(card.querySelector('.or-analysis p').textContent,'The matchup analysis.');assert.equal(card.querySelector('.or-analysis>b').textContent,'Hurd’s breakdown');
  assert.equal(card.querySelector('.or-card>p'),null);a.dom.window.close();
+});
+
+test('editorial display preserves published snapshots, formats prose safely, and never writes on navigation',async()=>{
+ const p={id:'1:1-2',matchup:{away:{id:'1',name:'Aarogant Fraudgers',record:'1-0'},home:{id:'2',name:'Mortal Wombats',record:'0-1'}},awayScore:117.2,homeScore:128.3,winner:'Mortal Wombats',awayRecord:'1-1',homeRecord:'1-1',writeup:'Fraudgers (1-0) vs. Wombats (0-1)\nHis exact words <script>alert(1)</script>.\n\nAnother paragraph.\nSam wins 128.3 – 117.2',confidence:100};
+ const state={current:1,weeks:[{week:1,published:true,publishedAt:'2026-09-17T00:00:00Z',predictions:[p]}]},original=JSON.stringify(state),calls=[],a=app('',calls,{state});
+ await a.w.LeagueOracle.paint(a.host,()=> '');
+ assert.equal(a.host.querySelector('.or-prose-heading').textContent,'Fraudgers (1-0) vs. Wombats (0-1)');
+ assert.equal(a.host.querySelector('.or-verdict').textContent,'Sam wins 128.3 – 117.2');
+ assert.match(a.host.querySelector('.or-analysis p').textContent,/His exact words <script>alert\(1\)<\/script>\.\n\nAnother paragraph\./);
+ assert.equal(a.host.querySelector('.or-analysis script'),null);
+ assert.deepEqual([...a.host.querySelectorAll('.or-record-badge')].map(x=>x.textContent),['1-0','0-1']);
+ const card=a.host.querySelector('.or-card');let scrolled=false;card.scrollIntoView=()=>{scrolled=true;};a.host.querySelector('[data-or-jump]').click();
+ assert.equal(scrolled,true);assert.equal(a.w.document.activeElement,card);assert.equal(JSON.stringify(state),original);
+ assert.equal(calls.some(x=>x.u.endsWith('/save')||x.u.endsWith('/publish')),false);a.dom.window.close();
+});
+
+test('ordinary prose stays verbatim and a conflicting pick never receives a fabricated winning margin',async()=>{
+ const p={id:'1:1-2',matchup:{away:{id:'1',name:'Aarogant Fraudgers'},home:{id:'2',name:'Mortal Wombats'}},awayScore:117.2,homeScore:128.3,winner:'Aarogant Fraudgers',awayRecord:'1-0',homeRecord:'0-1',writeup:'Not a matchup header.\nWins are earned, not promised.\n  ',confidence:75};
+ const a=app('',[],{state:{current:1,weeks:[{week:1,published:true,publishedAt:'2026-09-17T00:00:00Z',predictions:[p]}]}});await a.w.LeagueOracle.paint(a.host,()=> '');
+ assert.equal(a.host.querySelector('.or-analysis p').textContent,p.writeup);assert.equal(a.host.querySelector('.or-prose-heading'),null);assert.equal(a.host.querySelector('.or-verdict'),null);assert.equal(a.host.querySelector('.or-call>b').textContent,p.winner);a.dom.window.close();
 });

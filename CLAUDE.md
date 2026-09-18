@@ -164,7 +164,24 @@ reopening retain working text. Save draft remains the explicit server sync;
 local backup is not cross-device sync. Never clear Hurd's production rows
 for tests. Missing score/confidence inputs must keep Publish disabled.
 
+## v107 — Oracle editorial design (display-only)
+
+Oracle's public and private-preview cards use an ivory/plum/gold editorial skin
+in oracle-editorial.css: celestial masthead, horizontal matchup shortcuts,
+real manager crests, condensed team names, separate entering-week record badges,
+large projected scores, saved projected records, and a pick/margin ribbon.
+Margins appear only when the selected winner also has the higher numeric score.
+Commentary is serif; recognizable standalone team/record opening lines and
+score-verdict closing lines receive separate styles. All remaining text and line
+breaks are retained, escaped, and never written back. No invented article titles.
+Published team names and records are preserved from the saved snapshot when
+available; season-derived records are fallbacks only. Existing editor, storage,
+capabilities, drafts, and published rows are unchanged. Public render tests must
+assert that display and matchup navigation send no save/publish requests.
+
 ## v106 — Oracle matchup hierarchy and stable team order
+
+⚠️ Visual styling superseded in v107; stable saved team order remains.
 
 Published Oracle cards preserve the exact away/home order stored with Hurd's
 prediction, even if a later season-feed refresh presents the matchup in reverse.
