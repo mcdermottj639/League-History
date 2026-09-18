@@ -1,20 +1,23 @@
 /* Hurdstradamus — public prophecies and Hurd's separately-authorized editor. */
 (() => {'use strict';
-  const KEY='lh:oracle-session:v1', DRAFT_KEY='lh:oracle-drafts:2026:v1', WEEK_KEY='lh:oracle-week:2026:v1', FILE='season/current.json', WRITEUP_MAX=10000;
+  const KEY='lh:oracle-session:v1', DRAFT_KEY='lh:oracle-drafts:2026:v1', WEEK_KEY='lh:oracle-week:2026:v1', FILE='season/current.json', WRITEUP_MAX=10000, PUBLIC_KEY='lh:oracle-public:2026:v1';
   const esc=s=>String(s??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
   let invite=null;
   try { const h=new URLSearchParams(location.hash.slice(1)); if(h.has('oracle-editor')){invite=h.get('oracle-editor');h.delete('oracle-editor');history.replaceState(null,'',location.pathname+location.search+(h.size?'#'+h:''));} }catch{}
   const S={config:null,data:null,season:null,session:read(KEY),week:null,editor:false,message:'',busy:false,host:null,crest:null,preview:null,working:read(DRAFT_KEY)||{}};
-  let paintToken=0, renderToken=0;
+  let paintToken=0, renderToken=0, seasonFlight=null;
+  let publicData=null,publicNotice='';
+  function cachedPublic(){const c=read(PUBLIC_KEY);return c&&Date.now()-c.savedAt<86400000&&Array.isArray(c.data?.weeks)?c.data:null;}
+  function loadSeason(){if(S.season)return Promise.resolve(S.season);if(!seasonFlight)seasonFlight=fetchSeason().finally(()=>{seasonFlight=null;});return seasonFlight;}
   const owns=token=>token===paintToken&&(!S.host?.dataset.view||S.host.dataset.view==='oracle');
   function read(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch{return null;}}
   const put=(k,v)=>{try{v?localStorage.setItem(k,JSON.stringify(v)):localStorage.removeItem(k);}catch{}};
   async function config(){if(S.config)return S.config;const r=await fetch('oracle-config.json',{cache:'no-store'});if(!r.ok)throw Error('Oracle configuration is unavailable.');const c=await r.json();if(!c.enabled||typeof c.api!=='string'||!c.api)return null;S.config=c;return c;}
   async function api(path,body,auth=false){const c=await config();if(!c)throw Error('Hurdstradamus is not live yet.');const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),15000);try{const r=await fetch(c.api+'/api/oracle/'+path,{method:body?'POST':'GET',cache:'no-store',signal:ctl.signal,headers:{Accept:'application/json',...(body?{'Content-Type':'application/json'}:{}),...(auth&&S.session?{Authorization:'Bearer '+S.session.token}:{})},...(body?{body:JSON.stringify(body)}:{})});const j=await r.json().catch(()=>({}));if(!r.ok){if(r.status===401){S.editor=false;S.session=null;put(KEY,null);}throw Error(j.error||'The Oracle could not complete that request.');}return j;}finally{clearTimeout(timer);}}
-  async function loadSeason(){if(S.season)return S.season;let d;try{if(window.LeagueESPN?.SEASON_URL){const live=await fetch(window.LeagueESPN.SEASON_URL,{cache:'no-store',signal:AbortSignal.timeout(12000)});if(live.ok){const p=await live.json();if(p.teams?.length)d=window.LeagueESPN.toSnapshot(p);}}}catch{}const r=d?{ok:true,json:async()=>d}:await fetch(FILE,{cache:'no-store'});if(!r.ok)throw Error('The league schedule is unavailable.');d=await r.json();if(!Array.isArray(d.t)||!d.t.length)throw Error('The league schedule is unavailable.');S.season=d;return d;}
+  async function fetchSeason(){if(S.season)return S.season;let d;try{if(window.LeagueESPN?.SEASON_URL){const live=await fetch(window.LeagueESPN.SEASON_URL,{cache:'no-store',signal:AbortSignal.timeout(12000)});if(live.ok){const p=await live.json();if(p.teams?.length)d=window.LeagueESPN.toSnapshot(p);}}}catch{}const r=d?{ok:true,json:async()=>d}:await fetch(FILE,{cache:'no-store'});if(!r.ok)throw Error('The league schedule is unavailable.');d=await r.json();if(!Array.isArray(d.t)||!d.t.length)throw Error('The league schedule is unavailable.');S.season=d;return d;}
   function recordAt(team,week){let w=0,l=0,t=0;for(let i=0;i<week-1;i++){const opp=S.season.t.find(x=>String(x.id)===String(team.sch?.[i])),a=Number(team.s?.[i]),b=Number(opp?.s?.[i]);if(i>=Number(S.season.k||0)||!Number.isFinite(a)||!Number.isFinite(b)||team.s?.[i]==null||opp?.s?.[i]==null)continue;if(a>b)w++;else if(a<b)l++;else t++;}return `${w}-${l}${t?`-${t}`:''}`;}
   function projectedRecord(record,won){const m=String(record).match(/^(\d+)-(\d+)(?:-(\d+))?$/);if(!m)return record;return `${Number(m[1])+(won?1:0)}-${Number(m[2])+(won?0:1)}${Number(m[3])?`-${m[3]}`:''}`;}
-  function matchupsFor(week){const t=S.season.t,at=week-1,seen=new Set(),out=[];for(const away of t){const home=t.find(x=>String(x.id)===String(away.sch?.[at]));if(!home)continue;const ids=[String(away.id),String(home.id)].sort(),id=`${week}:${ids.join('-')}`;if(seen.has(id))continue;seen.add(id);out.push({id,away:{id:String(away.id),name:String(away.n),record:recordAt(away,week)},home:{id:String(home.id),name:String(home.n),record:recordAt(home,week)}});}return out;}
+  function matchupsFor(week){const t=S.season?.t||[],at=week-1,seen=new Set(),out=[];for(const away of t){const home=t.find(x=>String(x.id)===String(away.sch?.[at]));if(!home)continue;const ids=[String(away.id),String(home.id)].sort(),id=`${week}:${ids.join('-')}`;if(seen.has(id))continue;seen.add(id);out.push({id,away:{id:String(away.id),name:String(away.n),record:recordAt(away,week)},home:{id:String(home.id),name:String(home.n),record:recordAt(home,week)}});}return out;}
   async function boot(){const c=await config();if(!c)return false;if(invite){const s=await api('session',{key:invite});S.session=s;put(KEY,s);invite=null;S.editor=true;window.dispatchEvent(new CustomEvent('oracle-editor-ready'));}else if(S.session){try{await api('me',null,true);S.editor=true;}catch(err){if(S.session)throw err;S.editor=false;}}return true;}
   function resultFor(p){const byId=Object.fromEntries((S.season?.t||[]).map(t=>[String(t.id),t]));const a=byId[p.matchup?.away?.id],h=byId[p.matchup?.home?.id],i=(p.week||S.week)-1;if(!a||!h||!Number.isFinite(a.s?.[i])||!Number.isFinite(h.s?.[i])||a.s[i]<=0||h.s[i]<=0||a.s[i]===h.s[i])return null;const actual=a.s[i]>h.s[i]?a.n:h.n;return p.winner===actual?'right':'wrong';}
   function records(w){const all=(S.data?.weeks||[]).filter(x=>x.published).flatMap(x=>(x.predictions||[]).map(p=>({...p,week:x.week})));const count=a=>a.reduce((o,p)=>{const r=resultFor(p);if(r)o[r]++;return o;},{right:0,wrong:0});return {week:count((w?.predictions||[]).map(p=>({...p,week:w.week}))),all:count(all)};}
@@ -96,8 +99,11 @@
     if(head)head.textContent=`${complete} of ${total} complete · drafts are private until published.`;
   }
   async function render(token,refresh=false){
-    const turn=++renderToken;await loadSeason();if(!owns(token)||turn!==renderToken)return false;
-    if(refresh||!S.data){const data=await api('state'+(S.editor?'?editor=1':''),null,S.editor);if(!owns(token)||turn!==renderToken)return false;S.data=data;}
+    const turn=++renderToken;
+    const [data]=await Promise.all([(refresh||!S.data)?api('state'+(S.editor?'?editor=1':''),null,S.editor):Promise.resolve(S.data),S.editor?loadSeason():Promise.resolve()]);
+    if(!owns(token)||turn!==renderToken)return false;
+    S.data=data;
+    if(!S.editor&&refresh){publicData=data;put(PUBLIC_KEY,{savedAt:Date.now(),data});publicNotice='';}
     if(!S.week){
       const remembered=S.editor?read(WEEK_KEY):null;
       const draftWeeks=S.editor?S.data.weeks.filter(w=>(S.working[w.week]||w.predictions||[]).some(p=>p.writeup?.trim()||p.winner)).map(w=>w.week):[];
@@ -106,18 +112,16 @@
     const saved=S.data.weeks.find(x=>x.week===S.week)||{week:S.week,predictions:[]};
     const current={...saved,predictions:(S.editor&&S.working[S.week])||saved.predictions};
     const w=S.preview?{...saved,published:true,predictions:S.preview}:current;
-    S.host.innerHTML=`<div class="oracle"><nav class="or-nav"><label>Week <select data-or-week>${S.data.weeks.map(x=>`<option value="${x.week}" ${x.week===S.week?'selected':''}>${x.week}</option>`).join('')}</select></label>${S.editor?'<b>Hurd editor</b>':''}</nav>${S.preview?publicHTML(w,true):(S.editor?editorHTML(w):publicHTML(w))}</div>`;
+    S.host.innerHTML=`<div class="oracle"><nav class="or-nav"><label>Week <select data-or-week>${S.data.weeks.map(x=>`<option value="${x.week}" ${x.week===S.week?'selected':''}>${x.week}</option>`).join('')}</select></label>${S.editor?'<b>Hurd editor</b>':(publicNotice?'<small role="status">'+esc(publicNotice)+'</small>':'')}</nav>${S.preview?publicHTML(w,true):(S.editor?editorHTML(w):publicHTML(w))}</div>`;
     S.host.querySelectorAll('textarea[data-f="writeup"]').forEach(t=>{const c=t.parentElement.querySelector('[data-count]'),sync=()=>c.textContent=`${t.value.length.toLocaleString()} / ${WRITEUP_MAX.toLocaleString()}`;t.addEventListener('input',sync);sync();});
     if(S.editor&&!S.preview){S.host.querySelectorAll('[data-or-id] input,[data-or-id] textarea').forEach(el=>{el.addEventListener('input',()=>{syncEditorControls();backupEditor();});el.addEventListener('change',()=>{syncEditorControls();backupEditor();});});syncEditorControls();}
     return true;
   }
   async function paint(host,crest){
-    const token=++paintToken;
+    const token=++paintToken,reader=!invite&&!S.session;
     try{
       S.host=host;S.crest=crest;S.preview=null;
       host.innerHTML='<div class="oracle"><section class="or-empty"><b>Opening Hurdstradamus…</b><p>Loading this week’s prophecies.</p></section></div>';
-      if(!await boot()||!owns(token))return;
-      if(!await render(token,true)||!owns(token))return;
       host.onclick=async e=>{
         const jump=e.target.closest('[data-or-jump]');
         if(jump&&owns(token)){const card=host.querySelector('#oracle-game-'+S.week+'-'+jump.dataset.orJump);if(card){card.focus({preventScroll:true});card.scrollIntoView({behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'});}return;}
@@ -145,7 +149,14 @@
         S.week=Number(e.target.value);if(S.editor)put(WEEK_KEY,S.week);S.preview=null;S.message='';
         render(token).catch(err=>{if(owns(token))setStatus(err.message);});
       };
-    }catch(e){if(owns(token))host.innerHTML=`<section class="or-empty"><b>The Oracle cannot open right now.</b><p>${esc(e.message)}</p><p>Your saved device backups have not been removed.</p></section>`;}
+      // Reader cache contains only the unauthenticated public response, never editor data.
+      if(reader){S.editor=false;publicData=publicData||cachedPublic();if(publicData){S.data=publicData;publicNotice='Saved copy · checking updates…';await render(token);}}
+      const seasonReady=loadSeason().catch(()=>null);
+      if(!await boot()||!owns(token))return;
+      if(!await render(token,true)||!owns(token))return;
+      // A slow season feed cannot delay published writing or repaint an editor's form.
+      seasonReady.then(()=>{if(owns(token)&&!S.editor&&!S.preview)render(token).catch(()=>{});});
+    }catch(e){if(reader&&publicData&&owns(token)){S.data=publicData;publicNotice='Saved copy · refresh unavailable';await render(token);return;}if(owns(token))host.innerHTML=`<section class="or-empty"><b>The Oracle cannot open right now.</b><p>${esc(e.message)}</p><p>Your saved device backups have not been removed.</p></section>`;}
   }
   window.LeagueOracle={paint,get entry(){return !!invite;},get available(){return true;}};
 })();

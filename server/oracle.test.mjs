@@ -13,7 +13,7 @@ function app(fragment='',calls=[],options={}){
  w.AbortController=globalThis.AbortController;w.LeagueESPN={mgrFor:()=>''};
  w.fetch=async(url,opts={})=>{const u=String(url),body=opts.body?JSON.parse(opts.body):null;calls.push({u,body,auth:opts.headers?.Authorization||''});
   if(u.includes('oracle-config.json'))return response({enabled:true,api:'https://oracle.test',year:2026});
-  if(u.includes('season/current.json'))return response(options.season||season);
+  if(u.includes('season/current.json'))return options.seasonResponse?options.seasonResponse():response(options.season||season);
   if(options.api){const result=await options.api(u,opts);if(result)return result;}
   if(u.endsWith('/session'))return response({token:'a'.repeat(64),role:'oracle_editor'});
   if(u.endsWith('/me'))return response({role:'oracle_editor'});
@@ -168,6 +168,38 @@ test('editorial display preserves published snapshots, formats prose safely, and
  const card=a.host.querySelector('.or-card');let scrolled=false;card.scrollIntoView=()=>{scrolled=true;};a.host.querySelector('[data-or-jump]').click();
  assert.equal(scrolled,true);assert.equal(a.w.document.activeElement,card);assert.equal(JSON.stringify(state),original);
  assert.equal(calls.some(x=>x.u.endsWith('/save')||x.u.endsWith('/publish')),false);a.dom.window.close();
+});
+
+test('published writing loads while a slow season feed is still pending',async()=>{
+ let release;const state={current:2,weeks:[{week:2,published:true,publishedAt:'2026-09-17T00:00:00Z',predictions:edgePredictions()}]};
+ const a=app('',[],{state,seasonResponse:()=>new Promise(resolve=>{release=()=>resolve(response(season));})});
+ const painted=a.w.LeagueOracle.paint(a.host,()=> '');
+ await waitFor(()=>!!a.host.querySelector('.or-card'));
+ assert.match(a.host.textContent,/A complete prediction/);await painted;
+ assert.ok(a.w.localStorage.getItem('lh:oracle-public:2026:v1'));
+ release();await pause();a.dom.window.close();
+});
+
+test('cached public predictions show before a pending refresh and survive an offline refresh',async()=>{
+ const state={current:2,weeks:[{week:2,published:true,publishedAt:'2026-09-17T00:00:00Z',predictions:edgePredictions()}]};
+ let finish;const a=app('',[],{storage:{'lh:oracle-public:2026:v1':{savedAt:Date.now(),data:state}},api:u=>u.includes('/state')?new Promise(resolve=>{finish=()=>resolve(response({error:'Offline'},503));}):null});
+ const painted=a.w.LeagueOracle.paint(a.host,()=> '');
+ await waitFor(()=>!!a.host.querySelector('.or-card'));assert.match(a.host.textContent,/Saved copy/);
+ await waitFor(()=>!!finish);finish();await painted;
+ assert.match(a.host.textContent,/refresh unavailable/);assert.equal(a.host.querySelectorAll('.or-card').length,6);a.dom.window.close();
+});
+
+test('fresh public response replaces cached content and delayed responses never repaint another tab',async()=>{
+ const old={current:2,weeks:[{week:2,published:true,publishedAt:'2026-09-17T00:00:00Z',predictions:edgePredictions()}]},fresh=structuredClone(old);fresh.weeks[0].predictions[0].writeup='Fresh published words';
+ let finish;const a=app('',[],{storage:{'lh:oracle-public:2026:v1':{savedAt:Date.now(),data:old}},api:u=>u.includes('/state')?new Promise(resolve=>{finish=()=>resolve(response(fresh));}):null});
+ let painted=a.w.LeagueOracle.paint(a.host,()=> '');await waitFor(()=>!!finish);finish();await painted;assert.match(a.host.textContent,/Fresh published words/);assert.doesNotMatch(a.host.textContent,/checking updates/);
+ finish=null;painted=a.w.LeagueOracle.paint(a.host,()=> '');await waitFor(()=>!!finish);
+ a.host.dataset.view='history';a.host.innerHTML='<h2>History stays here</h2>';finish();await painted;await pause();assert.equal(a.host.textContent,'History stays here');a.dom.window.close();
+});
+
+test('editor responses never enter the public cache',async()=>{
+ const a=app('#oracle-editor='+'x'.repeat(43));await a.w.LeagueOracle.paint(a.host,()=> '');
+ assert.equal(a.w.localStorage.getItem('lh:oracle-public:2026:v1'),null);a.dom.window.close();
 });
 
 test('ordinary prose stays verbatim and a conflicting pick never receives a fabricated winning margin',async()=>{

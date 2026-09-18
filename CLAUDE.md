@@ -164,6 +164,17 @@ reopening retain working text. Save draft remains the explicit server sync;
 local backup is not cross-device sync. Never clear Hurd's production rows
 for tests. Missing score/confidence inputs must keep Publish disabled.
 
+## v109 — Faster Oracle loading
+
+Public Oracle responses are cached separately under lh:oracle-public:2026:v1
+for up to one day. Readers immediately see a labeled saved copy while a fresh
+public response loads; failed refreshes keep that copy readable. Editor states
+and device drafts never enter this cache. The season request starts alongside
+configuration/authentication, is deduplicated, and no longer blocks public
+write-ups. Editor schedule/state requests run together after authorization.
+Late season updates repaint readers only, never editable forms, and all async
+paints retain the shared-tab ownership check. Save/publish behavior is unchanged.
+
 ## v108 — Compact Oracle spacing
 
 Tighten the editorial cards without reducing commentary, team-name, or score
