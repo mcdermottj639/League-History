@@ -188,9 +188,11 @@ from **Tracked odds**, which IS the parlay product.
   `missingQuote` false, and a real observed quote. An unlocked, unpriced or
   flagged leg is left OUT, and each row prints its own `N priced` so the tally
   **names its own population** rather than quietly running short (the v51 rule).
-  ⚠️ `priced` and `decided` print together only when they DISAGREE — a leg can
-  be priced and still live. Equal, the second count is the same number said
-  twice (the v22 shape) and it spilled the row onto a third line.
+  ⚠️ **The per-row counts came straight back off** (owner: *"Remove the prices
+  and decided"*) — the row is the record and the odds, nothing else. So the
+  **caption** carries the population instead, naming any legs with no locked
+  price. Something has to: a total quietly short of the legs played, with
+  nothing on screen saying why, is the v3 fault.
 - **Zach's entered placed odds beat the tracked kickoff combination** for the
   weekly ticket, because that is what the ticket actually went in at. The note
   under the tiles names the split (how many weeks came from each source)
