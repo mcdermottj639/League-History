@@ -164,6 +164,15 @@ reopening retain working text. Save draft remains the explicit server sync;
 local backup is not cross-device sync. Never clear Hurd's production rows
 for tests. Missing score/confidence inputs must keep Publish disabled.
 
+## v106 — Oracle matchup hierarchy and stable team order
+
+Published Oracle cards preserve the exact away/home order stored with Hurd's
+prediction, even if a later season-feed refresh presents the matchup in reverse.
+Each team's projected score and projected record render together in its own
+side-by-side scoreboard column on mobile and desktop. A contrasting pick strip
+and a separately labeled Hurd's breakdown panel keep long write-ups visually
+distinct from matchup facts. The saved prediction order remains the game order.
+
 ## v105 — Decimal-score publishing and draft safety
 
 Oracle scores accept finite decimals from 0 through 300 in both the editor and

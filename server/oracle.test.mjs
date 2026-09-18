@@ -144,3 +144,14 @@ test('public readers never receive a device-only draft in place of published pre
  const a=app('',[],{storage:{'lh:oracle-drafts:2026:v1':{1:privateDraft}},state:{current:1,weeks:[{week:1,published:true,publishedAt:new Date().toISOString(),predictions:published}]}});
  await a.w.LeagueOracle.paint(a.host,()=> '');assert.match(a.host.textContent,/Published words/);assert.doesNotMatch(a.host.textContent,/PRIVATE UNSAVED WORDS/);a.dom.window.close();
 });
+
+test('published cards preserve Hurd’s saved team-score order and separate matchup, pick, and breakdown',async()=>{
+ const stored={id:'1:1-2',matchup:{away:{id:'1',name:'Aarogant Fraudgers'},home:{id:'2',name:'Mortal Wombats'}},awayScore:117.2,homeScore:128.3,winner:'Mortal Wombats',awayRecord:'0-1',homeRecord:'1-0',writeup:'The matchup analysis.',confidence:100,upset:false};
+ // Reverse source order to prove a later schedule refresh cannot swap the saved teams while leaving scores behind.
+ const reversed={t:[structuredClone(season.t[1]),structuredClone(season.t[0]),...season.t.slice(2)]};
+ const a=app('',[],{season:reversed,state:{current:1,weeks:[{week:1,published:true,publishedAt:new Date().toISOString(),predictions:[stored]}]}});
+ await a.w.LeagueOracle.paint(a.host,()=> '');const card=a.host.querySelector('.or-card'),sides=card.querySelectorAll('.or-side');
+ assert.equal(sides.length,2);assert.match(sides[0].textContent,/Aarogant Fraudgers.*Projected record 0-1.*117\.2.*Projected score/s);assert.match(sides[1].textContent,/Mortal Wombats.*Projected record 1-0.*128\.3.*Projected score/s);
+ assert.equal(card.querySelector('.or-matchup .or-call b').textContent,'Mortal Wombats');assert.equal(card.querySelector('.or-analysis p').textContent,'The matchup analysis.');assert.equal(card.querySelector('.or-analysis>b').textContent,'Hurd’s breakdown');
+ assert.equal(card.querySelector('.or-card>p'),null);a.dom.window.close();
+});
