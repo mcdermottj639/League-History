@@ -67,7 +67,7 @@ controls. Each matchup supports:
 
 - predicted winner;
 - projected score for both teams;
-- each team’s projected record;
+- each team’s projected record, calculated automatically from the record entering the week and Hurd’s selected winner;
 - Hurd’s matchup write-up (maximum 10,000 characters, with a live count);
 - confidence (stored as an integer 0–100);
 - optional Upset Watch toggle;

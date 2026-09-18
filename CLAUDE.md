@@ -149,6 +149,21 @@ ceiling. This is intentionally large enough for long-form analysis while still
 bounding accidental or abusive request payloads. Existing Hurd, Zach, owner,
 and member links remain unchanged.
 
+## v104 — Automatic Oracle records
+
+Hurd never types team records. Oracle reconstructs each team's record entering
+the selected week from the season score feed, then automatically adds the
+predicted win or loss when Hurd selects a winner. The editor fields are
+read-only, and public Preview/published cards calculate from the winner rather
+than trusting legacy record text. Existing saved or published predictions,
+editor capability, and public links remain intact.
+
+Every edit also backs up the working week locally under
+`lh:oracle-drafts:2026:v1`. Preview/back, week switching, failed saves and
+reopening retain working text. Save draft remains the explicit server sync;
+local backup is not cross-device sync. Never clear Hurd's production rows
+for tests. Missing score/confidence inputs must keep Publish disabled.
+
 ## v98 — Single public sharing control
 
 The question-mark sheet keeps its existing public Share the link control. The
