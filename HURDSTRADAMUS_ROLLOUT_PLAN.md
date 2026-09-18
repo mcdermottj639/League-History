@@ -68,7 +68,7 @@ controls. Each matchup supports:
 - predicted winner;
 - projected score for both teams;
 - each team’s projected record;
-- Hurd’s matchup write-up (maximum 500 characters, with remaining-count);
+- Hurd’s matchup write-up (maximum 10,000 characters, with a live count);
 - confidence (stored as an integer 0–100);
 - optional Upset Watch toggle;
 - draft save and clear, with truthful saved/error status;

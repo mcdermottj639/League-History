@@ -41,6 +41,14 @@ test('private Hurd link is stripped, drafts save incomplete, and publish unlocks
  assert.equal(a.host.querySelector('[data-or="publish"]').disabled,false);a.dom.window.close();
 });
 
+test('Hurd has room for long-form matchup write-ups',async()=>{
+ const a=app('#oracle-editor='+'x'.repeat(43));await a.w.LeagueOracle.paint(a.host,()=> '');
+ const writeup=a.host.querySelector('textarea[data-f="writeup"]');
+ assert.equal(writeup.maxLength,10000);assert.match(writeup.parentElement.textContent,/0 \/ 10,000/);
+ writeup.value='x'.repeat(7500);writeup.dispatchEvent(new a.w.Event('input',{bubbles:true}));
+ assert.match(writeup.parentElement.textContent,/7,500 \/ 10,000/);a.dom.window.close();
+});
+
 test('Hurd can privately preview unsaved work and return to the editor',async()=>{
  const a=app('#oracle-editor='+'x'.repeat(43));await a.w.LeagueOracle.paint(a.host,()=> '');
  a.host.querySelector('[data-or="preview"]').click();await new Promise(r=>setTimeout(r,0));
