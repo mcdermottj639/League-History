@@ -895,6 +895,15 @@
     else { $('#lg-app').hidden = false; paint(); }
     paintHead();
     labLink();
+    /* 🏈 The live score ticker (v113). ⚠️ AFTER `setMe`, like `labLink()` and
+       for the same reason: it puts the reader's own game first, and a value
+       derived before anyone is known cannot answer that (v1/v23). Guarded
+       because `ticker.js` ships as its own file — a missing one must not
+       throw out of boot and take the whole app down with it, and the ticker
+       is the least important thing on the screen. With `ticker-config.json`
+       disabled — which is how it ships — `boot` reads one local JSON, finds
+       the feature off and returns false without rendering or fetching. */
+    if (window.LeagueTicker) window.LeagueTicker.boot(crest).catch(() => {});
     if (window.LeagueOwnerLinks?.setupRequested) openHelp();
   }
 

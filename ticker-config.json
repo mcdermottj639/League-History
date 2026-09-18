@@ -1,0 +1,6 @@
+{
+  "enabled": false,
+  "api": "",
+  "year": 2026,
+  "note": "Live score ticker — PREPARED AND OFF (v113). Nothing renders and no network call is made while `enabled` is false. To turn it on: set `api` to whatever serves GET {api}/api/fantasy/football/scoreboard (the Sports-Hub endpoint directly, or a Supabase function in front of it) and set `enabled` to true. See the v113 section of CLAUDE.md before you do."
+}

@@ -2167,6 +2167,118 @@ function hostLaws() {
 }
 hostLaws();
 
+/* ══ 🏈 THE LIVE SCORE TICKER SHIPS OFF, AND STAYS WIRED (v113) ═══════════
+   The owner asked for it written and NOT turned on. These are the laws that
+   make "off" a fact about the repo rather than a thing somebody remembers,
+   plus the four wiring mistakes this app has already made once each. */
+function tickerLaws() {
+  const mark = block();
+  const fail = (m) => { console.log(`  ❌ ${m}`); bad++; };
+  const fs = require('fs');
+  const html = fs.readFileSync('./index.html', 'utf8');
+  const tjRaw = fs.readFileSync('./ticker.js', 'utf8');
+  /* ⚠️ THE SHAPE LAWS BELOW READ THE CODE, NOT THE PROSE. Written against the
+     raw file they all fired on this file's OWN comments — the ones explaining
+     that it must never touch #lg-body and must never reason about Thursday.
+     A law that a correct implementation fails because it documents itself is
+     worse than no law: the next session deletes the comment to get green.
+     Block comments go, and so do whole-line `//` ones; an inline `//` is left
+     alone so the URL and the regex literals in this file survive. */
+  const tj = tjRaw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const tc = fs.readFileSync('./ticker.css', 'utf8');
+  const lj = fs.readFileSync('./league.js', 'utf8');
+
+  /* ① 🚨 IT IS OFF. The single most important line in this block: merging a
+     LIVE ticker is a behaviour change on twelve phones, and the owner asked
+     for the opposite. Flipping either field here is a deliberate act that
+     has to make this law fail first. */
+  let cfg = null;
+  try { cfg = JSON.parse(fs.readFileSync('./ticker-config.json', 'utf8')); }
+  catch (_) { fail('ticker-config.json is missing or will not parse'); }
+  if (cfg) {
+    if (cfg.enabled !== false) fail('ticker-config.json ships ENABLED — the ticker was prepared to be off until the feed is proven on a phone');
+    if (cfg.api) fail('ticker-config.json ships a live api — no feed address belongs in the repo until it is turned on deliberately');
+  }
+
+  /* ② AND OFF MEANS SILENT. `boot` must bail before any external call. The
+     behavioural proof is in ticker.test.cjs ("no call to the feed"); this is
+     the cheap structural half — the config gate exists and is read first. */
+  /* ⚠️ ASSERTED INSIDE `tick()`, NOT ACROSS THE FILE. A whole-file index
+     comparison says the fetch comes first — `tick()` is simply declared above
+     `boot()` — which is a fact about source order and nothing about
+     behaviour. The property that matters is local: on the one path that can
+     reach the network, the config answer is checked before the call. */
+  if (tj.indexOf('if (!c) return false;') < 0) fail('ticker.js boot() has no disabled-config bail-out');
+  const tickFn = (tj.match(/async function tick\(\)[\s\S]*?\n  \}/) || [''])[0];
+  if (!tickFn) fail('could not find ticker.js tick() to check its config gate');
+  else {
+    const gate = tickFn.indexOf('if (!c) return;');
+    const call = tickFn.indexOf('fetchBoard(');
+    if (gate < 0) fail('ticker.js tick() never checks whether the feature is on');
+    else if (call > -1 && call < gate) fail('ticker.js calls the feed before it checks whether the feature is on');
+  }
+
+  /* ③ 🚨 HIDDEN BY PROPERTY **AND** BY RULE. `:root[data-palette]` is (0,2,1)
+     and the UA's `[hidden]` is (0,1,0), so a palette-layer `display` beats it
+     and would paint a FIXED BAR over the app forever. This trap has shipped
+     three times — `.lg-jump` (v9), `.lg-sheet` (v13), `.ai-sub` (v21) — and
+     it is worse here than in any of them, because a fixed element cannot be
+     scrolled away from. */
+  if (!/:root\[data-palette\] \.lt-host\[hidden\]\s*\{\s*display:\s*none/.test(tc)) {
+    fail('ticker.css has no palette-specificity [hidden] rule for .lt-host — `hidden = true` would be a visual no-op on a fixed bar');
+  }
+
+  /* ④ IT MOUNTS OUTSIDE THE SHARED BODY. The ticker repaints on a timer,
+     behind whatever view is up. Inside `#lg-body` it would have needed the
+     v76 ownership stamp and would have been the third file to get it wrong;
+     outside, the problem cannot arise. Asserted on the markup, because that
+     is the fact the reasoning rests on. */
+  const mount = html.indexOf('id="lg-tick"');
+  const mainEnd = html.indexOf('</main>');
+  if (mount < 0) fail('index.html has no #lg-tick mount point for the ticker');
+  else if (mainEnd > -1 && mount < mainEnd) fail('#lg-tick is INSIDE <main> — a timer-driven repaint inside the shared body is the v76 fault');
+  if (/getElementById\(\s*['"]lg-body|querySelector\(\s*['"]#lg-body/.test(tj)) {
+    fail('ticker.js reaches for #lg-body — it owns #lg-tick and nothing else');
+  }
+
+  /* ⑤ 🚨 BOOTED AFTER `setMe`. It puts the reader's own game first, and a
+     value derived before anyone is known cannot answer that — the v1 lesson,
+     which `labLink` then re-learned in v23 by sitting four lines too early.
+     Three of four cases look fine when this is wrong. */
+  const setMe = lj.indexOf('LH.setMe(me)');
+  const tick = lj.indexOf('LeagueTicker.boot');
+  if (tick < 0) fail('league.js never boots the ticker');
+  else if (setMe > -1 && tick < setMe) fail("league.js boots the ticker BEFORE setMe — it would put nobody's game first");
+
+  /* ⑥ ONE SOURCE OF TRUTH FOR WHO OWNS WHICH TEAM. `espn.js` holds the map
+     and it is rename-proof; a second copy here is the v36 crest bug waiting
+     for September. */
+  if (/MANAGERS\s*=|'aarogant fraudgers'/i.test(tj)) {
+    fail('ticker.js carries its own team-name map — espn.js owns that, and two copies drift every September');
+  }
+  if (!/mgrFor/.test(tj)) fail('ticker.js does not resolve managers through espn.js mgrFor');
+
+  /* ⑦ BOTH FILES ARE ACTUALLY SERVED, ON THE SAME ?v= AS THE REST. A module
+     written and never linked is the most expensive kind of dead code. */
+  const vj = (html.match(/ticker\.js\?v=(\d+)/) || [])[1];
+  const vc = (html.match(/ticker\.css\?v=(\d+)/) || [])[1];
+  if (!vj) fail('index.html never loads ticker.js');
+  if (!vc) fail('index.html never loads ticker.css');
+  if (vj && vc && vj !== vc) fail(`ticker.js is ?v=${vj} but ticker.css is ?v=${vc} — one of them will be served stale`);
+
+  /* ⑧ THE THURSDAY RULE IS NOT A CLOCK. The owner asked for dark until the
+     first kickoff; the feed says `pre` and the bar is not rendered. A day or
+     hour table here would be a second copy of the NFL calendar, wrong the
+     first time a game moves — and `season.js` already owns the one we have. */
+  if (/getDay\(\)|getUTCDay\(\)/.test(tj)) {
+    fail('ticker.js reasons about the day of the week — the kickoff gate reads the feed\'s own `pre` state, not a calendar');
+  }
+  if (!/state !== 'pre'/.test(tj)) fail('ticker.js has no pre-kickoff gate — it would show a bar of zeros before Thursday');
+
+  console.log(`  ${mark()} the ticker: prepared, wired, and off`);
+}
+tickerLaws();
+
 /* ══ 🗣️ THE RANKINGS COPY NAMES NO PUBLISHER (v77) ═══════════════════════
    The owner: "make no claim to who will publish them". Since v33 he can hand
    the Lab to any manager for a week or a season, so copy promising that HE

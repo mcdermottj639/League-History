@@ -1,0 +1,133 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   .lt- — THE LIVE SCORE TICKER (v113, prepared and off).
+
+   Placement C of three mocked: a fixed bar above the footer that opens a
+   sheet with all six games. Chosen by the owner.
+
+   ⚠️ EVERY COLOUR IS A TOKEN from styles.css's champagne block. A hex here
+   would be a colour nothing else in the app can reach — the one mistake this
+   stylesheet family has made repeatedly.
+
+   ⚠️ Loaded AFTER league.css, so it is the last layer and wins on ties.
+
+   🚨 NOTHING HERE IS `display: none` BY PROPERTY ALONE. `:root[data-palette]`
+   rules are (0,2,1) and the UA's `[hidden]` is (0,1,0), so a palette-layer
+   `display` would beat `hidden` and paint a fixed bar over the app forever —
+   the exact trap that hit `.lg-jump` (v9), `.lg-sheet` (v13) and `.ai-sub`
+   (v21). The `[hidden]` rule below is written at the same specificity as the
+   rule it has to beat, in the same edit as the markup.
+   ══════════════════════════════════════════════════════════════════════ */
+
+:root[data-palette] .lt-host[hidden] { display: none; }
+
+/* The bar reserves its own room rather than overlapping the footer. Set on
+   <body> by ticker.js only while a bar is actually up, so a week with nothing
+   live costs no space at all. */
+:root[data-palette] body.lt-on .lg-main { padding-bottom: 78px; }
+
+/* ── the bar ────────────────────────────────────────────────────────────── */
+:root[data-palette] .lt-bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  background: rgba(var(--barRGB), 1); border-top: 1px solid var(--tr2);
+  box-shadow: 0 -2px 10px rgba(0,0,0,.06);
+  padding-bottom: env(safe-area-inset-bottom); }
+/* The WHOLE bar is the tap target (the v14 rule — a separate control inside
+   it would cost a row to repeat what the bar already says). */
+:root[data-palette] .lt-bar-b {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  min-height: 52px; padding: 0 14px; cursor: pointer;
+  background: transparent; border: none; font-family: inherit;
+  text-align: left; touch-action: manipulation; }
+:root[data-palette] .lt-bar-l {
+  display: flex; align-items: center; gap: 7px; min-width: 0; flex: 1 1 auto; }
+:root[data-palette] .lt-bar-l .fh-crest { width: 22px; height: 22px; }
+/* The stand-in when a manager code will not resolve — same footprint as a
+   crest, so a rename never changes the bar's shape. */
+:root[data-palette] .lt-ab {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 auto; border-radius: 50%; background: var(--sf2);
+  border: 1.5px dashed var(--tr2); color: var(--gy);
+  font: 900 8px/1 Archivo, system-ui, sans-serif; letter-spacing: -.02em; }
+:root[data-palette] .lt-sc {
+  font: 900 15px/1 Archivo, system-ui, sans-serif; color: var(--ink);
+  font-variant-numeric: tabular-nums; }
+:root[data-palette] .lt-sc.dn { color: var(--gy); }
+:root[data-palette] .lt-v {
+  font: 800 10px/1 Archivo, system-ui, sans-serif; color: var(--gy); }
+:root[data-palette] .lt-bar-t {
+  display: flex; flex-direction: column; gap: 3px; align-items: flex-end;
+  margin-left: auto; flex: 0 0 auto; }
+:root[data-palette] .lt-bar-t b {
+  font: 800 9.5px/1 Archivo, system-ui, sans-serif; color: var(--neg); }
+/* ⚠️ `--gy` (6.6:1), never `--mu2` (2.56:1). The freshness line is the one
+   string on the bar whose whole job is to be legible when it says the number
+   above it is old — the v75 lesson about the version stamp, same shape. */
+:root[data-palette] .lt-bar-t i {
+  font: 700 9.5px/1 Archivo, system-ui, sans-serif; font-style: normal;
+  color: var(--gy); }
+:root[data-palette] .lt-bar-x {
+  flex: 0 0 auto; min-height: 34px; display: inline-flex; align-items: center;
+  padding: 0 11px; border-radius: 999px; border: 1px solid var(--tr2);
+  background: var(--sf); font: 800 10.5px/1 Archivo, system-ui, sans-serif;
+  color: var(--ink); }
+
+/* ── the sheet ──────────────────────────────────────────────────────────── */
+:root[data-palette] .lt-sheet {
+  position: fixed; inset: 0; z-index: 40; display: flex; flex-direction: column;
+  justify-content: flex-end; background: rgba(23,21,15,.42); }
+:root[data-palette] .lt-sheet-in {
+  background: var(--gr); border-radius: var(--r3) var(--r3) 0 0;
+  padding: 8px 0 14px; box-shadow: var(--e2);
+  max-height: 84vh; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  touch-action: manipulation; }
+:root[data-palette] .lt-grab {
+  width: 38px; height: 4px; border-radius: 999px; background: var(--tr2);
+  margin: 0 auto 10px; }
+:root[data-palette] .lt-sheet-h {
+  display: flex; align-items: baseline; gap: 8px; padding: 0 16px 9px; }
+:root[data-palette] .lt-sheet-h b {
+  font: 900 17px/1 Archivo, system-ui, sans-serif; color: var(--ink); }
+:root[data-palette] .lt-sheet-h span {
+  font: 800 10px/1 Archivo, system-ui, sans-serif; color: var(--neg); }
+:root[data-palette] .lt-sheet-h i {
+  font: 600 10.5px/1 Archivo, system-ui, sans-serif; font-style: normal;
+  color: var(--gy); margin-left: auto; }
+:root[data-palette] .lt-list {
+  background: var(--sf); border-top: 1px solid var(--tr);
+  border-bottom: 1px solid var(--tr); }
+:root[data-palette] .lt-row {
+  display: grid; grid-template-columns: 1fr auto; gap: 4px 10px;
+  padding: 8px 13px; border-bottom: 1px solid var(--tr); }
+:root[data-palette] .lt-row:last-child { border-bottom: none; }
+:root[data-palette] .lt-row.you { background: rgba(var(--acRGB), .10); }
+:root[data-palette] .lt-side {
+  display: flex; align-items: center; gap: 6px; grid-column: 1 / -1; }
+:root[data-palette] .lt-side .fh-crest { width: 17px; height: 17px; }
+:root[data-palette] .lt-nm {
+  font: 800 11.5px/1 Archivo, system-ui, sans-serif; color: var(--ink);
+  flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; }
+:root[data-palette] .lt-side .lt-sc { margin-left: auto; font-size: 13px; }
+:root[data-palette] .lt-side.win .lt-sc { color: var(--ac7); }
+/* ⚠️ --gy, not --mu. The losing side only has to step BACK from the winner's
+   gold, and --mu measured 3.81:1 at 11.5px/800 — under 4.5, and too small for
+   the large-text allowance, which starts at 14px bold. */
+:root[data-palette] .lt-side.lose .lt-nm, :root[data-palette] .lt-side.lose .lt-sc { color: var(--gy); }
+/* ⚠️ 9px is the app's type floor and this sat at 8.5. It is also --gy rather
+   than --mu2: measured at 1.12:1 on the reader's own tinted row, which is the
+   one row that has to be readable. */
+:root[data-palette] .lt-left {
+  font: 600 9px/1 Archivo, system-ui, sans-serif; color: var(--gy);
+  margin-left: 4px; flex: 0 0 auto; }
+:root[data-palette] .lt-meta {
+  grid-column: 1 / -1; margin-top: 1px;
+  font: 600 9px/1 Archivo, system-ui, sans-serif; color: var(--gy); }
+:root[data-palette] .lt-meta b { color: var(--neg); font-weight: 800; }
+:root[data-palette] .lt-foot {
+  margin: 10px 16px 0; font: 600 10.5px/1.45 Archivo, system-ui, sans-serif;
+  color: var(--gy); }
+:root[data-palette] .lt-close {
+  display: block; width: calc(100% - 32px); margin: 12px 16px 0;
+  min-height: 44px; border-radius: 999px; border: 1px solid var(--tr2);
+  background: var(--sf); cursor: pointer; touch-action: manipulation;
+  font: 800 12.5px/1 Archivo, system-ui, sans-serif; color: var(--ink); }

@@ -164,6 +164,110 @@ reopening retain working text. Save draft remains the explicit server sync;
 local backup is not cross-device sync. Never clear Hurd's production rows
 for tests. Missing score/confidence inputs must keep Publish disabled.
 
+## v113 — Live score ticker, PREPARED AND OFF
+
+🚨 **NOTHING ABOUT THE APP CHANGES ON A PHONE TODAY, AND THAT IS THE POINT.**
+The owner: *"I don't want any changes yet but if u can write it into the code
+so it's ready why not."* `ticker-config.json` ships `enabled: false` with an
+empty `api`, so `ticker.js` reads one same-origin JSON, finds the feature off
+and stops — no render, no external call, no reserved space. `checks.js` fails
+if either field is ever flipped in the repo, so turning it on is a deliberate
+act that has to break a law first. Same posture as Parlay v2 in v91/v92.
+
+**What it is: placement C of three mocked, the owner's pick.** A 52px fixed bar
+above the footer carrying the reader's own game — their score first, the
+opponent's second, `● Live · 3 left`, `4 of 6 live` — that opens a sheet with
+all six. Consistent on History, Season, Oracle, Rankings and Parlay, because it
+is a sibling of `<main>` and not part of any view.
+
+🚨 **THE FEED IS A NEW BOX-SCORE ENDPOINT, NOT `/season`, AND THAT IS THE WHOLE
+FINDING.** The obvious build is a few lines in `season.js` against the endpoint
+the Season tab already fetches. **It would have shipped a ticker that does not
+tick.** `/api/fantasy/football/season` returns espn-api's `Team.scores`, built
+from ESPN's `totalPoints` (football/team.py `_fetch_schedule`). During a live
+week ESPN puts the in-flight number in a **different field**, `totalPointsLive`,
+and only the box score reads it — football/box_score.py prefers it and falls
+back to `totalPoints`. **That branch exists precisely because `totalPoints` is
+not the live number.** A ticker on `/season` would have shown a settled figure
+on every screen with nothing saying so: the v3 fault, app-wide.
+⚠️ `Team.outcomes` reads `'U'` for an undecided week, which is the same `'U'`
+`engine.mjs:84` already refuses to grade a parlay on. Two independent signs
+that the season endpoint is a settled-week feed.
+
+**So the backend needs one new endpoint, and the data is already there.**
+`main.py:_find_box` already loops over every box score and throws five of six
+away because `/matchup` is scoped to the owner's team. `/api/fantasy/{sport}/
+scoreboard` returns all of them — per side a live score, a live projection, and
+a count of starters yet to play — and no player names. ⚠️ **It is not free like
+`/season` is**: `league.box_scores()` issues its own ESPN request plus the pro
+schedule and positional ratings, and `get_league`'s lru_cache holds the League
+object rather than this call, so it carries its own 45s TTL. Twelve phones on a
+live Sunday would otherwise be twelve ESPN pulls a minute. The patch lives in
+**Sports-Hub**, a different repo — it is not applied there and cannot be from
+here.
+
+⚠️ **"3 left" IS A STOPWATCH, NOT A GAME STATE.** `BoxPlayer.game_played` is
+`100 if now > kickoff + 3 hours else 0`. A game in the fourth quarter reports
+"hasn't played" and one that runs long reports "done" while it is still on.
+Good enough for a bar; **never build a settlement or a payout on it.** The
+honest version joins `proTeam` against the NFL scoreboard, which Sports-Hub's
+own changelog records failing open and flagging all 32 teams as on bye.
+
+- ⚠️ **THE THURSDAY RULE IS DATA-DRIVEN, NOT A CLOCK** (owner: it goes live at
+  kickoff *"since before then it's always 00 for every matchup"*). Every matchup
+  still `pre` means `anyLive: false` and **the bar is not rendered at all** — no
+  greyed-out row, no countdown, no reserved space. A day-and-hour table here
+  would be a second copy of the NFL calendar (`season.js` already owns one) and
+  wrong the first time a game moves. `checks.js` fails on a `getDay()` in
+  `ticker.js`.
+- ⚠️ **A matchup that has not kicked off prints an em dash, never `0.0`.**
+- 🚨 **IT NEVER TOUCHES `#lg-body`, AND THAT IS WHY A FIXED BAR IS THE SAFE
+  PLACEMENT.** It repaints on a timer behind whatever view is up. Inside the
+  shared body it would have needed the v76 ownership stamp and would have been
+  the third file to get it wrong; in `#lg-tick`, which no view owns, the
+  problem cannot arise. Asserted on the markup.
+- ⚠️ **Booted AFTER `setMe`** — it puts the reader's own game first, and a value
+  derived before anyone is known cannot answer that (v1, re-learned by
+  `labLink` in v23). Asserted by source order in `checks.js`.
+- **`ME === null` is a first-class case**: a stranger gets the closest live
+  game, in third person. Verified against the real app.
+- ⚠️ **Cadence comes from the feed, not a clock**: 60s while any game is live,
+  15 min otherwise, nothing at all while the tab is hidden.
+- ⚠️ **A failed refresh keeps the remembered board and RELABELS it** — "Saved
+  copy · 12 min ago", never `● Live`. Anything over six hours old is not shown
+  at all: last Sunday's scores on this Sunday's bar is the worst failure
+  available here. A board that does not validate is refused outright, so an
+  error page can never render as 0-0.
+- ⚠️ **No second copy of the team-name map.** `espn.js` owns it and is
+  rename-proof; `checks.js` fails if one appears in `ticker.js`. A name it
+  cannot resolve falls back to ESPN's abbreviation — found by rendering the
+  September-rename case, where the bar had shown two bare numbers and no crest.
+
+**Verified:** 22 backend checks against the real endpoint with fake box scores
+(fault-injected twice), 46 DOM checks against the real `ticker.js` (fault-
+injected four times, one of which exposed a vacuous ordering law — the fixture
+had the reader's game first, so nothing was being reordered), eight new
+structural laws in `checks.js` (fault-injected three times), `npm test` green,
+and the real `index.html` rendered in headless Chromium at 320/375/390/430px
+with a stubbed feed: bar and sheet clean on overflow, tap targets, the 9px type
+floor and contrast. **The sweep found four real defects in this release** —
+`.lt-left` at 8.5px, and `--mu2`/`--mu` measuring 2.09:1, 1.12:1 and 3.81:1 —
+all fixed. ⚠️ **And the sweep itself was wrong twice before it was right**: it
+did not composite alpha, so every figure on the reader's own tinted row was
+computed against solid gold, and its footer check measured before scrolling.
+**A measurement harness is a thing to verify, not to trust.**
+
+🚨 **WHAT IS NOT VERIFIED, AND IT IS THE FEED.** This sandbox cannot reach
+`site.api.espn.com`, `sports-hub-fantasy-api.onrender.com`, `api.sleeper.app`
+or `lm-api-reads.fantasy.espn.com` — all four refused by egress policy. Every
+number above came from fixtures. **CORS is the one thing that looks settled
+without a live call**: `Sports-Hub/render.yaml` sets
+`ALLOW_ORIGINS=https://mcdermottj639.github.io`, which is exactly where this
+app is served from. Render's free tier also sleeps after ~15 min idle, so the
+first request of the day cold-starts for 30-60s — the argument for putting the
+ticker behind the Supabase collector (which already calls that backend hourly,
+`supabase-collector.mjs:31`) rather than twelve phones waking a sleeping box.
+
 ## v110 — Faster Rankings loading
 
 ## v112 — Season odds tracking
@@ -756,6 +860,16 @@ superseded. No model run happens in a member's Rankings view: these are snapshot
       nobody to ask but the screen, and "ran out" and "arrived broken" send
       them to two different places.
 - `rankings-view.js` — saved-snapshot visual derivations and combined Rankings cards; loaded by the app and Lab.
+- `ticker.js` / `ticker.css` / `ticker-config.json` — 🏈 **the live score
+  ticker (v113), WRITTEN AND OFF.** The config ships `enabled: false` with an
+  empty `api`; `checks.js` fails if either is flipped, so turning it on cannot
+  happen by accident. A fixed bar above the footer with the reader's own game,
+  opening a sheet with all six. Mounts in `#lg-tick`, a sibling of `<main>` —
+  **never `#lg-body`**, so a timer-driven repaint can never land on a tab
+  somebody is reading (the v76 fault, designed out rather than guarded).
+  ⚠️ Its feed is a **box-score** endpoint that does not exist on the backend
+  yet, NOT the `/season` one the Season tab uses — see the v113 section for why
+  `/season` cannot carry a live score. `ticker.test.cjs` runs in `npm test`.
 - `rankings-view.test.cjs` — numeric, history, tie, missing-data and safe-rendering regressions.
 - `league.js` — the shell: identity, router, jump nav, the rankings view, and
   the **? sheet** (`helpHTML` / `openHelp` / `closeHelp`).
@@ -1625,6 +1739,30 @@ superseded. No model run happens in a member's Rankings view: these are snapshot
     errors.
 
 ## Open / next
+
+- 🏈 **THE TICKER IS WRITTEN AND CANNOT BE SWITCHED ON FROM HERE** (v113). Two
+  things stand between it and a live bar, in order:
+  1. **The `/api/fantasy/{sport}/scoreboard` endpoint is not deployed.** The
+     patch is written and tested against fake box scores, but it belongs to
+     **Sports-Hub**, a different repo, and this session has read access only.
+     Apply it there, redeploy, and confirm `GET .../scoreboard` answers.
+  2. **Then point `ticker-config.json` at it and set `enabled: true`** — which
+     deliberately fails `checks.js` until somebody also updates that law.
+  ⚠️ **Nothing here has ever seen a live number.** Every host is blocked by
+  this sandbox's egress policy, so the transform is verified against fixtures
+  and the feed is not verified at all. The first thing to confirm on his phone
+  is that the bar says `● Live` rather than `Saved copy`.
+- ⚠️ **THE HISTORY SUB-TABS CLIP IN THE FALLBACK FONT** — seen at 320 and 390px
+  in the v113 render sweep: "Trophy Cas", "Record Boo", "League Lor", "Cum Bow".
+  **Pre-existing and nothing to do with the ticker** — confirmed by rendering
+  the same page with the bar absent. The likely cause is v88's renames (You ·
+  Trophy Case · Record Book · League Lore · Cum Bowl) landing without the
+  fallback-font measurement v53/v55 established for the level-1 bar, which is
+  sized against the fallback precisely because a phone that cannot reach Google
+  Fonts renders it. ⚠️ **Not confirmed on a real phone**: this sandbox falls
+  back to DejaVu Sans, which is wider than iOS's system font, so it may be a
+  harness artefact. Worth one look at 320px on his phone before anyone spends
+  a release on it.
 
 - **Nobody has kept score against ESPN yet** (v40). Both forecasts are on the
   page and neither is proven better — that needs a Brier scoreboard logged

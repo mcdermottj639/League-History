@@ -21,6 +21,9 @@
   <link rel="stylesheet" href="parlay-next.css?v=112">
   <link rel="stylesheet" href="oracle.css?v=112">
   <link rel="stylesheet" href="oracle-editorial.css?v=112">
+  <!-- The live score ticker. Last layer: it is a fixed bar over everything
+       else and its [hidden] rule has to out-specify the palette layer. -->
+  <link rel="stylesheet" href="ticker.css?v=112">
 </head>
 <body class="lg-body">
   <header class="lg-top">
@@ -63,6 +66,14 @@
     </footer>
   </main>
 
+  <!-- 🏈 The live score ticker's mount point (v113, prepared and off).
+       ⚠️ A SIBLING OF <main>, NOT INSIDE #lg-body — deliberately. The body is
+       one element every tab reuses and the v76 stamp exists because two files
+       already painted over a tab somebody was reading. The ticker repaints
+       itself on a timer, behind whatever view is up, so it is given somewhere
+       of its own that no view owns and the problem cannot arise. -->
+  <div id="lg-tick" class="lt-host" hidden></div>
+
   <!-- The commissioner's gate. Loaded before league.js, which asks it
        whether to offer his name in the picker and link his Lab. -->
   <script src="rankings-view.js?v=112" defer></script>
@@ -77,6 +88,7 @@
   <script src="oracle.js?v=112" defer></script>
   <script src="rankings-editor.js?v=112" defer></script>
   <script src="owner-links.js?v=112" defer></script>
+  <script src="ticker.js?v=112" defer></script>
   <script src="league.js?v=112" defer></script>
 </body>
 </html>
