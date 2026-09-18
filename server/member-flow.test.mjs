@@ -138,3 +138,22 @@ test('cached Parlay entry checks quietly, then reports a real connection failure
   reopened.w.fetch=original;reopened.$('[data-pn="refresh"]').click();await until(()=>!reopened.$('.pn-error'));
  }finally{release?.();if(reopened)await reopened.close();await h.close();}
 });
+
+test('cached public rankings render immediately while the shared rankings refresh in the background',async()=>{
+ const rows=Array.from({length:12},(_,i)=>[`Team ${i+1}`,'1-0',130-i,'Saved take '+(i+1),null,null,'Manager '+(i+1),i===0?'McD':'Gotch']);
+ const cachedSnapshot={v:1,y:2026,k:2,l:'Week 2',d:'2026-09-18',r:true,o:rows};
+ const cached={savedAt:Date.now(),weeks:[{k:2,l:'2026 · Week 2',d:'2026-09-18',f:'live-2026-2'}],selected:'live-2026-2',snapshots:{'live-2026-2':cachedSnapshot}};
+ const h=await app({storage:{'lh:rankings-public:v1':JSON.stringify(cached)}});let release;
+ try{
+  const fresh={...cachedSnapshot,o:rows.map((row,i)=>i===0?[...row.slice(0,3),'Fresh take',...row.slice(4)]:row)};
+  h.w.RankingStore.list=()=>new Promise(resolve=>{release=()=>resolve([fresh]);});
+  h.$('[data-l1="rank"]').click();
+  await until(()=>h.$('#lg-body').textContent.includes('Saved rankings · checking for updates…'));
+  assert.match(h.$('#lg-body').textContent,/Saved take 1/);
+  assert.ok(h.$('.pr-list'));
+  release();
+  await until(()=>h.$('#lg-body').textContent.includes('Fresh take'));
+  assert.doesNotMatch(h.$('#lg-body').textContent,/checking for updates/);
+  assert.match(h.w.localStorage.getItem('lh:rankings-public:v1'),/Fresh take/);
+ }finally{release?.();await h.close();}
+});

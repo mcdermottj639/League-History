@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v109';
+  const APP_VERSION = 'v110';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -407,6 +407,36 @@
   const moveCls = (mv) => (mv > 0 ? 'up' : mv < 0 ? 'dn' : 'hold');
 
   const sharedWeeks = new Map();
+  /* Rankings publish through Firebase, which can be slower to wake than the
+     rest of this static app. Keep an unsigned, public copy only: it lets a
+     member read the last published ranking immediately while the shared store
+     checks for a newer one. Publisher sessions and edit drafts use different
+     keys and never enter this cache. */
+  const RANK_PUBLIC_KEY = 'lh:rankings-public:v1';
+  const RANK_PUBLIC_AGE = 86400000;
+  const readRankingCache = () => {
+    try {
+      const cached = JSON.parse(localStorage.getItem(RANK_PUBLIC_KEY) || 'null');
+      if (!cached || Date.now() - cached.savedAt >= RANK_PUBLIC_AGE || !Array.isArray(cached.weeks) ||
+          typeof cached.selected !== 'string' || !cached.snapshots || typeof cached.snapshots !== 'object') return null;
+      const p = cached.snapshots[cached.selected];
+      if (!p || !Array.isArray(p.o) || !p.o.length || !cached.weeks.some(w => w && w.f === cached.selected)) return null;
+      return cached;
+    } catch (_) { return null; }
+  };
+  const writeRankingCache = (weeks, selected, p) => {
+    try {
+      const snapshots = {};
+      weeks.forEach(w => { const saved = sharedWeeks.get(w.f); if (saved) snapshots[w.f] = saved; });
+      snapshots[selected] = p;
+      localStorage.setItem(RANK_PUBLIC_KEY, JSON.stringify({ savedAt: Date.now(), weeks, selected, snapshots }));
+    } catch (_) {}
+  };
+  const applyRankingCache = (cached) => {
+    sharedWeeks.clear();
+    Object.entries(cached.snapshots).forEach(([key, p]) => { if (p && Array.isArray(p.o)) sharedWeeks.set(key, p); });
+    S.weeks = cached.weeks;
+  };
   async function loadWeeks() {
     S.wkErr = null;
     try {
@@ -499,12 +529,47 @@
       <div class="ffp-card"><div class="ffp-empty"><b>That week's data doesn't look right.</b>The file is there but the rankings inside it could not be read, so nothing is shown rather than a half of one. The league's history below is unaffected.</div></div>`;
 
   let rankingRequest = 0;
+  function ownsRanking(requestId, host) {
+    return requestId === rankingRequest && (!host.dataset.view || host.dataset.view === 'rank');
+  }
+  function renderRanking(host, p, weeks, notice, allowControls) {
+    if (!p || !Array.isArray(p.o) || !p.o.length) { host.innerHTML = wkBad(); return false; }
+    try {
+      host.innerHTML = (notice ? '<p class="pr-note">' + esc(notice) + '</p>' : '') + rankHTML(p, weeks);
+    } catch (e) {
+      console.error('[rankings] that week would not render', e);
+      host.innerHTML = wkBad();
+      return false;
+    }
+    host.querySelectorAll('.rk-hide').forEach(button => { button.onclick = () => {
+      const details = button.closest('details'); details.open = false; details.querySelector('summary').focus();
+    }; });
+    mountRankingControls(allowControls ? p : null);
+    const sel = $('#lg-wksel');
+    if (sel) sel.onchange = () => { S.week = sel.value; paint(); };
+    return true;
+  }
   async function paintRankings(host) {
     const requestId = ++rankingRequest;
     host.innerHTML = '<div class="ffp-card"><div class="ffp-empty">Loading this week…</div></div>';
+    const cached = readRankingCache();
+    if (cached) {
+      applyRankingCache(cached);
+      if (!S.week || !S.weeks.some(w => w.f === S.week) || !sharedWeeks.has(S.week)) S.week = cached.selected;
+      const p = sharedWeeks.get(S.week);
+      if (ownsRanking(requestId, host)) renderRanking(host, p, S.weeks, 'Saved rankings · checking for updates…', false);
+    }
     const weeks = await loadWeeks();
-    if (requestId !== rankingRequest || (host.dataset.view && host.dataset.view !== "rank")) return;
+    if (!ownsRanking(requestId, host)) return;
     if (!weeks.length) {
+      /* An unreachable refresh must never turn a readable saved ranking into
+         a blank tab. A genuine empty shared archive still replaces the cache,
+         so an unpublished or retracted week remains honest. */
+      if (cached && S.wkErr) {
+        applyRankingCache(cached); S.week = cached.selected;
+        renderRanking(host, sharedWeeks.get(S.week), S.weeks, 'Saved rankings · refresh unavailable', false);
+        return;
+      }
       host.innerHTML = `<h2 class="section-title">🏆 Power Rankings</h2>
       <div class="ffp-card"><div class="ffp-empty">${WK_EMPTY[S.wkErr] || WK_EMPTY.none}</div></div><div id="lg-ranking-controls"></div>`;
       mountRankingControls(null);
@@ -513,7 +578,7 @@
     if (!S.week || !weeks.some((w) => w.f === S.week)) S.week = weeks[0].f;
     let p;
     try { p = await loadWeek(S.week); } catch (e) {
-      if (requestId !== rankingRequest || (host.dataset.view && host.dataset.view !== 'rank')) return;
+      if (!ownsRanking(requestId, host)) return;
       /* ⚠️ The offer and the control have to agree. With other weeks on file
          the picker is rendered right under the sentence that points at it;
          with only one, the sentence does not make an offer it cannot keep. */
@@ -536,21 +601,10 @@
        a confident, complete, empty ranking with nobody in it.
        Both are the same fault — the file is readable and its contents are not
        a week — so both get the same honest sentence. */
-    if (requestId !== rankingRequest || (host.dataset.view && host.dataset.view !== "rank")) return;
+    if (!ownsRanking(requestId, host)) return;
     if (!p || !Array.isArray(p.o) || !p.o.length) { host.innerHTML = wkBad(); return; }
-    try {
-      host.innerHTML = (S.wkErr ? '<p class="pr-note">' + (S.wkErr === 'invalid' ? 'The shared rankings have an unreadable week.' : 'Shared rankings could not be reached.') + ' Showing the older published file.</p>' : '') + rankHTML(p, weeks);
-    } catch (e) {
-      console.error('[rankings] that week would not render', e);
-      host.innerHTML = wkBad();
-      return;
-    }
-    host.querySelectorAll('.rk-hide').forEach(button => { button.onclick = () => {
-      const details = button.closest('details'); details.open = false; details.querySelector('summary').focus();
-    }; });
-    mountRankingControls(p);
-    const sel = $('#lg-wksel');
-    if (sel) sel.onchange = () => { S.week = sel.value; paint(); };
+    const fallbackNotice = S.wkErr ? (S.wkErr === 'invalid' ? 'The shared rankings have an unreadable week. Showing the older published file.' : 'Shared rankings could not be reached. Showing the older published file.') : '';
+    if (renderRanking(host, p, weeks, fallbackNotice, true)) writeRankingCache(weeks, S.week, p);
   }
 
   function mountRankingControls(p) {

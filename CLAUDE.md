@@ -164,6 +164,17 @@ reopening retain working text. Save draft remains the explicit server sync;
 local backup is not cross-device sync. Never clear Hurd's production rows
 for tests. Missing score/confidence inputs must keep Publish disabled.
 
+## v110 — Faster Rankings loading
+
+Public Rankings snapshots are cached separately under `lh:rankings-public:v1`
+for up to one day. Readers render the last successfully published ranking
+immediately with a clear refresh status while Firebase checks in the background.
+An unavailable refresh leaves that public copy readable; a confirmed empty
+shared archive still renders honestly. The cache contains only public snapshots,
+never publisher sessions, credentials, or ranking edit drafts. The publisher
+controls wait for the fresh shared snapshot, so a saved display cannot edit or
+unpublish stale data.
+
 ## v109 — Faster Oracle loading
 
 Public Oracle responses are cached separately under lh:oracle-public:2026:v1
