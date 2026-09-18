@@ -164,6 +164,15 @@ reopening retain working text. Save draft remains the explicit server sync;
 local backup is not cross-device sync. Never clear Hurd's production rows
 for tests. Missing score/confidence inputs must keep Publish disabled.
 
+## v108 — Compact Oracle spacing
+
+Tighten the editorial cards without reducing commentary, team-name, or score
+font sizes: 48px crests, shorter flexible name rows, closer record/score spacing,
+and confidence beside the pick label instead of in a third banner row. Reduce
+section padding, divider gaps, and card spacing. Long names still wrap; score
+baselines retain shared grid alignment. CSS-only presentation adjustment:
+no Oracle logic, storage, drafts, or published prediction changes.
+
 ## v107 — Oracle editorial design (display-only)
 
 Oracle's public and private-preview cards use an ivory/plum/gold editorial skin

@@ -60,3 +60,23 @@
 .or-matchup-nav button{font-size:12px}
 .oracle .or-editorial-card .or-analysis p{font-size:18px}
 @media(max-width:420px){.or-editorial-card .or-team .or-team-name{font-size:20px}.or-editorial-card .or-call{grid-template-columns:1fr}.or-editorial-card .or-call>small{justify-self:start;max-width:none}.or-editorial-card .or-projected-record{font-size:11px}.or-editorial-card .or-team small{font-size:10px;letter-spacing:0}}
+/* Compact rhythm: remove empty space, not readable text or saved content. */
+.oracle .or-editorial-card{padding-top:14px;padding-bottom:14px;margin-bottom:14px}
+.or-editorial-card .or-card-kicker{padding-bottom:8px}
+.or-editorial-card .or-matchup{padding-top:12px}
+.or-editorial-card .or-side{padding-top:0;padding-bottom:4px;gap:5px}
+.or-editorial-card .or-team{grid-template-rows:52px minmax(46px,auto) 22px 16px;gap:4px;align-self:start}
+.or-editorial-card .or-team img{width:48px!important;height:48px!important}
+.or-editorial-card .or-crest-fallback{width:48px;height:48px;font-size:28px}
+.or-editorial-card .or-call{grid-template-columns:minmax(0,1fr) auto;padding:8px 12px;margin-top:8px;gap:5px 8px}
+.or-editorial-card .or-call>span{grid-column:1;grid-row:1}
+.or-editorial-card .or-call>b{grid-column:1/-1;grid-row:2}
+.or-editorial-card .or-call>small{grid-column:2;grid-row:1;justify-self:end;max-width:none;padding:4px 7px;white-space:nowrap}
+.or-editorial-card .or-analysis{margin-top:14px;padding-top:12px}
+.or-editorial-card .or-analysis>b{margin-bottom:9px}
+.or-prose-heading{padding:6px 9px;margin-bottom:10px}
+.or-verdict{margin-top:14px;padding-top:4px;padding-bottom:4px}
+.or-editorial-card footer{margin-top:14px;padding-top:8px}
+.or-editorial-hero{padding-top:20px;padding-bottom:12px}
+.or-editorial-hero h2{margin:8px 0}
+.or-matchup-nav{padding-top:12px;padding-bottom:10px}
