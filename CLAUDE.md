@@ -169,15 +169,18 @@ for tests. Missing score/confidence inputs must keep Publish disabled.
 ## v112 — Season odds tracking
 
 **Who carries the ticket** now records the PRICES each member has been taking,
-not just whether their leg hit. Every member row carries `avg · total` beside
-their record, and two season tiles carry the same pair for the weekly ticket.
+not just whether their leg hit. Every member row carries their **average**
+price beside their record, and a season tile carries the same for the weekly
+ticket. ⚠️ **The average is the only figure PRINTED** (owner: *"Just give us
+avg we don't need total"*) — `tally()` still computes the sum, because the
+average is made of it and a stored total costs nothing, but nothing renders it.
 
 🚨 **THE ODDS ARE ADDED UP, AND THAT IS THE OWNER'S EXPLICIT CALL, NOT A
 SHORTCUT.** *"Why would we do parlay truly it's the season tracking so we want
 to see the odds they've been doing… we do add them up u can the total and then
 the avg for each weeks. Avg example -153 while total is -740."* So +100 and
--150 reads **-50**, where the same two legs multiplied as a real parlay would
-pay **+233**. This is a record of what the league has been betting, not a
+-150 reads **-50** (and averages **-25**), where the same two legs multiplied
+as a real parlay would pay **+233**. This is a record of what the league has been betting, not a
 payout, and the copy says so in as many words (**"Added, not parlay math"**) —
 ⚠️ an average landing between -100 and +100 is an artifact of adding American
 prices and is NOT a quotable line. The v3 fault is two figures side by side

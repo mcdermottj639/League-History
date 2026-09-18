@@ -42,9 +42,9 @@ async function seasonView(dataOverride){const h=harness(true,'before',dataOverri
 test('season odds add each locked price per member and never multiply them as a parlay',async()=>{
  const html=await seasonView(oddsSeason());
  // McD took -150 twice: the tally is the sum and its own average, not +233-style parlay math.
- assert.match(html,/McD<\/b><span>2–0 · 100%<small class="pn-block">-150 avg · -300 total<\/small>/);
+ assert.match(html,/McD<\/b><span>2–0 · 100%<small class="pn-block">-150 avg<\/small>/);
  // Hurd's +100 and -120 is the owner's own example shape: added, it reads -20.
- assert.match(html,/Hurd<\/b><span>1–1 · 50%<small class="pn-block">-10 avg · -20 total<\/small>/);
+ assert.match(html,/Hurd<\/b><span>1–1 · 50%<small class="pn-block">-10 avg<\/small>/);
  assert.match(html,/odds they have been taking/);
 });
 
@@ -52,8 +52,8 @@ test('season weekly odds prefer the placed ticket and name how many weeks each s
  const html=await seasonView(oddsSeason());
  // Week 1 counts Zach's placed +650 over the tracked +500; week 2 falls back to tracked +400.
  assert.match(html,/<strong>\+525<\/strong><small>Avg weekly odds<\/small>/);
- assert.match(html,/<strong>\+1,050<\/strong><small>Season odds total<\/small>/);
- assert.match(html,/2 of 2 tickets · 1 from the placed ticket, 1 tracked at kickoff\. Added, not parlay math\./);
+ assert.doesNotMatch(html,/Season odds total/);
+ assert.match(html,/2 of 2 tickets · 1 from the placed ticket, 1 tracked at kickoff\. Averaged, not parlay math\./);
 });
 
 test('unlocked, unpriced and flagged legs are excluded from the odds tally and the shortfall is visible',async()=>{
@@ -61,9 +61,9 @@ test('unlocked, unpriced and flagged legs are excluded from the odds tally and t
  data.weeks[1].ticket.legs=[leg('McD',-150),leg('Hurd',-120,'miss',{missingQuote:true}),leg('Slemp',150,'upcoming',{lockedAt:null}),leg('Zach',null)];
  const html=await seasonView(data);
  // Hurd keeps only his week 1 price; Slemp's unlocked leg and Zach's missing price never enter a total.
- assert.match(html,/Hurd<\/b><span>1–1 · 50%<small class="pn-block">\+100 avg · \+100 total<\/small>/);
- assert.match(html,/Slemp<\/b><span>0–1 · 0%<small class="pn-block">\+200 avg · \+200 total<\/small>/);
- assert.match(html,/Zach<\/b><span>2–0 · 100%<small class="pn-block">-110 avg · -110 total<\/small>/);
+ assert.match(html,/Hurd<\/b><span>1–1 · 50%<small class="pn-block">\+100 avg<\/small>/);
+ assert.match(html,/Slemp<\/b><span>0–1 · 0%<small class="pn-block">\+200 avg<\/small>/);
+ assert.match(html,/Zach<\/b><span>2–0 · 100%<small class="pn-block">-110 avg<\/small>/);
  // With the per-row count gone, the caption is the only thing naming the shortfall.
  assert.match(html,/3 legs had no locked price and are left out\./);
 });
