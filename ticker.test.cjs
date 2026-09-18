@@ -45,7 +45,7 @@ const BOARD = (over) => ({
 const ALL_PRE = { sport: 'football', week: 3, ttl: 45, anyLive: false,
   games: BOARD().games.map((g) => game(Number(g.away.teamId), Number(g.home.teamId), 0, 0, 9, 9, 'pre')) };
 
-function build({ me = 'McD', cfg = { enabled: true, api: 'https://x.test' }, board = BOARD(), boardFails = false } = {}) {
+function build({ me = 'McD', cfg = { enabled: true, feed: 'https://x.test/board' }, board = BOARD(), boardFails = false } = {}) {
   const dom = new JSDOM(
     `<!DOCTYPE html><html data-palette="champagne"><body class="lg-body">
        <main class="lg-main"><div id="lg-body">ARCHIVE</div></main>
@@ -87,7 +87,7 @@ const settle = () => new Promise((r) => setTimeout(r, 30));
   /* 1 ── OFF IS OFF. This is how it ships: one local config read, no api call,
          nothing rendered. If this ever fails, merging is a behaviour change. */
   {
-    const t = build({ cfg: { enabled: false, api: '' } });
+    const t = build({ cfg: { enabled: false, feed: '' } });
     const r = await t.w.LeagueTicker.boot(t.crest);
     await settle();
     is('disabled config: boot returns false', r, false);
@@ -98,9 +98,9 @@ const settle = () => new Promise((r) => setTimeout(r, 30));
   /* An empty api with enabled:true is still off — a half-filled config must
      not send the app at `undefined/api/...`. */
   {
-    const t = build({ cfg: { enabled: true, api: '' } });
-    is('enabled but no api is still off', await t.w.LeagueTicker.boot(t.crest), false);
-    is('enabled but no api: no call', t.calls.api, 0);
+    const t = build({ cfg: { enabled: true, feed: '' } });
+    is('enabled but no feed url is still off', await t.w.LeagueTicker.boot(t.crest), false);
+    is('enabled but no feed url: no call', t.calls.api, 0);
   }
 
   /* 2 ── THE THURSDAY RULE. A full, valid board where nothing has kicked off

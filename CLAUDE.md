@@ -194,6 +194,26 @@ on every screen with nothing saying so: the v3 fault, app-wide.
 `engine.mjs:84` already refuses to grade a parlay on. Two independent signs
 that the season endpoint is a settled-week feed.
 
+**The members' phones read Supabase, not Render.** The Supabase collector
+(`supabase-collector.mjs`) gained a scoreboard step and the edge function a
+public `GET /api/parlay/scoreboard`. 🚨 **BOTH ARE OFF**: the step runs only
+when `config.scoreboard_url` is set, the column is **nullable with no default**
+so applying the migration changes nothing, and the board validator **fails
+closed** — an unwired deployment stores nothing rather than storing an error
+page as a 0-0 board. ⚠️ **The validator is `ticker.js`'s own**, imported by the
+edge entry with a faked `window`, exactly as `espn.js` already is: one
+definition of what a board is, not two. ⚠️ **Cadence is read off the board**
+(60s while any game is live, 15 min otherwise) rather than a clock, because
+`dispatch()` fires every 30 seconds and that is far more often than this needs.
+⚠️ **A failed poll leaves the last board in place** — it ages out on the
+reader's own six-hour rule; deleting it would turn one bad poll into a bar that
+vanishes mid-Sunday. And the scoreboard can never fail the parlay run it rides
+on: the parlay is this collector's job and the board is a courtesy on top.
+⚠️ **Why it routes this way at all**: Render's free tier sleeps after ~15 min
+idle and cold-starts for 30-60s. On the one element that is on every screen,
+that is a minute of nothing. One server polling on a schedule means the cold
+start happens to nobody.
+
 **So the backend needs one new endpoint, and the data is already there.**
 `main.py:_find_box` already loops over every box score and throws five of six
 away because `/matchup` is scoped to the owner's team. `/api/fantasy/{sport}/
@@ -870,6 +890,10 @@ superseded. No model run happens in a member's Rankings view: these are snapshot
   ⚠️ Its feed is a **box-score** endpoint that does not exist on the backend
   yet, NOT the `/season` one the Season tab uses — see the v113 section for why
   `/season` cannot carry a live score. `ticker.test.cjs` runs in `npm test`.
+  ⚠️ `_t.valid` is **also the collector's validator**, imported into the edge
+  function with a faked `window` — so it has to stay free of `document` and
+  `localStorage` at module scope. A test in `server/supabase.test.mjs` loads it
+  by indirect eval, which is the one place that contract can break loudly.
 - `rankings-view.test.cjs` — numeric, history, tie, missing-data and safe-rendering regressions.
 - `league.js` — the shell: identity, router, jump nav, the rankings view, and
   the **? sheet** (`helpHTML` / `openHelp` / `closeHelp`).
@@ -1746,8 +1770,15 @@ superseded. No model run happens in a member's Rankings view: these are snapshot
      patch is written and tested against fake box scores, but it belongs to
      **Sports-Hub**, a different repo, and this session has read access only.
      Apply it there, redeploy, and confirm `GET .../scoreboard` answers.
-  2. **Then point `ticker-config.json` at it and set `enabled: true`** — which
-     deliberately fails `checks.js` until somebody also updates that law.
+  2. **Set `config.scoreboard_url` on the Supabase side** so the collector
+     starts storing a board, and confirm `GET .../api/parlay/scoreboard`
+     answers 200 rather than 503.
+  3. **Then point `ticker-config.json`'s `feed` at that route and set
+     `enabled: true`** — which deliberately fails `checks.js` until somebody
+     also updates that law. ⚠️ `feed` is the **whole url**, not a base: the
+     first cut appended `/api/fantasy/football/scoreboard`, which is the
+     Sports-Hub path shape, so the one file whose job is to choose a server
+     could only ever choose one kind.
   ⚠️ **Nothing here has ever seen a live number.** Every host is blocked by
   this sandbox's egress policy, so the transform is verified against fixtures
   and the feed is not verified at all. The first thing to confirm on his phone

@@ -1,6 +1,6 @@
 {
   "enabled": false,
-  "api": "",
+  "feed": "",
   "year": 2026,
-  "note": "Live score ticker — PREPARED AND OFF (v113). Nothing renders and no network call is made while `enabled` is false. To turn it on: set `api` to whatever serves GET {api}/api/fantasy/football/scoreboard (the Sports-Hub endpoint directly, or a Supabase function in front of it) and set `enabled` to true. See the v113 section of CLAUDE.md before you do."
+  "note": "Live score ticker \u2014 PREPARED AND OFF (v113). Nothing renders and no network call is made while `enabled` is false. To turn it on, set `feed` to the FULL url of something that serves the scoreboard shape \u2014 either the Sports-Hub endpoint (.../api/fantasy/football/scoreboard) or the Supabase route in front of it (.../functions/v1/league-parlay/api/parlay/scoreboard) \u2014 and set `enabled` to true. Prefer the Supabase one: it is what keeps a sleeping Render box out of twelve members' request path. See the v113 section of CLAUDE.md first."
 }

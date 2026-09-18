@@ -3,7 +3,7 @@ import {ensure,publicWeek,savePick,resetParlay,failure,lockDue,writable,savePlac
 import {transaction,digest,randomToken,constantEqual} from './supabase-store.mjs';
 import {collect} from './supabase-collector.mjs';
 
-export function edgeApp(rpc,{clock=Date.now,fetchJSON,managerFor}={}){
+export function edgeApp(rpc,{clock=Date.now,fetchJSON,managerFor,validBoard}={}){
  return async req=>{
   const headers={'Content-Type':'application/json','Cache-Control':'no-store','Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff','Access-Control-Allow-Headers':'Content-Type, Authorization','Access-Control-Allow-Methods':'GET, POST, OPTIONS'};
   const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers});
@@ -34,8 +34,21 @@ export function edgeApp(rpc,{clock=Date.now,fetchJSON,managerFor}={}){
     const token=(req.headers.get('authorization')||'').replace(/^Bearer /,'');
     if(!config.collector_secret||!constantEqual(token,config.collector_secret))throw failure('Not authorized',401);
     if(!config.collection_enabled)return json({ok:true,disabled:true});
-    const result=await collect(rpc,config,{clock,fetchJSON,managerFor});
+    const result=await collect(rpc,config,{clock,fetchJSON,managerFor,validBoard});
     return json(result,result.ok?200:502);
+   }
+   /* 🏈 The ticker's board (v113). Public and read-only — it is scores, the
+      same thing twelve people can read on ESPN. It carries no picks, no
+      session and no member, so it deliberately sits OUTSIDE the session gate.
+      ⚠️ 503 rather than an empty board when nothing has been collected: "no
+      games" and "nobody has ever polled" are opposite facts, and a reader that
+      cannot tell them apart shows zeros on a live Sunday. */
+   if(path==='/api/parlay/scoreboard'&&req.method==='GET'){
+    const season=(await rpc('read')).state.seasons[year];
+    const board=season?.scoreboard;
+    if(!board?.games)return json({error:season?.collector?.lastScoreboardError
+      ||'No scoreboard has been collected yet.'},503);
+    return json({week:board.week??null,games:board.games,observedAt:board.observedAt??null});
    }
    if(path==='/api/parlay/session'&&req.method==='POST'){
     // Persisted limit spans workers; no raw IP addresses are saved.

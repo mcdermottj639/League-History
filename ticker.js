@@ -67,7 +67,7 @@
       const r = await fetch(CFG, { cache: 'no-store' });
       if (r.ok) {
         const c = await r.json();
-        if (c && c.enabled && typeof c.api === 'string' && c.api) S.cfg = c;
+        if (c && c.enabled && typeof c.feed === 'string' && c.feed) S.cfg = c;
       }
     } catch (_) { /* a missing config is the feature being off, not an error */ }
     return S.cfg;
@@ -85,8 +85,14 @@
       && ['pre', 'live', 'final'].includes(g.state));
   }
 
-  async function fetchBoard(api) {
-    const url = String(api).replace(/\/+$/, '') + '/api/fantasy/football/scoreboard';
+  /* 🚨 `feed` IS THE WHOLE URL, NOT A BASE WITH A PATH BOLTED ON. The first
+     cut took a base and appended `/api/fantasy/football/scoreboard`, which is
+     the Sports-Hub backend's path shape — so the config could only ever point
+     at one kind of server, in a file whose entire job is to decide which
+     server this is. It can now be the Sports-Hub endpoint directly or the
+     Supabase route in front of it, and moving between them is a config edit
+     rather than a code change. */
+  async function fetchBoard(url) {
     const r = await fetch(url, { cache: 'no-store', headers: { Accept: 'application/json' },
       signal: AbortSignal.timeout(12000) });
     if (!r.ok) throw new Error('http ' + r.status);
@@ -274,7 +280,7 @@
     if (!c) return;                               // off: no timer, no request
     if (document.hidden) { schedule(); return; }  // a background tab asks nothing
     if (S.flight) return;
-    S.flight = fetchBoard(c.api)
+    S.flight = fetchBoard(c.feed)
       .then((b) => { S.board = b; S.at = Date.now(); S.fresh = true; put(CACHE, { at: S.at, board: b }); })
       .catch(() => { S.fresh = false; })          // keep the remembered board, relabelled
       .finally(() => { S.flight = null; render(); schedule(); });

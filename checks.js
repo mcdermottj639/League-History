@@ -2197,7 +2197,7 @@ function tickerLaws() {
   catch (_) { fail('ticker-config.json is missing or will not parse'); }
   if (cfg) {
     if (cfg.enabled !== false) fail('ticker-config.json ships ENABLED — the ticker was prepared to be off until the feed is proven on a phone');
-    if (cfg.api) fail('ticker-config.json ships a live api — no feed address belongs in the repo until it is turned on deliberately');
+    if (cfg.feed) fail('ticker-config.json ships a live feed url — no feed address belongs in the repo until it is turned on deliberately');
   }
 
   /* ② AND OFF MEANS SILENT. `boot` must bail before any external call. The
@@ -2274,6 +2274,45 @@ function tickerLaws() {
     fail('ticker.js reasons about the day of the week — the kickoff gate reads the feed\'s own `pre` state, not a calendar');
   }
   if (!/state !== 'pre'/.test(tj)) fail('ticker.js has no pre-kickoff gate — it would show a bar of zeros before Thursday');
+
+  /* ⑨ 🚨 THE COLLECTOR STEP IS OFF TOO, AND FAILS CLOSED. The scoreboard poll
+     runs only when `config.scoreboard_url` is set — the column is nullable
+     with no default, so every existing deployment reads `undefined` and this
+     does nothing. And the validator defaults to REFUSING: a deployment that
+     forgets to wire it stores nothing, rather than storing an error page as a
+     0-0 board on every screen. */
+  const sc = fs.readFileSync('./server/supabase-collector.mjs', 'utf8');
+  if (!/if\(config\.scoreboard_url\)/.test(sc)) {
+    fail('the Supabase collector does not gate its scoreboard poll on config.scoreboard_url — shipping it would start traffic');
+  }
+  if (!/validBoard\s*=\s*\(\)\s*=>\s*false/.test(sc)) {
+    fail('the collector\'s board validator does not default to refusing — an unwired deployment would store whatever the source returned');
+  }
+
+  /* ⑩ AND THE EDGE ENTRY ACTUALLY WIRES IT. Fails-closed means a missing
+     validator is silent: the feature would simply never store anything and
+     nothing would say why. Assert the one line that turns it on, and that it
+     reuses the BROWSER's definition rather than a second one. */
+  const edge = fs.readFileSync('./supabase/functions/league-parlay/index.ts', 'utf8');
+  if (!/validBoard/.test(edge)) fail('the edge entry never passes validBoard — the collector would fail closed forever and store nothing');
+  if (!/LeagueTicker\._t\.valid/.test(edge)) fail('the edge entry does not reuse ticker.js\'s own validator — a second definition of "a valid board" would drift');
+
+  /* ⑪ THE MIGRATION CANNOT TURN ANYTHING ON. A default here would enable
+     collection the moment it is applied, which is the opposite of what was
+     asked for. */
+  const mig = fs.readdirSync('./supabase/migrations').filter((f) => /scoreboard/.test(f));
+  if (!mig.length) fail('no scoreboard migration found');
+  mig.forEach((f) => {
+    /* ⚠️ THE STATEMENT, NOT THE FILE. Written against the whole file this
+       fired on the migration's own comment — which says, correctly, that NULL
+       is the default. Third time in this block that a law has matched the
+       prose explaining it; scope to the `add column` clause. */
+    const sql = fs.readFileSync('./supabase/migrations/' + f, 'utf8');
+    const stmt = (sql.match(/add column[^;]*scoreboard_url[^;]*/i) || [''])[0];
+    if (!stmt) fail(`${f} has no add-column statement for scoreboard_url`);
+    if (/\bdefault\b/i.test(stmt)) fail(`${f} gives scoreboard_url a DEFAULT — applying it would switch collection on`);
+    if (/not\s+null/i.test(stmt)) fail(`${f} makes scoreboard_url NOT NULL — null is what "off" means`);
+  });
 
   console.log(`  ${mark()} the ticker: prepared, wired, and off`);
 }

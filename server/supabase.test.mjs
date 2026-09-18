@@ -103,3 +103,108 @@ test('Concurrent collector changes do not overwrite picks saved during fetch; ou
  await collect(b.rpc,b.config,{clock:()=>now,fetchJSON:async()=>{throw Error('offline');}});
  assert.ok(b.store.read().seasons[2026].weeks[1].picks.McD.lockedAt);
 });
+
+/* ══ 🏈 THE TICKER'S SCOREBOARD (v113) — PREPARED AND OFF ═════════════════
+   Fixtures only. The point of most of these is that shipping this code cannot
+   start traffic or store anything anywhere. */
+const BOARD=(over={})=>({week:3,games:[
+ {away:{teamId:'1',team:'Aarogant Fraudgers',score:96.4,yetToPlay:4,starters:9,onBye:0},
+  home:{teamId:'7',team:'Death Dont Hurts Very Long',score:88.2,yetToPlay:3,starters:9,onBye:0},state:'live'},
+ {away:{teamId:'3',team:'Slob on my Cobb',score:118.6,yetToPlay:0,starters:9,onBye:0},
+  home:{teamId:'6',team:'Jared Goff Hits Women',score:102.3,yetToPlay:0,starters:9,onBye:0},state:'final'},
+],...over});
+const FINAL_BOARD=()=>BOARD({games:BOARD().games.map(g=>({...g,state:'final'}))});
+/* 🚨 THE REAL BROWSER VALIDATOR, LOADED THE WAY THE EDGE FUNCTION LOADS IT.
+   If ticker.js ever touches `document` or `localStorage` at module scope this
+   throws here, which is the only place that failure can be caught before Deno
+   hits it in production. */
+async function browserValidator(){
+ const fake={};globalThis.window=fake;
+ const {readFileSync}=await import('node:fs');
+ /* ⚠️ INDIRECT EVAL, so the source runs in GLOBAL scope and its bare `window`
+    resolves to `globalThis.window` — which is the actual contract the edge
+    function relies on. Passing `window` as a function parameter would shadow
+    it and pass even if ticker.js only ever worked with an injected one. */
+ (0,eval)(readFileSync('./ticker.js','utf8'));
+ return board=>fake.LeagueTicker._t.valid(board);
+}
+const withBoard=async url=>{const b=await backend();b.config.scoreboard_url=url;return b;};
+const boardOf=b=>b.store.read().seasons[2026].scoreboard;
+const ask=b=>b.request('api/parlay/scoreboard');
+
+test('Scoreboard collection is OFF with no url: nothing fetched, nothing stored, the route says so',async()=>{
+ const b=await backend();const urls=[];
+ await collect(b.rpc,b.config,{clock:()=>T,validBoard:()=>true,
+  fetchJSON:async url=>{urls.push(url);throw Error('offline');}});
+ assert.ok(!urls.some(u=>u.includes('scoreboard')&&!u.includes('espn.com')));
+ assert.equal(boardOf(b),undefined);
+ const r=await ask(b);assert.equal(r.status,503);
+ assert.match((await r.json()).error,/No scoreboard has been collected/);
+});
+
+test('Scoreboard collection FAILS CLOSED without a validator, even with a url and a good payload',async()=>{
+ const b=await withBoard('https://feed.test/board');
+ await collect(b.rpc,b.config,{clock:()=>T,fetchJSON:async u=>u.includes('feed.test')?BOARD():{events:[]}});
+ assert.equal(boardOf(b),undefined,'a collector with no validator must store nothing');
+ assert.match(b.store.read().seasons[2026].collector.lastScoreboardError,/Unrecognised/);
+});
+
+test('A valid board is stored with its observation time and served publicly',async()=>{
+ const b=await withBoard('https://feed.test/board');const validBoard=await browserValidator();
+ await collect(b.rpc,b.config,{clock:()=>T,validBoard,
+  fetchJSON:async u=>u.includes('feed.test')?BOARD():{events:[]}});
+ assert.equal(boardOf(b).games.length,2);
+ assert.equal(boardOf(b).observedAt,T);
+ const r=await ask(b);assert.equal(r.status,200);
+ const j=await r.json();
+ assert.equal(j.week,3);assert.equal(j.games[0].home.score,88.2);assert.equal(j.observedAt,T);
+ /* Public: scores, no picks, no session. It must answer with no token at all. */
+ assert.ok(!JSON.stringify(j).includes('picks'));
+});
+
+test('An error page is refused and the board already stored stays readable',async()=>{
+ const b=await withBoard('https://feed.test/board');const validBoard=await browserValidator();
+ await collect(b.rpc,b.config,{clock:()=>T,validBoard,fetchJSON:async u=>u.includes('feed.test')?BOARD():{events:[]}});
+ assert.equal(boardOf(b).games.length,2);
+ for(const junk of [{error:'gateway'},{week:3},{week:3,games:[{away:{teamId:'1'},state:'live'}]},
+                    {week:3,games:[{...BOARD().games[0],state:'halftime'}]}]){
+  await collect(b.rpc,b.config,{clock:()=>T+3600000,validBoard,
+   fetchJSON:async u=>u.includes('feed.test')?junk:{events:[]}});
+  assert.equal(boardOf(b).games.length,2,'the last good board must survive a bad poll');
+  assert.ok(b.store.read().seasons[2026].collector.lastScoreboardError);
+ }
+});
+
+test('Cadence comes from the board: 60s while live, 15 minutes once everything is final',async()=>{
+ const validBoard=await browserValidator();
+ const b=await withBoard('https://feed.test/board');let hits=0;
+ const run=async at=>collect(b.rpc,b.config,{clock:()=>at,validBoard,
+  fetchJSON:async u=>{if(!u.includes('feed.test'))return {events:[]};hits++;return BOARD();}});
+ await run(T);assert.equal(hits,1);
+ await run(T+30000);assert.equal(hits,1,'30s after a live board is too soon');
+ await run(T+61000);assert.equal(hits,2,'60s after a live board is due');
+
+ const c=await withBoard('https://feed.test/board');let cHits=0;
+ const runFinal=async at=>collect(c.rpc,c.config,{clock:()=>at,validBoard,
+  fetchJSON:async u=>{if(!u.includes('feed.test'))return {events:[]};cHits++;return FINAL_BOARD();}});
+ await runFinal(T);assert.equal(cHits,1);
+ await runFinal(T+120000);assert.equal(cHits,1,'two minutes after an all-final board is too soon');
+ await runFinal(T+901000);assert.equal(cHits,2,'fifteen minutes on, poll again');
+});
+
+test('A scoreboard outage never changes the parlay run it rides along with',async()=>{
+ /* ⚠️ ISOLATED, NOT ASSERTED ABSOLUTELY. The first cut asserted `ok === true`
+    with a stub ESPN payload that was already failing the run for parlay
+    reasons, so it was testing the stub, not the change. What matters is that
+    configuring a board CANNOT move the result either way, so the two runs are
+    identical except for the one variable. */
+ const validBoard=await browserValidator();
+ const espn=async u=>{if(u.includes('feed.test'))throw Error('Source HTTP 502');return {events:[]};};
+ const plain=await backend();
+ const base=await collect(plain.rpc,plain.config,{clock:()=>T,validBoard,fetchJSON:espn});
+ const b=await withBoard('https://feed.test/board');
+ const withFeed=await collect(b.rpc,b.config,{clock:()=>T,validBoard,fetchJSON:espn});
+ assert.deepEqual(withFeed,base,'the parlay collector owns the run; the board is a courtesy on top');
+ assert.match(b.store.read().seasons[2026].collector.lastScoreboardError,/502/);
+ assert.equal(plain.store.read().seasons[2026].collector.lastScoreboardError,undefined);
+});
