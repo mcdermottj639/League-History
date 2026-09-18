@@ -164,6 +164,28 @@ reopening retain working text. Save draft remains the explicit server sync;
 local backup is not cross-device sync. Never clear Hurd's production rows
 for tests. Missing score/confidence inputs must keep Publish disabled.
 
+## v105 — Decimal-score publishing and draft safety
+
+Oracle scores accept finite decimals from 0 through 300 in both the editor and
+the deployed Supabase handler; integer-only validation previously blocked valid
+125.9-style predictions. All six matchups must still have scores, a winner,
+write-up and integer confidence from 0 through 100 before publishing. Each card
+now identifies its missing fields, with readable status and completion messages.
+
+Preview/back and week switching use the loaded state, so they work offline and
+cannot replace working text with a fresh server response. Saves capture a
+snapshot without rebuilding the form afterward; typing during a slow save stays
+intact and the status explains when newer edits still need syncing. Exact text,
+including line breaks, remains in the device backup. Selected weeks are restored.
+Device-only drafts are never substituted into the public reader view. Existing
+capabilities, links, stored predictions, and explicit Save draft semantics remain
+unchanged. Never publish test predictions to production.
+
+Regression tests run the actual Edge Function against an isolated in-memory
+database and exercise the real editor against that handler: decimal save/reopen/
+preview/publish, long write-ups, invalid inputs, private drafts, failed/slow
+saves, selected-week restoration, and automatic projected records.
+
 ## v98 — Single public sharing control
 
 The question-mark sheet keeps its existing public Share the link control. The

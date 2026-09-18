@@ -2,26 +2,34 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {JSDOM} from 'jsdom';
+import {oracleEdge,predictions as edgePredictions} from './oracle-edge-harness.mjs';
 
 const source=readFileSync(new URL('../oracle.js',import.meta.url),'utf8');
 const teams=['Aarogant Fraudgers','Mortal Wombats','Slob on my Cobb','Morning Woods','Gregs Morning Dew Dew','Jared Goff Hits Women','Death Dont Hurts Very Long','Joe Sleepin on Dee TeeTees','Puka Atta Adonai','Thurgood Marshall','Jefferson Airplane','Pepperoni TDs'];
 const season={t:teams.map((n,i)=>({id:String(i+1),n,w:0,l:0,s:[],sch:[String(i%2===0?i+2:i)]}))};
 const response=(body,status=200)=>({ok:status>=200&&status<300,status,json:async()=>body});
-function app(fragment='',calls=[]){
+function app(fragment='',calls=[],options={}){
  const dom=new JSDOM('<main id="host"></main>',{url:'https://league.test/League-History/'+fragment,runScripts:'outside-only'}),w=dom.window;
  w.AbortController=globalThis.AbortController;w.LeagueESPN={mgrFor:()=>''};
  w.fetch=async(url,opts={})=>{const u=String(url),body=opts.body?JSON.parse(opts.body):null;calls.push({u,body,auth:opts.headers?.Authorization||''});
   if(u.includes('oracle-config.json'))return response({enabled:true,api:'https://oracle.test',year:2026});
-  if(u.includes('season/current.json'))return response(season);
+  if(u.includes('season/current.json'))return response(options.season||season);
+  if(options.api){const result=await options.api(u,opts);if(result)return result;}
   if(u.endsWith('/session'))return response({token:'a'.repeat(64),role:'oracle_editor'});
   if(u.endsWith('/me'))return response({role:'oracle_editor'});
-  if(u.includes('/state'))return response({year:2026,current:1,weeks:[{week:1,published:false,publishedAt:null,predictions:[]}]});
+  if(u.includes('/state'))return response(options.state||{year:2026,current:1,weeks:[{week:1,published:false,publishedAt:null,predictions:[]}]});
   if(u.endsWith('/save'))return response({ok:true,published:false});
   if(u.endsWith('/publish'))return response({ok:true,published:true});
   return response({error:'not found'},404);
  };
+ for(const [key,value] of Object.entries(options.storage||{}))w.localStorage.setItem(key,JSON.stringify(value));
  w.eval(source);return {dom,w,host:w.document.querySelector('#host')};
 }
+
+const pause=()=>new Promise(resolve=>setTimeout(resolve,0));
+async function waitFor(check){for(let i=0;i<100;i++){if(check())return;await new Promise(resolve=>setTimeout(resolve,10));}assert.ok(check(),'operation completed');}
+function setField(a,card,field,value){const el=card.querySelector(`[data-f="${field}"]`);el.value=value;el.dispatchEvent(new a.w.Event('input',{bubbles:true}));return el;}
+function fill(a){for(const card of a.host.querySelectorAll('[data-or-id]')){setField(a,card,'awayScore','134.75');setField(a,card,'homeScore','125.9');setField(a,card,'confidence','100');setField(a,card,'writeup','  His exact words.\n\nA second paragraph.  ');const winner=card.querySelector('[data-f="winner"]');winner.checked=true;winner.dispatchEvent(new a.w.Event('input',{bubbles:true}));}}
 
 test('ordinary readers see a rankings-style waiting state and never editor controls',async()=>{
  const a=app();await a.w.LeagueOracle.paint(a.host,()=> '');
@@ -69,4 +77,70 @@ test('Hurd can privately preview unsaved work and return to the editor',async()=
  assert.equal(a.host.querySelector('textarea').value,'Keep this prophecy safe');
  a.w.eval(source);await a.w.LeagueOracle.paint(a.host,()=> '');
  assert.equal(a.host.querySelector('textarea').value,'Keep this prophecy safe');a.dom.window.close();
+});
+
+test('decimal-score editor saves, reloads, previews, and publishes through the actual edge handler',async()=>{
+ const edge=oracleEdge([{week:1,published:false,draft_predictions:[],predictions:[]}]),calls=[];
+ const a=app('#oracle-editor='+'x'.repeat(43),calls,{api:(u,opts)=>edge.fetch(new URL(u).pathname,{body:opts.body?JSON.parse(opts.body):undefined,auth:!!opts.headers?.Authorization})});
+ await a.w.LeagueOracle.paint(a.host,()=> '');fill(a);
+ const score=a.host.querySelector('[data-f="homeScore"]');assert.equal(score.step,'any');assert.equal(score.checkValidity(),true);
+ assert.equal(a.host.querySelector('[data-or="publish"]').disabled,false);assert.match(a.host.querySelector('.or-lock').textContent,/All six matchups are ready/);
+ assert.equal(a.host.querySelectorAll('.or-errors:not([hidden])').length,0);
+ a.host.querySelector('[data-or="save"]').click();await waitFor(()=>a.host.querySelector('.or-status').textContent==='Private draft saved online.');
+ assert.equal(edge.rows.get(1).draft_predictions[0].homeScore,125.9);
+ const words='  His exact words.\n\nA second paragraph.  ';assert.equal(edge.rows.get(1).draft_predictions[0].writeup,words);
+ a.w.eval(source);await a.w.LeagueOracle.paint(a.host,()=> '');assert.equal(a.host.querySelector('textarea').value,words);
+ a.host.querySelector('[data-or="preview"]').click();await pause();assert.match(a.host.textContent,/125.9/);
+ a.host.querySelector('[data-or="edit"]').click();await pause();
+ a.host.querySelector('[data-or="publish"]').click();await waitFor(()=>a.host.querySelector('.or-status').textContent==='Week published to the league.');
+ assert.equal(edge.rows.get(1).published,true);assert.equal(edge.rows.get(1).predictions[0].writeup,words);
+ const reader=await (await edge.fetch('/api/oracle/state',{auth:false})).json();assert.equal(reader.weeks[0].predictions[0].homeScore,125.9);
+ a.dom.window.close();
+});
+
+test('validation pinpoints missing and out-of-range fields while accepting zero scores and 100% confidence',async()=>{
+ const a=app('#oracle-editor='+'x'.repeat(43));await a.w.LeagueOracle.paint(a.host,()=> '');fill(a);
+ const card=a.host.querySelector('[data-or-id]');
+ for(const value of ['', '-1', '300.01']){setField(a,card,'homeScore',value);assert.equal(a.host.querySelector('[data-or="publish"]').disabled,true);assert.match(card.querySelector('.or-errors').textContent,/home score/);}
+ setField(a,card,'homeScore','0');assert.equal(a.host.querySelector('[data-or="publish"]').disabled,false);
+ for(const value of ['', '100.5', '101']){setField(a,card,'confidence',value);assert.equal(a.host.querySelector('[data-or="publish"]').disabled,true);assert.match(card.querySelector('.or-errors').textContent,/confidence/);}
+ setField(a,card,'confidence','100');assert.equal(a.host.querySelector('[data-or="publish"]').disabled,false);
+ setField(a,card,'writeup','   ');assert.equal(a.host.querySelector('[data-or="publish"]').disabled,true);assert.match(card.querySelector('.or-errors').textContent,/write-up/);a.dom.window.close();
+});
+
+test('a delayed save preserves newer typing and does not refetch state or replace the form',async()=>{
+ let finish;const calls=[],a=app('#oracle-editor='+'x'.repeat(43),calls,{api:u=>u.endsWith('/save')?new Promise(resolve=>{finish=()=>resolve(response({ok:true}));}):null});
+ await a.w.LeagueOracle.paint(a.host,()=> '');fill(a);
+ const card=a.host.querySelector('[data-or-id]'),field=setField(a,card,'writeup','Snapshot being saved');
+ a.host.querySelector('[data-or="save"]').click();await pause();assert.equal(a.host.querySelector('[data-or-week]').disabled,true);
+ setField(a,card,'writeup','Newer words typed while saving');finish();await pause();
+ assert.equal(a.host.querySelector('textarea'),field);assert.equal(field.value,'Newer words typed while saving');
+ assert.match(a.host.querySelector('.or-status').textContent,/Newer edits remain/);assert.match(a.w.localStorage.getItem('lh:oracle-drafts:2026:v1'),/Newer words/);
+ assert.equal(calls.filter(x=>x.u.includes('/state')).length,1);a.dom.window.close();
+});
+
+test('failed saves and offline previews retain the form and device backup',async()=>{
+ const calls=[],a=app('#oracle-editor='+'x'.repeat(43),calls,{api:u=>u.endsWith('/save')?response({error:'Storage temporarily unavailable'},503):null});
+ await a.w.LeagueOracle.paint(a.host,()=> '');const card=a.host.querySelector('[data-or-id]'),field=setField(a,card,'writeup','Keep every word');
+ a.host.querySelector('[data-or="save"]').click();await pause();assert.equal(a.host.querySelector('textarea'),field);
+ assert.match(a.host.querySelector('.or-status').textContent,/Storage temporarily unavailable.*writing is still here/);
+ a.w.fetch=async()=>{throw Error('Offline');};a.host.querySelector('[data-or="preview"]').click();await pause();
+ assert.match(a.host.textContent,/Keep every word/);a.host.querySelector('[data-or="edit"]').click();await pause();assert.equal(a.host.querySelector('textarea').value,'Keep every word');
+ assert.match(a.w.localStorage.getItem('lh:oracle-drafts:2026:v1'),/Keep every word/);a.dom.window.close();
+});
+
+test('week selection and device drafts survive reopening; prior results automate projected records',async()=>{
+ const nextSeason={k:1,t:season.t.map((t,i)=>({...t,s:[i%2?100:110.5],sch:[t.sch[0],t.sch[0]]}))};
+ const a=app('#oracle-editor='+'x'.repeat(43),[],{season:nextSeason,state:{current:1,weeks:[{week:1,published:false,predictions:[]},{week:2,published:false,predictions:[]}]}});
+ await a.w.LeagueOracle.paint(a.host,()=> '');setField(a,a.host.querySelector('[data-or-id]'),'writeup','Week one words');
+ const select=a.host.querySelector('[data-or-week]');select.value='2';select.dispatchEvent(new a.w.Event('change',{bubbles:true}));await pause();fill(a);
+ assert.equal(a.host.querySelector('[data-f="awayRecord"]').value,'2-0');assert.equal(a.host.querySelector('[data-f="homeRecord"]').value,'0-2');
+ a.w.eval(source);await a.w.LeagueOracle.paint(a.host,()=> '');assert.equal(a.host.querySelector('[data-or-week]').value,'2');assert.match(a.host.querySelector('textarea').value,/His exact words/);
+ const back=a.host.querySelector('[data-or-week]');back.value='1';back.dispatchEvent(new a.w.Event('change',{bubbles:true}));await pause();assert.equal(a.host.querySelector('textarea').value,'Week one words');a.dom.window.close();
+});
+
+test('public readers never receive a device-only draft in place of published predictions',async()=>{
+ const published=edgePredictions();published[0].writeup='Published words';const privateDraft=structuredClone(published);privateDraft[0].writeup='PRIVATE UNSAVED WORDS';
+ const a=app('',[],{storage:{'lh:oracle-drafts:2026:v1':{1:privateDraft}},state:{current:1,weeks:[{week:1,published:true,publishedAt:new Date().toISOString(),predictions:published}]}});
+ await a.w.LeagueOracle.paint(a.host,()=> '');assert.match(a.host.textContent,/Published words/);assert.doesNotMatch(a.host.textContent,/PRIVATE UNSAVED WORDS/);a.dom.window.close();
 });
