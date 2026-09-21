@@ -1,4 +1,4 @@
-import {ensure,ingest,lockDue,payerFromFantasy} from './engine.mjs';
+import {ensure,ingest,lockDue,payerFromFantasy,collectBoxscores} from './engine.mjs';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 const sandbox={window:{},localStorage:{getItem:()=>null,setItem:()=>{}}};
@@ -26,6 +26,7 @@ export class Collector {
     }catch(e){this.store.transact(s=>{ensure(s,this.year,k).feedError=String(e.message).slice(0,140);});}}
     this.lastSource=now;
    }
+   await collectBoxscores(this.store,this.year,this.fetchJSON,now);
    if(now-this.lastFantasy>3600000){
     try{const payload=await this.fetchJSON(E.SEASON_URL);const season=this.store.read().seasons[this.year];
      for(const w of Object.values(season.weeks)){const prev=season.weeks[w.week-1];if(!prev?.games.length||!prev.games.every(g=>g.completed&&g.status==='STATUS_FINAL'))continue;

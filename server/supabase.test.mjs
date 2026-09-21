@@ -103,3 +103,20 @@ test('Concurrent collector changes do not overwrite picks saved during fetch; ou
  await collect(b.rpc,b.config,{clock:()=>now,fetchJSON:async()=>{throw Error('offline');}});
  assert.ok(b.store.read().seasons[2026].weeks[1].picks.McD.lockedAt);
 });
+test('Collector fetches ESPN box scores for final write-in props without failing the board when the summary is down',async()=>{
+ const b=await backend();activate(b.store);
+ const g=b.store.read().seasons[2026].weeks[1].games[0];
+ savePick(b.store,2026,1,{role:'member',member:'Gotch'},{member:'Gotch',gameId:g.id,market:'prop',description:'Loveland ATTD',odds:155,revision:0},T);
+ const scoreboard={season:{year:2026,type:2},week:{number:1},events:[{id:g.id,date:new Date(T-1000).toISOString(),competitions:[{competitors:[{homeAway:'home',team:{abbreviation:g.home},score:'3'},{homeAway:'away',team:{abbreviation:g.away},score:'9'}],status:{type:{state:'post',completed:true,name:'STATUS_FINAL'}}}]}]};
+ const summary={boxscore:{players:[{team:{abbreviation:g.home},statistics:[{name:'receiving',keys:['receptions','receivingYards','receivingTouchdowns'],athletes:[{athlete:{id:'1',displayName:'Jalen Loveland'},stats:['4','52','0']}]}]}]}};
+ const urls=[];
+ const result=await collect(b.rpc,b.config,{clock:()=>T+1000,fetchJSON:async url=>{urls.push(url);if(url.includes('/summary'))return summary;if(url.includes('scoreboard'))return scoreboard;throw Error('unexpected '+url);}});
+ assert.equal(result.ok,true);assert.ok(urls.some(u=>u.includes('/summary?event='+g.id)));
+ assert.equal(b.store.read().seasons[2026].weeks[1].games.find(x=>x.id===g.id).boxscore.players[0].displayName,'Jalen Loveland');
+ const down=await backend();activate(down.store);
+ const g2=down.store.read().seasons[2026].weeks[1].games[0];
+ savePick(down.store,2026,1,{role:'member',member:'Gotch'},{member:'Gotch',gameId:g2.id,market:'prop',description:'Loveland ATTD',odds:155,revision:0},T);
+ const failed=await collect(down.rpc,down.config,{clock:()=>T+1000,fetchJSON:async url=>{if(url.includes('/summary'))throw Error('Source HTTP 403');if(url.includes('scoreboard'))return scoreboard;throw Error('unexpected');}});
+ assert.equal(failed.ok,true);assert.ok(down.store.read().seasons[2026].weeks[1].games.find(x=>x.id===g2.id).boxError);
+});
+

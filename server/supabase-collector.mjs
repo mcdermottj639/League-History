@@ -1,6 +1,7 @@
-import {ensure,ingest,lockDue,payerFromFantasy,writable} from './engine.mjs';
+import {ensure,ingest,lockDue,payerFromFantasy,writable,attachBoxscore,parseBoxscore} from './engine.mjs';
 import {transaction,randomToken} from './supabase-store.mjs';
 import {parseScoreboard} from './domain.mjs';
+import {gamesNeedingBoxscore,boxscoreURL} from './props.mjs';
 export async function getJSON(url,fetcher=fetch){const r=await fetcher(url,{signal:AbortSignal.timeout(10000),headers:{Accept:'application/json','User-Agent':'League-History/Parlay'}});if(!r.ok)throw Error('Source HTTP '+r.status);return r.json();}
 export async function collect(rpc,config,{clock=Date.now,fetchJSON=getJSON,managerFor=()=>''}={}){
  const lease=randomToken();if(!await rpc('lease',{owner:lease}))return {ok:true,busy:true};
@@ -26,6 +27,12 @@ export async function collect(rpc,config,{clock=Date.now,fetchJSON=getJSON,manag
    for(const r of results){try{if(r.error)throw Error(r.error);ingest(store,year,r.week,r.payload,r.at);}catch(e){store.transact(s=>{ensure(s,year,r.week).feedError=String(e.message).slice(0,140);});}}
    store.transact(s=>{const season=s.seasons[year];season.collector??={};season.collector.lastAttempt=now;if(!season.weeks[season.current].feedError)season.collector.lastSuccess=clock();});
   });
+  snapshot=(await rpc('read')).state.seasons[year];
+  const wanted=[];
+  for(const w of Object.values(snapshot.weeks||{})){for(const g of gamesNeedingBoxscore(w,clock()))wanted.push({week:w.week,id:g.id,final:g.status==='STATUS_FINAL'&&g.completed});}
+  const unique=[...new Map(wanted.map(x=>[x.id,x])).values()];
+  const boxes=await Promise.all(unique.map(async item=>{try{return {...item,boxscore:parseBoxscore(await fetchJSON(boxscoreURL(item.id)),clock(),item.final)};}catch(e){return {...item,error:String(e.message).slice(0,140)};}}));
+  if(boxes.length)await transaction(rpc,store=>{for(const b of boxes){if(b.boxscore)attachBoxscore(store,year,b.week,b.id,b.boxscore);else store.transact(s=>{const g=s.seasons[year]?.weeks[b.week]?.games.find(g=>g.id===b.id);if(g&&!g.boxscore)g.boxError=b.error;});}});
   if(now-(snapshot.collector?.lastFantasy||0)>=3600000&&snapshot.current>1){
    try{
     const p=await fetchJSON('https://sports-hub-fantasy-api.onrender.com/api/fantasy/football/season');

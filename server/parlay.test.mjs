@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Store} from './store.mjs';
-import {parseScoreboard,ticket,result,ROSTER} from './domain.mjs';
-import {ensure,ingest,savePick,resetParlay,importLegacy,payerFromFantasy,payerFromScores,publicWeek,activateRelease} from './engine.mjs';
+import {parseScoreboard,ticket,result,progress,ROSTER} from './domain.mjs';
+import {ensure,ingest,savePick,resetParlay,importLegacy,payerFromFantasy,payerFromScores,publicWeek,activateRelease,collectBoxscores,attachBoxscore} from './engine.mjs';
+import {parseProp,parseBoxscore,gradeProp,boxscoreURL} from './props.mjs';
 import {createApp,hash} from './app.mjs';
 import {Collector} from './collector.mjs';
 const T=Date.UTC(2026,8,20,16,0),K=T+3600000;
@@ -112,3 +113,82 @@ test('payer accepts the current no-year fantasy feed only with final complete pr
  const zero=structuredClone(p);zero.teams[0].scores[0]=0;assert.equal(get(zero).score,0);
  const tie=structuredClone(p);tie.teams[0].scores[0]=70.9;assert.equal(get(tie).status,'tie');
 });
+
+function boxPayload({td=0,rushTd=0,passTd=0,recYds=52,first}={}){
+ return {boxscore:{players:[
+  {team:{abbreviation:'CHI'},statistics:[
+   {name:'receiving',keys:['receptions','receivingYards','yardsPerReception','receivingTouchdowns','longReception','receivingTargets'],athletes:[{athlete:{id:'1',displayName:'Jalen Loveland',shortName:'J. Loveland'},stats:['4',String(recYds),'13.0',String(td),'22','7']}]},
+   {name:'rushing',keys:['rushingAttempts','rushingYards','yardsPerRushAttempt','rushingTouchdowns','longRushing'],athletes:[{athlete:{id:'2',displayName:"D'Andre Swift",shortName:'D. Swift'},stats:['12','41','3.4',String(rushTd),'9']}]}
+  ]},
+  {team:{abbreviation:'MIN'},statistics:[
+   {name:'passing',keys:['completions/passingAttempts','passingYards','yardsPerPassAttempt','passingTouchdowns','interceptions'],athletes:[{athlete:{id:'3',displayName:'J.J. McCarthy',shortName:'J. McCarthy'},stats:['13/21','140','6.7',String(passTd),'1']}]}
+  ]}
+ ]},scoringPlays:first?[{type:{text:first.type},athletesInvolved:first.athletes}]:[]};
+}
+const finalGame=(box,extra={})=>({home:'CHI',away:'MIN',homeScore:3,awayScore:9,state:'post',completed:true,status:'STATUS_FINAL',boxscore:box,...extra});
+
+test('write-in props parse ATTD, first TD, over/under and N+; junk stays unparsed',()=>{
+ assert.deepEqual(parseProp('Loveland ATTD'),{kind:'attd',player:'Loveland'});
+ assert.deepEqual(parseProp('CHI Loveland anytime touchdown'),{kind:'attd',player:'Loveland'});
+ assert.equal(parseProp('Hurts over 60.5 rushing yards').stat,'rushYds');
+ assert.equal(parseProp('Jefferson 80+ rec yards').kind,'threshold');
+ assert.equal(parseProp('St. Brown over 6.5 receptions').stat,'receptions');
+ assert.equal(parseProp('Mahomes over 1.5 passing TDs').stat,'passTd');
+ assert.equal(parseProp('Player points over 5'),null);
+});
+
+test('ATTD grades from rush/rec/return TDs, never from passing TDs; unknown names stay pending',()=>{
+ const miss=parseBoxscore(boxPayload(),K,true),hit=parseBoxscore(boxPayload({td:1}),K,true),qb=parseBoxscore(boxPayload({passTd:2}),K,true);
+ const g=finalGame(miss);
+ assert.equal(result({market:'prop',description:'Loveland ATTD',lockedAt:K},g),'miss');
+ assert.match(progress({market:'prop',description:'Loveland ATTD',lockedAt:K},g),/0 TDs/);
+ assert.equal(result({market:'prop',description:'Loveland ATTD',lockedAt:K},finalGame(hit)),'hit');
+ assert.equal(result({market:'prop',description:'McCarthy ATTD',lockedAt:K},finalGame(qb)),'miss');
+ assert.equal(result({market:'prop',description:'Nobody ATTD',lockedAt:K},g),'pending');
+ assert.equal(result({market:'prop',description:'Player points over 5',lockedAt:K},g),'pending');
+});
+
+test('over/under and N+ grade from box score; live hits lock in, live misses wait for final',()=>{
+ const box=parseBoxscore(boxPayload({recYds:102}),K,false);
+ const live={home:'CHI',away:'MIN',homeScore:3,awayScore:9,state:'in',completed:false,status:'STATUS_IN_PROGRESS',boxscore:box};
+ const over={market:'prop',description:'Loveland over 89.5 rec yards',lockedAt:K};
+ assert.equal(result(over,live),'hit');
+ assert.equal(result({...over,description:'Loveland under 89.5 rec yards'},live),'miss');
+ assert.equal(result({market:'prop',description:'Loveland 80+ rec yards',lockedAt:K},live),'hit');
+ const short=parseBoxscore(boxPayload({recYds:40}),K,false);
+ assert.equal(result(over,{...live,boxscore:short}),'live');
+ assert.equal(result(over,finalGame(parseBoxscore(boxPayload({recYds:40}),K,true))),'miss');
+});
+
+test('first TD uses scoring plays; passing TD credits the receiver',()=>{
+ const box=parseBoxscore(boxPayload({first:{type:'Passing Touchdown',athletes:[{displayName:'Caleb Williams'},{displayName:'Jalen Loveland'}]}}),K,true);
+ const g=finalGame(box);
+ assert.equal(result({market:'prop',description:'Loveland first TD',lockedAt:K},g),'hit');
+ assert.equal(result({market:'prop',description:'Williams first TD',lockedAt:K},g),'miss');
+});
+
+test('organizer review still overrides an automatic prop grade',()=>{
+ const g=finalGame(parseBoxscore(boxPayload({td:0}),K,true));
+ assert.equal(result({market:'prop',description:'Loveland ATTD',lockedAt:K,manualResult:'hit'},g),'hit');
+});
+
+test('scoreboard ingest keeps a stored box score; collector fetches summaries only for games with props',async()=>{
+ const s=setup();
+ savePick(s,2026,2,member('Gotch'),{member:'Gotch',gameId:'g1',market:'prop',description:'Loveland ATTD',odds:155,revision:0},T);
+ const final=payload();final.events[0].competitions[0].status.type={state:'post',completed:true,name:'STATUS_FINAL'};
+ ingest(s,2026,2,final,K+1000);
+ attachBoxscore(s,2026,2,'g1',parseBoxscore(boxPayload({td:0}),K+1000,true));
+ ingest(s,2026,2,final,K+2000);
+ assert.equal(s.read().seasons[2026].weeks[2].games[0].boxscore.players[0].displayName,'Jalen Loveland');
+ assert.equal(publicWeek(s.read().seasons[2026].weeks[2],K+2000).ticket.legs.find(l=>l.member==='Gotch').result,'miss');
+ const urls=[];
+ await collectBoxscores(s,2026,async url=>{urls.push(url);return boxPayload({td:1});},K+3000);
+ assert.ok(!urls.includes(boxscoreURL('g1')));
+ const s2=setup();
+ savePick(s2,2026,2,member('Gotch'),{member:'Gotch',gameId:'g1',market:'prop',description:'Loveland ATTD',odds:155,revision:0},T);
+ ingest(s2,2026,2,final,K+1000);
+ await collectBoxscores(s2,2026,async url=>{assert.equal(url,boxscoreURL('g1'));return boxPayload({td:1});},K+1000);
+ assert.equal(result(s2.read().seasons[2026].weeks[2].picks.Gotch,s2.read().seasons[2026].weeks[2].games[0]),'hit');
+ s.close();s2.close();
+});
+
