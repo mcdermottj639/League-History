@@ -1,4 +1,7 @@
 // Generates a private capability link without printing its token or committing it.
+// 🚨 After launch this script is storage only. Running it and installing a new
+// hash revokes the live organizer link that has already been sent. Do not use
+// against production unless Jack explicitly orders a replacement.
 import {randomBytes,createHash} from 'node:crypto';
 import {writeFileSync,mkdirSync,realpathSync} from 'node:fs';
 import {resolve,dirname} from 'node:path';

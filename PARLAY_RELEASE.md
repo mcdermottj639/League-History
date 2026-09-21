@@ -123,7 +123,13 @@ behavior and late navigation responses. These do not substitute for visual QA.
 
 ## Private organizer link
 
-Generate only to a private path outside the public repository:
+🚨 The live organizer link has already been sent. Do not run the generator
+again, do not install a new `PARLAY_ORGANIZER_HASH`, and do not change the
+`#parlay-organizer=` fragment. Replacing the hash would revoke Zach's session
+and force a resend; Jack's standing rule is sent links are never resent.
+
+Generate only to a private path outside the public repository, and only when
+explicitly creating a *first* packet before launch:
 
 ```sh
 node scripts/create-organizer.mjs --out /private/path/parlay-organizer-launch.md
@@ -134,8 +140,9 @@ The prepared private packet contains the final GitHub Pages URL fragment and
 The server receives only the hash as configuration; the link token is exchanged
 via HTTPS and removed from the address bar. Browser storage contains a random
 session token. Replacing the hash invalidates previous organizer sessions and
-links. A new device needs the private link again; clearing storage also requires
-reopening it. Share the packet's organizer link with Zach only after launch.
+links — that is why it is forbidden after the link has been sent. A new device
+still uses the *same* sent link; clearing storage also requires reopening that
+same link. Never mint a replacement.
 
 ## Supabase preparation status
 

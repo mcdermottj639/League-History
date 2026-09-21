@@ -89,6 +89,15 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
 - ⚠️ **This repo is PUBLIC.** Everything in it — real first names, the takes,
   the team names — is world-readable. That was the owner's setting, not an
   accident, but weigh it before adding anything new about a person.
+- 🚨 **Never rotate, replace, or regenerate a private link that has already
+  been sent.** Zach's `#parlay-organizer=` capability, Hurd's `#oracle-editor=`
+  capability, owner-handoff fragments, and any member/share URL already in the
+  group chat stay as they are. Do not install a new `organizer_hash`, mint a
+  replacement launch packet, or change fragment names. A new hash revokes the
+  live session and forces a resend — Jack's standing rule is those links will
+  not be resent. Lost-link recovery is an explicit owner instruction only, and
+  even then the old hash stays valid until he says otherwise. Generate nothing
+  that would require anyone to open a new link.
 
 ## v99 — Version only in help
 
