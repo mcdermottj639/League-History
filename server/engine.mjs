@@ -1,10 +1,15 @@
 import {ROSTER,STAKE,parseScoreboard,quoteFor,locked,ticket,migratePick,odds,number,decimal} from './domain.mjs';
+import {parseBoxscore,gamesNeedingBoxscore,boxscoreURL} from './props.mjs';
+export {gamesNeedingBoxscore,boxscoreURL,parseBoxscore};
 export const failure=(message,status=400)=>Object.assign(new Error(message),{status});
 export function ensure(state,year,week){const s=state.seasons[year]??={weeks:{},current:week};return s.weeks[week]??={year,week,stake:STAKE,games:[],picks:{},revisions:{},unmapped:[],imported:false,audit:[],updatedAt:0,payer:{status:'pending'}};}
 export function ingest(store,year,week,payload,now=Date.now()){
  const incoming=parseScoreboard(payload,now);if(!incoming.length)throw failure('Empty scoreboard',502);
  return store.transact(state=>{const w=ensure(state,year,week);
-  for(const game of incoming){const old=w.games.find(g=>g.id===game.id);const index=w.games.findIndex(g=>g.id===game.id);if(old&&old.seenAt>game.seenAt)continue;if(index<0)w.games.push(game);else w.games[index]=game;
+  for(const game of incoming){const old=w.games.find(g=>g.id===game.id);const index=w.games.findIndex(g=>g.id===game.id);if(old&&old.seenAt>game.seenAt)continue;
+   if(old?.boxscore && (!game.boxscore || (old.boxscore.observedAt||0)>=(game.boxscore.observedAt||0))) game.boxscore=old.boxscore;
+   if(old?.boxError && !game.boxscore) game.boxError=old.boxError;
+   if(index<0)w.games.push(game);else w.games[index]=game;
    for(const p of Object.values(w.picks).filter(p=>p.gameId===game.id)){
     if(p.lockedAt)continue;
     if(locked(game,now)||(old&&locked(old,now))){p.lockedAt=now;p.scheduledKick=old?.kick||game.kick;p.missingQuote=p.market!=='prop'&&(!p.quote||p.quote.provider!=='DraftKings via ESPN'||p.quote.observedAt>=p.scheduledKick);p.staleQuote=!!p.quote?.observedAt&&p.scheduledKick-p.quote.observedAt>120000;}
@@ -13,6 +18,22 @@ export function ingest(store,year,week,payload,now=Date.now()){
   }
   lockDue(w,now);w.updatedAt=now;w.feedError=null;return w;
  });
+}
+export function attachBoxscore(store,year,week,gameId,boxscore){
+ return store.transact(state=>{const g=ensure(state,year,week).games.find(g=>g.id===String(gameId));if(!g)return null;
+  if(g.boxscore && (g.boxscore.observedAt||0)>(boxscore.observedAt||0))return g.boxscore;
+  g.boxscore=boxscore;delete g.boxError;return g.boxscore;
+ });
+}
+export async function collectBoxscores(store,year,fetchJSON,now=Date.now()){
+ const season=store.read().seasons[year];if(!season)return;
+ const wanted=[];
+ for(const w of Object.values(season.weeks||{})){for(const g of gamesNeedingBoxscore(w,now))wanted.push({week:w.week,id:g.id,final:g.status==='STATUS_FINAL'&&g.completed});}
+ const unique=[...new Map(wanted.map(x=>[x.id,x])).values()];
+ await Promise.all(unique.map(async item=>{
+  try{const payload=await fetchJSON(boxscoreURL(item.id));attachBoxscore(store,year,item.week,item.id,parseBoxscore(payload,now,item.final));}
+  catch(e){store.transact(s=>{const g=s.seasons[year]?.weeks[item.week]?.games.find(g=>g.id===item.id);if(g&&!g.boxscore)g.boxError=String(e.message).slice(0,140);});}
+ }));
 }
 export function lockDue(w,now=Date.now()){
  for(const p of Object.values(w.picks)){const g=w.games.find(g=>g.id===p.gameId);if(!p.lockedAt&&g&&locked(g,now)){p.lockedAt=now;p.scheduledKick=g.kick;p.missingQuote=p.market!=='prop'&&(!p.quote||p.quote.provider!=='DraftKings via ESPN'||p.quote.observedAt>=g.kick);p.staleQuote=!!p.quote?.observedAt&&g.kick-p.quote.observedAt>120000;}}

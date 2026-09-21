@@ -31,7 +31,9 @@ reconciliation, never simply enabling the old Firebase writer.
   stale quotes are labeled, never represented as exact closing prices. The UI refreshes
   every 20 seconds when visible and not editing.
 - Live score/progress rows, upcoming legs and collapsed completed legs; automatic
-  standard-market settlement, pushes and explicitly pending unsupported results.
+  standard-market settlement, pushes and player-prop grading from the ESPN box
+  score. Unparsed write-ins, unmatched names and missing stats stay pending.
+
 - Combined decimal-price multiplication converted to American odds; $10 tracked
   return/profit. Partial tickets are labeled and cannot become full-ticket wins.
 - A compact placed-ticket card shows actual DraftKings combined odds entered
@@ -56,8 +58,12 @@ Observed ESPN prices are not guaranteed instantaneous/direct DraftKings closing
 prices. Quote timestamps, missing prices and stale snapshots remain visible.
 The actual placed ticket can differ from this kickoff-based tracker.
 
-Write-in props remain supported but are explicitly manual: no automatic prices
-or results are invented. Ordinary identity preserves the app's existing trusted
+Write-in props stay supported. Known markets (anytime TD, first TD, over/under
+or N+ yards, receptions and TDs) grade from the ESPN box score after the game,
+never from the final score alone. Passing TDs do not count as anytime TDs.
+Unparsed text, ambiguous names and missing stats remain pending for organizer
+review; that review can still override an automatic grade. No prices are
+invented. Ordinary identity preserves the app's existing trusted
 name-selection model, not verified personal accounts. Organizer authority alone
 uses a secret capability. The public source may change availability or format;
 source failures disable stale-board saves and retain last observations.

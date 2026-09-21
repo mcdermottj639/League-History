@@ -1,4 +1,5 @@
 // Parlay domain logic. Shared calculations never assume a missing price or result.
+import {gradePick} from './props.mjs';
 export const ROSTER = ['McD','CC','Hurd','Hyman','Christel','Woods','Zach','Buley','Wolff','Riz','Slemp','Gotch'];
 export const STAKE = 10;
 export const number = v => v === null || v === undefined || (typeof v==='string'&&v.trim()==='') ? null : Number.isFinite(Number(v)) ? Number(v) : null;
@@ -36,7 +37,8 @@ export function result(p,g){
   if(p.manualResult)return p.manualResult;
   if(!p.lockedAt)return 'upcoming';
   if(!g)return 'pending';
-  if(p.market==='prop'||p.missingQuote)return 'pending';
+  if(p.missingQuote)return 'pending';
+  if(p.market==='prop')return gradePick(p,g).result;
   if(!g.completed)return g.state==='in'?'live':'pending';
   if(g.status!=='STATUS_FINAL'||g.homeScore===null||g.awayScore===null)return 'pending';
   let margin;
@@ -45,13 +47,14 @@ export function result(p,g){
   return margin>0?'hit':margin<0?'miss':'push';
 }
 export function progress(p,g){
+  if(p.market==='prop')return gradePick(p,g).progress||'';
   if(!g||g.homeScore===null||g.awayScore===null||!p.quote)return '';
   if(p.market==='total'){const total=g.homeScore+g.awayScore;return p.side==='over'?`${total} points · ${total>p.quote.line?'over the line':`needs ${Math.floor(p.quote.line-total)+1} more`}`:`${total} points · ${total<p.quote.line?`${p.quote.line-total} below total`:'at or above total'}`;}
-  if(p.market==='prop')return 'Result requires review';
   let margin=p.side===g.home?g.homeScore-g.awayScore:g.awayScore-g.homeScore;
   if(p.market==='spread'){margin+=p.quote.line;return margin>0?`Covering by ${+margin.toFixed(2)}`:margin<0?`Outside cover by ${+Math.abs(margin).toFixed(2)}`:'At the spread';}
   return margin>0?`Leading by ${margin}`:margin<0?`Trailing by ${-margin}`:'Tied';
 }
+
 export function ticket(picks,games,now=Date.now(),stake=STAKE,openedAt=0){
   const legs=picks.map(p=>{const g=games.find(g=>g.id===p.gameId);return {...p,result:result(p,g),game:g?{away:g.away,home:g.home,awayScore:g.awayScore,homeScore:g.homeScore,kick:g.kick,state:g.state,completed:g.completed,status:g.status,detail:g.detail,seenAt:g.seenAt}:null,progress:progress(p,g)};});
   const hit=legs.filter(l=>l.result==='hit').length,miss=legs.filter(l=>l.result==='miss').length,push=legs.filter(l=>l.result==='push').length;
