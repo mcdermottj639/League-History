@@ -76,3 +76,17 @@ test('a season with no locked prices says so instead of printing a zero total',a
  assert.match(html,/Weekly odds appear once a ticket locks at kickoff with its prices known\./);
  assert.match(html,/McD<\/b><span><span aria-label="No settled picks or locked prices">—<\/span>/);
 });
+
+test('tied records sort by average odds, better American number first',async()=>{
+ const namesOf=html=>[...html.split('Who carries the ticket')[1].split('Past tickets')[0].matchAll(/<div class="pn-row pn-record"><b>([^<]*)<\/b>/g)].map(m=>m[1]);
+ const data={year:2026,current:2,preview:true,roster:['McD','CC','Hyman','Christel','Zach','Gotch','Wolff','Riz'],weeks:[
+  {year:2026,week:2,updatedAt:1,feedError:null,payer:{status:'pending'},placedTicket:null,ticketOddsRevision:0,revisions:{},priorTickets:[],games:[],unmapped:[],ticket:tk([
+   leg('CC',-110),leg('Hyman',-120),leg('Zach',-142),leg('Christel',-225),leg('McD',-238),leg('Gotch',155,'miss'),leg('Wolff',-105,'miss')
+  ],100)}
+ ]};
+ const names=namesOf(await seasonView(data));
+ assert.deepEqual(names.filter(n=>['CC','Hyman','Zach','Christel','McD'].includes(n)),['CC','Hyman','Zach','Christel','McD']);
+ assert.deepEqual(names.filter(n=>['Gotch','Wolff'].includes(n)),['Gotch','Wolff']);
+ assert.ok(names.indexOf('Gotch')>names.indexOf('McD'));
+ assert.equal(names.at(-1),'Riz');
+});

@@ -228,6 +228,16 @@ from **Tracked odds**, which IS the parlay product.
   cannot reach the live Supabase parlay, so the numbers were rendered from
   fixtures rather than a live week.
 
+## v113 — Tied records sort by odds
+
+**Who carries the ticket** still ranks by record first. When the W–L is the
+same, the row order follows the averaged American price, **higher number
+first**: CC at −110 before McD at −238, Gotch at +155 before a −105 miss.
+A missing price sorts last inside a tied record. Name is only the final
+tiebreak. Owner: *"If the record is the same can these be sorted by odds 2nd.
+Like the 1-0s should go cc Hyman Zach Christel McD."* No links, capabilities
+or hash change.
+
 ## v111 — Ticket-wide Parlay lock and Thursday reset
 
 The first scheduled kickoff locks the entire current parlay at both the server
