@@ -238,6 +238,18 @@ tiebreak. Owner: *"If the record is the same can these be sorted by odds 2nd.
 Like the 1-0s should go cc Hyman Zach Christel McD."* No links, capabilities
 or hash change.
 
+## Tuesday editorial week — Oracle and Rankings
+
+Oracle's API reports the NFL week from the same Tuesday 4 AM Eastern cutoff as
+Parlay, rather than selecting the first unpublished database row (an old Week 1
+placeholder can remain unpublished forever). The public Oracle opens to the
+current week's waiting state; Hurd opens to its draft, while older drafts and
+published weeks remain selectable. This requires redeploying `league-oracle` as
+well as publishing `oracle.js` on Pages. Rankings still shows published sets
+only; the latest published set announces when the current week's rankings are
+awaiting publication. The Power Rankings Lab builds from actual fantasy scores
+after games, so the Tuesday cutoff does not invent results or publish a set.
+
 ## v114 — Tuesday 4 AM ET opens the next parlay week
 
 ESPN’s default scoreboard often stays on the completed week through Monday
