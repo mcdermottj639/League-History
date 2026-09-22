@@ -1497,3 +1497,6 @@ superseded. No model run happens in a member's Rankings view: these are snapshot
   shared store once `sync` is set. A reaction, a comment or anything else
   would ride the same store and the same rules, and each one is its own
   decision about what twelve relatives can write into a page the others read.
+
+### v114 — Oracle record recovery
+Oracle retains its last valid full result snapshot under `lh:oracle-results:2026:v1` for up to seven days. Failed live fetches preserve that data without renewing freshness. Readers retry in the background every 30 seconds (successful results have a 60-second freshness window), and on visibility, pageshow, and reconnect events. Hidden tabs and editor sessions are excluded. Published predictions, drafts, private links, and final-result grading rules are unchanged.

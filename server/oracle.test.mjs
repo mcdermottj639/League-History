@@ -269,3 +269,40 @@ test('ordinary prose stays verbatim and a conflicting pick never receives a fabr
  const a=app('',[],{state:{current:1,weeks:[{week:1,published:true,publishedAt:'2026-09-17T00:00:00Z',predictions:[p]}]}});await a.w.LeagueOracle.paint(a.host,()=> '');
  assert.equal(a.host.querySelector('.or-analysis p').textContent,p.writeup);assert.equal(a.host.querySelector('.or-prose-heading'),null);assert.equal(a.host.querySelector('.or-verdict'),null);assert.equal(a.host.querySelector('.or-call>b').textContent,p.winner);a.dom.window.close();
 });
+
+test('Oracle retries failed results in place, restores cached records on reload, and preserves them offline',async()=>{
+ const p={id:'1:1-2',matchup:{away:{id:'1',name:'Away'},home:{id:'2',name:'Home'}},winner:'Away',awayScore:100,homeScore:90,writeup:'Saved prophecy'};
+ const state={current:2,weeks:[{week:1,published:true,publishedAt:'2026-09-21',predictions:[p]}]};
+ const raw={week:2,teams:[{teamId:'1',scores:[110],outcomes:['W'],schedule:['2']},{teamId:'2',scores:[80],outcomes:['L'],schedule:['1']}]};
+ let fail=true,requests=0;
+ function live(a){
+  Object.defineProperty(a.w.document,'hidden',{configurable:true,value:false});
+  a.w.AbortSignal=globalThis.AbortSignal;
+  a.w.LeagueESPN.SEASON_URL='https://results.test';a.w.LeagueESPN.toSnapshot=()=>structuredClone(season);
+  const original=a.w.fetch;a.w.fetch=async(url,opts)=>{if(url==='https://results.test'){requests++;if(fail)throw Error('offline');return response(raw);}return original(url,opts);};
+ }
+ const a=app('',[],{state});live(a);
+ let retry;const realTimeout=a.w.setTimeout.bind(a.w);a.w.setTimeout=(fn,ms,...args)=>ms===30000?(retry=fn,123):realTimeout(fn,ms,...args);
+ await a.w.LeagueOracle.paint(a.host,()=> '');await pause();
+ assert.equal(a.host.querySelector('.or-head-stats b').firstChild.textContent,'—');
+ fail=false;await retry();
+ assert.match(a.host.querySelector('.or-head-stats').textContent,/1–0/,'scheduled retry recovers without restarting');
+ const stored=JSON.parse(a.w.localStorage.getItem('lh:oracle-results:2026:v1'));assert.ok(stored.data.oracleResults);
+ a.dom.window.close();
+ fail=true;const b=app('',[],{state,storage:{'lh:oracle-results:2026:v1':stored}});live(b);
+ await b.w.LeagueOracle.paint(b.host,()=> '');await pause();
+ assert.match(b.host.querySelector('.or-head-stats').textContent,/1–0/,'offline reopening retains record');
+ const before=requests;b.w.document.dispatchEvent(new b.w.Event('visibilitychange'));await waitFor(()=>requests>before);
+ assert.match(b.host.querySelector('.or-head-stats').textContent,/1–0/);
+ assert.equal(JSON.parse(b.w.localStorage.getItem('lh:oracle-results:2026:v1')).savedAt,stored.savedAt,'failure does not renew cache');
+ b.host.dataset.view='season';const after=requests;b.w.dispatchEvent(new b.w.Event('online'));await pause();assert.equal(requests,after,'other tabs do not refresh Oracle');
+ b.dom.window.close();
+});
+
+test('recovery events never replace Hurd’s unsaved editor',async()=>{
+ const calls=[],a=app('#oracle-editor=test',calls);Object.defineProperty(a.w.document,'hidden',{value:false});
+ await a.w.LeagueOracle.paint(a.host,()=> '');fill(a);
+ const field=a.host.querySelector('textarea'),value=field.value,count=calls.length;
+ a.w.document.dispatchEvent(new a.w.Event('visibilitychange'));a.w.dispatchEvent(new a.w.Event('pageshow'));a.w.dispatchEvent(new a.w.Event('online'));await pause();
+ assert.equal(a.host.querySelector('textarea'),field);assert.equal(field.value,value);assert.equal(calls.length,count);a.dom.window.close();
+});

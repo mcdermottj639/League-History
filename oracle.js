@@ -7,7 +7,24 @@
   const S={config:null,data:null,season:null,session:read(KEY),week:null,manualWeek:false,editor:false,message:'',busy:false,host:null,crest:null,preview:null,working:read(DRAFT_KEY)||{}};
   let paintToken=0, renderToken=0, seasonFlight=null,seasonFetched=0;
   let publicData=null,publicNotice='';
-  let renderedRoot=null,renderedHTML='';
+  let renderedRoot=null,renderedHTML='',recoveryTimer=null,readerReady=false;
+  const RESULTS_KEY='lh:oracle-results:2026:v1';
+  function validSeason(d){return Array.isArray(d?.t)&&d.t.length>0;}
+  function validResults(d){return validSeason(d)&&Number.isInteger(d.oracleResults?.week)&&Array.isArray(d.oracleResults?.teams)&&d.oracleResults.teams.length>0;}
+  const savedResults=read(RESULTS_KEY);
+  if(savedResults&&Date.now()-savedResults.savedAt<7*86400000&&validResults(savedResults.data))S.season=savedResults.data;
+  function readerActive(){return S.host&&owns(paintToken)&&!document.hidden&&!S.editor&&!S.session&&!invite&&!S.preview;}
+  function scheduleRecovery(){clearTimeout(recoveryTimer);recoveryTimer=setTimeout(refreshResults,30000);}
+  async function refreshResults(){
+    clearTimeout(recoveryTimer);
+    if(!readerReady||!readerActive())return;
+    const token=paintToken;
+    try{await loadSeason();if(owns(token)&&readerActive())await render(token);}catch{}
+    finally{if(owns(token)&&readerActive())scheduleRecovery();}
+  }
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)clearTimeout(recoveryTimer);else refreshResults();});
+  window.addEventListener('pageshow',refreshResults);
+  window.addEventListener('online',refreshResults);
   function cachedPublic(){const c=read(PUBLIC_KEY);return c&&Date.now()-c.savedAt<86400000&&Array.isArray(c.data?.weeks)?c.data:null;}
   function loadSeason(){if(S.season&&Date.now()-seasonFetched<60000)return Promise.resolve(S.season);if(!seasonFlight)seasonFlight=fetchSeason().finally(()=>{seasonFlight=null;});return seasonFlight;}
   const owns=token=>token===paintToken&&(!S.host?.dataset.view||S.host.dataset.view==='oracle');
@@ -15,7 +32,26 @@
   const put=(k,v)=>{try{v?localStorage.setItem(k,JSON.stringify(v)):localStorage.removeItem(k);}catch{}};
   async function config(){if(S.config)return S.config;const r=await fetch('oracle-config.json',{cache:'no-store'});if(!r.ok)throw Error('Oracle configuration is unavailable.');const c=await r.json();if(!c.enabled||typeof c.api!=='string'||!c.api)return null;S.config=c;return c;}
   async function api(path,body,auth=false){const c=await config();if(!c)throw Error('Hurdstradamus is not live yet.');const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),15000);try{const r=await fetch(c.api+'/api/oracle/'+path,{method:body?'POST':'GET',cache:'no-store',signal:ctl.signal,headers:{Accept:'application/json',...(body?{'Content-Type':'application/json'}:{}),...(auth&&S.session?{Authorization:'Bearer '+S.session.token}:{})},...(body?{body:JSON.stringify(body)}:{})});const j=await r.json().catch(()=>({}));if(!r.ok){if(r.status===401){S.editor=false;S.session=null;put(KEY,null);}throw Error(j.error||'The Oracle could not complete that request.');}return j;}finally{clearTimeout(timer);}}
-  async function fetchSeason(){let d;try{if(window.LeagueESPN?.SEASON_URL){const live=await fetch(window.LeagueESPN.SEASON_URL,{cache:'no-store',signal:AbortSignal.timeout(12000)});if(live.ok){const p=await live.json();if(p.teams?.length){d=window.LeagueESPN.toSnapshot(p);d.oracleResults={week:p.week,teams:p.teams};}}}}catch{}if(!d&&S.season){seasonFetched=Date.now();return S.season;}const r=d?{ok:true,json:async()=>d}:await fetch(FILE,{cache:'no-store'});if(!r.ok)throw Error('The league schedule is unavailable.');d=await r.json();if(!Array.isArray(d.t)||!d.t.length)throw Error('The league schedule is unavailable.');S.season=d;seasonFetched=Date.now();return d;}
+  async function fetchSeason(){
+    let d;
+    try{
+      if(window.LeagueESPN?.SEASON_URL){
+        const live=await fetch(window.LeagueESPN.SEASON_URL,{cache:'no-store',signal:AbortSignal.timeout(12000)});
+        if(live.ok){const p=await live.json();if(Number.isInteger(p.week)&&p.teams?.length){
+          const candidate=window.LeagueESPN.toSnapshot(p);
+          candidate.oracleResults={week:p.week,teams:p.teams};
+          if(validResults(candidate))d=candidate;
+        }}
+      }
+    }catch{}
+    // A failed live request must neither erase good results nor mark them fresh.
+    if(!d&&S.season)return S.season;
+    if(!d){const r=await fetch(FILE,{cache:'no-store',signal:AbortSignal.timeout(12000)});if(!r.ok)throw Error('The league schedule is unavailable.');d=await r.json();}
+    if(!validSeason(d))throw Error('The league schedule is unavailable.');
+    S.season=d;
+    if(validResults(d)){seasonFetched=Date.now();put(RESULTS_KEY,{savedAt:seasonFetched,data:d});}
+    return d;
+  }
   function recordAt(team,week){let w=0,l=0,t=0;for(let i=0;i<week-1;i++){const opp=S.season.t.find(x=>String(x.id)===String(team.sch?.[i])),a=Number(team.s?.[i]),b=Number(opp?.s?.[i]);if(i>=Number(S.season.k||0)||!Number.isFinite(a)||!Number.isFinite(b)||team.s?.[i]==null||opp?.s?.[i]==null)continue;if(a>b)w++;else if(a<b)l++;else t++;}return `${w}-${l}${t?`-${t}`:''}`;}
   function projectedRecord(record,won){const m=String(record).match(/^(\d+)-(\d+)(?:-(\d+))?$/);if(!m)return record;return `${Number(m[1])+(won?1:0)}-${Number(m[2])+(won?0:1)}${Number(m[3])?`-${m[3]}`:''}`;}
   function matchupsFor(week){const t=S.season?.t||[],at=week-1,seen=new Set(),out=[];for(const away of t){const home=t.find(x=>String(x.id)===String(away.sch?.[at]));if(!home)continue;const ids=[String(away.id),String(home.id)].sort(),id=`${week}:${ids.join('-')}`;if(seen.has(id))continue;seen.add(id);out.push({id,away:{id:String(away.id),name:String(away.n),record:recordAt(away,week)},home:{id:String(home.id),name:String(home.n),record:recordAt(home,week)}});}return out;}
@@ -149,6 +185,7 @@
     return true;
   }
   async function paint(host,crest){
+    clearTimeout(recoveryTimer);readerReady=false;
     const token=++paintToken,reader=!invite&&!S.session;
     try{
       S.host=host;S.crest=crest;S.preview=null;S.week=null;S.manualWeek=false;
@@ -184,11 +221,14 @@
       // Reader cache contains only the unauthenticated public response, never editor data.
       if(reader){S.editor=false;publicData=publicData||cachedPublic();if(publicData){S.data=publicData;publicNotice='Saved copy · checking updates…';await render(token);}}
       const seasonReady=loadSeason().catch(()=>null);
+      // Attach recovery before public API work so its failure cannot strand records.
+      seasonReady.then(()=>{if(owns(token)&&readerActive())scheduleRecovery();});
       if(!await boot()||!owns(token))return;
       if(!await render(token,true)||!owns(token))return;
+      readerReady=true;if(readerActive())scheduleRecovery();
       // A slow season feed cannot delay published writing or repaint an editor's form.
       seasonReady.then(()=>{if(owns(token)&&!S.editor&&!S.preview)render(token).catch(()=>{});});
-    }catch(e){if(reader&&publicData&&owns(token)){S.data=publicData;publicNotice='Saved copy · refresh unavailable';await render(token);return;}if(owns(token))host.innerHTML=`<section class="or-empty"><b>The Oracle cannot open right now.</b><p>${esc(e.message)}</p><p>Your saved device backups have not been removed.</p></section>`;}
+    }catch(e){if(reader&&publicData&&owns(token)){S.data=publicData;publicNotice='Saved copy · refresh unavailable';await render(token);readerReady=true;if(readerActive())scheduleRecovery();return;}if(owns(token))host.innerHTML=`<section class="or-empty"><b>The Oracle cannot open right now.</b><p>${esc(e.message)}</p><p>Your saved device backups have not been removed.</p></section>`;}
   }
   window.LeagueOracle={paint,get entry(){return !!invite;},get available(){return true;}};
 })();
