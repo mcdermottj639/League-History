@@ -485,7 +485,7 @@
     const latest = Math.max(...weeks.filter(w => /^live-2026-/.test(w.f)).map(w => w.k), 0);
     const current = Math.max(0, nflEditorialWeek() - 1);
     return !S.wkErr && latest > 0 && current > latest
-      ? [{k:current,l:`2026 · After Week ${current} · Unpublished`,f:`pending-2026-${current}`},...weeks]
+      ? [{k:current,l:`2026 · After Week ${current}`,f:`pending-2026-${current}`},...weeks]
       : weeks;
   };
   const wkPick = (weeks) => (rankingOptions(weeks).length > 1

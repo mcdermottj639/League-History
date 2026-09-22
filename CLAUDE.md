@@ -263,8 +263,7 @@ retain the existing card DOM, images, focus and matchup navigation scroll.
 Only the small refresh-status message changes when the content is unchanged.
 
 Public tabs open on the latest **published** Oracle prophecy and Rankings set.
-The week picker includes the current unpublished week with an explicit
-"Unpublished" label. Rankings uses the completed week (After Week 2 while Oracle/Parlay prepare Week 3). No waiting banner appears above published content. Returning to either tab opens the latest
+The week picker includes unpublished weeks with plain week labels, without any publication-status suffix. Rankings uses the completed week (After Week 2 while Oracle/Parlay prepare Week 3). No waiting banner appears above published content. Returning to either tab opens the latest
 published set again. Hurd's private editor still opens on the current Tuesday
 week; older drafts and published weeks remain selectable. Do not change his
 private link, session, or capability handling to implement this behavior.

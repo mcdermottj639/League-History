@@ -138,7 +138,7 @@
     const saved=S.data.weeks.find(x=>x.week===S.week)||{week:S.week,predictions:[]};
     const current={...saved,predictions:(S.editor&&S.working[S.week])||saved.predictions};
     const w=S.preview?{...saved,published:true,predictions:S.preview}:current;
-    const html=`<div class="oracle"><nav class="or-nav"><label>Week <select data-or-week>${S.data.weeks.map(x=>`<option value="${x.week}" ${x.week===S.week?'selected':''}>${x.week}${!S.editor&&!x.published?' · Unpublished':''}</option>`).join('')}</select></label>${S.editor?'<b>Hurd editor</b>':'<small data-or-notice role="status"></small>'}</nav>${S.preview?publicHTML(w,true):(S.editor?editorHTML(w):publicHTML(w))}</div>`;
+    const html=`<div class="oracle"><nav class="or-nav"><label>Week <select data-or-week>${S.data.weeks.map(x=>`<option value="${x.week}" ${x.week===S.week?'selected':''}>${x.week}</option>`).join('')}</select></label>${S.editor?'<b>Hurd editor</b>':'<small data-or-notice role="status"></small>'}</nav>${S.preview?publicHTML(w,true):(S.editor?editorHTML(w):publicHTML(w))}</div>`;
     // A successful refresh with the same content keeps the existing cards,
     // loaded images, focus and horizontal matchup scroll in place.
     if(!S.editor&&renderedRoot?.parentNode===S.host&&html===renderedHTML){const notice=S.host.querySelector('[data-or-notice]');if(notice)notice.textContent=publicNotice;return true;}
