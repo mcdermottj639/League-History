@@ -80,3 +80,17 @@
 .or-editorial-hero{padding-top:20px;padding-bottom:12px}
 .or-editorial-hero h2{margin:8px 0}
 .or-matchup-nav{padding-top:12px;padding-bottom:10px}
+.or-accuracy{margin:12px 0;padding:16px;border:1px solid #a0855680;border-radius:14px;background:#211735;color:#f8f0d5}
+.or-accuracy h3{margin:0 0 12px;font:700 18px Georgia,serif;color:#ecd59e}
+.or-accuracy-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.or-accuracy-grid>div{display:flex;flex-direction:column;gap:5px;min-width:0}
+.or-accuracy-grid strong{font-size:26px;color:#ecd59e}
+.or-accuracy-grid span{font-size:13px}.or-accuracy-grid small{font-size:11px;color:#ddd0e9;line-height:1.4}
+.or-accuracy p{font-size:12px;line-height:1.5;margin:12px 0 0;color:#ddd0e9}
+.or-score-result{margin:10px 0 16px;padding:12px;background:#f3eddf;border:1px solid #c7b98c;border-radius:10px}
+.or-score-result h3{font-size:15px;margin:0 0 10px;color:#392347}
+.or-score-result table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px;color:#211744}
+.or-score-result th,.or-score-result td{padding:7px 3px;text-align:right;vertical-align:top;border-bottom:1px solid #d8cdae;font-variant-numeric:tabular-nums}
+.or-score-result th:first-child{width:40%;text-align:left;overflow-wrap:anywhere}
+.or-score-result thead th{font-size:10px}.or-score-result>b{display:block;margin-top:10px;color:#5f3c83;font-size:13px}
+.or-card .or-result-pending{font-size:12px;line-height:1.5;color:#675274}

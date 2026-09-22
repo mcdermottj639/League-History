@@ -2,6 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {oracleEdge,predictions} from './oracle-edge-harness.mjs';
 
+test('confidence is optional for save and publish; legacy values remain compatible',async()=>{
+ const edge=oracleEdge(),p=predictions();p.forEach(x=>delete x.confidence);
+ for(const action of ['save','publish'])assert.equal((await edge.fetch('/api/oracle/'+action,{body:{week:2,predictions:p}})).status,200);
+ assert.equal(edge.rows.get(2).published,true);
+});
+
 test('actual edge handler saves and publishes decimal scores and 10,000-character write-ups without changing other weeks',async()=>{
  const untouched={week:1,published:true,predictions:[{writeup:'Existing published work'}],draft_predictions:[]};
  const edge=oracleEdge([untouched]),p=predictions();p[0].writeup='x'.repeat(10000);p[1].awayScore=0;p[1].homeScore=300;
@@ -17,7 +23,7 @@ test('actual edge handler saves and publishes decimal scores and 10,000-characte
 });
 
 test('partial drafts save; incomplete or invalid predictions cannot publish',async()=>{
- for(const [field,value] of [['awayScore',null],['homeScore',null],['winner',''],['writeup','  '],['confidence',null]]){
+ for(const [field,value] of [['awayScore',null],['homeScore',null],['winner',''],['writeup','  ']]){
   const edge=oracleEdge(),p=predictions();p[0][field]=value;
   assert.equal((await edge.fetch('/api/oracle/save',{body:{week:2,predictions:p}})).status,200);
   assert.equal((await edge.fetch('/api/oracle/publish',{body:{week:2,predictions:p}})).status,400);
@@ -27,7 +33,7 @@ test('partial drafts save; incomplete or invalid predictions cannot publish',asy
   const edge=oracleEdge(),p=predictions();p[0].homeScore=value;
   const r=await edge.fetch('/api/oracle/save',{body:{week:2,predictions:p}});assert.equal(r.status,400);assert.match((await r.json()).error,/Matchup 1.*home score/);assert.equal(edge.writes.length,0);
  }
- for(const modify of [p=>p.pop(),p=>{p[0].writeup='x'.repeat(10001);},p=>{p[0].confidence=100.1;},p=>{p[1].id=p[0].id;}]){
+ for(const modify of [p=>p.pop(),p=>{p[0].writeup='x'.repeat(10001);},p=>{p[1].id=p[0].id;}]){
   const edge=oracleEdge(),p=predictions();modify(p);assert.equal((await edge.fetch('/api/oracle/publish',{body:{week:2,predictions:p}})).status,400);assert.equal(edge.writes.length,0);
  }
 });
