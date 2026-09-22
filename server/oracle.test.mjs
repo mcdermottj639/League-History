@@ -213,6 +213,22 @@ test('cached public predictions show before a pending refresh and survive an off
  assert.match(a.host.textContent,/refresh unavailable/);assert.equal(a.host.querySelectorAll('.or-card').length,6);a.dom.window.close();
 });
 
+test('saved Oracle cards paint immediately and unchanged refreshes retain the existing content',async()=>{
+ const state={current:3,weeks:[{week:2,published:true,publishedAt:'2026-09-17T00:00:00Z',predictions:edgePredictions()}]};
+ for(const p of state.weeks[0].predictions){p.matchup.away.record='1-0';p.matchup.home.record='0-1';}
+ let finish;const a=app('',[],{storage:{'lh:oracle-public:2026:v1':{savedAt:Date.now(),data:state}},api:u=>u.includes('/state')?new Promise(resolve=>{finish=()=>resolve(response(state));}):null});
+ let painted=a.w.LeagueOracle.paint(a.host,()=> '');
+ const card=a.host.querySelector('.or-card');assert.ok(card,'saved content renders before any network response');
+ const nav=a.host.querySelector('.or-matchup-nav div');nav.scrollLeft=75;
+ await waitFor(()=>!!finish);finish();await painted;await pause();
+ assert.equal(a.host.querySelector('.or-card'),card,'successful refresh keeps the existing card');
+ assert.equal(a.host.querySelector('.or-matchup-nav div').scrollLeft,75);
+ finish=null;painted=a.w.LeagueOracle.paint(a.host,()=> '');
+ assert.equal(a.host.querySelector('.or-card'),card,'reopening never removes the saved card');
+ await waitFor(()=>!!finish);finish();await painted;
+ assert.equal(a.host.querySelector('.or-card'),card);a.dom.window.close();
+});
+
 test('fresh public response replaces cached content and delayed responses never repaint another tab',async()=>{
  const old={current:2,weeks:[{week:2,published:true,publishedAt:'2026-09-17T00:00:00Z',predictions:edgePredictions()}]},fresh=structuredClone(old);fresh.weeks[0].predictions[0].writeup='Fresh published words';
  let finish;const a=app('',[],{storage:{'lh:oracle-public:2026:v1':{savedAt:Date.now(),data:old}},api:u=>u.includes('/state')?new Promise(resolve=>{finish=()=>resolve(response(fresh));}):null});

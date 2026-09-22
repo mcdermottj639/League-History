@@ -7,6 +7,7 @@
   const S={config:null,data:null,season:null,session:read(KEY),week:null,manualWeek:false,editor:false,message:'',busy:false,host:null,crest:null,preview:null,working:read(DRAFT_KEY)||{}};
   let paintToken=0, renderToken=0, seasonFlight=null;
   let publicData=null,publicNotice='';
+  let renderedRoot=null,renderedHTML='';
   function cachedPublic(){const c=read(PUBLIC_KEY);return c&&Date.now()-c.savedAt<86400000&&Array.isArray(c.data?.weeks)?c.data:null;}
   function loadSeason(){if(S.season)return Promise.resolve(S.season);if(!seasonFlight)seasonFlight=fetchSeason().finally(()=>{seasonFlight=null;});return seasonFlight;}
   const owns=token=>token===paintToken&&(!S.host?.dataset.view||S.host.dataset.view==='oracle');
@@ -100,7 +101,8 @@
   }
   async function render(token,refresh=false){
     const turn=++renderToken;
-    const [data]=await Promise.all([(refresh||!S.data)?api('state'+(S.editor?'?editor=1':''),null,S.editor):Promise.resolve(S.data),S.editor?loadSeason():Promise.resolve()]);
+    let data=S.data;
+    if(refresh||!data||S.editor){[data]=await Promise.all([(refresh||!data)?api('state'+(S.editor?'?editor=1':''),null,S.editor):Promise.resolve(data),S.editor?loadSeason():Promise.resolve()]);}
     if(!owns(token)||turn!==renderToken)return false;
     S.data=data;
     if(!S.editor&&refresh){publicData=data;put(PUBLIC_KEY,{savedAt:Date.now(),data});publicNotice='';}
@@ -115,7 +117,12 @@
     const saved=S.data.weeks.find(x=>x.week===S.week)||{week:S.week,predictions:[]};
     const current={...saved,predictions:(S.editor&&S.working[S.week])||saved.predictions};
     const w=S.preview?{...saved,published:true,predictions:S.preview}:current;
-    S.host.innerHTML=`<div class="oracle"><nav class="or-nav"><label>Week <select data-or-week>${S.data.weeks.map(x=>`<option value="${x.week}" ${x.week===S.week?'selected':''}>${x.week}${!S.editor&&!x.published?' · Awaiting publication':''}</option>`).join('')}</select></label>${S.editor?'<b>Hurd editor</b>':(publicNotice?'<small role="status">'+esc(publicNotice)+'</small>':'')}</nav>${S.preview?publicHTML(w,true):(S.editor?editorHTML(w):publicHTML(w))}</div>`;
+    const html=`<div class="oracle"><nav class="or-nav"><label>Week <select data-or-week>${S.data.weeks.map(x=>`<option value="${x.week}" ${x.week===S.week?'selected':''}>${x.week}${!S.editor&&!x.published?' · Awaiting publication':''}</option>`).join('')}</select></label>${S.editor?'<b>Hurd editor</b>':'<small data-or-notice role="status"></small>'}</nav>${S.preview?publicHTML(w,true):(S.editor?editorHTML(w):publicHTML(w))}</div>`;
+    // A successful refresh with the same content keeps the existing cards,
+    // loaded images, focus and horizontal matchup scroll in place.
+    if(!S.editor&&renderedRoot?.parentNode===S.host&&html===renderedHTML){const notice=S.host.querySelector('[data-or-notice]');if(notice)notice.textContent=publicNotice;return true;}
+    S.host.innerHTML=html;renderedHTML=html;renderedRoot=S.host.firstElementChild;
+    const notice=S.host.querySelector('[data-or-notice]');if(notice)notice.textContent=publicNotice;
     S.host.querySelectorAll('textarea[data-f="writeup"]').forEach(t=>{const c=t.parentElement.querySelector('[data-count]'),sync=()=>c.textContent=`${t.value.length.toLocaleString()} / ${WRITEUP_MAX.toLocaleString()}`;t.addEventListener('input',sync);sync();});
     if(S.editor&&!S.preview){S.host.querySelectorAll('[data-or-id] input,[data-or-id] textarea').forEach(el=>{el.addEventListener('input',()=>{syncEditorControls();backupEditor();});el.addEventListener('change',()=>{syncEditorControls();backupEditor();});});syncEditorControls();}
     return true;
@@ -124,7 +131,8 @@
     const token=++paintToken,reader=!invite&&!S.session;
     try{
       S.host=host;S.crest=crest;S.preview=null;S.week=null;S.manualWeek=false;
-      host.innerHTML='<div class="oracle"><section class="or-empty"><b>Opening Hurdstradamus…</b><p>Loading this week’s prophecies.</p></section></div>';
+      if(reader)publicData=publicData||cachedPublic();
+      if(!reader||!publicData)host.innerHTML='<div class="oracle"><section class="or-empty"><b>Opening Hurdstradamus…</b><p>Loading this week’s prophecies.</p></section></div>';
       host.onclick=async e=>{
         const jump=e.target.closest('[data-or-jump]');
         if(jump&&owns(token)){const card=host.querySelector('#oracle-game-'+S.week+'-'+jump.dataset.orJump);if(card){card.focus({preventScroll:true});card.scrollIntoView({behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'});}return;}
