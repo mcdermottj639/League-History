@@ -486,15 +486,24 @@
         `<option value="${esc(w.f)}"${w.f === S.week ? ' selected' : ''}>${esc(w.l)}</option>`).join('')}</select></div>`
     : '');
 
+  function nflEditorialWeek(now = new Date()) {
+    const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', {timeZone:'America/New_York', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', hourCycle:'h23'}).formatToParts(now).filter(x => x.type !== 'literal').map(x => [x.type, x.value]));
+    const wall = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour);
+    return Math.min(18, Math.max(1, 1 + Math.floor((wall - Date.UTC(2026, 8, 8, 4)) / 604800000)));
+  }
+
   function rankHTML(p, weeks) {
     const pick = wkPick(weeks);
     const data = window.RankingVisuals.facts(p, [...sharedWeeks.values()]);
+    const latestPublished = Math.max(...weeks.filter(w => /^live-2026-/.test(w.f)).map(w => w.k), 0);
+    const waiting = p.y === 2026 && p.k === latestPublished && nflEditorialWeek() > latestPublished;
     return `<div class="pr-card pr-head lg-rank-head">
         <div class="pr-week">${esc(p.l || '')}${p.d ? ` · ${esc(niceDate(p.d))}` : ''}</div>
         <h2>Power Rankings</h2>
         <p class="pr-sub">League rankings. The numbers and the story.</p>
         ${window.RankingVisuals.highlights(data)}
       </div>
+      ${waiting ? `<p class="pr-note" role="status">Week ${nflEditorialWeek()} rankings are awaiting publication. Showing the latest published set below.</p>` : ''}
       ${pick}
       <div id="lg-ranking-controls"></div>
       <ol class="pr-list rk-list">${window.RankingVisuals.rowsHTML(data, {crest, me:LH.me()})}</ol>

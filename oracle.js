@@ -4,7 +4,7 @@
   const esc=s=>String(s??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
   let invite=null;
   try { const h=new URLSearchParams(location.hash.slice(1)); if(h.has('oracle-editor')){invite=h.get('oracle-editor');h.delete('oracle-editor');history.replaceState(null,'',location.pathname+location.search+(h.size?'#'+h:''));} }catch{}
-  const S={config:null,data:null,season:null,session:read(KEY),week:null,editor:false,message:'',busy:false,host:null,crest:null,preview:null,working:read(DRAFT_KEY)||{}};
+  const S={config:null,data:null,season:null,session:read(KEY),week:null,manualWeek:false,editor:false,message:'',busy:false,host:null,crest:null,preview:null,working:read(DRAFT_KEY)||{}};
   let paintToken=0, renderToken=0, seasonFlight=null;
   let publicData=null,publicNotice='';
   function cachedPublic(){const c=read(PUBLIC_KEY);return c&&Date.now()-c.savedAt<86400000&&Array.isArray(c.data?.weeks)?c.data:null;}
@@ -104,10 +104,12 @@
     if(!owns(token)||turn!==renderToken)return false;
     S.data=data;
     if(!S.editor&&refresh){publicData=data;put(PUBLIC_KEY,{savedAt:Date.now(),data});publicNotice='';}
-    if(!S.week){
+    if(!S.week||(!S.manualWeek&&S.week<S.data.current)){
       const remembered=S.editor?read(WEEK_KEY):null;
       const draftWeeks=S.editor?S.data.weeks.filter(w=>(S.working[w.week]||w.predictions||[]).some(p=>p.writeup?.trim()||p.winner)).map(w=>w.week):[];
-      S.week=S.data.weeks.some(w=>w.week===remembered)?remembered:(draftWeeks.at(-1)||(!S.editor&&S.data.weeks.filter(w=>w.published).at(-1)?.week)||S.data.current||1);
+      // Open the new Tuesday week by default. Past drafts and published weeks
+      // stay in the picker; a private draft for the current week stays selected.
+      S.week=S.data.weeks.some(w=>w.week===remembered&&w.week>=S.data.current)?remembered:(draftWeeks.filter(w=>w>=S.data.current).at(-1)||S.data.current||1);
     }
     const saved=S.data.weeks.find(x=>x.week===S.week)||{week:S.week,predictions:[]};
     const current={...saved,predictions:(S.editor&&S.working[S.week])||saved.predictions};
@@ -146,7 +148,7 @@
       host.onchange=e=>{
         if(!e.target.matches('[data-or-week]')||S.busy||!owns(token))return;
         if(S.editor&&!S.preview)backupEditor();
-        S.week=Number(e.target.value);if(S.editor)put(WEEK_KEY,S.week);S.preview=null;S.message='';
+        S.week=Number(e.target.value);S.manualWeek=true;if(S.editor)put(WEEK_KEY,S.week);S.preview=null;S.message='';
         render(token).catch(err=>{if(owns(token))setStatus(err.message);});
       };
       // Reader cache contains only the unauthenticated public response, never editor data.

@@ -27,6 +27,14 @@ function app(fragment='',calls=[],options={}){
 }
 
 const pause=()=>new Promise(resolve=>setTimeout(resolve,0));
+test('Oracle opens Week 3 Tuesday at 4 AM Eastern despite an old unpublished Week 1 row',async()=>{
+ const rows=[{week:1,published:false,draft_predictions:[],predictions:[]},{week:2,published:true,draft_predictions:[],predictions:[]}];
+ const before=oracleEdge(rows,'2026-09-22T07:59:00Z');
+ const after=oracleEdge(rows,'2026-09-22T08:00:00Z');
+ const a=await(await before.fetch('/api/oracle/state')).json(),b=await(await after.fetch('/api/oracle/state')).json();
+ assert.equal(a.current,2);assert.equal(b.current,3);assert.ok(b.weeks.some(w=>w.week===3&&!w.published));
+ assert.equal(after.rows.has(3),false,'opening a week leaves published rows and drafts untouched');
+});
 async function waitFor(check){for(let i=0;i<100;i++){if(check())return;await new Promise(resolve=>setTimeout(resolve,10));}assert.ok(check(),'operation completed');}
 function setField(a,card,field,value){const el=card.querySelector(`[data-f="${field}"]`);el.value=value;el.dispatchEvent(new a.w.Event('input',{bubbles:true}));return el;}
 function fill(a){for(const card of a.host.querySelectorAll('[data-or-id]')){setField(a,card,'awayScore','134.75');setField(a,card,'homeScore','125.9');setField(a,card,'confidence','100');setField(a,card,'writeup','  His exact words.\n\nA second paragraph.  ');const winner=card.querySelector('[data-f="winner"]');winner.checked=true;winner.dispatchEvent(new a.w.Event('input',{bubbles:true}));}}
