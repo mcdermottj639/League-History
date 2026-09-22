@@ -1,6 +1,6 @@
 import {ensure,ingest,lockDue,payerFromFantasy,writable,attachBoxscore,parseBoxscore} from './engine.mjs';
 import {transaction,randomToken} from './supabase-store.mjs';
-import {parseScoreboard} from './domain.mjs';
+import {parseScoreboard,nflBettingWeek} from './domain.mjs';
 import {gamesNeedingBoxscore,boxscoreURL} from './props.mjs';
 export async function getJSON(url,fetcher=fetch){const r=await fetcher(url,{signal:AbortSignal.timeout(10000),headers:{Accept:'application/json','User-Agent':'League-History/Parlay'}});if(!r.ok)throw Error('Source HTTP '+r.status);return r.json();}
 export async function collect(rpc,config,{clock=Date.now,fetchJSON=getJSON,managerFor=()=>''}={}){
@@ -11,11 +11,14 @@ export async function collect(rpc,config,{clock=Date.now,fetchJSON=getJSON,manag
   await transaction(rpc,store=>store.transact(s=>{ensure(s,year,config.launch_week);Object.values(s.seasons[year].weeks).forEach(w=>lockDue(w,now));}));
   let snapshot=(await rpc('read')).state.seasons[year];
   let discovery=null;
-  if(now-(snapshot.collector?.lastDiscovery||0)>=900000||!snapshot.collector?.discoveryMarkets){try{discovery=await fetchJSON('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard');}catch{}}
+  const open=nflBettingWeek(now,year);
+  if(now-(snapshot.collector?.lastDiscovery||0)>=900000||!snapshot.collector?.discoveryMarkets||(writable(snapshot)&&open>snapshot.current)){try{discovery=await fetchJSON('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard');}catch{}}
   await transaction(rpc,store=>store.transact(s=>{
    const season=s.seasons[year],k=Number(discovery?.week?.number);
    // Before launch the selected legacy week wins; discovery must not skip Week 1.
-   if(discovery?.season?.year===year&&discovery?.season?.type===2&&k>=1&&k<=18){season.collector??={};season.collector.lastDiscovery=now;season.collector.discoveredWeek=k;const markets=(Array.isArray(discovery.events)?parseScoreboard(discovery,now):[]).flatMap(g=>g.markets);season.collector.discoveryMarkets=Object.fromEntries(['ml','spread','total'].map(m=>[m,markets.filter(q=>q.market===m).length]));if(writable(season)){season.current=Math.max(season.current,k);ensure(s,year,season.current);}}
+   if(discovery?.season?.year===year&&discovery?.season?.type===2&&k>=1&&k<=18){season.collector??={};season.collector.lastDiscovery=now;season.collector.discoveredWeek=k;const markets=(Array.isArray(discovery.events)?parseScoreboard(discovery,now):[]).flatMap(g=>g.markets);season.collector.discoveryMarkets=Object.fromEntries(['ml','spread','total'].map(m=>[m,markets.filter(q=>q.market===m).length]));if(writable(season))season.current=Math.max(season.current,k);}
+   // Tuesday 4 AM ET opens the next betting week even when ESPN has not flipped.
+   if(writable(season)){season.current=Math.max(season.current,nflBettingWeek(now,year));ensure(s,year,season.current);}
   }));
   snapshot=(await rpc('read')).state.seasons[year];
   const recent=Object.values(snapshot.weeks).filter(w=>w.week===snapshot.current||w.week===snapshot.current-1||Object.values(w.picks).some(p=>!p.lockedAt)||w.games.some(g=>!g.completed));

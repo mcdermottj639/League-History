@@ -238,6 +238,18 @@ tiebreak. Owner: *"If the record is the same can these be sorted by odds 2nd.
 Like the 1-0s should go cc Hyman Zach Christel McD."* No links, capabilities
 or hash change.
 
+## v114 — Tuesday 4 AM ET opens the next parlay week
+
+ESPN’s default scoreboard often stays on the completed week through Monday
+night and into Tuesday. Jack’s rule: **the next week is in the parlay week
+list by 4:00 AM ET each Tuesday** so people can enter picks that morning.
+`nflBettingWeek()` in `domain.mjs` is the clock: 2026 Week 1 opened Tue Sep 8
+4:00 AM America/New_York, then every seven days. After launch the collector
+takes `max(current, ESPN week, betting week)` and never moves backwards.
+Prelaunch still cannot skip the selected legacy week. Organizer, Hurd, and
+member links are unchanged. The live `league-parlay` function must be
+redeployed for this to take effect; a Pages-only merge does not open Week 3.
+
 ## v111 — Ticket-wide Parlay lock and Thursday reset
 
 The first scheduled kickoff locks the entire current parlay at both the server

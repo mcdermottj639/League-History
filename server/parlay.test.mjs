@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Store} from './store.mjs';
-import {parseScoreboard,ticket,result,progress,ROSTER} from './domain.mjs';
+import {parseScoreboard,ticket,result,progress,ROSTER,nflBettingWeek} from './domain.mjs';
 import {ensure,ingest,savePick,resetParlay,importLegacy,payerFromFantasy,payerFromScores,publicWeek,activateRelease,collectBoxscores,attachBoxscore} from './engine.mjs';
 import {parseProp,parseBoxscore,gradeProp,boxscoreURL} from './props.mjs';
 import {createApp,hash} from './app.mjs';
@@ -13,6 +13,18 @@ const newStore=()=>new Store(':memory:');
 function setup(){const s=newStore();ingest(s,2026,2,payload(),T);return s;}
 const member=m=>({member:m,role:'member'}),pick=(m='McD',extra={})=>({member:m,gameId:'g1',market:'spread',side:'PHI',revision:0,...extra});
 test('exact six DK markets; unknown bookmaker, opening-only, missing prices never fabricated',()=>{assert.equal(parseScoreboard(payload(),T)[0].markets.length,6);const p=payload();p.events[0].competitions[0].odds[0].provider.name='Other';assert.equal(parseScoreboard(p,T)[0].markets.length,0);p.events[0].competitions[0].odds[0].provider.name='DraftKings';delete p.events[0].competitions[0].odds[0].total.over.close.odds;assert.equal(parseScoreboard(p,T)[0].markets.length,5);assert.equal(parseScoreboard(payload(),K+1)[0].markets.length,0);});
+test('NFL betting week opens Tuesday 4 AM ET even when ESPN is still on the completed week',()=>{
+ assert.equal(nflBettingWeek(Date.parse('2026-09-08T08:00:00Z')),1);
+ assert.equal(nflBettingWeek(Date.parse('2026-09-10T16:00:00Z')),1);
+ assert.equal(nflBettingWeek(Date.parse('2026-09-22T07:59:00Z')),2);
+ assert.equal(nflBettingWeek(Date.parse('2026-09-22T08:00:00Z')),3);
+ assert.equal(nflBettingWeek(Date.parse('2026-09-23T16:00:00Z')),3);
+});
+test('background collector opens the Tuesday-4AM week without waiting for ESPN to flip',async()=>{
+ const s=newStore();let now=Date.parse('2026-09-22T07:59:00Z');const c=new Collector(s,{clock:()=>now,startWeek:1,fetchJSON:async url=>{if(url.includes('week=3'))return {season:{year:2026,type:2},week:{number:3},events:[]};if(url.includes('football/season'))throw Error('offline');return payload();}});
+ await c.cycle(now);assert.equal(s.read().seasons[2026].current,2);
+ now=Date.parse('2026-09-22T08:00:00Z');await c.cycle(now);assert.equal(s.read().seasons[2026].current,3);assert.ok(s.read().seasons[2026].weeks[3]);s.close();
+});
 test('reservations are game-wide; replacement preserves old until transaction succeeds; revision conflicts',()=>{const s=setup();savePick(s,2026,2,member('McD'),pick(),T);assert.throws(()=>savePick(s,2026,2,member('Hurd'),pick('Hurd',{market:'total',side:'under'}),T),/just picked/);assert.throws(()=>savePick(s,2026,2,member('McD'),pick('McD',{revision:1,gameId:'unknown'}),T),/closed/);assert.equal(s.read().seasons[2026].weeks[2].picks.McD.gameId,'g1');assert.throws(()=>savePick(s,2026,2,member('McD'),pick(),T),/changed/);savePick(s,2026,2,member('McD'),pick('McD',{revision:1,clear:true}),T);savePick(s,2026,2,member('Hurd'),pick('Hurd'),T);s.close();});
 test('organizer attribution, member boundary, kickoff denies edits and clears even with stale feed',()=>{const s=setup();assert.throws(()=>savePick(s,2026,2,member('McD'),pick('Hurd'),T),/own pick/);savePick(s,2026,2,{role:'organizer',member:'Zach'},pick('Hurd'),T);assert.equal(s.read().seasons[2026].weeks[2].picks.Hurd.addedBy,'organizer');assert.throws(()=>savePick(s,2026,2,member('Hurd'),pick('Hurd',{revision:1,clear:true}),K),/locked/);s.close();});
 test('first kickoff locks the whole ticket; only an organizer can reset after a final Thursday miss',()=>{

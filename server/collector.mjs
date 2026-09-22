@@ -1,4 +1,5 @@
 import {ensure,ingest,lockDue,payerFromFantasy,collectBoxscores} from './engine.mjs';
+import {nflBettingWeek} from './domain.mjs';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 const sandbox={window:{},localStorage:{getItem:()=>null,setItem:()=>{}}};
@@ -11,7 +12,8 @@ export class Collector {
   if(this.running)return;this.running=true;
   try {
    this.store.transact(s=>{const season=s.seasons[this.year]??={current:this.startWeek,weeks:{}};ensure(s,this.year,season.current);Object.values(season.weeks).forEach(w=>lockDue(w,now));});
-   if(now-this.lastDiscovery>900000){try{const p=await this.fetchJSON('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard');const k=Number(p.week?.number);if(p.season?.year===this.year&&p.season?.type===2&&k>=this.startWeek&&k<=18)this.store.transact(s=>{s.seasons[this.year].current=Math.max(s.seasons[this.year].current,k);ensure(s,this.year,k);});this.lastDiscovery=now;}catch{}}
+   if(now-this.lastDiscovery>900000||nflBettingWeek(now,this.year)>this.store.read().seasons[this.year].current){try{const p=await this.fetchJSON('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard');const k=Number(p.week?.number);if(p.season?.year===this.year&&p.season?.type===2&&k>=this.startWeek&&k<=18)this.store.transact(s=>{s.seasons[this.year].current=Math.max(s.seasons[this.year].current,k);});this.lastDiscovery=now;}catch{}
+    this.store.transact(s=>{s.seasons[this.year].current=Math.max(s.seasons[this.year].current,nflBettingWeek(now,this.year));ensure(s,this.year,s.seasons[this.year].current);});}
    const s=this.store.read().seasons[this.year],week=s.current;
    const recent=Object.values(s.weeks).filter(w=>w.week===week||w.week===week-1||Object.values(w.picks).some(p=>!p.lockedAt)||w.games.some(g=>!g.completed));
    const active=recent.some(w=>w.games.some(g=>g.state==='in'||(g.kick-now<1800000&&g.kick-now>-3600000)));

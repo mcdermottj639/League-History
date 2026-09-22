@@ -30,6 +30,9 @@ reconciliation, never simply enabling the old Firebase writer.
   near kickoff/during games, five-minute collection otherwise. Timing is best effort;
   stale quotes are labeled, never represented as exact closing prices. The UI refreshes
   every 20 seconds when visible and not editing.
+- The next NFL week is on the parlay week list by **Tuesday 4:00 AM America/New_York**,
+  even if ESPN’s default scoreboard is still last week. Discovery still cannot move
+  the open week backwards. First kickoff still locks the new ticket.
 - Live score/progress rows, upcoming legs and collapsed completed legs; automatic
   standard-market settlement, pushes and player-prop grading from the ESPN box
   score. Unparsed write-ins, unmatched names and missing stats stay pending.

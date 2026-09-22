@@ -85,6 +85,13 @@ test('Week 1 collector never fetches Week 0 or advances the selected prelaunch w
  await collect(b.rpc,b.config,{clock:()=>T,fetchJSON:async url=>{urls.push(url);if(!url.includes('?'))return {season:{year:2026,type:2},week:{number:2}};throw Error('offline');}});
  assert.equal(b.store.read().seasons[2026].current,1);assert.ok(!urls.some(u=>u.includes('week=0')||u.includes('football/season')));assert.equal(b.store.read().seasons[2026].weeks[1].feedError,'offline');
 });
+test('live collector opens the next week at Tuesday 4 AM ET while ESPN is still on the completed board',async()=>{
+ const b=await backend();activate(b.store);
+ b.store.transact(s=>{s.seasons[2026].current=2;s.seasons[2026].weeks[2]=structuredClone(s.seasons[2026].weeks[1]);s.seasons[2026].weeks[2].week=2;});
+ const tue=Date.parse('2026-09-22T08:00:00Z'),urls=[];
+ await collect(b.rpc,b.config,{clock:()=>tue,fetchJSON:async url=>{urls.push(url);const week=Number(new URL(url).searchParams.get('week')||2);return {season:{year:2026,type:2},week:{number:week},events:[]};}});
+ assert.equal(b.store.read().seasons[2026].current,3);assert.ok(b.store.read().seasons[2026].weeks[3]);assert.ok(urls.some(u=>u.includes('week=3')));
+});
 test('Collector uses honest identifying headers and reports source failure instead of a false success',async()=>{
  await getJSON('https://source.example',async(url,options)=>{assert.equal(options.headers.Accept,'application/json');assert.equal(options.headers['User-Agent'],'League-History/Parlay');return Response.json({ok:true});});
  const b=await backend();const result=await collect(b.rpc,b.config,{clock:()=>T,fetchJSON:async()=>{throw Error('Source HTTP 403');}});

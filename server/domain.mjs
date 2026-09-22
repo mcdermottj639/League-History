@@ -2,6 +2,19 @@
 import {gradePick} from './props.mjs';
 export const ROSTER = ['McD','CC','Hurd','Hyman','Christel','Woods','Zach','Buley','Wolff','Riz','Slemp','Gotch'];
 export const STAKE = 10;
+/* 2026 NFL betting week. Week 1 opened Tue Sep 8 at 4:00 AM America/New_York.
+   Later weeks open on that same clock, every Tuesday at 4 AM ET, even if ESPN
+   is still showing last week's completed scoreboard. Never moves backwards. */
+export function nflBettingWeek(now, year=2026){
+  const et=etWall(now),wall=Date.UTC(et.year,et.month-1,et.day,et.hour,et.minute),week1=Date.UTC(year,8,8,4,0);
+  if(wall<week1)return 1;
+  return Math.min(18,Math.max(1,1+Math.floor((wall-week1)/604800000)));
+}
+function etWall(now){
+  const p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(now)).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
+  const hour=Number(p.hour)===24?0:Number(p.hour);
+  return {year:+p.year,month:+p.month,day:+p.day,hour,minute:+p.minute};
+}
 export const number = v => v === null || v === undefined || (typeof v==='string'&&v.trim()==='') ? null : Number.isFinite(Number(v)) ? Number(v) : null;
 export const odds = v => { const n=number(String(v ?? '').replace(/[−–]/g,'-')); return n!==null && Math.abs(n)>=100 ? n : null; };
 export const decimal = n => n>0?1+n/100:1+100/-n;
