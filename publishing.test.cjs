@@ -40,6 +40,8 @@ async function fetchMock(input,options={}) {
 function app(file, saved = {}, isOwner = true) {
  const dom=new JSDOM(fs.readFileSync(file,'utf8'),{url:'https://league.test/'+file,runScripts:'outside-only',pretendToBeVisual:true});
  const w=dom.window;
+ const RealDate=w.Date;
+ w.Date=class extends RealDate {constructor(...args){super(...(args.length?args:['2026-09-22T12:00:00Z']));}static now(){return RealDate.parse('2026-09-22T12:00:00Z');}};
  w.HTMLCanvasElement.prototype.getContext=()=>new Proxy({}, {get:(_,key)=>key==='measureText'?()=>({width:10}):key==='createLinearGradient'||key==='createRadialGradient'?()=>({addColorStop(){}}):()=>{}});
  w.HTMLCanvasElement.prototype.toDataURL=()=>'';
  w.fetch=fetchMock;w.AbortController=AbortController;w.TextEncoder=TextEncoder;w.confirm=()=>true;w.scrollTo=()=>{};
@@ -76,6 +78,13 @@ async function until(fn) { for(let i=0;i<100;i++){if(fn())return;await new Promi
    await until(()=>ownerApp.window.document.querySelector('[data-edit]'));
    assert(refreshes>0,'opening app restores the saved login');
    assert.equal(guest.window.document.querySelector('[data-edit]'),null,'members have no publishing controls');
+   const member=guest.window.document;
+   await until(()=>member.querySelector('#lg-wksel option[value="pending-2026-3"]'));
+   assert.match(member.querySelector('#lg-body .pr-week').textContent,/After Week 1/);
+   const select=member.querySelector('#lg-wksel');select.value='pending-2026-3';select.dispatchEvent(new guest.window.Event('change'));
+   await until(()=>member.querySelector('#lg-body .ffp-empty')?.textContent.includes('Week 3 rankings are awaiting publication'));
+   member.querySelector('[data-l1="rank"]').click();
+   await until(()=>member.querySelector('#lg-body .pr-week')?.textContent.includes('After Week 1'));
    const doc=ownerApp.window.document;
    doc.querySelector('[data-edit]').click();await until(()=>doc.querySelector('.lg-ranking-edit'));
    const original = JSON.parse(JSON.stringify(weeks[1]));

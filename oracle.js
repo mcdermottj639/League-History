@@ -104,17 +104,18 @@
     if(!owns(token)||turn!==renderToken)return false;
     S.data=data;
     if(!S.editor&&refresh){publicData=data;put(PUBLIC_KEY,{savedAt:Date.now(),data});publicNotice='';}
-    if(!S.week||(!S.manualWeek&&S.week<S.data.current)){
+    if(!S.week||(!S.manualWeek&&S.editor&&S.week<S.data.current)){
       const remembered=S.editor?read(WEEK_KEY):null;
       const draftWeeks=S.editor?S.data.weeks.filter(w=>(S.working[w.week]||w.predictions||[]).some(p=>p.writeup?.trim()||p.winner)).map(w=>w.week):[];
-      // Open the new Tuesday week by default. Past drafts and published weeks
-      // stay in the picker; a private draft for the current week stays selected.
-      S.week=S.data.weeks.some(w=>w.week===remembered&&w.week>=S.data.current)?remembered:(draftWeeks.filter(w=>w>=S.data.current).at(-1)||S.data.current||1);
+      const latestPublished=S.data.weeks.filter(w=>w.published).at(-1)?.week;
+      // Hurd opens on the new drafting week. Readers open on the latest
+      // published prophecy and may select an unpublished week in the picker.
+      S.week=S.editor?(S.data.weeks.some(w=>w.week===remembered&&w.week>=S.data.current)?remembered:(draftWeeks.filter(w=>w>=S.data.current).at(-1)||S.data.current||1)):(latestPublished||S.data.current||1);
     }
     const saved=S.data.weeks.find(x=>x.week===S.week)||{week:S.week,predictions:[]};
     const current={...saved,predictions:(S.editor&&S.working[S.week])||saved.predictions};
     const w=S.preview?{...saved,published:true,predictions:S.preview}:current;
-    S.host.innerHTML=`<div class="oracle"><nav class="or-nav"><label>Week <select data-or-week>${S.data.weeks.map(x=>`<option value="${x.week}" ${x.week===S.week?'selected':''}>${x.week}</option>`).join('')}</select></label>${S.editor?'<b>Hurd editor</b>':(publicNotice?'<small role="status">'+esc(publicNotice)+'</small>':'')}</nav>${S.preview?publicHTML(w,true):(S.editor?editorHTML(w):publicHTML(w))}</div>`;
+    S.host.innerHTML=`<div class="oracle"><nav class="or-nav"><label>Week <select data-or-week>${S.data.weeks.map(x=>`<option value="${x.week}" ${x.week===S.week?'selected':''}>${x.week}${!S.editor&&!x.published?' · Awaiting publication':''}</option>`).join('')}</select></label>${S.editor?'<b>Hurd editor</b>':(publicNotice?'<small role="status">'+esc(publicNotice)+'</small>':'')}</nav>${S.preview?publicHTML(w,true):(S.editor?editorHTML(w):publicHTML(w))}</div>`;
     S.host.querySelectorAll('textarea[data-f="writeup"]').forEach(t=>{const c=t.parentElement.querySelector('[data-count]'),sync=()=>c.textContent=`${t.value.length.toLocaleString()} / ${WRITEUP_MAX.toLocaleString()}`;t.addEventListener('input',sync);sync();});
     if(S.editor&&!S.preview){S.host.querySelectorAll('[data-or-id] input,[data-or-id] textarea').forEach(el=>{el.addEventListener('input',()=>{syncEditorControls();backupEditor();});el.addEventListener('change',()=>{syncEditorControls();backupEditor();});});syncEditorControls();}
     return true;
@@ -122,7 +123,7 @@
   async function paint(host,crest){
     const token=++paintToken,reader=!invite&&!S.session;
     try{
-      S.host=host;S.crest=crest;S.preview=null;
+      S.host=host;S.crest=crest;S.preview=null;S.week=null;S.manualWeek=false;
       host.innerHTML='<div class="oracle"><section class="or-empty"><b>Opening Hurdstradamus…</b><p>Loading this week’s prophecies.</p></section></div>';
       host.onclick=async e=>{
         const jump=e.target.closest('[data-or-jump]');
