@@ -37,11 +37,32 @@ test('Oracle opens Week 3 Tuesday at 4 AM Eastern despite an old unpublished Wee
 });
 async function waitFor(check){for(let i=0;i<100;i++){if(check())return;await new Promise(resolve=>setTimeout(resolve,10));}assert.ok(check(),'operation completed');}
 function setField(a,card,field,value){const el=card.querySelector(`[data-f="${field}"]`);el.value=value;el.dispatchEvent(new a.w.Event('input',{bubbles:true}));return el;}
-function fill(a){for(const card of a.host.querySelectorAll('[data-or-id]')){setField(a,card,'awayScore','134.75');setField(a,card,'homeScore','125.9');setField(a,card,'confidence','100');setField(a,card,'writeup','  His exact words.\n\nA second paragraph.  ');const winner=card.querySelector('[data-f="winner"]');winner.checked=true;winner.dispatchEvent(new a.w.Event('input',{bubbles:true}));}}
+function fill(a){for(const card of a.host.querySelectorAll('[data-or-id]')){setField(a,card,'awayScore','134.75');setField(a,card,'homeScore','125.9');setField(a,card,'writeup','  His exact words.\n\nA second paragraph.  ');const winner=card.querySelector('[data-f="winner"]');winner.checked=true;winner.dispatchEvent(new a.w.Event('input',{bubbles:true}));}}
 
 test('ordinary readers see a rankings-style waiting state and never editor controls',async()=>{
  const a=app();await a.w.LeagueOracle.paint(a.host,()=> '');
  assert.match(a.host.textContent,/waiting to be published/i);assert.doesNotMatch(a.host.textContent,/Hurd editor|Save draft|Publish Week/);a.dom.window.close();
+});
+
+test('score accuracy uses full-precision final results, published weeks, stable team IDs and ties',async()=>{
+ const prediction=week=>({id:week+':1-2',matchup:{away:{id:'1',name:'Old Away'},home:{id:'2',name:'Old Home'}},winner:'Old Away',awayScore:week===1?100:120,homeScore:week===1?90:110,writeup:'Prediction',awayRecord:'1-0',homeRecord:'0-1',confidence:80});
+ const state={current:3,weeks:[1,2,3].map(week=>({week,published:week<3,publishedAt:'2026-09-21T00:00:00Z',predictions:[prediction(week)]}))};
+ const raw={week:3,teams:[{teamId:'1',scores:[110,100,150],outcomes:['W','T','W'],schedule:['2','2','2']},{teamId:'2',scores:[80,100,90],outcomes:['L','T','L'],schedule:['1','1','1']}]};
+ const a=app('',[],{state,season:{...season,oracleResults:raw}});await a.w.LeagueOracle.paint(a.host,()=> '');await pause();
+ assert.deepEqual([...a.host.querySelectorAll('.or-accuracy-grid strong')].map(x=>x.textContent),['15 pts','12.5 pts']);
+ assert.match(a.host.querySelector('.or-head-stats').textContent,/1–0–1/);
+ assert.match(a.host.querySelector('.or-score-result').textContent,/Matchup tied/);
+ assert.doesNotMatch(a.host.textContent,/% confidence/);
+ a.dom.window.close();
+ // Current-week scores, missing outcomes and wrong matchups never become finals.
+ for(const change of [r=>{r.week=2;},r=>{r.teams[0].outcomes[1]='U';},r=>{r.teams[0].schedule[1]='99';},r=>{r.teams[0].scores[1]=null;}]){
+  const data=structuredClone(raw);change(data);const b=app('',[],{state,season:{...season,oracleResults:data}});await b.w.LeagueOracle.paint(b.host,()=> '');await pause();
+  assert.equal(b.host.querySelector('.or-accuracy-grid strong').textContent,'—');assert.equal(b.host.querySelector('.or-score-result'),null);b.dom.window.close();
+ }
+ // A legitimate zero remains in its original week and counts in the error.
+ raw.teams[0].scores[1]=0;raw.teams[0].outcomes[1]='L';raw.teams[1].outcomes[1]='W';
+ const zero=app('',[],{state,season:{...season,oracleResults:raw}});await zero.w.LeagueOracle.paint(zero.host,()=> '');await pause();
+ assert.equal(zero.host.querySelector('.or-accuracy-grid strong').textContent,'65 pts');zero.dom.window.close();
 });
 
 test('reader opens the last published Oracle and can inspect the unpublished new week',async()=>{
@@ -67,7 +88,7 @@ test('private Hurd link is stripped, drafts save incomplete, and publish unlocks
  const partial=calls.find(x=>x.u.endsWith('/save'));assert.equal(partial.body.predictions.length,6);assert.equal(partial.body.predictions[0].awayScore,null);
  for(const card of a.host.querySelectorAll('[data-or-id]')){
   const set=(f,v)=>{const el=card.querySelector(`[data-f="${f}"]`);el.value=v;el.dispatchEvent(new a.w.Event('input',{bubbles:true}));};
-  set('awayScore','111');set('homeScore','108');set('writeup','The crystal ball sees this one clearly.');set('confidence','72');
+  set('awayScore','111');set('homeScore','108');set('writeup','The crystal ball sees this one clearly.');
   const winner=card.querySelector('[data-f="winner"]');winner.checked=true;winner.dispatchEvent(new a.w.Event('input',{bubbles:true}));
   assert.equal(card.querySelector('[data-f="awayRecord"]').readOnly,true);assert.equal(card.querySelector('[data-f="homeRecord"]').readOnly,true);
   assert.equal(card.querySelector('[data-f="awayRecord"]').value,'1-0');assert.equal(card.querySelector('[data-f="homeRecord"]').value,'0-1');
@@ -122,13 +143,12 @@ test('decimal-score editor saves, reloads, previews, and publishes through the a
  a.dom.window.close();
 });
 
-test('validation pinpoints missing and out-of-range fields while accepting zero scores and 100% confidence',async()=>{
+test('validation pinpoints missing and out-of-range fields while accepting zero scores without confidence',async()=>{
  const a=app('#oracle-editor='+'x'.repeat(43));await a.w.LeagueOracle.paint(a.host,()=> '');fill(a);
  const card=a.host.querySelector('[data-or-id]');
  for(const value of ['', '-1', '300.01']){setField(a,card,'homeScore',value);assert.equal(a.host.querySelector('[data-or="publish"]').disabled,true);assert.match(card.querySelector('.or-errors').textContent,/home score/);}
  setField(a,card,'homeScore','0');assert.equal(a.host.querySelector('[data-or="publish"]').disabled,false);
- for(const value of ['', '100.5', '101']){setField(a,card,'confidence',value);assert.equal(a.host.querySelector('[data-or="publish"]').disabled,true);assert.match(card.querySelector('.or-errors').textContent,/confidence/);}
- setField(a,card,'confidence','100');assert.equal(a.host.querySelector('[data-or="publish"]').disabled,false);
+ assert.equal(a.host.querySelector('[data-or="publish"]').disabled,false);
  setField(a,card,'writeup','   ');assert.equal(a.host.querySelector('[data-or="publish"]').disabled,true);assert.match(card.querySelector('.or-errors').textContent,/write-up/);a.dom.window.close();
 });
 
@@ -177,7 +197,7 @@ test('published cards preserve Hurd’s saved team-score order and separate matc
  await a.w.LeagueOracle.paint(a.host,()=> '');const card=a.host.querySelector('.or-card'),sides=card.querySelectorAll('.or-side');
  assert.equal(sides.length,2);assert.match(sides[0].textContent,/Aarogant Fraudgers.*117\.2.*Projected score.*Projected record 0-1/s);assert.match(sides[1].textContent,/Mortal Wombats.*128\.3.*Projected score.*Projected record 1-0/s);
  assert.equal(card.querySelector('.or-matchup .or-call b').textContent,'Mortal Wombats by 11.1');assert.equal(card.querySelector('.or-analysis p').textContent,'The matchup analysis.');assert.equal(card.querySelector('.or-analysis>b').textContent,'Hurd’s breakdown');
- assert.equal(card.querySelector('.or-card>p'),null);a.dom.window.close();
+ assert.equal(card.querySelector('.or-card>p:not(.or-result-pending)'),null);a.dom.window.close();
 });
 
 test('editorial display preserves published snapshots, formats prose safely, and never writes on navigation',async()=>{

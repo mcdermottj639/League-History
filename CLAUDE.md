@@ -240,6 +240,18 @@ or hash change.
 
 ## Tuesday editorial week — Oracle and Rankings
 
+Oracle no longer displays or requires confidence. The Edge Function accepts
+new predictions without it and remains compatible with older saved values.
+Score accuracy is mean absolute error per predicted team score, displayed for
+the selected published week and the season, with sample counts and per-matchup
+predicted/final/error tables. Pick records use the same confirmed finals.
+Grading uses raw indexed fantasy scores (including zero, without rounding),
+reciprocal scheduled team IDs, matching W/L/T outcomes, and only weeks before
+the source's current week. A tie remains a tie. Missing or current-week results
+remain pending. Public records aggregate published predictions only. Season
+results refresh on re-entry after 60 seconds; network failure retains the last
+successful result source. No capability, private link or session changes.
+
 Oracle refreshes must keep published content visible. Saved public content
 renders synchronously without a loading placeholder, and identical refreshes
 retain the existing card DOM, images, focus and matchup navigation scroll.
@@ -255,7 +267,7 @@ private link, session, or capability handling to implement this behavior.
 Oracle's API reports the NFL week from the same Tuesday 4 AM Eastern cutoff as
 Parlay, rather than selecting the first unpublished database row (an old Week 1
 placeholder can remain unpublished forever). The public Oracle opens to the
-current week's waiting state; Hurd opens to its draft, while older drafts and
+latest published week; Hurd opens to the current draft, while older drafts and
 published weeks remain selectable. This requires redeploying `league-oracle` as
 well as publishing `oracle.js` on Pages. Rankings still shows published sets
 only; the latest published set announces when the current week's rankings are
