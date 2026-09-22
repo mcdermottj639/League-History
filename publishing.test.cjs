@@ -79,10 +79,10 @@ async function until(fn) { for(let i=0;i<100;i++){if(fn())return;await new Promi
    assert(refreshes>0,'opening app restores the saved login');
    assert.equal(guest.window.document.querySelector('[data-edit]'),null,'members have no publishing controls');
    const member=guest.window.document;
-   await until(()=>member.querySelector('#lg-wksel option[value="pending-2026-3"]'));
+   await until(()=>member.querySelector('#lg-wksel option[value="pending-2026-2"]'));
    assert.match(member.querySelector('#lg-body .pr-week').textContent,/After Week 1/);
-   const select=member.querySelector('#lg-wksel');select.value='pending-2026-3';select.dispatchEvent(new guest.window.Event('change'));
-   await until(()=>member.querySelector('#lg-body .ffp-empty')?.textContent.includes('Week 3 rankings are awaiting publication'));
+   const select=member.querySelector('#lg-wksel');select.value='pending-2026-2';select.dispatchEvent(new guest.window.Event('change'));
+   await until(()=>member.querySelector('#lg-body .ffp-empty')?.textContent.includes('After Week 2 · Unpublished'));
    member.querySelector('[data-l1="rank"]').click();
    await until(()=>member.querySelector('#lg-body .pr-week')?.textContent.includes('After Week 1'));
    const doc=ownerApp.window.document;

@@ -246,7 +246,7 @@ or hash change.
 Oracle no longer displays or requires confidence. The Edge Function accepts
 new predictions without it and remains compatible with older saved values.
 Score accuracy is mean absolute error per predicted team score. Grading still
-runs, but pick totals, accuracy summaries, final-score tables and pending-result
+runs, with weekly and season pick records visible. Accuracy summaries, final-score tables and pending-result
 messages are temporarily hidden from the reader and accessibility tree to keep
 Oracle compact. Saved predictions and projected scores remain visible.
 Pick records use the same confirmed finals.
@@ -264,7 +264,7 @@ Only the small refresh-status message changes when the content is unchanged.
 
 Public tabs open on the latest **published** Oracle prophecy and Rankings set.
 The week picker includes the current unpublished week with an explicit
-"Awaiting publication" state. Returning to either tab opens the latest
+"Unpublished" label. Rankings uses the completed week (After Week 2 while Oracle/Parlay prepare Week 3). No waiting banner appears above published content. Returning to either tab opens the latest
 published set again. Hurd's private editor still opens on the current Tuesday
 week; older drafts and published weeks remain selectable. Do not change his
 private link, session, or capability handling to implement this behavior.
@@ -275,8 +275,7 @@ placeholder can remain unpublished forever). The public Oracle opens to the
 latest published week; Hurd opens to the current draft, while older drafts and
 published weeks remain selectable. This requires redeploying `league-oracle` as
 well as publishing `oracle.js` on Pages. Rankings still shows published sets
-only; the latest published set announces when the current week's rankings are
-awaiting publication. The Power Rankings Lab builds from actual fantasy scores
+by default, with unpublished completed weeks selectable. The Power Rankings Lab builds from actual fantasy scores
 after games, so the Tuesday cutoff does not invent results or publish a set.
 
 ## v114 — Tuesday 4 AM ET opens the next parlay week

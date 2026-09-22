@@ -483,9 +483,9 @@
      unpublish (file deleted, index line still there) lands exactly here. */
   const rankingOptions = (weeks) => {
     const latest = Math.max(...weeks.filter(w => /^live-2026-/.test(w.f)).map(w => w.k), 0);
-    const current = nflEditorialWeek();
+    const current = Math.max(0, nflEditorialWeek() - 1);
     return !S.wkErr && latest > 0 && current > latest
-      ? [{k:current,l:`2026 · Week ${current} · Awaiting publication`,f:`pending-2026-${current}`},...weeks]
+      ? [{k:current,l:`2026 · After Week ${current} · Unpublished`,f:`pending-2026-${current}`},...weeks]
       : weeks;
   };
   const wkPick = (weeks) => (rankingOptions(weeks).length > 1
@@ -502,15 +502,12 @@
   function rankHTML(p, weeks) {
     const pick = wkPick(weeks);
     const data = window.RankingVisuals.facts(p, [...sharedWeeks.values()]);
-    const latestPublished = Math.max(...weeks.filter(w => /^live-2026-/.test(w.f)).map(w => w.k), 0);
-    const waiting = p.y === 2026 && p.k === latestPublished && nflEditorialWeek() > latestPublished;
     return `<div class="pr-card pr-head lg-rank-head">
         <div class="pr-week">${esc(p.l || '')}${p.d ? ` · ${esc(niceDate(p.d))}` : ''}</div>
         <h2>Power Rankings</h2>
         <p class="pr-sub">League rankings. The numbers and the story.</p>
         ${window.RankingVisuals.highlights(data)}
       </div>
-      ${waiting ? `<p class="pr-note" role="status">Week ${nflEditorialWeek()} rankings are awaiting publication. Showing the latest published set below.</p>` : ''}
       ${pick}
       <div id="lg-ranking-controls"></div>
       <ol class="pr-list rk-list">${window.RankingVisuals.rowsHTML(data, {crest, me:LH.me()})}</ol>
@@ -567,7 +564,7 @@
   }
   function renderPendingRanking(host, weeks) {
     host.innerHTML = `<h2 class="section-title">🏆 Power Rankings</h2>${wkPick(weeks)}
-      <div class="ffp-card"><div class="ffp-empty"><b>Week ${nflEditorialWeek()} rankings are awaiting publication.</b><p>The latest published set is available from the week picker.</p></div></div>
+      <div class="ffp-card"><div class="ffp-empty"><b>After Week ${Math.max(0, nflEditorialWeek() - 1)} · Unpublished</b><p>The latest published set is available from the week picker.</p></div></div>
       <div id="lg-ranking-controls"></div>`;
     mountRankingControls(null);
     const sel = $('#lg-wksel');

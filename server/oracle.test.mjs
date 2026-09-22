@@ -51,9 +51,10 @@ test('score accuracy uses full-precision final results, published weeks, stable 
  const a=app('',[],{state,season:{...season,oracleResults:raw}});await a.w.LeagueOracle.paint(a.host,()=> '');await pause();
  assert.deepEqual([...a.host.querySelectorAll('.or-accuracy-grid strong')].map(x=>x.textContent),['15 pts','12.5 pts']);
  assert.match(a.host.querySelector('.or-head-stats').textContent,/1–0–1/);
+ assert.equal(a.host.querySelector('.or-head-stats').hidden,false);
  assert.match(a.host.querySelector('.or-score-result').textContent,/Matchup tied/);
  assert.doesNotMatch(a.host.textContent,/% confidence/);
- for(const panel of a.host.querySelectorAll('.or-head-stats,.or-accuracy,.or-score-result,.or-result-pending')) assert.equal(panel.hidden,true);
+ for(const panel of a.host.querySelectorAll('.or-accuracy,.or-score-result,.or-result-pending')) assert.equal(panel.hidden,true);
  a.dom.window.close();
  // Current-week scores, missing outcomes and wrong matchups never become finals.
  for(const change of [r=>{r.week=2;},r=>{r.teams[0].outcomes[1]='U';},r=>{r.teams[0].schedule[1]='99';},r=>{r.teams[0].scores[1]=null;}]){
