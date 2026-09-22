@@ -481,8 +481,15 @@
      sentence and absent from the page is the v30 fault written out in prose.
      Reachable now that RETRACTING a week is a supported move: a half-done
      unpublish (file deleted, index line still there) lands exactly here. */
-  const wkPick = (weeks) => (weeks.length > 1
-    ? `<div class="lg-wk"><label for="lg-wksel">Week</label><select id="lg-wksel">${weeks.map((w) =>
+  const rankingOptions = (weeks) => {
+    const latest = Math.max(...weeks.filter(w => /^live-2026-/.test(w.f)).map(w => w.k), 0);
+    const current = nflEditorialWeek();
+    return !S.wkErr && latest > 0 && current > latest
+      ? [{k:current,l:`2026 · Week ${current} · Awaiting publication`,f:`pending-2026-${current}`},...weeks]
+      : weeks;
+  };
+  const wkPick = (weeks) => (rankingOptions(weeks).length > 1
+    ? `<div class="lg-wk"><label for="lg-wksel">Week</label><select id="lg-wksel">${rankingOptions(weeks).map((w) =>
         `<option value="${esc(w.f)}"${w.f === S.week ? ' selected' : ''}>${esc(w.l)}</option>`).join('')}</select></div>`
     : '');
 
@@ -558,11 +565,19 @@
     if (sel) sel.onchange = () => { S.week = sel.value; paint(); };
     return true;
   }
+  function renderPendingRanking(host, weeks) {
+    host.innerHTML = `<h2 class="section-title">🏆 Power Rankings</h2>${wkPick(weeks)}
+      <div class="ffp-card"><div class="ffp-empty"><b>Week ${nflEditorialWeek()} rankings are awaiting publication.</b><p>The latest published set is available from the week picker.</p></div></div>
+      <div id="lg-ranking-controls"></div>`;
+    mountRankingControls(null);
+    const sel = $('#lg-wksel');
+    if (sel) sel.onchange = () => { S.week = sel.value; paint(); };
+  }
   async function paintRankings(host) {
     const requestId = ++rankingRequest;
     host.innerHTML = '<div class="ffp-card"><div class="ffp-empty">Loading this week…</div></div>';
     const cached = readRankingCache();
-    if (cached) {
+    if (cached && !S.week?.startsWith('pending-')) {
       applyRankingCache(cached);
       if (!S.week || !S.weeks.some(w => w.f === S.week) || !sharedWeeks.has(S.week)) S.week = cached.selected;
       const p = sharedWeeks.get(S.week);
@@ -584,7 +599,8 @@
       mountRankingControls(null);
       return;
     }
-    if (!S.week || !weeks.some((w) => w.f === S.week)) S.week = weeks[0].f;
+    if (!S.week || !rankingOptions(weeks).some((w) => w.f === S.week)) S.week = weeks[0].f;
+    if (S.week.startsWith('pending-')) { renderPendingRanking(host, weeks); return; }
     let p;
     try { p = await loadWeek(S.week); } catch (e) {
       if (!ownsRanking(requestId, host)) return;
@@ -832,6 +848,7 @@
       if (l1.dataset.l1 === 'rank' && S.view === 'rank' && window.RankingsEditor && window.RankingsEditor.editing()) return;
       if (window.RankingsEditor) window.RankingsEditor.reset();
       if (l1.dataset.l1 !== S.view || S.prof || S.view === 'rank') {
+        if (l1.dataset.l1 === 'rank') S.week = null;
         S.view = l1.dataset.l1; S.prof = null; paint(); window.scrollTo({ top: 0 });
       }
       return;

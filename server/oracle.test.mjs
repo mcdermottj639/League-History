@@ -44,6 +44,22 @@ test('ordinary readers see a rankings-style waiting state and never editor contr
  assert.match(a.host.textContent,/waiting to be published/i);assert.doesNotMatch(a.host.textContent,/Hurd editor|Save draft|Publish Week/);a.dom.window.close();
 });
 
+test('reader opens the last published Oracle and can inspect the unpublished new week',async()=>{
+ const state={year:2026,current:3,weeks:[
+  {week:2,published:true,publishedAt:'2026-09-18T00:00:00Z',predictions:[]},
+  {week:3,published:false,publishedAt:null,predictions:[]}
+ ]};
+ const a=app('',[],{state});await a.w.LeagueOracle.paint(a.host,()=> '');
+ assert.equal(a.host.querySelector('[data-or-week]').value,'2');
+ assert.match(a.host.textContent,/Published/);
+ const picker=a.host.querySelector('[data-or-week]');picker.value='3';picker.dispatchEvent(new a.w.Event('change',{bubbles:true}));
+ await waitFor(()=>a.host.textContent.includes('waiting to be published'));
+ assert.match(a.host.textContent,/waiting to be published/i);
+ await a.w.LeagueOracle.paint(a.host,()=> '');
+ assert.equal(a.host.querySelector('[data-or-week]').value,'2','reopening returns to the latest published week');
+ a.dom.window.close();
+});
+
 test('private Hurd link is stripped, drafts save incomplete, and publish unlocks only after all six matchups complete',async()=>{
  const calls=[],a=app('#oracle-editor='+'x'.repeat(43),calls);await a.w.LeagueOracle.paint(a.host,()=> '');
  assert.equal(a.w.location.hash,'');assert.match(a.host.textContent,/Hurd editor/);assert.equal(a.host.querySelectorAll('[data-or-id]').length,6);assert.equal(a.host.querySelector('[data-or="publish"]').disabled,true);

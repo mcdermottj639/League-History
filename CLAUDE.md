@@ -240,6 +240,13 @@ or hash change.
 
 ## Tuesday editorial week — Oracle and Rankings
 
+Public tabs open on the latest **published** Oracle prophecy and Rankings set.
+The week picker includes the current unpublished week with an explicit
+"Awaiting publication" state. Returning to either tab opens the latest
+published set again. Hurd's private editor still opens on the current Tuesday
+week; older drafts and published weeks remain selectable. Do not change his
+private link, session, or capability handling to implement this behavior.
+
 Oracle's API reports the NFL week from the same Tuesday 4 AM Eastern cutoff as
 Parlay, rather than selecting the first unpublished database row (an old Week 1
 placeholder can remain unpublished forever). The public Oracle opens to the
