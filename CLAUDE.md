@@ -240,6 +240,11 @@ or hash change.
 
 ## Tuesday editorial week — Oracle and Rankings
 
+Oracle refreshes must keep published content visible. Saved public content
+renders synchronously without a loading placeholder, and identical refreshes
+retain the existing card DOM, images, focus and matchup navigation scroll.
+Only the small refresh-status message changes when the content is unchanged.
+
 Public tabs open on the latest **published** Oracle prophecy and Rankings set.
 The week picker includes the current unpublished week with an explicit
 "Awaiting publication" state. Returning to either tab opens the latest
