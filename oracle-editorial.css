@@ -1,3 +1,5 @@
+/* Temporarily keep grading totals and result tables out of the reader layout. */
+.oracle [hidden]{display:none!important}
 /* Oracle's public editorial skin. Editor inputs and saved content are untouched. */
 .oracle:has(.or-editorial-hero){max-width:820px;background:#20112e;padding:12px;border-radius:22px}
 .or-editorial-hero{position:relative;isolation:isolate;overflow:hidden;text-align:center;border:0;background:radial-gradient(ellipse at 90% 5%,#63423766,transparent 55%),linear-gradient(125deg,#1a0b25,#321a43);padding:30px 12px 16px;margin-top:0}

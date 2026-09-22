@@ -53,6 +53,7 @@ test('score accuracy uses full-precision final results, published weeks, stable 
  assert.match(a.host.querySelector('.or-head-stats').textContent,/1–0–1/);
  assert.match(a.host.querySelector('.or-score-result').textContent,/Matchup tied/);
  assert.doesNotMatch(a.host.textContent,/% confidence/);
+ for(const panel of a.host.querySelectorAll('.or-head-stats,.or-accuracy,.or-score-result,.or-result-pending')) assert.equal(panel.hidden,true);
  a.dom.window.close();
  // Current-week scores, missing outcomes and wrong matchups never become finals.
  for(const change of [r=>{r.week=2;},r=>{r.teams[0].outcomes[1]='U';},r=>{r.teams[0].schedule[1]='99';},r=>{r.teams[0].scores[1]=null;}]){
