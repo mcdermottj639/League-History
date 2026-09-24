@@ -139,6 +139,19 @@ async function until(fn) { for(let i=0;i<100;i++){if(fn())return;await new Promi
  [...reader.window.document.querySelectorAll('button')].find(b=>b.textContent==='History').click();
  [...reader.window.document.querySelectorAll('button')].find(b=>b.textContent==='Rankings').click();await until(()=>reader.window.document.querySelector('#lg-body').textContent.includes('No rankings published yet'));
  } finally {reader.window.close();}
+
+ // An older cache is a loading fallback, not a permanent week selection.
+ const snap=k=>({v:1,y:2026,k,l:'After Week '+k,d:'2026-09-22',r:true,o:Array.from({length:12},(_,i)=>['Team '+i,'1-0',100+i,'Saved words',i+1,null,'Manager '+i,'id'+i])});
+ weeks={1:snap(1),2:snap(2)};
+ const cache={savedAt:Date.parse('2026-09-22T12:00:00Z'),weeks:[{k:1,l:'2026 · After Week 1',f:'live-2026-1'}],selected:'live-2026-1',snapshots:{'live-2026-1':snap(1)}};
+ const returning=app('index.html',{'lh:rankings-public:v1':JSON.stringify(cache)},false);
+ try{
+  const d=returning.window.document;d.querySelector('[data-l1="rank"]').click();
+  await until(()=>d.querySelector('.pr-week')?.textContent.includes('After Week 2'));
+  const select=d.querySelector('#lg-wksel');select.value='live-2026-1';select.dispatchEvent(new returning.window.Event('change'));
+  await until(()=>d.querySelector('.pr-week')?.textContent.includes('After Week 1')&&!d.querySelector('.pr-note'));
+  assert.equal(d.querySelector('#lg-wksel').value,'live-2026-1');
+ }finally{returning.window.close();}
  // Reject invalid snapshots and absent ETags without writing.
  await assert.rejects(w.RankingStore.write(2,{v:1,k:2,l:'Week 2',d:'2026-09-16',o:[]},'"2"'),/twelve/);
  w.RankingStore.signOut();await assert.rejects(w.RankingStore.write(1,{v:1,k:1,l:'Week 1',d:'2026-09-16',o:Array.from({length:12},(_,i)=>['T'+i,'',1,''])},'"2"'),/Sign in/);

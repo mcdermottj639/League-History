@@ -143,8 +143,9 @@ export function gradePick(p,g){
  }
  return {...graded,result:finished(g)?'pending':g?.state==='in'?'live':'pending'};
 }
+export const weekPicks=w=>[...Object.values(w.picks||{}),...(w.resets||[]).flatMap(r=>r.picks||r.ticket?.legs||[])];
 export function gamesNeedingBoxscore(w,now=Date.now()){
- const props=Object.values(w.picks||{}).filter(p=>p.market==='prop');
+ const props=weekPicks(w).filter(p=>p.market==='prop');
  return (w.games||[]).filter(g=>{
   const mine=props.filter(p=>p.gameId===g.id);if(!mine.length)return false;
   if(g.state==='in')return true;

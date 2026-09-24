@@ -14,7 +14,7 @@ function harness(enabled=true,stage='before',dataOverride=null){
  const window={LeagueParlay:{paint(){legacyCalls++;}},LeagueHistory:{name:x=>x,me:()=> 'McD'},scrollY:0,scrollTo(){}};
  const context={window,location:{hash:'',pathname:'/',search:''},history:{replaceState(){}},localStorage:{getItem:()=>null,setItem(){},removeItem(){}},document:{addEventListener:(n,fn)=>events[n]=fn,visibilityState:'visible'},setInterval(){},AbortSignal,Date,fetch:async(url,options)=>{requests.push({url,options});return {ok:true,json:async()=>url==='parlay/config.json'?{enabled,api:'',year:2026}:data};}};
  vm.runInNewContext(source,context);
- return {window,host,events,requests,get legacyCalls(){return legacyCalls;},click:async dataset=>events.click({target:{closest:()=>({dataset})}})};
+ return {data,window,host,events,requests,get legacyCalls(){return legacyCalls;},click:async dataset=>events.click({target:{closest:()=>({dataset})}})};
 }
 test('disabled launch gate renders original parlay and never requests new service',async()=>{const h=harness(false);await h.window.LeagueParlay.paint(h.host);assert.equal(h.legacyCalls,1);assert.equal(h.requests.length,1);});
 test('enabled UI renders all six market choices, tab order and ticket/season navigation',async()=>{const h=harness();await h.window.LeagueParlay.paint(h.host);const html=h.host.innerHTML;assert.ok(html.indexOf('data-tab="picks"')<html.indexOf('data-tab="ticket"'));assert.ok(html.indexOf('data-tab="ticket"')<html.indexOf('data-tab="season"'));assert.match(html,/Spread/);assert.match(html,/Moneyline/);assert.match(html,/data-side="over"/);assert.match(html,/data-side="under"/);assert.equal((html.match(/data-pn="select"/g)||[]).length%6,0);assert.doesNotMatch(html,/data-pn="manage"/);
@@ -89,4 +89,15 @@ test('tied records sort by average odds, better American number first',async()=>
  assert.deepEqual(names.filter(n=>['Gotch','Wolff'].includes(n)),['Gotch','Wolff']);
  assert.ok(names.indexOf('Gotch')>names.indexOf('McD'));
  assert.equal(names.at(-1),'Riz');
+});
+
+
+test('Parlay follows rollover on refresh and reopening while respecting a manual history selection',async()=>{
+ const h=harness();await h.window.LeagueParlay.paint(h.host);
+ const next=structuredClone(h.data.weeks[0]);next.week=3;next.ticket.legs=[];
+ h.data.current=3;h.data.weeks.unshift(next);await h.click({pn:'refresh'});
+ assert.match(h.host.innerHTML,/<option value="3" selected>/);
+ await h.events.change({target:{id:'pn-week',value:'2'}});await h.click({pn:'refresh'});
+ assert.match(h.host.innerHTML,/<option value="2" selected>/);
+ await h.window.LeagueParlay.paint(h.host);assert.match(h.host.innerHTML,/<option value="3" selected>/);
 });

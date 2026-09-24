@@ -1500,3 +1500,7 @@ superseded. No model run happens in a member's Rankings view: these are snapshot
 
 ### v114 — Oracle record recovery
 Oracle retains its last valid full result snapshot under `lh:oracle-results:2026:v1` for up to seven days. Failed live fetches preserve that data without renewing freshness. Readers retry in the background every 30 seconds (successful results have a 60-second freshness window), and on visibility, pageshow, and reconnect events. Hidden tabs and editor sessions are excluded. Published predictions, drafts, private links, and final-result grading rules are unchanged.
+
+### v115 — Cache rollover and reset-attempt recovery
+Oracle and Rankings follow the latest published week after cache refresh unless the reader deliberately selected history. Parlay follows the current server week on refresh and tab entry, preserving explicit history selection while that view stays open. Oracle rejects older or incomplete results responses that would remove confirmed finals without renewing cache freshness.
+Reset-time ticket snapshots remain immutable. Separate tracking selections (lazily initialized for existing reset attempts) keep receiving kickoff quotes, locks, final scores and prop box scores; public history and season totals derive from these updated selections. No private links, capabilities, sessions, routes or configuration are changed. This supersedes v114's fetch-failure-only result protection.

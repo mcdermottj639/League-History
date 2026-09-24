@@ -306,3 +306,33 @@ test('recovery events never replace Hurd’s unsaved editor',async()=>{
  a.w.document.dispatchEvent(new a.w.Event('visibilitychange'));a.w.dispatchEvent(new a.w.Event('pageshow'));a.w.dispatchEvent(new a.w.Event('online'));await pause();
  assert.equal(a.host.querySelector('textarea'),field);assert.equal(field.value,value);assert.equal(calls.length,count);a.dom.window.close();
 });
+
+
+test('cache refresh follows the latest publication but respects explicit history selection',async()=>{
+ const old={current:3,weeks:[{week:2,published:true,publishedAt:'2026-09-18',predictions:[]},{week:3,published:false,predictions:[]}]};
+ const fresh=structuredClone(old);fresh.weeks[1].published=true;fresh.weeks[1].publishedAt='2026-09-24';
+ const a=app('',[],{storage:{'lh:oracle-public:2026:v1':{savedAt:Date.now(),data:old}},state:fresh});
+ try{
+  await a.w.LeagueOracle.paint(a.host,()=> '');assert.equal(a.host.querySelector('[data-or-week]').value,'3');
+  const picker=a.host.querySelector('[data-or-week]');picker.value='2';picker.dispatchEvent(new a.w.Event('change',{bubbles:true}));await pause();
+  a.w.dispatchEvent(new a.w.Event('online'));await pause();assert.equal(a.host.querySelector('[data-or-week]').value,'2');
+ }finally{a.dom.window.close();}
+});
+
+test('successful older or incomplete results cannot erase finals; valid corrections remain accepted',async()=>{
+ const p={id:'2:1-2',matchup:{away:{id:'1',name:'Away'},home:{id:'2',name:'Home'}},winner:'Away',awayScore:100,homeScore:90,writeup:'Saved prophecy'};
+ const state={current:3,weeks:[{week:2,published:true,publishedAt:'2026-09-21',predictions:[p]}]};
+ const raw={week:3,teams:[{teamId:'1',scores:[110,110],outcomes:['W','W'],schedule:['2','2']},{teamId:'2',scores:[80,80],outcomes:['L','L'],schedule:['1','1']}]};
+ for(const kind of ['older','incomplete','correction']){
+  const savedAt=Date.now()-10000,a=app('',[],{state,storage:{'lh:oracle-results:2026:v1':{savedAt,data:{...season,oracleResults:raw}}}});
+  a.w.AbortSignal=globalThis.AbortSignal;a.w.LeagueESPN.SEASON_URL='https://results.test';a.w.LeagueESPN.toSnapshot=()=>structuredClone(season);
+  const incoming=structuredClone(raw);if(kind==='older')incoming.week=2;if(kind==='incomplete')incoming.teams.pop();if(kind==='correction'){incoming.teams[0].scores[1]=70;incoming.teams[0].outcomes[1]='L';incoming.teams[1].outcomes[1]='W';}
+  const original=a.w.fetch;a.w.fetch=async(url,opts)=>url==='https://results.test'?response(incoming):original(url,opts);
+  try{
+   await a.w.LeagueOracle.paint(a.host,()=> '');await pause();
+   assert.equal(a.host.querySelector('.or-head-stats b').firstChild.textContent,kind==='correction'?'0–1':'1–0');
+   const cached=JSON.parse(a.w.localStorage.getItem('lh:oracle-results:2026:v1'));
+   if(kind!=='correction')assert.equal(cached.savedAt,savedAt);else assert.equal(cached.data.oracleResults.teams[0].scores[1],70);
+  }finally{a.dom.window.close();}
+ }
+});

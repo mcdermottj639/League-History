@@ -11,6 +11,20 @@
   const RESULTS_KEY='lh:oracle-results:2026:v1';
   function validSeason(d){return Array.isArray(d?.t)&&d.t.length>0;}
   function validResults(d){return validSeason(d)&&Number.isInteger(d.oracleResults?.week)&&Array.isArray(d.oracleResults?.teams)&&d.oracleResults.teams.length>0;}
+  // Accept score corrections, but never replace confirmed finals with an older
+  // or incomplete successful response. Failed validation does not renew freshness.
+  function retainsResults(next,previous){
+    if(!validResults(previous))return true;
+    const a=previous.oracleResults,b=next.oracleResults;
+    if(b.week<a.week)return false;
+    const final=(source,id,i)=>{
+      const t=source.teams.find(t=>String(t.teamId)===String(id)),o=source.teams.find(o=>String(o.teamId)===String(t?.schedule?.[i]));
+      if(!t||!o||String(o.schedule?.[i])!==String(t.teamId))return false;
+      const x=t.scores?.[i],y=o.scores?.[i];
+      return typeof x==='number'&&Number.isFinite(x)&&typeof y==='number'&&Number.isFinite(y)&&t.outcomes?.[i]===(x===y?'T':x>y?'W':'L')&&o.outcomes?.[i]===(x===y?'T':x>y?'L':'W');
+    };
+    return a.teams.every(t=>Array.from({length:Math.max(0,a.week-1)},(_,i)=>i).every(i=>!final(a,t.teamId,i)||final(b,t.teamId,i)));
+  }
   const savedResults=read(RESULTS_KEY);
   if(savedResults&&Date.now()-savedResults.savedAt<7*86400000&&validResults(savedResults.data))S.season=savedResults.data;
   function readerActive(){return S.host&&owns(paintToken)&&!document.hidden&&!S.editor&&!S.session&&!invite&&!S.preview;}
@@ -40,7 +54,7 @@
         if(live.ok){const p=await live.json();if(Number.isInteger(p.week)&&p.teams?.length){
           const candidate=window.LeagueESPN.toSnapshot(p);
           candidate.oracleResults={week:p.week,teams:p.teams};
-          if(validResults(candidate))d=candidate;
+          if(validResults(candidate)&&retainsResults(candidate,S.season))d=candidate;
         }}
       }
     }catch{}
@@ -163,7 +177,7 @@
     if(!owns(token)||turn!==renderToken)return false;
     S.data=data;
     if(!S.editor&&refresh){publicData=data;put(PUBLIC_KEY,{savedAt:Date.now(),data});publicNotice='';}
-    if(!S.week||(!S.manualWeek&&S.editor&&S.week<S.data.current)){
+    if(!S.week||(!S.manualWeek&&(!S.editor||S.week<S.data.current))){
       const remembered=S.editor?read(WEEK_KEY):null;
       const draftWeeks=S.editor?S.data.weeks.filter(w=>(S.working[w.week]||w.predictions||[]).some(p=>p.writeup?.trim()||p.winner)).map(w=>w.week):[];
       const latestPublished=S.data.weeks.filter(w=>w.published).at(-1)?.week;

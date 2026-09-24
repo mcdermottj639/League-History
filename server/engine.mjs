@@ -1,8 +1,10 @@
 import {ROSTER,STAKE,parseScoreboard,quoteFor,locked,ticket,migratePick,odds,number,decimal} from './domain.mjs';
-import {parseBoxscore,gamesNeedingBoxscore,boxscoreURL} from './props.mjs';
+import {parseBoxscore,gamesNeedingBoxscore,boxscoreURL,weekPicks} from './props.mjs';
 export {gamesNeedingBoxscore,boxscoreURL,parseBoxscore};
 export const failure=(message,status=400)=>Object.assign(new Error(message),{status});
 export function ensure(state,year,week){const s=state.seasons[year]??={weeks:{},current:week};return s.weeks[week]??={year,week,stake:STAKE,games:[],picks:{},revisions:{},unmapped:[],imported:false,audit:[],updatedAt:0,payer:{status:'pending'}};}
+// Keep the reset-time snapshot immutable; track its selections separately.
+function trackedPicks(w){for(const r of w.resets||[])r.picks??=structuredClone(r.ticket?.legs||[]);return weekPicks(w);}
 export function ingest(store,year,week,payload,now=Date.now()){
  const incoming=parseScoreboard(payload,now);if(!incoming.length)throw failure('Empty scoreboard',502);
  return store.transact(state=>{const w=ensure(state,year,week);
@@ -10,7 +12,7 @@ export function ingest(store,year,week,payload,now=Date.now()){
    if(old?.boxscore && (!game.boxscore || (old.boxscore.observedAt||0)>=(game.boxscore.observedAt||0))) game.boxscore=old.boxscore;
    if(old?.boxError && !game.boxscore) game.boxError=old.boxError;
    if(index<0)w.games.push(game);else w.games[index]=game;
-   for(const p of Object.values(w.picks).filter(p=>p.gameId===game.id)){
+   for(const p of trackedPicks(w).filter(p=>p.gameId===game.id)){
     if(p.lockedAt)continue;
     if(locked(game,now)||(old&&locked(old,now))){p.lockedAt=now;p.scheduledKick=old?.kick||game.kick;p.missingQuote=p.market!=='prop'&&(!p.quote||p.quote.provider!=='DraftKings via ESPN'||p.quote.observedAt>=p.scheduledKick);p.staleQuote=!!p.quote?.observedAt&&p.scheduledKick-p.quote.observedAt>120000;}
     else {const q=quoteFor(game,p);if(q)p.quote={...q};}
@@ -36,7 +38,7 @@ export async function collectBoxscores(store,year,fetchJSON,now=Date.now()){
  }));
 }
 export function lockDue(w,now=Date.now()){
- for(const p of Object.values(w.picks)){const g=w.games.find(g=>g.id===p.gameId);if(!p.lockedAt&&g&&locked(g,now)){p.lockedAt=now;p.scheduledKick=g.kick;p.missingQuote=p.market!=='prop'&&(!p.quote||p.quote.provider!=='DraftKings via ESPN'||p.quote.observedAt>=g.kick);p.staleQuote=!!p.quote?.observedAt&&g.kick-p.quote.observedAt>120000;}}
+ for(const p of trackedPicks(w)){const g=w.games.find(g=>g.id===p.gameId);if(!p.lockedAt&&g&&locked(g,now)){p.lockedAt=now;p.scheduledKick=g.kick;p.missingQuote=p.market!=='prop'&&(!p.quote||p.quote.provider!=='DraftKings via ESPN'||p.quote.observedAt>=g.kick);p.staleQuote=!!p.quote?.observedAt&&g.kick-p.quote.observedAt>120000;}}
 }
 export function savePick(store,year,week,actor,input,now=Date.now()){
  return store.transact(state=>{const w=ensure(state,year,week);lockDue(w,now);
@@ -65,7 +67,7 @@ export function resetParlay(store,year,week,actor,now=Date.now()){
  return store.transact(state=>{const w=state.seasons[year]?.weeks[week];if(!w)throw failure('Unknown ticket',404);lockDue(w,now);
   const current=ticket(Object.values(w.picks),w.games,now,w.stake,w.ticketOpenedAt||0);
   if(!current.resetEligible)throw failure('Reset is available only after a completed Thursday leg misses.',409);
-  w.resets??=[];w.resets.push({at:now,by:'organizer',reason:'thursday-miss',ticket:structuredClone(current),placedTicket:structuredClone(w.placedTicket||null)});
+  w.resets??=[];w.resets.push({at:now,by:'organizer',reason:'thursday-miss',ticket:structuredClone(current),picks:structuredClone(Object.values(w.picks)),placedTicket:structuredClone(w.placedTicket||null)});
   w.revisions??={};Object.keys(w.picks).forEach(member=>{w.revisions[member]=Number(w.revisions[member]??w.picks[member].revision??0)+1;});
   w.picks={};w.ticketOpenedAt=now;w.placedTicket=null;w.ticketOddsRevision=(w.ticketOddsRevision||0)+1;
   w.audit.push({at:now,action:'reset-parlay',by:'organizer',reason:'thursday-miss'});
@@ -84,7 +86,10 @@ export function importLegacy(store,year,week,rows,now=Date.now()){
 export function publicWeek(w,now=Date.now()){
  // Reset attempts are historical tickets, not discarded data. They are safe for
  // the shared Season view and keep a Thursday-loss pivot from erasing records.
- const priorTickets=(w.resets||[]).map(r=>({at:r.at,reason:r.reason,ticket:r.ticket,placedTicket:r.placedTicket||null}));
+ const priorTickets=(w.resets||[]).map(r=>{
+  const picks=structuredClone(r.picks||r.ticket.legs),historical={games:w.games,picks};lockDue(historical,now);
+  return {at:r.at,reason:r.reason,ticket:ticket(picks,w.games,now,r.ticket.stake),placedTicket:r.placedTicket||null};
+ });
  return {year:w.year,week:w.week,updatedAt:w.updatedAt,feedError:w.feedError||null,payer:w.payer,placedTicket:w.placedTicket||null,ticketOddsRevision:w.ticketOddsRevision||0,revisions:w.revisions||{},games:w.games,ticket:ticket(Object.values(w.picks),w.games,now,w.stake,w.ticketOpenedAt||0),priorTickets,unmapped:w.unmapped};
 }
 export function payerFromScores(scores,previousWeek){

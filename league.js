@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v114';
+  const APP_VERSION = 'v115';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -571,7 +571,7 @@
     if (sel) sel.onchange = () => { S.week = sel.value; paint(); };
   }
   async function paintRankings(host) {
-    const requestId = ++rankingRequest;
+    const requestId = ++rankingRequest, followLatest = !S.week;
     host.innerHTML = '<div class="ffp-card"><div class="ffp-empty">Loading this week…</div></div>';
     const cached = readRankingCache();
     if (cached && !S.week?.startsWith('pending-')) {
@@ -596,7 +596,7 @@
       mountRankingControls(null);
       return;
     }
-    if (!S.week || !rankingOptions(weeks).some((w) => w.f === S.week)) S.week = weeks[0].f;
+    if (followLatest || !S.week || !rankingOptions(weeks).some((w) => w.f === S.week)) S.week = weeks[0].f;
     if (S.week.startsWith('pending-')) { renderPendingRanking(host, weeks); return; }
     let p;
     try { p = await loadWeek(S.week); } catch (e) {

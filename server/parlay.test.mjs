@@ -204,3 +204,37 @@ test('scoreboard ingest keeps a stored box score; collector fetches summaries on
  s.close();s2.close();
 });
 
+
+
+test('new and legacy reset attempts keep grading and freezing quotes without changing the reset snapshot',()=>{
+ for(const legacy of [false,true]){
+ const s=newStore(),thu=Date.parse('2026-09-18T00:15:00Z'),sun=Date.parse('2026-09-20T17:00:00Z'),before=thu-60000,after=thu+10800000;
+ try{
+  ingest(s,2026,2,payload([event('thu',thu),event('sun',sun)]),before);
+  savePick(s,2026,2,member('McD'),{...pick(),gameId:'thu'},before);
+  savePick(s,2026,2,member('Hurd'),{...pick('Hurd'),gameId:'sun'},before);
+  const final=payload([event('thu',thu),event('sun',sun)]),c=final.events[0].competitions[0];c.status.type={state:'post',completed:true,name:'STATUS_FINAL'};c.competitors.find(x=>x.homeAway==='home').score='20';c.competitors.find(x=>x.homeAway==='away').score='24';
+  ingest(s,2026,2,final,after);resetParlay(s,2026,2,{role:'organizer',member:'Zach'},after);
+  if(legacy)s.transact(state=>{delete state.seasons[2026].weeks[2].resets[0].picks;});
+  const original=s.read().seasons[2026].weeks[2].resets[0].ticket;
+  ingest(s,2026,2,final,sun-60000);
+  const sunday=final.events[1].competitions[0];sunday.status.type={state:'post',completed:true,name:'STATUS_FINAL'};
+  ingest(s,2026,2,final,sun+14400000);
+  const w=s.read().seasons[2026].weeks[2],prior=publicWeek(w,sun+14400000).priorTickets[0].ticket;
+  assert.equal(prior.legs.find(p=>p.member==='Hurd').result,'hit');assert.equal(prior.settled,true);
+  assert.equal(prior.legs.find(p=>p.member==='Hurd').quote.observedAt,sun-60000);
+  assert.deepEqual(w.resets[0].ticket,original);assert.deepEqual(w.picks,{});
+ }finally{s.close();}
+ }
+});
+
+test('archived prop selections still request their final box scores',async()=>{
+ const s=setup();
+ try{
+  savePick(s,2026,2,member('McD'),pick('McD',{market:'prop',description:'Jalen Loveland ATTD',odds:150}),T);
+  s.transact(state=>{const w=state.seasons[2026].weeks[2];w.resets=[{at:K,reason:'thursday-miss',ticket:{legs:Object.values(w.picks),stake:10}}];w.picks={};const g=w.games[0];g.state='post';g.status='STATUS_FINAL';g.completed=true;});
+  const urls=[];await collectBoxscores(s,2026,async url=>{urls.push(url);return boxPayload({td:1});},K+1000);
+  assert.deepEqual(urls,[boxscoreURL('g1')]);
+  assert.equal(publicWeek(s.read().seasons[2026].weeks[2],K+1000).priorTickets[0].ticket.legs[0].result,'hit');
+ }finally{s.close();}
+});

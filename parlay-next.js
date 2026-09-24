@@ -5,7 +5,7 @@
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const read=k=>{try{return JSON.parse(localStorage.getItem(k)||'null');}catch{return null;}},write=(k,v)=>{try{v?localStorage.setItem(k,JSON.stringify(v)):localStorage.removeItem(k);}catch{}};
  let invite=null,configRequest=null,paintId=0,sharedPick=null;try{const m=/(?:^#|&)parlay-organizer=([A-Za-z0-9_-]{43})(?:&|$)/.exec(location.hash);if(m){invite=m[1];history.replaceState(null,'',location.pathname+location.search);}}catch{}
- const S={host:null,cr:null,config:null,data:null,tab:'picks',week:null,manage:false,target:'',draft:null,editing:false,busy:false,message:'',error:false,session:read(KEY),pending:false,authTried:false,verified:false,configError:false,refreshing:false,checking:false};
+ const S={host:null,cr:null,config:null,data:null,tab:'picks',week:null,manualWeek:false,manage:false,target:'',draft:null,editing:false,busy:false,message:'',error:false,session:read(KEY),pending:false,authTried:false,verified:false,configError:false,refreshing:false,checking:false};
  window.ParlayNext={entry:!!invite};
  const money=n=>n==null?'—':n.toLocaleString(undefined,{style:'currency',currency:'USD'}),sign=n=>n==null?'—':(n>0?'+':'')+n.toLocaleString();
  const name=m=>LH?.name(m)||m,me=()=>LH?.me(),owns=()=>S.host?.dataset.view==='parlay'&&S.host?.dataset.parlayMode==='next',admin=()=>S.verified&&S.session?.role==='organizer',week=()=>S.data?.weeks.find(w=>w.week===S.week),member=()=>S.manage&&admin()?S.target:me();
@@ -35,7 +35,7 @@
   else if(S.session&&!S.authTried){try{const auth=await api('me',null,true);S.session={...S.session,...auth,api:S.config.api,year:S.config.year};S.verified=true;S.authTried=true;write(KEY,S.session);if(admin()&&!me())window.dispatchEvent(new CustomEvent('parlay-organizer-ready'));}catch(e){S.verified=false;say(e.message,true);}}
  }
  async function memberSession(m){if(admin())return S.session;if(!m)throw Error('Choose your name at the top of the app first.');if(!S.session||!S.verified||S.session.member!==m){S.session={...await api('session',{member:m}),api:S.config.api,year:S.config.year};S.verified=true;write(KEY,S.session);}return S.session;}
- async function refresh(force=false){if(S.refreshing)return;S.refreshing=true;try{const data=await api('state');if(data.year!==S.config.year||!Array.isArray(data.weeks)||!Array.isArray(data.roster))throw Error('Invalid parlay state');S.data=data;if(!data.weeks.some(w=>w.week===S.week))S.week=data.current;write(CACHE,{api:S.config.api,at:Date.now(),data});S.pending=S.configError||data.writable===false;if(force)say(S.pending?'The parlay is temporarily read-only.':'Updated just now.');}catch(e){S.pending=true;if(force||!S.data)say('Could not refresh. Showing the last saved data; editing is unavailable.',true);}finally{S.refreshing=false;S.checking=false;if(owns()&&!S.busy&&!S.host.querySelector('input:focus,textarea:focus,select:focus'))render();}}
+ async function refresh(force=false){if(S.refreshing)return;S.refreshing=true;try{const data=await api('state');if(data.year!==S.config.year||!Array.isArray(data.weeks)||!Array.isArray(data.roster))throw Error('Invalid parlay state');const changed=!S.manualWeek&&S.week!==data.current;S.data=data;if(changed||!data.weeks.some(w=>w.week===S.week)){S.week=data.current;S.draft=null;S.editing=false;}write(CACHE,{api:S.config.api,at:Date.now(),data});S.pending=S.configError||data.writable===false;if(force)say(S.pending?'The parlay is temporarily read-only.':'Updated just now.');}catch(e){S.pending=true;if(force||!S.data)say('Could not refresh. Showing the last saved data; editing is unavailable.',true);}finally{S.refreshing=false;S.checking=false;if(owns()&&!S.busy&&!S.host.querySelector('input:focus,textarea:focus,select:focus'))render();}}
  const pickFor=m=>week()?.ticket.legs.find(p=>p.member===m);
  const available=g=>g.state==='pre'&&Date.now()<g.kick&&!week().ticket.legs.some(p=>p.member!==member()&&p.gameId===g.id);
  function gameHTML(g){
@@ -126,7 +126,7 @@
    S.busy=true;try{await api('reset',{year:S.data.year,week:S.week},true);S.tab='picks';S.manage=false;S.draft=null;S.editing=false;say('Parlay reset. A new ticket is open.');await refresh();}catch(err){say(err.message,true);await refresh();}finally{S.busy=false;render();}
   }
   if(act==='refresh'||act==='retry'){if(S.configError||!S.config){S.config=null;await window.LeagueParlay.paint(S.host,S.cr);return;}await restore();await refresh(true);}
-  if(act==='history'){S.week=Number(b.dataset.week);S.tab='ticket';render();}
+  if(act==='history'){S.week=Number(b.dataset.week);S.manualWeek=true;S.tab='ticket';render();}
   if(act==='prop'){await save({gameId:document.getElementById('pn-prop-game').value,market:'prop',description:document.getElementById('pn-prop').value,odds:document.getElementById('pn-prop-odds').value});}
   if(act==='placed-odds'||act==='clear-placed-odds'){
    if(!admin()||S.pending)return;const request={year:S.data.year,week:S.week,revision:week().ticketOddsRevision||0,...(act==='clear-placed-odds'?{clear:true}:{odds:S.host.querySelector('#pn-placed-odds').value})};S.busy=true;
@@ -134,13 +134,13 @@
   }
   if(act==='review'){try{await api('review',{year:S.data.year,week:S.week,member:b.dataset.member,result:S.host.querySelector(`[data-review="${b.dataset.member}"]`).value,note:S.host.querySelector(`[data-note="${b.dataset.member}"]`).value},true);say('Result saved.');await refresh();}catch(e){say(e.message,true);render();}}
  });
- document.addEventListener('change',async e=>{if(!owns()||S.busy)return;if(e.target.id==='pn-demo'&&e.target.value){try{await api('demo',{stage:e.target.value});S.draft=null;S.editing=false;await refresh();}catch(err){say(err.message,true);}render();return;}if(e.target.id==='pn-week'){S.week=Number(e.target.value);S.draft=null;S.editing=false;render();}if(e.target.id==='pn-target'){S.target=e.target.value;S.draft=null;S.editing=false;render();}});
+ document.addEventListener('change',async e=>{if(!owns()||S.busy)return;if(e.target.id==='pn-demo'&&e.target.value){try{await api('demo',{stage:e.target.value});S.draft=null;S.editing=false;await refresh();}catch(err){say(err.message,true);}render();return;}if(e.target.id==='pn-week'){S.week=Number(e.target.value);S.manualWeek=true;S.draft=null;S.editing=false;render();}if(e.target.id==='pn-target'){S.target=e.target.value;S.draft=null;S.editing=false;render();}});
  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&owns()&&S.config?.enabled)refresh();});
  setInterval(()=>{if(owns()&&S.config?.enabled&&document.visibilityState!=='hidden'&&!S.busy&&!S.host.querySelector('details.pn-review[open],details[data-detail="prop"][open],details[data-detail="placed-odds"][open]'))refresh();},20000);
  window.LeagueParlay={...legacy,take(payload){
   const result=legacy.take(payload);try{const raw=atob(String(payload).replace(/-/g,'+').replace(/_/g,'/'));const pick=JSON.parse(new TextDecoder().decode(Uint8Array.from(raw,c=>c.charCodeAt(0))));if(['ok','dupe'].includes(result))sharedPick=pick;}catch{}return result;
  },async paint(host,cr,apiContext){
-  const id=++paintId;S.host=host;S.cr=cr;host.dataset.parlayMode='next';S.checking=true;
+  const id=++paintId;S.manualWeek=false;if(S.data)S.week=S.data.current;S.host=host;S.cr=cr;host.dataset.parlayMode='next';S.checking=true;
   // Replace the previous view synchronously, before the first network await.
   if(S.data)render();else host.innerHTML='<div class="pn"><p class="pn-note" role="status">Loading the shared parlay…</p></div>';
   let c;try{c=await config();}catch(e){S.checking=false;say(e.message,true);render();return;}
