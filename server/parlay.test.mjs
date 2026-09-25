@@ -27,17 +27,60 @@ test('background collector opens the Tuesday-4AM week without waiting for ESPN t
 });
 test('reservations are game-wide; replacement preserves old until transaction succeeds; revision conflicts',()=>{const s=setup();savePick(s,2026,2,member('McD'),pick(),T);assert.throws(()=>savePick(s,2026,2,member('Hurd'),pick('Hurd',{market:'total',side:'under'}),T),/just picked/);assert.throws(()=>savePick(s,2026,2,member('McD'),pick('McD',{revision:1,gameId:'unknown'}),T),/closed/);assert.equal(s.read().seasons[2026].weeks[2].picks.McD.gameId,'g1');assert.throws(()=>savePick(s,2026,2,member('McD'),pick(),T),/changed/);savePick(s,2026,2,member('McD'),pick('McD',{revision:1,clear:true}),T);savePick(s,2026,2,member('Hurd'),pick('Hurd'),T);s.close();});
 test('organizer attribution, member boundary, kickoff denies edits and clears even with stale feed',()=>{const s=setup();assert.throws(()=>savePick(s,2026,2,member('McD'),pick('Hurd'),T),/own pick/);savePick(s,2026,2,{role:'organizer',member:'Zach'},pick('Hurd'),T);assert.equal(s.read().seasons[2026].weeks[2].picks.Hurd.addedBy,'organizer');assert.throws(()=>savePick(s,2026,2,member('Hurd'),pick('Hurd',{revision:1,clear:true}),K),/locked/);s.close();});
-test('first kickoff locks the whole ticket; only an organizer can reset after a final Thursday miss',()=>{
+test('unpicked Thursday games leave empty and Sunday tickets open for saves, changes and clears',()=>{
+ const thu=Date.UTC(2026,8,18,0,15),sun=Date.UTC(2026,8,20,17),before=thu-60000;
+ for(const state of ['pre','in','post']){
+  const s=newStore(),now=thu+3600000,board=payload([event('thu',thu),event('sun',sun),event('late',sun+10800000)]);
+  try{
+   ingest(s,2026,2,board,before);
+   savePick(s,2026,2,member('McD'),pick('McD',{gameId:'sun'}),before);
+   board.events[0].competitions[0].status.type={state,completed:state==='post',name:state==='post'?'STATUS_FINAL':state==='in'?'STATUS_IN_PROGRESS':'STATUS_SCHEDULED'};
+   ingest(s,2026,2,board,now);
+   const w=s.read().seasons[2026].weeks[2];
+   assert.equal(publicWeek(w,now).ticket.locked,false,state);
+   assert.equal(ticket([],w.games,now).locked,false,state);
+   assert.throws(()=>savePick(s,2026,2,member('Hurd'),pick('Hurd',{gameId:'thu'}),now),/game is closed/);
+   savePick(s,2026,2,member('McD'),pick('McD',{gameId:'sun',side:'DAL',revision:1}),now);
+   savePick(s,2026,2,member('McD'),pick('McD',{clear:true,revision:2}),now);
+   savePick(s,2026,2,member('Hurd'),pick('Hurd',{gameId:'sun'}),now);
+   savePick(s,2026,2,{role:'organizer',member:'Zach'},pick('McD',{gameId:'late',revision:3}),now);
+   assert.equal(publicWeek(s.read().seasons[2026].weeks[2],now).ticket.locked,false);
+  }finally{s.close();}
+ }
+});
+test('first selected kickoff locks every pick even with a stale pregame feed',()=>{
+ const s=newStore();
+ try{
+  ingest(s,2026,2,payload([event('g1',K),event('late',K+10800000)]),T);
+  savePick(s,2026,2,member('McD'),pick(),T);
+  savePick(s,2026,2,member('Hurd'),pick('Hurd',{gameId:'late'}),T);
+  assert.equal(publicWeek(s.read().seasons[2026].weeks[2],K-1).ticket.locked,false);
+  assert.equal(publicWeek(s.read().seasons[2026].weeks[2],K).ticket.locked,true);
+  for(const actor of [member('Hurd'),{role:'organizer',member:'Zach'}]){
+   for(const clear of [false,true])assert.throws(()=>savePick(s,2026,2,actor,pick('Hurd',{gameId:'late',revision:1,clear}),K),/parlay is locked/);
+  }
+ }finally{s.close();}
+});
+test('a frozen selected leg keeps the ticket locked if its game disappears or changes kickoff',()=>{
+ const p={member:'McD',gameId:'g1',market:'ml',side:'PHI',lockedAt:K,quote:{odds:-110}};
+ assert.equal(ticket([p],[],K+1).locked,true);
+ assert.equal(ticket([p],[{id:'g1',state:'pre',kick:K+3600000}],K+1).locked,true);
+ assert.equal(ticket([{...p,lockedAt:null}],[{id:'g1',state:'in',kick:K+3600000}],K).locked,true);
+});
+test('first selected kickoff locks the whole ticket; only an organizer can reset after a final Thursday miss',()=>{
  const s=newStore(),thu=Date.UTC(2026,8,18,0,15),before=thu-60000,after=thu+10800000,organizer={role:'organizer',member:'Zach'};
  try{
-  const sunday=thu+259200000;ingest(s,2026,2,payload([event('thu',thu),event('sun',sunday)]),before);savePick(s,2026,2,member('McD'),{...pick('McD'),gameId:'thu'},before);
-  const final=payload([event('thu',thu),event('sun',sunday)]),c=final.events[0].competitions[0];c.status.type={state:'post',completed:true,name:'STATUS_FINAL'};c.competitors.find(x=>x.homeAway==='home').score='20';c.competitors.find(x=>x.homeAway==='away').score='24';ingest(s,2026,2,final,after);
+  const sunday=thu+259200000;ingest(s,2026,2,payload([event('thu',thu),event('sun',sunday),event('early',sunday-3600000)]),before);savePick(s,2026,2,member('McD'),{...pick('McD'),gameId:'thu'},before);
+  const final=payload([event('thu',thu),event('sun',sunday),event('early',sunday-3600000)]),c=final.events[0].competitions[0];c.status.type={state:'post',completed:true,name:'STATUS_FINAL'};c.competitors.find(x=>x.homeAway==='home').score='20';c.competitors.find(x=>x.homeAway==='away').score='24';ingest(s,2026,2,final,after);
   const w=publicWeek(s.read().seasons[2026].weeks[2],after);assert.equal(w.ticket.locked,true);assert.equal(w.ticket.resetEligible,true);
   assert.throws(()=>savePick(s,2026,2,member('Hurd'),{...pick('Hurd'),gameId:'sun'},after),/parlay is locked/);
   assert.throws(()=>resetParlay(s,2026,2,member('McD'),after),/Organizer/);
   resetParlay(s,2026,2,organizer,after);const reset=s.read().seasons[2026].weeks[2];assert.deepEqual(reset.picks,{});assert.equal(reset.resets.length,1);assert.equal(reset.audit.at(-1).action,'reset-parlay');
   const history=publicWeek(reset,after).priorTickets;assert.equal(history.length,1);assert.equal(history[0].ticket.legs[0].member,'McD');assert.equal(history[0].ticket.miss,1);
   assert.equal(publicWeek(reset,after).ticket.locked,false);savePick(s,2026,2,member('Hurd'),{...pick('Hurd'),gameId:'sun'},after);
+  ingest(s,2026,2,final,sunday-1800000);
+  assert.equal(publicWeek(s.read().seasons[2026].weeks[2],sunday-1800000).ticket.locked,false,'unpicked kickoff after reset stays open');
+  savePick(s,2026,2,member('Hurd'),pick('Hurd',{gameId:'sun',side:'DAL',revision:1}),sunday-1800000);
  }finally{s.close();}
 });
 test('a non-Thursday loss never opens the reset route',()=>{

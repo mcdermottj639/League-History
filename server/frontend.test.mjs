@@ -22,6 +22,18 @@ test('enabled UI renders all six market choices, tab order and ticket/season nav
  await h.click({pn:'tab',tab:'season'});assert.match(h.host.innerHTML,/Past tickets/);assert.match(h.host.innerHTML,/No picks settled yet/);
 });
 test('a started game visibly locks every parlay selection',async()=>{const h=harness(true,'live');await h.window.LeagueParlay.paint(h.host);assert.match(h.host.innerHTML,/This parlay is locked/);assert.match(h.host.innerHTML,/data-pn="edit" disabled/);assert.match(h.host.innerHTML,/data-pn="clear" disabled/);});
+test('an unpicked started game leaves saved-pick controls and the remaining game board open',async()=>{
+ const store=new Store(':memory:');seedPreview(store,'before');
+ const w=store.read().seasons[2026].weeks[2],now=Date.now();
+ w.picks.McD={...w.picks.Hurd,member:'McD'};delete w.picks.Hurd;
+ Object.assign(w.games.at(-1),{kick:now-3600000,state:'post',completed:true,status:'STATUS_FINAL'});
+ const h=harness(true,'before',{weeks:[publicWeek(w,now)]});store.close();
+ await h.window.LeagueParlay.paint(h.host);
+ assert.doesNotMatch(h.host.innerHTML,/This parlay is locked/);
+ assert.doesNotMatch(h.host.innerHTML,/data-pn="(?:edit|clear)" disabled/);
+ await h.click({pn:'edit'});assert.match(h.host.innerHTML,/data-pn="select"/);
+ assert.doesNotMatch(h.host.innerHTML,/data-game="demo15"/);
+});
 test('preview scenario refresh repaints even while its select retains focus',async()=>{const h=harness();await h.window.LeagueParlay.paint(h.host);h.host.innerHTML='old';h.host.querySelector=()=>({});await h.events.change({target:{id:'pn-demo',value:'live'}});assert.notEqual(h.host.innerHTML,'old');assert.ok(h.requests.some(r=>r.url.endsWith('/demo')));});
 
 /* Season odds tracking (v112). The league wanted a record of the PRICES it has

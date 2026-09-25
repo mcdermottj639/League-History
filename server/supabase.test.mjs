@@ -75,6 +75,22 @@ test('Separate Edge workers cannot claim the same game; CAS retry preserves winn
  const responses=await Promise.all([b.request('api/parlay/pick',pick('McD'),m.token),b.request('api/parlay/pick',pick('Hurd'),h.token)]);
  assert.deepEqual(responses.map(r=>r.status).sort(),[200,409]);assert.equal(Object.keys(b.store.read().seasons[2026].weeks[1].picks).length,1);
 });
+test('Edge state and saves stay open after an unpicked game, then close at a selected kickoff',async()=>{
+ const b=await backend();activate(b.store);
+ b.store.transact(state=>{const g=state.seasons[2026].weeks[1].games[0];g.kick=T-3600000;g.state='post';g.completed=true;g.status='STATUS_FINAL';});
+ const m=await b.session('McD'),h=await b.session('Hurd');
+ const current=async()=>(await(await b.request('api/parlay/state')).json()).weeks[0];
+ assert.equal((await current()).ticket.locked,false);
+ assert.equal((await b.request('api/parlay/pick',pick('McD',1),m.token)).status,200);
+ assert.equal((await b.request('api/parlay/pick',{...pick('McD',1),revision:1,side:'CAR'},m.token)).status,200);
+ assert.equal((await b.request('api/parlay/pick',pick('Hurd',2),h.token)).status,200);
+ assert.equal((await current()).ticket.locked,false);
+ b.store.transact(state=>{state.seasons[2026].weeks[1].games[1].kick=T;});
+ assert.equal((await current()).ticket.locked,true);
+ const response=await b.request('api/parlay/pick',{...pick('Hurd',2),revision:1,clear:true},h.token);
+ assert.equal(response.status,409);assert.match((await response.json()).error,/parlay is locked/);
+ assert.equal((await current()).ticket.legs.length,2);
+});
 test('All twelve ordinary identities preserve their own scope; Week 0 rejected',async()=>{
  const b=await backend();activate(b.store);
  for(let i=0;i<ROSTER.length;i++){const member=ROSTER[i],s=await b.session(member);assert.equal(s.role,'member');assert.equal((await b.request('api/parlay/pick',pick(member,i),s.token)).status,200);assert.equal(b.store.read().seasons[2026].weeks[1].picks[member].addedBy,member);}
@@ -126,4 +142,3 @@ test('Collector fetches ESPN box scores for final write-in props without failing
  const failed=await collect(down.rpc,down.config,{clock:()=>T+1000,fetchJSON:async url=>{if(url.includes('/summary'))throw Error('Source HTTP 403');if(url.includes('scoreboard'))return scoreboard;throw Error('unexpected');}});
  assert.equal(failed.ok,true);assert.ok(down.store.read().seasons[2026].weeks[1].games.find(x=>x.id===g2.id).boxError);
 });
-

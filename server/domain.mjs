@@ -68,13 +68,14 @@ export function progress(p,g){
   return margin>0?`Leading by ${margin}`:margin<0?`Trailing by ${-margin}`:'Tied';
 }
 
-export function ticket(picks,games,now=Date.now(),stake=STAKE,openedAt=0){
+export function ticket(picks,games,now=Date.now(),stake=STAKE){
   const legs=picks.map(p=>{const g=games.find(g=>g.id===p.gameId);return {...p,result:result(p,g),game:g?{away:g.away,home:g.home,awayScore:g.awayScore,homeScore:g.homeScore,kick:g.kick,state:g.state,completed:g.completed,status:g.status,detail:g.detail,seenAt:g.seenAt}:null,progress:progress(p,g)};});
   const hit=legs.filter(l=>l.result==='hit').length,miss=legs.filter(l=>l.result==='miss').length,push=legs.filter(l=>l.result==='push').length;
-  /* One ticket means the first kickoff closes the entire collection. The
-     reset escape hatch deliberately needs a completed Thursday miss. NFL
+  /* Only a game selected on this ticket can close the collection. Preserve
+     a frozen leg's lock even if the feed loses or reschedules its game.
+     The reset escape hatch deliberately needs a completed Thursday miss. NFL
      Thursday kickoffs cross midnight UTC, so use the league's Eastern time. */
-  const ticketLocked=games.some(g=>g.kick>=openedAt&&locked(g,now));
+  const ticketLocked=legs.some(l=>l.lockedAt||(l.game&&locked(l.game,now)));
   const thursdayMiss=legs.some(l=>l.result==='miss'&&l.game?.kick&&new Intl.DateTimeFormat('en-US',{weekday:'long',timeZone:'America/New_York'}).format(new Date(l.game.kick))==='Thursday');
   const settled=legs.length>0&&legs.every(l=>['hit','miss','push'].includes(l.result));
   const priced=legs.filter(l=>l.result!=='push'),known=priced.every(l=>odds(l.quote?.odds)!==null&&!l.missingQuote);

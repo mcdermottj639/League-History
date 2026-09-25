@@ -291,8 +291,10 @@ redeployed for this to take effect; a Pages-only merge does not open Week 3.
 
 ## v111 — Ticket-wide Parlay lock and Thursday reset
 
-The first scheduled kickoff locks the entire current parlay at both the server
-and the interface; nobody can save, replace, or clear a game after that point.
+⚠️ **SUPERSEDED in v116:** the lock now uses the first kickoff among saved
+picks, not the first game anywhere on the weekly schedule.
+The first selected game's kickoff locks the entire current parlay at both the
+server and the interface; nobody can save, replace, or clear a pick after that point.
 The existing private organizer session is the only reset authority. Reset is
 available for the current week only after a completed Thursday miss, calculated
 in America/New_York so Thursday-night games that are Friday UTC are handled
@@ -1504,3 +1506,16 @@ Oracle retains its last valid full result snapshot under `lh:oracle-results:2026
 ### v115 — Cache rollover and reset-attempt recovery
 Oracle and Rankings follow the latest published week after cache refresh unless the reader deliberately selected history. Parlay follows the current server week on refresh and tab entry, preserving explicit history selection while that view stays open. Oracle rejects older or incomplete results responses that would remove confirmed finals without renewing cache freshness.
 Reset-time ticket snapshots remain immutable. Separate tracking selections (lazily initialized for existing reset attempts) keep receiving kickoff quotes, locks, final scores and prop box scores; public history and season totals derive from these updated selections. No private links, capabilities, sessions, routes or configuration are changed. This supersedes v114's fetch-failure-only result protection.
+
+### v116 — Lock only when a selected game starts
+The shared ticket calculation checks only the current ticket's saved selections.
+An unpicked Thursday game (or any other unpicked game) leaves an empty or upcoming
+ticket editable. The first selected kickoff locks every pick, including later
+games, using the clock even if the feed still says pregame. A persisted leg lock
+remains authoritative if the feed loses or reschedules its matchup. Started
+games themselves remain unavailable for new picks. Reset attempts stay archived
+and cannot lock the replacement ticket. The existing organizer-only Thursday-loss
+reset, quotes, odds, revisions, saved picks and private links are preserved.
+The `league-parlay` Edge Function must be redeployed with the shared server
+modules for this fix to take effect; updating GitHub Pages alone is insufficient.
+The incorrect ticket lock is derived, so no data reset or migration is needed.

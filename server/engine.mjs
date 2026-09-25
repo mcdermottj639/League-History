@@ -42,7 +42,7 @@ export function lockDue(w,now=Date.now()){
 }
 export function savePick(store,year,week,actor,input,now=Date.now()){
  return store.transact(state=>{const w=ensure(state,year,week);lockDue(w,now);
-  if(ticket(Object.values(w.picks),w.games,now,w.stake,w.ticketOpenedAt||0).locked)throw failure('The parlay is locked because a game has started.',409);
+  if(ticket(Object.values(w.picks),w.games,now,w.stake).locked)throw failure('The parlay is locked because a game on this ticket has started.',409);
   const member=actor.role==='organizer'?input.member:actor.member;
   if(!ROSTER.includes(member))throw failure('Choose a league member.');
   if(actor.role!=='organizer'&&input.member!==actor.member)throw failure('You can only edit your own pick.',403);
@@ -65,7 +65,7 @@ export function savePick(store,year,week,actor,input,now=Date.now()){
 export function resetParlay(store,year,week,actor,now=Date.now()){
  if(actor.role!=='organizer')throw failure('Organizer access required',403);
  return store.transact(state=>{const w=state.seasons[year]?.weeks[week];if(!w)throw failure('Unknown ticket',404);lockDue(w,now);
-  const current=ticket(Object.values(w.picks),w.games,now,w.stake,w.ticketOpenedAt||0);
+  const current=ticket(Object.values(w.picks),w.games,now,w.stake);
   if(!current.resetEligible)throw failure('Reset is available only after a completed Thursday leg misses.',409);
   w.resets??=[];w.resets.push({at:now,by:'organizer',reason:'thursday-miss',ticket:structuredClone(current),picks:structuredClone(Object.values(w.picks)),placedTicket:structuredClone(w.placedTicket||null)});
   w.revisions??={};Object.keys(w.picks).forEach(member=>{w.revisions[member]=Number(w.revisions[member]??w.picks[member].revision??0)+1;});
@@ -90,7 +90,7 @@ export function publicWeek(w,now=Date.now()){
   const picks=structuredClone(r.picks||r.ticket.legs),historical={games:w.games,picks};lockDue(historical,now);
   return {at:r.at,reason:r.reason,ticket:ticket(picks,w.games,now,r.ticket.stake),placedTicket:r.placedTicket||null};
  });
- return {year:w.year,week:w.week,updatedAt:w.updatedAt,feedError:w.feedError||null,payer:w.payer,placedTicket:w.placedTicket||null,ticketOddsRevision:w.ticketOddsRevision||0,revisions:w.revisions||{},games:w.games,ticket:ticket(Object.values(w.picks),w.games,now,w.stake,w.ticketOpenedAt||0),priorTickets,unmapped:w.unmapped};
+ return {year:w.year,week:w.week,updatedAt:w.updatedAt,feedError:w.feedError||null,payer:w.payer,placedTicket:w.placedTicket||null,ticketOddsRevision:w.ticketOddsRevision||0,revisions:w.revisions||{},games:w.games,ticket:ticket(Object.values(w.picks),w.games,now,w.stake),priorTickets,unmapped:w.unmapped};
 }
 export function payerFromScores(scores,previousWeek){
  if(scores.length!==ROSTER.length||new Set(scores.map(x=>x.member)).size!==ROSTER.length||scores.some(x=>!ROSTER.includes(x.member)||number(x.score)===null))return {status:'pending'};
