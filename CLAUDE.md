@@ -178,26 +178,18 @@ for tests. Missing score/confidence inputs must keep Publish disabled.
 
 ## v110 — Faster Rankings loading
 
-## v112 — Season odds tracking
+## v117 — Season odds tracking
 
-**Who carries the ticket** now records the PRICES each member has been taking,
-not just whether their leg hit. Every member row carries their **average**
-price beside their record, and a season tile carries the same for the weekly
-ticket. ⚠️ **The average is the only figure PRINTED** (owner: *"Just give us
-avg we don't need total"*) — `tally()` still computes the sum, because the
-average is made of it and a stored total costs nothing, but nothing renders it.
+**Who carries the ticket** shows each member's average locked price beside
+ their record. Convert American odds to decimal returns, average with equal
+ weight per priced pick, then convert back to American odds and round once.
+ This also applies to the weekly ticket average. Prices are never multiplied.
+ Evens displays as +100; invalid and missing prices are excluded.
 
-🚨 **THE ODDS ARE ADDED UP, AND THAT IS THE OWNER'S EXPLICIT CALL, NOT A
-SHORTCUT.** *"Why would we do parlay truly it's the season tracking so we want
-to see the odds they've been doing… we do add them up u can the total and then
-the avg for each weeks. Avg example -153 while total is -740."* So +100 and
--150 reads **-50** (and averages **-25**), where the same two legs multiplied
-as a real parlay would pay **+233**. This is a record of what the league has been betting, not a
-payout, and the copy says so in as many words (**"Added, not parlay math"**) —
-⚠️ an average landing between -100 and +100 is an artifact of adding American
-prices and is NOT a quotable line. The v3 fault is two figures side by side
-with nothing saying they are different things, and this number sits one tab
-from **Tracked odds**, which IS the parlay product.
+⚠️ **SUPERSEDED in v117:** v112 directly averaged signed American numbers.
+ That produced invalid +19/+20 prices. The owner's September 27 correction
+ replaces that arithmetic with average payout odds: Zach +125, Gotch +121,
+ Christel -327 and McD -198 for the verified Week 2–3 saved prices.
 
 - **A price only counts once the kickoff lock froze it** — `lockedAt` set,
   `missingQuote` false, and a real observed quote. An unlocked, unpriced or
@@ -1519,3 +1511,8 @@ reset, quotes, odds, revisions, saved picks and private links are preserved.
 The `league-parlay` Edge Function must be redeployed with the shared server
 modules for this fix to take effect; updating GitHub Pages alone is insufficient.
 The incorrect ticket lock is derived, so no data reset or migration is needed.
+
+### v117 — Correct average betting odds
+Member and weekly averages use decimal returns converted back to American odds.
+Saved prices, records, lock rules and private links are unchanged. Regression
+tests cover mixed signs, heavy favorites, evens and invalid quotes.

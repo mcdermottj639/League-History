@@ -36,13 +36,7 @@ test('an unpicked started game leaves saved-pick controls and the remaining game
 });
 test('preview scenario refresh repaints even while its select retains focus',async()=>{const h=harness();await h.window.LeagueParlay.paint(h.host);h.host.innerHTML='old';h.host.querySelector=()=>({});await h.events.change({target:{id:'pn-demo',value:'live'}});assert.notEqual(h.host.innerHTML,'old');assert.ok(h.requests.some(r=>r.url.endsWith('/demo')));});
 
-/* Season odds tracking (v112). The league wanted a record of the PRICES it has
-   been taking, which is a running plus/minus tally of American odds and is
-   deliberately NOT parlay math: a week at +100 and a week at -150 reads -50,
-   where the same two legs multiplied as a real parlay would pay +233. These
-   fixtures fix every price by hand so the arithmetic is checked against
-   numbers this file states, not against whatever the preview seed happens to
-   produce. */
+/* Season prices use equal-stake decimal averages, never a parlay product. */
 const leg=(member,odds,result='hit',extra={})=>({member,result,lockedAt:1,missingQuote:false,quote:{odds},...extra});
 const tk=(legs,combinedOdds)=>({legs,hit:legs.filter(l=>l.result==='hit').length,miss:legs.filter(l=>l.result==='miss').length,push:0,settled:true,full:legs.length===4,status:'lost',stake:10,combinedOdds,returned:0,net:-10,locked:true,resetEligible:false});
 const oddsSeason=()=>({year:2026,current:2,preview:true,roster:['McD','Hurd','Slemp','Zach'],weeks:[
@@ -51,12 +45,12 @@ const oddsSeason=()=>({year:2026,current:2,preview:true,roster:['McD','Hurd','Sl
 ]});
 async function seasonView(dataOverride){const h=harness(true,'before',dataOverride);await h.window.LeagueParlay.paint(h.host);await h.click({pn:'tab',tab:'season'});return h.host.innerHTML;}
 
-test('season odds add each locked price per member and never multiply them as a parlay',async()=>{
+test('season odds average decimal prices per member without multiplying',async()=>{
  const html=await seasonView(oddsSeason());
- // McD took -150 twice: the tally is the sum and its own average, not +233-style parlay math.
+ // Identical favorite prices remain unchanged.
  assert.match(html,/McD<\/b><span>2–0 · 100%<small class="pn-block">-150 avg<\/small>/);
- // Hurd's +100 and -120 is the owner's own example shape: added, it reads -20.
- assert.match(html,/Hurd<\/b><span>1–1 · 50%<small class="pn-block">-10 avg<\/small>/);
+ // +100 and -120 average to decimal 1.9167, or -109 American.
+ assert.match(html,/Hurd<\/b><span>1–1 · 50%<small class="pn-block">-109 avg<\/small>/);
  assert.match(html,/odds they have been taking/);
 });
 
@@ -112,4 +106,25 @@ test('Parlay follows rollover on refresh and reopening while respecting a manual
  await h.events.change({target:{id:'pn-week',value:'2'}});await h.click({pn:'refresh'});
  assert.match(h.host.innerHTML,/<option value="2" selected>/);
  await h.window.LeagueParlay.paint(h.host);assert.match(h.host.innerHTML,/<option value="3" selected>/);
+});
+
+// Real saved-price examples from the September 27 report.
+test('reported member prices produce valid American averages including heavy favorites',async()=>{
+ const data=oddsSeason();
+ data.roster=['Zach','Gotch','Christel','McD'];
+ data.weeks[0].ticket=tk([leg('Zach',-142),leg('Gotch',155),leg('Christel',-225),leg('McD',-238)],-225);
+ data.weeks[0].placedTicket={odds:-225};
+ data.weeks[1].ticket=tk([leg('Zach',180),leg('Gotch',-115),leg('Christel',-600),leg('McD',-170)],-600);
+ const html=await seasonView(data);
+ for(const [member,avg] of [['Zach','+125'],['Gotch','+121'],['Christel','-327'],['McD','-198']])
+  assert.ok(html.includes(member+'</b><span>2–0 · 100%<small class="pn-block">'+avg+' avg</small>'));
+ assert.match(html,/<strong>-327<\/strong><small>Avg weekly odds<\/small>/);
+});
+test('evens normalize to +100 and invalid prices are excluded',async()=>{
+ const data=oddsSeason();data.roster=['McD','Hurd'];
+ data.weeks[0].ticket=tk([leg('McD',-100),leg('Hurd',20)],100);
+ data.weeks[1].ticket=tk([leg('McD',100),leg('Hurd',Infinity)],100);
+ const html=await seasonView(data);
+ assert.match(html,/McD<\/b><span>2–0 · 100%<small class="pn-block">\+100 avg/);
+ assert.match(html,/Hurd<\/b><span>2–0 · 100%<small class="pn-block">No locked prices/);
 });
