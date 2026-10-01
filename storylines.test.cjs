@@ -81,7 +81,10 @@ assert.match(S._comparisonTxt(3.04,[3,1,2],'your'),/ahead of two and level with 
 assert.match(S._comparisonTxt(3,[3,3,3],'your'),/level with three/);
 const missing = structuredClone(data); missing.teams[1].scores=[];
 assert.ok(!/Week 1 score would/.test(S._performanceLine(missing,missing.teams[0])));
-const preseason = S._derive(snapshot);
+// Keep the preseason case independent of the published fallback's current week.
+const preseason = S._derive({ ...snapshot, k: 0, l: 'Preseason',
+  t: snapshot.t.map(t => ({ ...t, w: 0, l: 0, ti: 0, pf: 0, pa: 0,
+    apw: 0, apl: 0, s: [] })) });
 assert.ok(!/through|would have beaten/.test(S._careerLines(preseason,preseason.teams[0]).join(' ')));
 const multi = {...data, wp:5};
 const mid = {...multi.teams[0], g:5,w:1,l:4,ti:0,apw:35,apl:20,allPct:35/55,winPct:1/5};

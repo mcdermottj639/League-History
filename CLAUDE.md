@@ -1516,3 +1516,13 @@ The incorrect ticket lock is derived, so no data reset or migration is needed.
 Member and weekly averages use decimal returns converted back to American odds.
 Saved prices, records, lock rules and private links are unchanged. Regression
 tests cover mixed signs, heavy favorites, evens and invalid quotes.
+
+### October 1, 2026 — Verified season fallback refresh
+The bundled `season/current.json` fallback now contains the completed Week 3
+results, dated October 1, replacing the September 10 preseason snapshot. It
+was generated through `LeagueESPN.toSnapshot` from the existing season API.
+All 36 team-week scores/opponents and all 12 records, points for/against and
+all-play totals were reconciled with Flaim ESPN results. Live refresh behavior
+and existing links are unchanged. This is a one-time snapshot refresh, not
+a new automatic publishing job. The narrative preseason test constructs its
+own zero-game fixture so future fallback updates do not change that case.
