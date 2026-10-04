@@ -96,5 +96,18 @@
       } else render();
     } catch(error) { status(error.message); }
   }
-  window.LeagueOwnerLinks={mount,setupRequested,setupLabel};
+  // Reuse the owner's existing private capability; server verification remains mandatory.
+  function parlayKey() {
+    if (!allowed()) return null;
+    if (typeof setupToken === 'string') return setupToken;
+    try {
+      const rows=read().filter(row=>row.status==='ready');
+      for (const row of rows) {
+        const token=new URLSearchParams(new URL(row.url).hash.slice(1)).get('parlay-organizer');
+        if (/^[A-Za-z0-9_-]{43}$/.test(token||'')) return token;
+      }
+    } catch (_) {}
+    return null;
+  }
+  window.LeagueOwnerLinks={mount,setupRequested,setupLabel,parlayKey};
 })();

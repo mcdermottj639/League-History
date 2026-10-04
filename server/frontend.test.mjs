@@ -6,13 +6,13 @@ import {Store} from './store.mjs';
 import {seedPreview} from './preview.mjs';
 import {publicWeek} from './engine.mjs';
 const source=readFileSync(new URL('../parlay-next.js',import.meta.url),'utf8');
-function harness(enabled=true,stage='before',dataOverride=null,organizer=false,confirmReset=true){
+function harness(enabled=true,stage='before',dataOverride=null,organizer=false,confirmReset=true,owner=false){
  const store=new Store(':memory:');seedPreview(store,stage);const season=store.read().seasons[2026];store.close();
  const data={supportsPickReset:true,year:2026,current:2,preview:true,roster:['McD','Hurd','Slemp','Zach'],weeks:Object.values(season.weeks).map(w=>publicWeek(w))};
  if(dataOverride)Object.assign(data,dataOverride);
  const events={},requests=[],host={dataset:{view:'parlay'},innerHTML:'',querySelector:()=>null,querySelectorAll:()=>[]};let legacyCalls=0;
- const window={LeagueParlay:{paint(){legacyCalls++;}},LeagueHistory:{name:x=>x,me:()=> 'McD'},scrollY:0,scrollTo(){}};
- const context={window,location:{hash:'',pathname:'/',search:''},history:{replaceState(){}},confirm:()=>confirmReset,localStorage:{getItem:k=>organizer&&k==='lh:parlay-session:v2'?JSON.stringify({token:'test',role:'organizer',member:'Zach'}):null,setItem(){},removeItem(){}},document:{addEventListener:(n,fn)=>events[n]=fn,visibilityState:'visible'},setInterval(){},AbortSignal,Date,fetch:async(url,options)=>{requests.push({url,options});return {ok:true,json:async()=>url==='parlay/config.json'?{enabled,api:'',year:2026}:url.endsWith('/me')?{role:'organizer',member:'Zach'}:data};}};
+ const window={LeagueOwner:{is:()=>owner},LeagueOwnerLinks:{parlayKey:()=> 'A'.repeat(43)},LeagueParlay:{paint(){legacyCalls++;}},LeagueHistory:{name:x=>x,me:()=> 'McD'},scrollY:0,scrollTo(){}};
+ const context={window,location:{hash:'',pathname:'/',search:''},history:{replaceState(){}},confirm:()=>confirmReset,localStorage:{getItem:k=>organizer&&k==='lh:parlay-session:v2'?JSON.stringify({token:'test',role:'organizer',member:'Zach'}):null,setItem(){},removeItem(){}},document:{addEventListener:(n,fn)=>events[n]=fn,visibilityState:'visible'},setInterval(){},AbortSignal,Date,fetch:async(url,options)=>{requests.push({url,options});return {ok:true,json:async()=>url==='parlay/config.json'?{enabled,api:'',year:2026}:url.endsWith('/me')||url.endsWith('/session')?{token:'test',role:'organizer',member:'Zach'}:data};}};
  vm.runInNewContext(source,context);
  return {data,window,host,events,requests,get legacyCalls(){return legacyCalls;},click:async dataset=>events.click({target:{closest:()=>({dataset})}})};
 }
@@ -144,4 +144,12 @@ test('evens normalize to +100 and invalid prices are excluded',async()=>{
 
 test('older backend never offers or sends an unsupported pick reset',async()=>{
  const h=harness(true,'live',{supportsPickReset:undefined},true);await h.window.LeagueParlay.paint(h.host);await h.click({pn:'manage'});assert.doesNotMatch(h.host.innerHTML,/data-pn="reset-pick"/);await h.click({pn:'reset-pick'});assert.ok(!h.requests.some(r=>r.url.endsWith('/reset-pick')));
+});
+
+test('owner automatically verifies saved organizer capability without opening a special link',async()=>{
+ const h=harness(true,'live',null,false,true,true);await h.window.LeagueParlay.paint(h.host);
+ assert.match(h.host.innerHTML,/data-pn="manage"/);
+ const request=h.requests.find(r=>r.url.endsWith('/session'));assert.equal(JSON.parse(request.options.body).key,'A'.repeat(43));
+ await h.click({pn:'manage'});assert.match(h.host.innerHTML,/Reset this person’s pick/);
+ const ordinary=harness(true,'live');await ordinary.window.LeagueParlay.paint(ordinary.host);assert.ok(!ordinary.requests.some(r=>r.url.endsWith('/session')));assert.doesNotMatch(ordinary.host.innerHTML,/data-pn="manage"/);
 });

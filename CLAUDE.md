@@ -178,6 +178,15 @@ for tests. Missing score/confidence inputs must keep Publish disabled.
 
 ## v110 — Faster Rankings loading
 
+## v119 — Owner Parlay management access
+
+When the unlocked owner opens Parlay, the app exchanges the existing ready
+organizer capability from the device's private link directory for a verified
+organizer session automatically. A pending owner-Parlay handoff also works.
+No manual copy/open step is needed. Owner UI state or selecting McD alone never
+substitutes for server authentication; devices without a saved capability
+cannot silently acquire it. Zach's link and all existing sessions remain valid.
+
 ## v118 — Individual missed-bet reset
 
 In Parlay → Manage picks, the verified organizer can reset a single current-week

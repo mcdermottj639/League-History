@@ -33,6 +33,16 @@
   if(S.session?.api!==undefined&&(S.session.api!==S.config.api||S.session.year!==S.config.year)){S.session=null;S.verified=false;write(KEY,null);}
   if(invite){const key=invite;try{S.session={...await api('session',{key}),api:S.config.api,year:S.config.year};invite=null;S.verified=true;write(KEY,S.session);S.authTried=true;window.dispatchEvent(new CustomEvent('parlay-organizer-ready'));S.manage=true;S.target='Zach';say('Organizer access is ready on this device.');}catch(e){S.verified=false;say(e.message,true);}}
   else if(S.session&&!S.authTried){try{const auth=await api('me',null,true);S.session={...S.session,...auth,api:S.config.api,year:S.config.year};S.verified=true;S.authTried=true;write(KEY,S.session);if(admin()&&!me())window.dispatchEvent(new CustomEvent('parlay-organizer-ready'));}catch(e){S.verified=false;say(e.message,true);}}
+
+  if(!admin()&&window.LeagueOwner?.is()){
+   const key=window.LeagueOwnerLinks?.parlayKey();
+   if(key)try{
+    const auth=await api('session',{key});
+    if(auth.role!=='organizer')throw Error('Could not verify organizer access.');
+    S.session={...auth,api:S.config.api,year:S.config.year};S.verified=true;S.authTried=true;write(KEY,S.session);
+    say('Your parlay management access is ready.');
+   }catch(e){say(e.message,true);}
+  }
  }
  async function memberSession(m){if(admin())return S.session;if(!m)throw Error('Choose your name at the top of the app first.');if(!S.session||!S.verified||S.session.member!==m){S.session={...await api('session',{member:m}),api:S.config.api,year:S.config.year};S.verified=true;write(KEY,S.session);}return S.session;}
  async function refresh(force=false){if(S.refreshing)return;S.refreshing=true;try{const data=await api('state');if(data.year!==S.config.year||!Array.isArray(data.weeks)||!Array.isArray(data.roster))throw Error('Invalid parlay state');const changed=!S.manualWeek&&S.week!==data.current;S.data=data;if(changed||!data.weeks.some(w=>w.week===S.week)){S.week=data.current;S.draft=null;S.editing=false;}write(CACHE,{api:S.config.api,at:Date.now(),data});S.pending=S.configError||data.writable===false;if(force)say(S.pending?'The parlay is temporarily read-only.':'Updated just now.');}catch(e){S.pending=true;if(force||!S.data)say('Could not refresh. Showing the last saved data; editing is unavailable.',true);}finally{S.refreshing=false;S.checking=false;if(owns()&&!S.busy&&!S.host.querySelector('input:focus,textarea:focus,select:focus'))render();}}

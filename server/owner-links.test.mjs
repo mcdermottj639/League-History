@@ -42,3 +42,10 @@ test('Oracle owner setup saves Hurd separately and leaves Zach’s saved organiz
  assert.equal(rows.length,2);assert.deepEqual(rows[0],zach);assert.equal(rows[1].label,'Hurd · Hurdstradamus editor');assert.equal(rows[1].url,'https://league.test/League-History/#oracle-editor='+token);assert.equal(rows[1].status,'ready');
  assert.match(h.host.textContent,/Hurd’s link is ready/);h.dom.window.close();
 });
+
+test('owner parlay capability is available only on unlocked owner devices with a ready saved link',()=>{
+ const token='A'.repeat(43),rows=[{label:'Zach',url:'https://league.test/League-History/#parlay-organizer='+token,status:'ready'}];
+ const h=setup(true,undefined,rows);assert.equal(h.w.LeagueOwnerLinks.parlayKey(),token);h.lock();assert.equal(h.w.LeagueOwnerLinks.parlayKey(),null);h.dom.window.close();
+ const member=setup(false,undefined,rows);assert.equal(member.w.LeagueOwnerLinks.parlayKey(),null);member.dom.window.close();
+ const pending=setup(true,undefined,[{...rows[0],status:'inactive'}]);assert.equal(pending.w.LeagueOwnerLinks.parlayKey(),null);pending.dom.window.close();
+});
