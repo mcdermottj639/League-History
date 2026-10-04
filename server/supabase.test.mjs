@@ -142,3 +142,20 @@ test('Collector fetches ESPN box scores for final write-in props without failing
  const failed=await collect(down.rpc,down.config,{clock:()=>T+1000,fetchJSON:async url=>{if(url.includes('/summary'))throw Error('Source HTTP 403');if(url.includes('scoreboard'))return scoreboard;throw Error('unexpected');}});
  assert.equal(failed.ok,true);assert.ok(down.store.read().seasons[2026].weeks[1].games.find(x=>x.id===g2.id).boxError);
 });
+
+test('reset-pick API requires organizer, current week, matching revisions and preserves other picks',async()=>{
+ const b=await backend();activate(b.store);
+ const admin=await(await b.request('api/parlay/session',{key:'test-private-key'})).json(),regular=await b.session('McD');
+ await b.request('api/parlay/pick',pick('McD'),regular.token);
+ await b.request('api/parlay/pick',pick('Hurd',1),admin.token);
+ await b.request('api/parlay/placed-odds',{year:2026,week:1,odds:12500,revision:0},admin.token);
+ b.store.transact(s=>{const g=s.seasons[2026].weeks[1].games[0];g.kick=T-1000;g.state='in';});
+ const request={year:2026,week:1,member:'McD',revision:1,ticketOddsRevision:1,reason:'bet-not-placed'};
+ assert.equal((await b.request('api/parlay/reset-pick',request)).status,401);
+ assert.equal((await b.request('api/parlay/reset-pick',request,regular.token)).status,403);
+ assert.equal((await b.request('api/parlay/reset-pick',{...request,week:2},admin.token)).status,400);
+ assert.equal((await b.request('api/parlay/reset-pick',request,admin.token)).status,200);
+ const w=b.store.read().seasons[2026].weeks[1];assert.equal(w.placedTicket,null);assert.equal(w.ticketOddsRevision,2);assert.equal(w.audit.at(-1).placedTicket.odds,12500);assert.ok(w.picks.Hurd);assert.equal(w.picks.McD,undefined);
+ assert.equal((await b.request('api/parlay/pick',{...pick('McD',2),revision:1},regular.token)).status,409);
+ assert.equal((await b.request('api/parlay/pick',{...pick('McD',2),revision:2},regular.token)).status,200);
+});

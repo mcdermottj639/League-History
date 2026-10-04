@@ -7,7 +7,7 @@ import {Store} from './store.mjs';
 import {seedPreview} from './preview.mjs';
 import {Collector} from './collector.mjs';
 import {ROSTER} from './domain.mjs';
-import {ensure,publicWeek,savePick,resetParlay,failure,lockDue,writable,savePlacedOdds} from './engine.mjs';
+import {ensure,publicWeek,savePick,resetPick,resetParlay,failure,lockDue,writable,savePlacedOdds} from './engine.mjs';
 export const hash=s=>createHash('sha256').update(String(s)).digest('hex');
 const ROOT=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 export function createApp({store,organizerHash,year=2026,startWeek=2,origins=[],preview=false,clock=Date.now,apiURL='',collectorEnabled=false,durableStorage=false}){
@@ -39,7 +39,7 @@ export function createApp({store,organizerHash,year=2026,startWeek=2,origins=[],
    if(path==='/api/parlay/me') {const s=session(req);return json(res,200,{role:s.role,member:s.member,expires:s.expires});}
    if(path==='/api/parlay/state'&&req.method==='GET'){
     store.transact(s=>{const season=s.seasons[year];for(const w of Object.values(season.weeks))lockDue(w,clock());});
-    const s=store.read().seasons[year];return json(res,200,{v:2,year,current:s.current,roster:ROSTER,preview,writable:preview||writable(s),weeks:Object.values(s.weeks).filter(w=>w.week>=startWeek).sort((a,b)=>b.week-a.week).map(w=>publicWeek(w,clock()))});
+    const s=store.read().seasons[year];return json(res,200,{v:2,supportsPickReset:true,year,current:s.current,roster:ROSTER,preview,writable:preview||writable(s),weeks:Object.values(s.weeks).filter(w=>w.week>=startWeek).sort((a,b)=>b.week-a.week).map(w=>publicWeek(w,clock()))});
    }
    if(path==='/api/parlay/demo'&&preview&&req.method==='POST'){const b=await body(req);if(!['before','live','lost','won'].includes(b.stage))throw failure('Unknown scenario');seedPreview(store,b.stage,clock());return json(res,200,{ok:true});}
    if(path==='/api/parlay/pick'&&req.method==='POST'){
@@ -53,12 +53,12 @@ export function createApp({store,organizerHash,year=2026,startWeek=2,origins=[],
     const b=await body(req);if(b.year!==year||!Number.isInteger(b.week)||b.week<startWeek||b.week>store.read().seasons[year].current)throw failure('Invalid season or week');
     return json(res,200,savePlacedOdds(store,year,b.week,actor,b,clock()));
    }
-   if(path==='/api/parlay/reset'&&req.method==='POST'){
+   if(['/api/parlay/reset','/api/parlay/reset-pick'].includes(path)&&req.method==='POST'){
     const actor=session(req);if(actor.role!=='organizer')throw failure('Organizer access required',403);
     if(!preview&&!writable(store.read().seasons[year]))throw failure('The parlay is read-only until cutover is complete.',503);
     const b=await body(req),current=store.read().seasons[year].current;
     if(b.year!==year||b.week!==current)throw failure('Only the current parlay can be reset.',409);
-    return json(res,200,resetParlay(store,year,b.week,actor,clock()));
+    return json(res,200,path.endsWith('/reset-pick')?resetPick(store,year,b.week,actor,b,clock()):resetParlay(store,year,b.week,actor,clock()));
    }
    if(path==='/api/parlay/review'&&req.method==='POST'){
     if(!preview&&!writable(store.read().seasons[year]))throw failure('The parlay is read-only until cutover is complete.',503);const actor=session(req);if(actor.role!=='organizer')throw failure('Organizer access required',403);const b=await body(req);

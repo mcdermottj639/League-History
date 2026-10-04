@@ -1,5 +1,5 @@
 import {ROSTER} from './domain.mjs';
-import {ensure,publicWeek,savePick,resetParlay,failure,lockDue,writable,savePlacedOdds} from './engine.mjs';
+import {ensure,publicWeek,savePick,resetPick,resetParlay,failure,lockDue,writable,savePlacedOdds} from './engine.mjs';
 import {transaction,digest,randomToken,constantEqual} from './supabase-store.mjs';
 import {collect} from './supabase-collector.mjs';
 
@@ -54,10 +54,10 @@ export function edgeApp(rpc,{clock=Date.now,fetchJSON,managerFor}={}){
      store.transact(state=>{ensure(state,year,config.launch_week);for(const w of Object.values(state.seasons[year].weeks))lockDue(w,clock());});
      const s=store.read().seasons[year],w=s.weeks[s.current];
      if(path.endsWith('/readiness'))return {preview:false,year,current:s.current,collectorEnabled:config.collection_enabled,organizerConfigured:/^[a-f0-9]{64}$/.test(config.organizer_hash||''),durableStorage:true,imported:!!s.weeks[s.release?.cutoverWeek??s.current]?.imported,writable:writable(s),cutoverWeek:s.release?.cutoverWeek??null,unresolved:w.unmapped.length,lastCollection:s.collector?.lastSuccess||null};
-     return {v:2,year,current:s.current,roster:ROSTER,preview:false,writable:writable(s),weeks:Object.values(s.weeks).filter(w=>w.week>=startWeek).sort((a,b)=>b.week-a.week).map(w=>publicWeek(w,clock()))};
+     return {v:2,supportsPickReset:true,year,current:s.current,roster:ROSTER,preview:false,writable:writable(s),weeks:Object.values(s.weeks).filter(w=>w.week>=startWeek).sort((a,b)=>b.week-a.week).map(w=>publicWeek(w,clock()))};
     }));
    }
-   if(['/api/parlay/pick','/api/parlay/placed-odds','/api/parlay/review','/api/parlay/reset'].includes(path)&&req.method==='POST'){
+   if(['/api/parlay/pick','/api/parlay/placed-odds','/api/parlay/review','/api/parlay/reset','/api/parlay/reset-pick'].includes(path)&&req.method==='POST'){
     const actor=await session(),b=await body();
     if(path!=='/api/parlay/pick'&&actor.role!=='organizer')throw failure('Organizer access required',403);
     if(b.year!==year||!Number.isInteger(b.week)||b.week<1||b.week>18)throw failure('Invalid season or week');
@@ -69,6 +69,7 @@ export function edgeApp(rpc,{clock=Date.now,fetchJSON,managerFor}={}){
       return savePick(store,year,b.week,actor,b,clock());
      }
      if(b.week>s.current)throw failure('Invalid season or week');
+     if(path==='/api/parlay/reset-pick')return resetPick(store,year,b.week,actor,b,clock());
      if(path==='/api/parlay/reset'){if(b.week!==s.current)throw failure('Only the current parlay can be reset.',409);return resetParlay(store,year,b.week,actor,clock());}
      if(path==='/api/parlay/placed-odds')return savePlacedOdds(store,year,b.week,actor,b,clock());
      if(!ROSTER.includes(b.member)||!['hit','miss','push','pending'].includes(b.result))throw failure('Invalid review');

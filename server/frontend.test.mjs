@@ -6,13 +6,13 @@ import {Store} from './store.mjs';
 import {seedPreview} from './preview.mjs';
 import {publicWeek} from './engine.mjs';
 const source=readFileSync(new URL('../parlay-next.js',import.meta.url),'utf8');
-function harness(enabled=true,stage='before',dataOverride=null){
+function harness(enabled=true,stage='before',dataOverride=null,organizer=false,confirmReset=true){
  const store=new Store(':memory:');seedPreview(store,stage);const season=store.read().seasons[2026];store.close();
- const data={year:2026,current:2,preview:true,roster:['McD','Hurd','Slemp','Zach'],weeks:Object.values(season.weeks).map(w=>publicWeek(w))};
+ const data={supportsPickReset:true,year:2026,current:2,preview:true,roster:['McD','Hurd','Slemp','Zach'],weeks:Object.values(season.weeks).map(w=>publicWeek(w))};
  if(dataOverride)Object.assign(data,dataOverride);
  const events={},requests=[],host={dataset:{view:'parlay'},innerHTML:'',querySelector:()=>null,querySelectorAll:()=>[]};let legacyCalls=0;
  const window={LeagueParlay:{paint(){legacyCalls++;}},LeagueHistory:{name:x=>x,me:()=> 'McD'},scrollY:0,scrollTo(){}};
- const context={window,location:{hash:'',pathname:'/',search:''},history:{replaceState(){}},localStorage:{getItem:()=>null,setItem(){},removeItem(){}},document:{addEventListener:(n,fn)=>events[n]=fn,visibilityState:'visible'},setInterval(){},AbortSignal,Date,fetch:async(url,options)=>{requests.push({url,options});return {ok:true,json:async()=>url==='parlay/config.json'?{enabled,api:'',year:2026}:data};}};
+ const context={window,location:{hash:'',pathname:'/',search:''},history:{replaceState(){}},confirm:()=>confirmReset,localStorage:{getItem:k=>organizer&&k==='lh:parlay-session:v2'?JSON.stringify({token:'test',role:'organizer',member:'Zach'}):null,setItem(){},removeItem(){}},document:{addEventListener:(n,fn)=>events[n]=fn,visibilityState:'visible'},setInterval(){},AbortSignal,Date,fetch:async(url,options)=>{requests.push({url,options});return {ok:true,json:async()=>url==='parlay/config.json'?{enabled,api:'',year:2026}:url.endsWith('/me')?{role:'organizer',member:'Zach'}:data};}};
  vm.runInNewContext(source,context);
  return {data,window,host,events,requests,get legacyCalls(){return legacyCalls;},click:async dataset=>events.click({target:{closest:()=>({dataset})}})};
 }
@@ -85,7 +85,7 @@ test('a season with no locked prices says so instead of printing a zero total',a
 
 test('tied records sort by average odds, better American number first',async()=>{
  const namesOf=html=>[...html.split('Who carries the ticket')[1].split('Past tickets')[0].matchAll(/<div class="pn-row pn-record"><b>([^<]*)<\/b>/g)].map(m=>m[1]);
- const data={year:2026,current:2,preview:true,roster:['McD','CC','Hyman','Christel','Zach','Gotch','Wolff','Riz'],weeks:[
+ const data={supportsPickReset:true,year:2026,current:2,preview:true,roster:['McD','CC','Hyman','Christel','Zach','Gotch','Wolff','Riz'],weeks:[
   {year:2026,week:2,updatedAt:1,feedError:null,payer:{status:'pending'},placedTicket:null,ticketOddsRevision:0,revisions:{},priorTickets:[],games:[],unmapped:[],ticket:tk([
    leg('CC',-110),leg('Hyman',-120),leg('Zach',-142),leg('Christel',-225),leg('McD',-238),leg('Gotch',155,'miss'),leg('Wolff',-105,'miss')
   ],100)}
@@ -127,4 +127,21 @@ test('evens normalize to +100 and invalid prices are excluded',async()=>{
  const html=await seasonView(data);
  assert.match(html,/McD<\/b><span>2–0 · 100%<small class="pn-block">\+100 avg/);
  assert.match(html,/Hurd<\/b><span>2–0 · 100%<small class="pn-block">No locked prices/);
+});
+
+ test('missed-bet reset is organizer-only and confirms a revision-bound individual request',async()=>{
+  const h=harness(true,'live',null,true);await h.window.LeagueParlay.paint(h.host);await h.click({pn:'manage'});
+  assert.match(h.host.innerHTML,/data-pn="reset-pick"/);await h.click({pn:'reset-pick'});
+  const req=h.requests.find(r=>r.url.endsWith('/reset-pick'));assert.ok(req);const body=JSON.parse(req.options.body);
+  assert.equal(body.member,'McD');assert.equal(body.reason,'bet-not-placed');assert.equal(body.revision,h.data.weeks.find(w=>w.week===2).ticket.legs.find(p=>p.member==='McD').revision);assert.equal(req.options.headers.Authorization,'Bearer test');
+  const cancelled=harness(true,'live',null,true,false);await cancelled.window.LeagueParlay.paint(cancelled.host);await cancelled.click({pn:'manage'});await cancelled.click({pn:'reset-pick'});assert.ok(!cancelled.requests.some(r=>r.url.endsWith('/reset-pick')));
+  const regular=harness(true,'live');await regular.window.LeagueParlay.paint(regular.host);assert.doesNotMatch(regular.host.innerHTML,/data-pn="reset-pick"/);
+ });
+ test('reset member can select an upcoming replacement while other legs keep the ticket locked',async()=>{
+  const h=harness(true,'live');const w=h.data.weeks.find(w=>w.week===2);w.ticket.legs=w.ticket.legs.filter(p=>p.member!=='McD');w.replacementSlots={McD:true};
+  await h.window.LeagueParlay.paint(h.host);assert.match(h.host.innerHTML,/Your pick was reset/);assert.doesNotMatch(h.host.innerHTML,/This parlay is locked/);assert.doesNotMatch(h.host.innerHTML,/data-pn="select"[^>]*disabled/);assert.match(h.host.innerHTML,/data-pn="prop"/);
+ });
+
+test('older backend never offers or sends an unsupported pick reset',async()=>{
+ const h=harness(true,'live',{supportsPickReset:undefined},true);await h.window.LeagueParlay.paint(h.host);await h.click({pn:'manage'});assert.doesNotMatch(h.host.innerHTML,/data-pn="reset-pick"/);await h.click({pn:'reset-pick'});assert.ok(!h.requests.some(r=>r.url.endsWith('/reset-pick')));
 });

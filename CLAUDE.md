@@ -178,6 +178,21 @@ for tests. Missing score/confidence inputs must keep Publish disabled.
 
 ## v110 — Faster Rankings loading
 
+## v118 — Individual missed-bet reset
+
+In Parlay → Manage picks, the verified organizer can reset a single current-week
+pick after kickoff by confirming the bet was not placed. `reset-pick` verifies
+both pick and placed-odds revisions, retains the removed pick and actual odds in
+the private audit, clears actual odds, and opens one replacement slot for that
+member. All other picks and kickoff quotes remain unchanged. The member or
+organizer may save one upcoming-game replacement even if other legs have locked;
+the normal game availability, freshness, uniqueness and revision checks apply.
+The removed unplaced pick is excluded from season results; it is not a Thursday
+reset attempt. A full Thursday reset clears replacement permissions too.
+The reset control appears only when backend state advertises `supportsPickReset`.
+Deploy the updated `league-parlay` Edge Function to activate it on frontend v118. No schema,
+capability, session, link or collector configuration changes are needed.
+
 ## v117 — Season odds tracking
 
 **Who carries the ticket** shows each member's average locked price beside
@@ -287,6 +302,10 @@ redeployed for this to take effect; a Pages-only merge does not open Week 3.
 picks, not the first game anywhere on the weekly schedule.
 The first selected game's kickoff locks the entire current parlay at both the
 server and the interface; nobody can save, replace, or clear a pick after that point.
+⚠️ **SUPERSEDED in v118 for individual unplaced picks:** a separate organizer-only
+reset opens one member slot after kickoff. The whole-ticket Thursday reset below
+remains unchanged.
+
 The existing private organizer session is the only reset authority. Reset is
 available for the current week only after a completed Thursday miss, calculated
 in America/New_York so Thursday-night games that are Friday UTC are handled

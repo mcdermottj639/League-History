@@ -281,3 +281,25 @@ test('archived prop selections still request their final box scores',async()=>{
   assert.equal(publicWeek(s.read().seasons[2026].weeks[2],K+1000).priorTickets[0].ticket.legs[0].result,'hit');
  }finally{s.close();}
 });
+
+test('organizer missed-bet reset opens only one slot, preserves other locks and excludes discarded results',async()=>{
+ const {resetPick}=await import('./engine.mjs');const s=setup(),organizer={role:'organizer',member:'Zach'},now=K+1000;
+ ingest(s,2026,2,payload([event(),event('g2'),event('later',K+7200000)]),T);
+ savePick(s,2026,2,member('McD'),pick(),T);savePick(s,2026,2,member('Hurd'),pick('Hurd',{gameId:'g2'}),T);
+ ingest(s,2026,2,payload([event(),event('g2'),event('later',K+7200000)]),now);
+ const request={member:'McD',revision:1,ticketOddsRevision:0,reason:'bet-not-placed'},before=s.read().seasons[2026].weeks[2];
+ assert.throws(()=>resetPick(s,2026,2,member('McD'),request,now),/Organizer/);
+ assert.throws(()=>resetPick(s,2026,2,organizer,{...request,revision:0},now),/changed/);
+ assert.throws(()=>resetPick(s,2026,2,organizer,{...request,ticketOddsRevision:1},now),/changed/);
+ assert.throws(()=>resetPick(s,2026,2,organizer,{...request,reason:''},now),/Confirm/);
+ resetPick(s,2026,2,organizer,request,now);
+ const w=s.read().seasons[2026].weeks[2],view=publicWeek(w,now);
+ assert.deepEqual(w.picks.Hurd,before.picks.Hurd);assert.equal(w.picks.McD,undefined);assert.equal(w.audit.at(-1).pick.member,'McD');assert.equal(view.priorTickets.length,0);assert.equal(view.ticket.legs.length,1);assert.equal(view.ticket.locked,true);assert.equal(view.replacementSlots.McD,true);
+ assert.throws(()=>resetPick(s,2026,2,organizer,request,now),/no pick/);
+ assert.throws(()=>savePick(s,2026,2,member('Slemp'),pick('Slemp',{gameId:'later'}),now),/parlay is locked/);
+ assert.throws(()=>savePick(s,2026,2,member('McD'),pick('McD',{revision:2}),now),/closed/);
+ assert.throws(()=>savePick(s,2026,2,member('McD'),pick('McD',{revision:1,gameId:'later'}),now),/changed/);
+ savePick(s,2026,2,member('McD'),pick('McD',{revision:2,gameId:'later'}),now);
+ assert.equal(s.read().seasons[2026].weeks[2].replacementSlots.McD,undefined);
+ assert.throws(()=>savePick(s,2026,2,member('McD'),pick('McD',{revision:3,clear:true}),now),/parlay is locked/);s.close();
+});

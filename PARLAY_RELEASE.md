@@ -21,11 +21,17 @@ reconciliation, never simply enabling the old Firebase writer.
 - DraftKings prices supplied by ESPN's public NFL scoreboard. The chosen market
   follows line movement until its individual kickoff; then the last observed
   pregame quote is immutable. Scheduled kickoffs also lock during feed outages.
-- The first game kickoff locks the entire current ticket for everyone, enforced
+- The first selected game kickoff locks the entire current ticket for everyone, enforced
   by the server as well as the interface. After a completed Thursday miss, only
   the existing verified organizer session can reset the current ticket for a
   fresh attempt. The Thursday attempt, its legs and its entered odds are retained
   in the shared Season tracking rather than erased or overwritten.
+- A verified organizer can use Manage picks → Reset this person’s pick when the
+  bet was not placed, including after kickoff. Confirmation removes only that
+  pick and opens one upcoming-game replacement for that member, even while other
+  legs stay locked. Removed picks and any cleared actual odds remain in private
+  audit history, excluded from season results. Both revisions are checked.
+  Deploy the updated Edge Function to activate the capability-gated v118 control; no migration is required.
 - Background collection independent of open browsers: a 30-second scheduled check
   near kickoff/during games, five-minute collection otherwise. Timing is best effort;
   stale quotes are labeled, never represented as exact closing prices. The UI refreshes
