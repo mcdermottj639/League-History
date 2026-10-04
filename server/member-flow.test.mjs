@@ -83,7 +83,7 @@ test('existing shared-pick links display their original pick without silently ch
 
 test('organizer records and corrects actual odds; every member sees them without edit controls',async()=>{
  const h=await app({invite:true,member:null});let memberApp;try{
- await until(()=>h.$('#pn-target'));h.$('[data-tab="ticket"]').click();assert.ok(h.$('#pn-placed-odds'));h.$('#pn-placed-odds').value='+12,500';h.$('[data-pn="placed-odds"]').click();await until(()=>h.store.read().seasons[2026].weeks[2].placedTicket?.odds===12500);await until(()=>h.$('#lg-body').textContent.includes('$1,260.00 potential return'));assert.match(h.$('#lg-body').textContent,/\$1,250.00 potential profit/);assert.match(h.$('#lg-body').textContent,/Tracked odds/);
+ await until(()=>h.$('#pn-target'));h.$('[data-tab="ticket"]').click();assert.ok(h.$('#pn-placed-odds'));h.$('#pn-placed-odds').value='+12,500';h.$('[data-pn="placed-odds"]').click();await until(()=>h.store.read().seasons[2026].weeks[2].placedTicket?.odds===12500);await until(()=>h.$('.pn-ticket-summary').textContent.includes('$1,260.00To Pay'));assert.match(h.$('#lg-body').textContent,/\$1,250.00 potential profit/);assert.match(h.$('#lg-body').textContent,/Placed odds · DraftKings/);
  memberApp=await app({backend:h,member:'Gotch'});memberApp.$('[data-l1="parlay"]').click();await until(()=>memberApp.$('[data-tab="ticket"]'));memberApp.$('[data-tab="ticket"]').click();assert.match(memberApp.$('#lg-body').textContent,/\+12,500/);assert.equal(memberApp.$('#pn-placed-odds'),null);
  const regular=await(await fetch(h.api+'/api/parlay/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({member:'Gotch'})})).json();
  const denied=await fetch(h.api+'/api/parlay/placed-odds',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+regular.token},body:JSON.stringify({year:2026,week:2,odds:99999,revision:1})});assert.equal(denied.status,403);
@@ -156,4 +156,19 @@ test('cached public rankings render immediately while the shared rankings refres
   assert.doesNotMatch(h.$('#lg-body').textContent,/checking for updates/);
   assert.match(h.w.localStorage.getItem('lh:rankings-public:v1'),/Fresh take/);
  }finally{release?.();await h.close();}
+});
+
+test('screenshot review saves only confirmed totals, keeps mismatch visible and never stores image or OCR text',async()=>{
+ const h=await app({invite:true,member:null});try{
+  await until(()=>h.$('#pn-target'));h.$('[data-tab="ticket"]').click();
+  h.w.URL.createObjectURL=()=> 'blob:fixture-ticket';h.w.URL.revokeObjectURL=()=>{};
+  h.w.LeagueTicketPhoto.read=async()=>({odds:59655,stake:10,potentialReturn:5975.57,legCount:11});
+  const file=new h.w.File(['fixture'],'ticket.png',{type:'image/png'});
+  Object.defineProperty(h.$('#pn-receipt-file'),'files',{value:[file]});h.$('#pn-receipt-file').dispatchEvent(new h.w.Event('change',{bubbles:true}));
+  await until(()=>h.$('#pn-receipt-return'));assert.equal(h.$('#pn-receipt-return').value,'5975.57');assert.equal(h.store.read().seasons[2026].weeks[2].placedTicket,undefined);
+  assert.equal(h.$('#pn-receipt-confirm').checked,false);h.$('[data-pn="save-receipt"]').click();
+  await until(()=>h.store.read().seasons[2026].weeks[2].placedTicket?.source==='screenshot');await until(()=>h.$('.pn-ticket-summary').textContent.includes('$5,975.57To Pay'));
+  const saved=h.store.read().seasons[2026].weeks[2].placedTicket;assert.equal(saved.legCount,11);assert.equal(saved.legsConfirmed,false);assert.equal(saved.potentialProfit,5965.57);assert.doesNotMatch(JSON.stringify(saved),/blob:|base64|Bet ID/);
+  assert.match(h.$('.pn-ticket-summary').textContent,/11 picks on ticket · 4 tracked/);
+ }finally{await h.close();}
 });

@@ -1,3 +1,4 @@
+import '../ticket-values.js';
 import {ROSTER,STAKE,parseScoreboard,quoteFor,locked,ticket,migratePick,odds,number,decimal} from './domain.mjs';
 import {parseBoxscore,gamesNeedingBoxscore,boxscoreURL,weekPicks} from './props.mjs';
 export {gamesNeedingBoxscore,boxscoreURL,parseBoxscore};
@@ -49,7 +50,7 @@ export function savePick(store,year,week,actor,input,now=Date.now()){
   const old=w.picks[member];if(old?.lockedAt)throw failure('This pick is locked at kickoff.',409);
   if(Number(input.revision||0)!==Number(w.revisions?.[member]??old?.revision??0))throw failure('This pick changed on another device. Refresh before replacing it.',409);
   w.revisions??={};const revision=Number(w.revisions[member]??old?.revision??0)+1;
-  if(input.clear){w.revisions[member]=revision;delete w.picks[member];w.audit.push({at:now,action:'clear',member,by:actor.role==='organizer'?'organizer':member});return {ok:true};}
+  if(input.clear){if(w.placedTicket?.legCount){w.placedTicket.legsConfirmed=false;w.ticketOddsRevision=(w.ticketOddsRevision||0)+1;}w.revisions[member]=revision;delete w.picks[member];w.audit.push({at:now,action:'clear',member,by:actor.role==='organizer'?'organizer':member});return {ok:true};}
   const g=w.games.find(g=>g.id===String(input.gameId));if(locked(g,now))throw failure('This game is closed for picks.',409);
   if(now-w.updatedAt>300000||now-g.seenAt>300000)throw failure('The board is stale. Wait for a fresh update before saving.',503);
   if(Object.values(w.picks).some(p=>p.member!==member&&p.gameId===g.id))throw failure('That game was just picked. Choose another matchup.',409);
@@ -59,6 +60,7 @@ export function savePick(store,year,week,actor,input,now=Date.now()){
   if(market==='prop'&&(!description||description.length>120||odds(input.odds)===null))throw failure('Enter the prop and its quoted odds.');
   const quote=q?{...q}:{label:description,odds:odds(input.odds),line:null,observedAt:now,provider:'Member-entered prop'};
   const p={member,gameId:g.id,market,side:market==='prop'?'':side,description:market==='prop'?description:'',original:{...quote},quote,createdAt:old?.createdAt||now,updatedAt:now,revision,addedBy:actor.role==='organizer'?'organizer':member};
+  if(w.placedTicket?.legCount){w.placedTicket.legsConfirmed=false;w.ticketOddsRevision=(w.ticketOddsRevision||0)+1;}
   if(w.replacementSlots)delete w.replacementSlots[member];
   w.revisions[member]=revision;w.picks[member]=p;w.unmapped=w.unmapped.filter(p=>p.member!==member);w.audit.push({at:now,action:old?'replace':'save',member,by:p.addedBy});return {ok:true,pick:p};
  });
@@ -107,9 +109,9 @@ export function publicWeek(w,now=Date.now()){
  // the shared Season view and keep a Thursday-loss pivot from erasing records.
  const priorTickets=(w.resets||[]).map(r=>{
   const picks=structuredClone(r.picks||r.ticket.legs),historical={games:w.games,picks};lockDue(historical,now);
-  return {at:r.at,reason:r.reason,ticket:ticket(picks,w.games,now,r.ticket.stake),placedTicket:r.placedTicket||null};
+  return {at:r.at,reason:r.reason,ticket:globalThis.LeagueTicketValues.apply(ticket(picks,w.games,now,r.ticket.stake),r.placedTicket),placedTicket:r.placedTicket||null};
  });
- return {year:w.year,week:w.week,updatedAt:w.updatedAt,feedError:w.feedError||null,payer:w.payer,placedTicket:w.placedTicket||null,ticketOddsRevision:w.ticketOddsRevision||0,revisions:w.revisions||{},replacementSlots:w.replacementSlots||{},games:w.games,ticket:ticket(Object.values(w.picks),w.games,now,w.stake),priorTickets,unmapped:w.unmapped};
+ return {year:w.year,week:w.week,updatedAt:w.updatedAt,feedError:w.feedError||null,payer:w.payer,placedTicket:w.placedTicket||null,ticketOddsRevision:w.ticketOddsRevision||0,revisions:w.revisions||{},replacementSlots:w.replacementSlots||{},games:w.games,ticket:globalThis.LeagueTicketValues.apply(ticket(Object.values(w.picks),w.games,now,w.stake),w.placedTicket),priorTickets,unmapped:w.unmapped};
 }
 export function payerFromScores(scores,previousWeek){
  if(scores.length!==ROSTER.length||new Set(scores.map(x=>x.member)).size!==ROSTER.length||scores.some(x=>!ROSTER.includes(x.member)||number(x.score)===null))return {status:'pending'};
@@ -146,15 +148,33 @@ export function savePlacedOdds(store,year,week,actor,input,now=Date.now()){
  if(actor.role!=='organizer')throw failure('Organizer access required',403);
  return store.transact(s=>{const w=s.seasons[year]?.weeks[week];if(!w)throw failure('Unknown ticket',404);
   if(input.revision!==(w.ticketOddsRevision||0))throw failure('The placed odds changed on another device. Refresh before editing.',409);
-  const previous=w.placedTicket?.odds??null;let value=null;
+  const previous=w.placedTicket?.odds??null,previousTicket=structuredClone(w.placedTicket||null);let value=null;
   if(!input.clear){const text=String(input.odds??'').trim().replace(/[−–]/g,'-');
    if(!/^[+-]?(?:\d+|\d{1,3}(?:,\d{3})+)$/.test(text))throw failure('Enter American odds, such as +12500 or -110.');
    value=odds(text.replace(/,/g,''));if(value===null||!Number.isSafeInteger(value))throw failure('Enter valid whole-number American odds of +100 or higher, or -100 or lower.');
   }
+  const money=(value,label)=>{const n=Number(value);if(value===''||value===null||!Number.isFinite(n)||n<=0||n>100000000||Math.abs(n*100-Math.round(n*100))>0.00001)throw failure('Enter a valid '+label+' with at most two decimals.');return n;};
+  let stake=w.stake,potentialReturn=value===null?null:Math.round(stake*decimal(value)*100)/100,legCount=null,legsConfirmed=false,source='manual',exactReturn=false;
+  if(value!==null){
+   if(input.stake!==undefined)stake=money(input.stake,'stake');
+   potentialReturn=Math.round(stake*decimal(value)*100)/100;
+   if(input.potentialReturn!==undefined&&input.potentialReturn!==''){
+    potentialReturn=money(input.potentialReturn,'To Pay amount');exactReturn=true;
+    // DK displays rounded American odds. Allow cents of rounding, not a cash-out value.
+    const expected=stake*decimal(value),tolerance=Math.max(0.02,stake/100+0.01);
+    if(Math.abs(potentialReturn-expected)>tolerance)throw failure('To Pay does not match these odds and stake. Check the ticket totals (not Cash Out).');
+   }
+   if(input.legCount!==undefined&&input.legCount!==''){
+    legCount=Number(input.legCount);if(!Number.isInteger(legCount)||legCount<1||legCount>99)throw failure('Enter the number of picks on the ticket.');
+    legsConfirmed=input.legsConfirmed===true;
+    if(legsConfirmed&&legCount!==Object.keys(w.picks).length)throw failure('Ticket pick count differs from the app. Reconcile the picks before confirming the legs.',409);
+   }
+   source=input.source==='screenshot'?'screenshot':'manual';
+   if(source==='screenshot'&&(legCount===null||!exactReturn||input.stake===undefined))throw failure('Review odds, wager, To Pay and pick count before saving this screenshot.');
+  }
   w.ticketOddsRevision=(w.ticketOddsRevision||0)+1;
-  const potentialReturn=value===null?null:Math.round(w.stake*decimal(value)*100)/100;
-  w.placedTicket=value===null?null:{odds:value,stake:w.stake,potentialReturn,potentialProfit:Math.round((potentialReturn-w.stake)*100)/100,updatedAt:now,revision:w.ticketOddsRevision};
-  w.audit.push({action:input.clear?'clear-placed-odds':'save-placed-odds',at:now,by:'organizer',previous,odds:value});
+  w.placedTicket=value===null?null:{odds:value,stake,potentialReturn,potentialProfit:Math.round((potentialReturn-stake)*100)/100,legCount,legsConfirmed,source,exactReturn,updatedAt:now,revision:w.ticketOddsRevision};
+  w.audit.push({action:input.clear?'clear-placed-odds':'save-placed-odds',at:now,by:'organizer',previous,previousTicket,odds:value});
   return {ok:true,placedTicket:w.placedTicket,revision:w.ticketOddsRevision};
  });
 }

@@ -50,7 +50,8 @@ reconciliation, never simply enabling the old Firebase writer.
   can add/edit/clear them; ordinary members only see the saved figures. Supports
   signed American odds including comma-separated values; rejects invalid prices
   and stale edits. Entries remain editable after kickoff and persist per week.
-  Placement odds never overwrite tracked leg prices or season results. Potential
+  Placed odds and exact To Pay take priority for ticket return/net; tracked leg
+  prices and member records remain unchanged. Potential
   return includes stake and is before any pushes/voids, not a confirmed payout.
 - Prior week's lowest fantasy scorer reimburses Zach $10. Full precision and zero
   scores count; missing scores remain pending and ties are shown for resolution.
@@ -59,6 +60,19 @@ reconciliation, never simply enabling the old Firebase writer.
   for another member. Name selection alone never grants organizer permissions.
 - Private capability link exchanged for a remembered server-verified session;
   no email/password signup, separate app, or betting-placement confirmation.
+
+## v120 screenshot totals
+
+Organizers can add a weekly DraftKings screenshot in Ticket and review its odds,
+wager, exact To Pay and pick count before saving. The photo is processed locally
+with pinned Tesseract.js dependencies; image pixels and Bet ID are not uploaded
+or retained in shared state. Confirmed totals are saved with revision checks.
+A count mismatch remains visible and prevents a false settled return. Matching
+counts alone never confirm the legs; the organizer checks the expanded bookmaker
+ticket. Push/void payout changes remain pending instead of repricing an SGP as
+independent legs. OCR failure permits manual entry; Cash Out is never To Pay.
+The Edge bundle must include root `ticket-values.js`. New UI is gated by
+`supportsTicketReceipt`; existing placed odds already take headline priority.
 
 ## Important boundaries
 

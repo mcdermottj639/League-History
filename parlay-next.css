@@ -5,3 +5,5 @@
 
 /* Compact shared summaries; native disclosures retain full-row touch targets. */
 .pn .pn-members{padding:0 12px}.pn .pn-members>details+details{border-top:1px solid var(--tr)}.pn .pn-members summary{padding:12px 0;min-height:48px}.pn .pn-members details[open]{padding-bottom:8px}.pn .pn-leg p{margin:4px 0}.pn .pn-placed{padding-top:9px;border-top:1px solid var(--tr)}.pn .pn-placed p{margin:4px 0}.pn .pn-ticket-summary .pn-stats{margin:10px 0}.pn .pn-record{padding:9px 0;min-height:44px;align-items:baseline}.pn .pn-record>b{flex:0 1 auto;min-width:0;overflow-wrap:anywhere}.pn .pn-record>span{flex:1 1 150px;min-width:0}.pn .pn-record:last-child{border-bottom:0}
+
+.pn-receipt-preview{display:block;max-width:100%;max-height:380px;object-fit:contain;margin:12px auto;border-radius:12px}.pn .pn-check{display:flex;align-items:flex-start;gap:10px;margin:14px 0}.pn .pn-check input{width:auto;flex:0 0 auto;margin-top:3px}.pn input[type=file]{max-width:100%}

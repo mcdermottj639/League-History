@@ -39,7 +39,7 @@ export function createApp({store,organizerHash,year=2026,startWeek=2,origins=[],
    if(path==='/api/parlay/me') {const s=session(req);return json(res,200,{role:s.role,member:s.member,expires:s.expires});}
    if(path==='/api/parlay/state'&&req.method==='GET'){
     store.transact(s=>{const season=s.seasons[year];for(const w of Object.values(season.weeks))lockDue(w,clock());});
-    const s=store.read().seasons[year];return json(res,200,{v:2,supportsPickReset:true,year,current:s.current,roster:ROSTER,preview,writable:preview||writable(s),weeks:Object.values(s.weeks).filter(w=>w.week>=startWeek).sort((a,b)=>b.week-a.week).map(w=>publicWeek(w,clock()))});
+    const s=store.read().seasons[year];return json(res,200,{v:2,supportsPickReset:true,supportsTicketReceipt:true,year,current:s.current,roster:ROSTER,preview,writable:preview||writable(s),weeks:Object.values(s.weeks).filter(w=>w.week>=startWeek).sort((a,b)=>b.week-a.week).map(w=>publicWeek(w,clock()))});
    }
    if(path==='/api/parlay/demo'&&preview&&req.method==='POST'){const b=await body(req);if(!['before','live','lost','won'].includes(b.stage))throw failure('Unknown scenario');seedPreview(store,b.stage,clock());return json(res,200,{ok:true});}
    if(path==='/api/parlay/pick'&&req.method==='POST'){

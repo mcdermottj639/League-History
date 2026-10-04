@@ -54,7 +54,7 @@ export function edgeApp(rpc,{clock=Date.now,fetchJSON,managerFor}={}){
      store.transact(state=>{ensure(state,year,config.launch_week);for(const w of Object.values(state.seasons[year].weeks))lockDue(w,clock());});
      const s=store.read().seasons[year],w=s.weeks[s.current];
      if(path.endsWith('/readiness'))return {preview:false,year,current:s.current,collectorEnabled:config.collection_enabled,organizerConfigured:/^[a-f0-9]{64}$/.test(config.organizer_hash||''),durableStorage:true,imported:!!s.weeks[s.release?.cutoverWeek??s.current]?.imported,writable:writable(s),cutoverWeek:s.release?.cutoverWeek??null,unresolved:w.unmapped.length,lastCollection:s.collector?.lastSuccess||null};
-     return {v:2,supportsPickReset:true,year,current:s.current,roster:ROSTER,preview:false,writable:writable(s),weeks:Object.values(s.weeks).filter(w=>w.week>=startWeek).sort((a,b)=>b.week-a.week).map(w=>publicWeek(w,clock()))};
+     return {v:2,supportsPickReset:true,supportsTicketReceipt:true,year,current:s.current,roster:ROSTER,preview:false,writable:writable(s),weeks:Object.values(s.weeks).filter(w=>w.week>=startWeek).sort((a,b)=>b.week-a.week).map(w=>publicWeek(w,clock()))};
     }));
    }
    if(['/api/parlay/pick','/api/parlay/placed-odds','/api/parlay/review','/api/parlay/reset','/api/parlay/reset-pick'].includes(path)&&req.method==='POST'){

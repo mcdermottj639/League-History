@@ -178,6 +178,27 @@ for tests. Missing score/confidence inputs must keep Publish disabled.
 
 ## v110 — Faster Rankings loading
 
+## v120 — Placed-ticket totals and screenshot import
+
+Entered DraftKings odds now take priority in the Ticket headline, potential return,
+and settled-ticket return/net tracking. `ticket-values.js` is shared by the browser
+and Parlay backend; kickoff calculations remain available as `calculatedOdds` and
+individual records keep their original quote history. Exact To Pay, stake, pick
+count and leg confirmation can be saved by the organizer with revision protection.
+Push/void repricing and unreconciled receipt selections never invent final payouts.
+
+Ticket → Add DraftKings screenshot reads pixels locally using lazy-loaded,
+integrity-pinned Tesseract.js 6.0.1 (worker 6.0.1, core 6.0.0, English data 1.0.0).
+No vision API or secret is embedded. Review explicitly saves only totals and source
+metadata, not image pixels, bet IDs, or raw OCR text. Extraction failure leaves
+editable fields. A collapsed screenshot cannot verify individual legs; mismatched
+counts are highlighted and users must compare View Legs before checking confirmation.
+Changing a receipt-backed pick invalidates leg confirmation. Existing saved odds
+work immediately; new receipt fields appear only with `supportsTicketReceipt`.
+Deploy `league-parlay` including the new root `ticket-values.js` dependency.
+No schema, private-link, or authentication change. The original per-week payer
+remains $10 even if a receipt records a different actual wager.
+
 ## v119 — Owner Parlay management access
 
 When the unlocked owner opens Parlay, the app exchanges the existing ready
