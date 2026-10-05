@@ -1575,3 +1575,7 @@ all-play totals were reconciled with Flaim ESPN results. Live refresh behavior
 and existing links are unchanged. This is a one-time snapshot refresh, not
 a new automatic publishing job. The narrative preseason test constructs its
 own zero-game fixture so future fallback updates do not change that case.
+
+## v121 — Organizer tracking entries after kickoff
+
+Verified organizers (Jack and Zach through existing access) can use Manage picks → Add pick for tracking for an empty current-week slot, including started/final games. Original ticket line and odds are required; entries lock immediately, retain organizer provenance, and grade normally. Existing picks require the existing explicit reset first. Member locks, game reservations, revision conflicts, links, and capabilities remain unchanged. Both runtimes advertise supportsTrackingEntry; deploy the shared engine with the Edge Function before enabling the UI.

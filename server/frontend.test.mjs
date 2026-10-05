@@ -167,3 +167,14 @@ test('photo import control requires organizer and deployed receipt capability',a
   assert.equal(h.host.innerHTML.includes('pn-receipt-file'),visible);
  }
 });
+
+test('late tracking form is available only to verified organizers with deployed support and an empty slot',async()=>{
+ for(const [organizer,capability,visible] of [[true,true,true],[false,true,false],[true,false,false]]){
+  const h=harness(true,'live',{supportsTrackingEntry:capability},organizer);
+  const w=h.data.weeks.find(w=>w.week===2);w.ticket.legs=w.ticket.legs.filter(p=>p.member!=='Slemp');
+  await h.window.LeagueParlay.paint(h.host);await h.click({pn:'manage'});
+  await h.events.change({target:{id:'pn-target',value:'Slemp'}});
+  assert.equal(h.host.innerHTML.includes('data-pn="tracking"'),visible);
+  if(visible){assert.match(h.host.innerHTML,/Original American odds/);assert.match(h.host.innerHTML,/includes started games/);}
+ }
+});

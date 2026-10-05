@@ -303,3 +303,29 @@ test('organizer missed-bet reset opens only one slot, preserves other locks and 
  assert.equal(s.read().seasons[2026].weeks[2].replacementSlots.McD,undefined);
  assert.throws(()=>savePick(s,2026,2,member('McD'),pick('McD',{revision:3,clear:true}),now),/parlay is locked/);s.close();
 });
+
+test('organizer tracking records a started game with original ticket odds and grades it after final',()=>{
+ const s=setup(),actor={role:'organizer',member:'Zach'},now=K+3600000;
+ const input=pick('McD',{trackingEntry:true,line:-3.5,odds:-115});
+ assert.throws(()=>savePick(s,2026,2,member('McD'),input,now),/Organizer/);
+ for(const bad of [{line:''},{odds:''},{side:'INVALID'},{market:'invalid'},{gameId:'unknown'},{revision:7}])assert.throws(()=>savePick(s,2026,2,actor,{...input,...bad},now));
+ const {pick:p}=savePick(s,2026,2,actor,input,now);
+ assert.equal(p.quote.odds,-115);assert.equal(p.quote.line,-3.5);assert.equal(p.quote.provider,'Organizer-entered ticket');assert.equal(p.lockedAt,now);assert.equal(p.trackingEntry,true);
+ assert.equal(s.read().seasons[2026].weeks[2].audit.at(-1).action,'tracking-entry');
+ assert.throws(()=>savePick(s,2026,2,actor,{...input,revision:1},now),/already has a pick/);
+ assert.throws(()=>savePick(s,2026,2,actor,{...input,member:'Hurd'},now),/just picked/);
+ ingest(s,2026,2,payload([event('g1',K,{status:{type:{state:'post',completed:true,name:'STATUS_FINAL'}}})]),now+1000);
+ const leg=publicWeek(s.read().seasons[2026].weeks[2],now+1000).ticket.legs[0];assert.equal(leg.result,'hit');assert.equal(leg.quote.odds,-115);assert.equal(leg.missingQuote,false);s.close();
+});
+
+test('tracking can fill an empty slot on a locked ticket without touching other selections',()=>{
+ const s=setup(),actor={role:'organizer',member:'McD'},now=K+1;
+ ingest(s,2026,2,payload([event(),event('g2'),event('g3'),event('g4')]),T);
+ savePick(s,2026,2,member('Hurd'),pick('Hurd'),T);
+ for(const [m,gameId,market,side,line,description] of [['McD','g2','total','under',47.5,''],['Zach','g3','ml','PHI',null,''],['CC','g4','prop','',null,'Barkley anytime TD']]){
+  savePick(s,2026,2,actor,pick(m,{gameId,market,side,line,description,trackingEntry:true,odds:140}),now);
+ }
+ const w=s.read().seasons[2026].weeks[2];assert.equal(w.picks.Hurd.quote.line,-3.5);assert.equal(w.picks.Hurd.trackingEntry,undefined);assert.equal(Object.keys(w.picks).length,4);
+ assert.throws(()=>savePick(s,2026,2,member('Slemp'),pick('Slemp'),now),/parlay is locked/);
+ s.transact(state=>{state.seasons[2026].current=3;});assert.throws(()=>savePick(s,2026,2,actor,pick('Gotch',{trackingEntry:true,line:-3,odds:-110}),now),/current week/);s.close();
+});

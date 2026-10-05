@@ -41,28 +41,42 @@ export async function collectBoxscores(store,year,fetchJSON,now=Date.now()){
 export function lockDue(w,now=Date.now()){
  for(const p of trackedPicks(w)){const g=w.games.find(g=>g.id===p.gameId);if(!p.lockedAt&&g&&locked(g,now)){p.lockedAt=now;p.scheduledKick=g.kick;p.missingQuote=p.market!=='prop'&&(!p.quote||p.quote.provider!=='DraftKings via ESPN'||p.quote.observedAt>=g.kick);p.staleQuote=!!p.quote?.observedAt&&g.kick-p.quote.observedAt>120000;}}
 }
+function trackingQuote(g,input,now){
+ const {market,side}=input,line=number(input.line),price=odds(input.odds),description=String(input.description||'').trim();
+ if(!['ml','spread','total','prop'].includes(market)||price===null)throw failure('Choose a market and enter the original ticket odds.');
+ if(market!=='prop'&&!(market==='total'?['over','under']:[g.home,g.away]).includes(side))throw failure('Choose a valid team or total side.');
+ if(['spread','total'].includes(market)&&(line===null||(market==='total'&&line<=0)))throw failure('Enter the original ticket line.');
+ if(market==='prop'&&(!description||description.length>120))throw failure('Enter the exact player prop.');
+ const label=market==='prop'?description:market==='ml'?side+' ML':market==='total'?side+' '+line:side+' '+(line>0?'+':'')+line;
+ return {label,odds:price,line:['spread','total'].includes(market)?line:null,observedAt:now,provider:'Organizer-entered ticket'};
+}
 export function savePick(store,year,week,actor,input,now=Date.now()){
  return store.transact(state=>{const w=ensure(state,year,week);lockDue(w,now);
+  const tracking=input.trackingEntry===true;
+  if(tracking&&actor.role!=='organizer')throw failure('Organizer access required',403);
   const member=actor.role==='organizer'?input.member:actor.member;
+  if(tracking&&(week!==state.seasons[year].current||input.clear))throw failure('Tracking entries require the current week and an empty pick slot.',409);
+  if(tracking&&w.picks[member])throw failure('This member already has a pick. Reset it first if the bet was not placed.',409);
   if(!ROSTER.includes(member))throw failure('Choose a league member.');
   if(actor.role!=='organizer'&&input.member!==actor.member)throw failure('You can only edit your own pick.',403);
-  if(ticket(Object.values(w.picks),w.games,now,w.stake).locked&&!w.replacementSlots?.[member])throw failure('The parlay is locked because a game on this ticket has started.',409);
+  if(!tracking&&ticket(Object.values(w.picks),w.games,now,w.stake).locked&&!w.replacementSlots?.[member])throw failure('The parlay is locked because a game on this ticket has started.',409);
   const old=w.picks[member];if(old?.lockedAt)throw failure('This pick is locked at kickoff.',409);
   if(Number(input.revision||0)!==Number(w.revisions?.[member]??old?.revision??0))throw failure('This pick changed on another device. Refresh before replacing it.',409);
   w.revisions??={};const revision=Number(w.revisions[member]??old?.revision??0)+1;
   if(input.clear){if(w.placedTicket?.legCount){w.placedTicket.legsConfirmed=false;w.ticketOddsRevision=(w.ticketOddsRevision||0)+1;}w.revisions[member]=revision;delete w.picks[member];w.audit.push({at:now,action:'clear',member,by:actor.role==='organizer'?'organizer':member});return {ok:true};}
-  const g=w.games.find(g=>g.id===String(input.gameId));if(locked(g,now))throw failure('This game is closed for picks.',409);
-  if(now-w.updatedAt>300000||now-g.seenAt>300000)throw failure('The board is stale. Wait for a fresh update before saving.',503);
+  const g=w.games.find(g=>g.id===String(input.gameId));if(!g||(!tracking&&locked(g,now)))throw failure('This game is closed for picks.',409);
+  if(!tracking&&(now-w.updatedAt>300000||now-g.seenAt>300000))throw failure('The board is stale. Wait for a fresh update before saving.',503);
   if(Object.values(w.picks).some(p=>p.member!==member&&p.gameId===g.id))throw failure('That game was just picked. Choose another matchup.',409);
-  const market=input.market,side=input.side,q=market==='prop'?null:quoteFor(g,{market,side});
+  const market=input.market,side=input.side,q=tracking?trackingQuote(g,input,now):market==='prop'?null:quoteFor(g,{market,side});
   if(market!=='prop'&&!q)throw failure('That DraftKings market is unavailable.',409);
   const description=String(input.description||'').trim();
   if(market==='prop'&&(!description||description.length>120||odds(input.odds)===null))throw failure('Enter the prop and its quoted odds.');
   const quote=q?{...q}:{label:description,odds:odds(input.odds),line:null,observedAt:now,provider:'Member-entered prop'};
   const p={member,gameId:g.id,market,side:market==='prop'?'':side,description:market==='prop'?description:'',original:{...quote},quote,createdAt:old?.createdAt||now,updatedAt:now,revision,addedBy:actor.role==='organizer'?'organizer':member};
+  if(tracking)Object.assign(p,{trackingEntry:true,lockedAt:now,scheduledKick:g.kick,missingQuote:false,staleQuote:false});
   if(w.placedTicket?.legCount){w.placedTicket.legsConfirmed=false;w.ticketOddsRevision=(w.ticketOddsRevision||0)+1;}
   if(w.replacementSlots)delete w.replacementSlots[member];
-  w.revisions[member]=revision;w.picks[member]=p;w.unmapped=w.unmapped.filter(p=>p.member!==member);w.audit.push({at:now,action:old?'replace':'save',member,by:p.addedBy});return {ok:true,pick:p};
+  w.revisions[member]=revision;w.picks[member]=p;w.unmapped=w.unmapped.filter(p=>p.member!==member);w.audit.push({at:now,action:tracking?'tracking-entry':old?'replace':'save',member,by:p.addedBy});return {ok:true,pick:p};
  });
 }
 // An unplaced selection is retained for audit, never graded as a wager.
