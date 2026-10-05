@@ -192,3 +192,13 @@ test('a standard selection leaves the same matchup available for a prop and trac
  assert.ok(h.host.innerHTML.includes(`data-game="${taken.gameId}"`));
  const updated=h.host.innerHTML.match(/id="pn-prop-game"[\s\S]*?<\/select>/)[0];assert.ok(!updated.includes(`value="${taken.gameId}"`));
 });
+
+test('saved pick card labels settled results without treating live or pending picks as wins',async()=>{
+ for(const [result,label] of [['hit','Won'],['miss','Lost'],['push','Push'],['live',null],['pending',null]]){
+  const h=harness(true,'live'),w=h.data.weeks.find(w=>w.week===2);w.ticket.legs.find(p=>p.member==='McD').result=result;
+  await h.window.LeagueParlay.paint(h.host);
+  const card=h.host.innerHTML.match(/<section class="pn-card pn-saved[^]*?<\/section>/)[0];
+  if(label){assert.ok(card.includes('pn-saved-'+result));assert.ok(card.includes('>'+label+'</strong>'));}
+  else assert.ok(!card.includes('pn-pick-outcome'));
+ }
+});

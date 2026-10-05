@@ -1589,3 +1589,7 @@ Each matchup reserves two independent categories: one spread/total/moneyline pic
 Tracking defaults to game, player/pick and optional odds. Standard markets are available through a collapsed switch and show only their relevant fields. Organizer tracking hides the duplicate normal-pick board. Blank odds are stored as null, do not prevent prop grading, and are excluded from price averages and estimated payouts. Invalid supplied odds are rejected. This supersedes v121’s mandatory tracking odds.
 
 Result review now asks only for the outcome and Save. Both runtimes accept an omitted review note; organizer authorization and audit history remain intact.
+
+## v125 — Pick result on the Picks screen
+
+The saved pick card shows Won in green, Lost in red, or a neutral Push after settlement, using the existing graded result. Upcoming, live and pending picks never receive win/loss styling.
