@@ -125,7 +125,7 @@
     const axis = [1,4,8,maxRank].filter((n,i,a) => n <= maxRank && a.indexOf(n) === i);
     const grid = axis.map(n => `<line x1="34" y1="${y(n)}" x2="${width-16}" y2="${y(n)}"/><text x="2" y="${y(n)+4}">#${n}</text>`).join('');
     const weeks = Array.from({length:last-first+1}, (_,i) => first+i).map(w => `<text x="${x(w)}" y="160" text-anchor="middle">${w === 0 ? 'Pre' : 'W'+w}</text>`).join('');
-    const lines = trail.slice(1).map((s,i) => s.week === trail[i].week+1 ? `<line class="rk-trend" x1="${x(trail[i].week)}" y1="${y(trail[i].rank)}" x2="${x(s.week)}" y2="${y(s.rank)}"/>` : '').join('');
+    const lines = trail.slice(1).map((s,i) => `<line class="rk-trend" x1="${x(trail[i].week)}" y1="${y(trail[i].rank)}" x2="${x(s.week)}" y2="${y(s.rank)}"/>`).join('');
     const dots = trail.map(s => `<circle cx="${x(s.week)}" cy="${y(s.rank)}" r="4.5"><title>${s.week === 0 ? 'Preseason' : 'Week '+s.week}: rank ${s.rank}</title></circle>`).join('');
     const change = trail[0].rank-r.rank;
     const summary = trail.length === 1 ? 'First published ranking. Trends build with each week.' : (change ? `${change>0?'↑':'↓'} ${Math.abs(change)} ${Math.abs(change)===1?'place':'places'}` : 'Same rank') + ` since ${first === 0 ? 'preseason' : 'Week '+first}.`;

@@ -1593,3 +1593,7 @@ Result review now asks only for the outcome and Save. Both runtimes accept an om
 ## v125 — Pick result on the Picks screen
 
 The saved pick card shows Won in green, Lost in red, or a neutral Push after settlement, using the existing graded result. Upcoming, live and pending picks never receive win/loss styling.
+
+## v126 — Publication gaps
+
+Ranking charts connect successive published points across skipped weeks without creating missing-week values. Rank movement and editor baselines use the most recent earlier edition in the same season. Oracle readers select the highest published week regardless of response order; season records retain all published predictions across gaps and exclude unpublished drafts.

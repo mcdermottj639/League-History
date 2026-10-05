@@ -83,7 +83,7 @@
             controls.forEach(([b]) => b.disabled = true);
             status.textContent = 'Saving…';
             try {
-              const previous = (await store.list()).find(p => p.y===snapshot.y && p.k<snapshot.k);
+              const previous = (await store.list()).filter(p => p.y===snapshot.y && p.k<snapshot.k).sort((a,b) => b.k-a.k)[0];
               const identity = r => r[7] || r[0];
               draft.o.forEach((row,i) => { const was = previous ? previous.o.findIndex(r => identity(r)===identity(row)) : -1; row[5] = was<0 ? null : was-i; });
               await store.write(snapshot.k, draft, current.etag, snapshot.y);

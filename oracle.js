@@ -180,7 +180,7 @@
     if(!S.week||(!S.manualWeek&&(!S.editor||S.week<S.data.current))){
       const remembered=S.editor?read(WEEK_KEY):null;
       const draftWeeks=S.editor?S.data.weeks.filter(w=>(S.working[w.week]||w.predictions||[]).some(p=>p.writeup?.trim()||p.winner)).map(w=>w.week):[];
-      const latestPublished=S.data.weeks.filter(w=>w.published).at(-1)?.week;
+      const latestPublished=Math.max(0,...S.data.weeks.filter(w=>w.published).map(w=>w.week));
       // Hurd opens on the new drafting week. Readers open on the latest
       // published prophecy and may select an unpublished week in the picker.
       S.week=S.editor?(S.data.weeks.some(w=>w.week===remembered&&w.week>=S.data.current)?remembered:(draftWeeks.filter(w=>w>=S.data.current).at(-1)||S.data.current||1)):(latestPublished||S.data.current||1);

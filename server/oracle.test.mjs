@@ -336,3 +336,14 @@ test('successful older or incomplete results cannot erase finals; valid correcti
   }finally{a.dom.window.close();}
  }
 });
+
+test('skipped Oracle weeks retain published records and latest publication regardless of row order',async()=>{
+ const prediction=week=>({id:week+':1-2',matchup:{away:{id:'1',name:'Old Away'},home:{id:'2',name:'Old Home'}},winner:'Old Away',awayScore:110,homeScore:90,writeup:'Published week '+week});
+ const state={year:2026,current:7,weeks:[{week:5,published:true,publishedAt:'2026-10-01',predictions:[prediction(5)]},{week:3,published:false,predictions:[prediction(3)]},{week:1,published:true,publishedAt:'2026-09-10',predictions:[prediction(1)]},{week:7,published:false,predictions:[]}]};
+ const raw={week:7,teams:[{teamId:'1',scores:[110,110,110,110,80,110],outcomes:['W','W','W','W','L','W'],schedule:Array(6).fill('2')},{teamId:'2',scores:[90,90,90,90,100,90],outcomes:['L','L','L','L','W','L'],schedule:Array(6).fill('1')}]};
+ const a=app('',[],{state,season:{...season,oracleResults:raw}});await a.w.LeagueOracle.paint(a.host,()=> '');await pause();
+ assert.equal(a.host.querySelector('[data-or-week]').value,'5');
+ const records=[...a.host.querySelectorAll('.or-head-stats>b')].map(n=>n.firstChild.textContent);
+ assert.deepEqual(records,['0–1','1–1'],'only published weeks 1 and 5 count; skipped weeks and draft do not');
+ assert.match(a.host.textContent,/Published week 5/);a.dom.window.close();
+});
