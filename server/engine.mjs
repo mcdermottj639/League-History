@@ -43,7 +43,7 @@ export function lockDue(w,now=Date.now()){
 }
 function trackingQuote(g,input,now){
  const {market,side}=input,line=number(input.line),price=odds(input.odds),description=String(input.description||'').trim();
- if(!['ml','spread','total','prop'].includes(market)||price===null)throw failure('Choose a market and enter the original ticket odds.');
+ if(!['ml','spread','total','prop'].includes(market)||(String(input.odds??'').trim()!==''&&price===null))throw failure('Choose a market and enter valid odds or leave them blank.');
  if(market!=='prop'&&!(market==='total'?['over','under']:[g.home,g.away]).includes(side))throw failure('Choose a valid team or total side.');
  if(['spread','total'].includes(market)&&(line===null||(market==='total'&&line<=0)))throw failure('Enter the original ticket line.');
  if(market==='prop'&&(!description||description.length>120))throw failure('Enter the exact player prop.');
@@ -70,7 +70,7 @@ export function savePick(store,year,week,actor,input,now=Date.now()){
   const market=input.market,side=input.side,q=tracking?trackingQuote(g,input,now):market==='prop'?null:quoteFor(g,{market,side});
   if(market!=='prop'&&!q)throw failure('That DraftKings market is unavailable.',409);
   const description=String(input.description||'').trim();
-  if(market==='prop'&&(!description||description.length>120||odds(input.odds)===null))throw failure('Enter the prop and its quoted odds.');
+  if(market==='prop'&&(!description||description.length>120||(String(input.odds??'').trim()!==''&&odds(input.odds)===null)))throw failure('Enter the player prop. Odds are optional, but must be valid if supplied.');
   const quote=q?{...q}:{label:description,odds:odds(input.odds),line:null,observedAt:now,provider:'Member-entered prop'};
   const p={member,gameId:g.id,market,side:market==='prop'?'':side,description:market==='prop'?description:'',original:{...quote},quote,createdAt:old?.createdAt||now,updatedAt:now,revision,addedBy:actor.role==='organizer'?'organizer':member};
   if(tracking)Object.assign(p,{trackingEntry:true,lockedAt:now,scheduledKick:g.kick,missingQuote:false,staleQuote:false});

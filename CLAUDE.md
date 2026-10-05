@@ -1583,3 +1583,9 @@ Verified organizers (Jack and Zach through existing access) can use Manage picks
 ## v122 — One standard pick plus one prop per matchup
 
 Each matchup reserves two independent categories: one spread/total/moneyline pick and one player prop. Both normal member entry and organizer tracking enforce this on the server. The prop dropdown includes games with an existing standard pick; the tracking dropdown labels remaining categories and disables taken bet types. One pick per member, kickoff locks, existing records and links remain unchanged.
+
+## v123 — Compact tracking entry and optional odds
+
+Tracking defaults to game, player/pick and optional odds. Standard markets are available through a collapsed switch and show only their relevant fields. Organizer tracking hides the duplicate normal-pick board. Blank odds are stored as null, do not prevent prop grading, and are excluded from price averages and estimated payouts. Invalid supplied odds are rejected. This supersedes v121’s mandatory tracking odds.
+
+Result review now asks only for the outcome and Save. Both runtimes accept an omitted review note; organizer authorization and audit history remain intact.

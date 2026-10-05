@@ -63,7 +63,7 @@ export function createApp({store,organizerHash,year=2026,startWeek=2,origins=[],
    if(path==='/api/parlay/review'&&req.method==='POST'){
     if(!preview&&!writable(store.read().seasons[year]))throw failure('The parlay is read-only until cutover is complete.',503);const actor=session(req);if(actor.role!=='organizer')throw failure('Organizer access required',403);const b=await body(req);
     if(b.year!==year||!Number.isInteger(b.week)||!ROSTER.includes(b.member)||!['hit','miss','push','pending'].includes(b.result))throw failure('Invalid review');
-    const note=String(b.note||'').trim();if(note.length<5||note.length>300)throw failure('Include a short reason for this result.');
+    const note=String(b.note||'').trim();if(note.length>300)throw failure('Optional note must be 300 characters or less.');
     store.transact(s=>{const w=s.seasons[year]?.weeks[b.week],p=w?.picks[b.member];if(!p?.lockedAt)throw failure('Only locked selections can be settled manually.');const g=w.games.find(g=>g.id===p.gameId);if(g?.state==='in'||(g?.state==='pre'&&clock()<g.kick))throw failure('Wait until the game finishes.');if(p.market!=='prop'&&!p.missingQuote&&g?.status==='STATUS_FINAL')throw failure('Standard final results are calculated automatically.');p.manualResult=b.result;p.reviewNote=note;w.audit.push({at:clock(),action:'review',member:b.member,result:b.result,note,by:'organizer'});});return json(res,200,{ok:true});
    }
    if(path.startsWith('/api/'))return json(res,404,{error:'Not found'});

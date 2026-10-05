@@ -159,3 +159,13 @@ test('reset-pick API requires organizer, current week, matching revisions and pr
  assert.equal((await b.request('api/parlay/pick',{...pick('McD',2),revision:1},regular.token)).status,409);
  assert.equal((await b.request('api/parlay/pick',{...pick('McD',2),revision:2},regular.token)).status,200);
 });
+
+test('organizer can review a completed prop without giving a reason',async()=>{
+ const b=await backend();activate(b.store);
+ const admin=await(await b.request('api/parlay/session',{key:'test-private-key'})).json();
+ b.store.transact(s=>{const w=s.seasons[2026].weeks[1],g=w.games[0];g.state='post';g.completed=true;g.status='STATUS_FINAL';g.kick=T-1000;w.picks.CC={member:'CC',gameId:g.id,market:'prop',description:'James Cook ATTD',lockedAt:T-1000,quote:{odds:null}};});
+ const body={year:2026,week:1,member:'CC',result:'hit'};
+ const regular=await b.session('CC');assert.equal((await b.request('api/parlay/review',body,regular.token)).status,403);
+ assert.equal((await b.request('api/parlay/review',body,admin.token)).status,200);
+ const w=b.store.read().seasons[2026].weeks[1];assert.equal(w.picks.CC.manualResult,'hit');assert.equal(w.picks.CC.reviewNote,'');assert.equal(w.audit.at(-1).action,'review');
+});

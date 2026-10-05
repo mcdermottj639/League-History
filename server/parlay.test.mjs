@@ -308,7 +308,7 @@ test('organizer tracking records a started game with original ticket odds and gr
  const s=setup(),actor={role:'organizer',member:'Zach'},now=K+3600000;
  const input=pick('McD',{trackingEntry:true,line:-3.5,odds:-115});
  assert.throws(()=>savePick(s,2026,2,member('McD'),input,now),/Organizer/);
- for(const bad of [{line:''},{odds:''},{side:'INVALID'},{market:'invalid'},{gameId:'unknown'},{revision:7}])assert.throws(()=>savePick(s,2026,2,actor,{...input,...bad},now));
+ for(const bad of [{line:''},{odds:'nope'},{side:'INVALID'},{market:'invalid'},{gameId:'unknown'},{revision:7}])assert.throws(()=>savePick(s,2026,2,actor,{...input,...bad},now));
  const {pick:p}=savePick(s,2026,2,actor,input,now);
  assert.equal(p.quote.odds,-115);assert.equal(p.quote.line,-3.5);assert.equal(p.quote.provider,'Organizer-entered ticket');assert.equal(p.lockedAt,now);assert.equal(p.trackingEntry,true);
  assert.equal(s.read().seasons[2026].weeks[2].audit.at(-1).action,'tracking-entry');
@@ -339,5 +339,18 @@ test('one standard bet plus one prop per game, in either order, for members and 
   savePick(s,2026,2,actor('CC'),bet('CC',!firstProp),now);
   for(const market of ['spread','total','ml','prop'])assert.throws(()=>savePick(s,2026,2,actor('Hurd'),{...bet('Hurd',market==='prop'),market},now),/category was just picked/);
   assert.equal(Object.keys(s.read().seasons[2026].weeks[2].picks).length,2);s.close();
+ }
+});
+
+test('props without odds save and grade while unknown prices remain unknown',()=>{
+ for(const trackingEntry of [false,true]){
+  const s=setup(),actor=trackingEntry?{role:'organizer',member:'Zach'}:member('CC'),now=trackingEntry?K+1:T;
+  const input=pick('CC',{trackingEntry,market:'prop',description:'Loveland ATTD',odds:''});
+  for(const odds of ['abc',0,99])assert.throws(()=>savePick(s,2026,2,actor,{...input,odds},now),/valid/);
+  savePick(s,2026,2,actor,input,now);
+  ingest(s,2026,2,payload([event('g1',K,{status:{type:{state:'post',completed:true,name:'STATUS_FINAL'}}})]),K+1000);
+  attachBoxscore(s,2026,2,'g1',parseBoxscore(boxPayload({td:1}),K+1000,true));
+  const t=publicWeek(s.read().seasons[2026].weeks[2],K+1000).ticket;
+  assert.equal(t.legs[0].quote.odds,null);assert.equal(t.legs[0].result,'hit');assert.equal(t.combinedOdds,null);assert.equal(t.estimatedReturn,null);s.close();
  }
 });

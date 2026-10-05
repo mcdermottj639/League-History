@@ -175,7 +175,7 @@ test('late tracking form is available only to verified organizers with deployed 
   await h.window.LeagueParlay.paint(h.host);await h.click({pn:'manage'});
   await h.events.change({target:{id:'pn-target',value:'Slemp'}});
   assert.equal(h.host.innerHTML.includes('data-pn="tracking"'),visible);
-  if(visible){assert.match(h.host.innerHTML,/Original American odds/);assert.match(h.host.innerHTML,/includes started games/);}
+  if(visible){assert.match(h.host.innerHTML,/Odds \(optional\)/);assert.match(h.host.innerHTML,/James Cook ATTD/);}
  }
 });
 

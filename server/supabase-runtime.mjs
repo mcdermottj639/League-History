@@ -73,7 +73,7 @@ export function edgeApp(rpc,{clock=Date.now,fetchJSON,managerFor}={}){
      if(path==='/api/parlay/reset'){if(b.week!==s.current)throw failure('Only the current parlay can be reset.',409);return resetParlay(store,year,b.week,actor,clock());}
      if(path==='/api/parlay/placed-odds')return savePlacedOdds(store,year,b.week,actor,b,clock());
      if(!ROSTER.includes(b.member)||!['hit','miss','push','pending'].includes(b.result))throw failure('Invalid review');
-     const note=String(b.note||'').trim();if(note.length<5||note.length>300)throw failure('Include a short reason for this result.');
+     const note=String(b.note||'').trim();if(note.length>300)throw failure('Optional note must be 300 characters or less.');
      store.transact(state=>{const w=state.seasons[year].weeks[b.week],p=w?.picks[b.member];if(!p?.lockedAt)throw failure('Only locked selections can be settled manually.');const g=w.games.find(g=>g.id===p.gameId);if(g?.state==='in'||(g?.state==='pre'&&clock()<g.kick))throw failure('Wait until the game finishes.');if(p.market!=='prop'&&!p.missingQuote&&g?.status==='STATUS_FINAL')throw failure('Standard final results are calculated automatically.');p.manualResult=b.result;p.reviewNote=note;w.audit.push({at:clock(),action:'review',member:b.member,result:b.result,note,by:'organizer'});});return {ok:true};
     }));
    }
