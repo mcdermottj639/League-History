@@ -1578,4 +1578,8 @@ own zero-game fixture so future fallback updates do not change that case.
 
 ## v121 — Organizer tracking entries after kickoff
 
-Verified organizers (Jack and Zach through existing access) can use Manage picks → Add pick for tracking for an empty current-week slot, including started/final games. Original ticket line and odds are required; entries lock immediately, retain organizer provenance, and grade normally. Existing picks require the existing explicit reset first. Member locks, game reservations, revision conflicts, links, and capabilities remain unchanged. Both runtimes advertise supportsTrackingEntry; deploy the shared engine with the Edge Function before enabling the UI.
+Verified organizers (Jack and Zach through existing access) can use Manage picks → Add pick for tracking for an empty current-week slot, including started/final games. Original ticket line and odds are required; entries lock immediately, retain organizer provenance, and grade normally. Existing picks require the existing explicit reset first. Member locks, revision conflicts, links, and capabilities remain unchanged. Game-wide reservations are superseded by v122’s category reservations. Both runtimes advertise supportsTrackingEntry; deploy the shared engine with the Edge Function before enabling the UI.
+
+## v122 — One standard pick plus one prop per matchup
+
+Each matchup reserves two independent categories: one spread/total/moneyline pick and one player prop. Both normal member entry and organizer tracking enforce this on the server. The prop dropdown includes games with an existing standard pick; the tracking dropdown labels remaining categories and disables taken bet types. One pick per member, kickoff locks, existing records and links remain unchanged.

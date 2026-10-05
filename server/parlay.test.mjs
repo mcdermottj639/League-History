@@ -329,3 +329,15 @@ test('tracking can fill an empty slot on a locked ticket without touching other 
  assert.throws(()=>savePick(s,2026,2,member('Slemp'),pick('Slemp'),now),/parlay is locked/);
  s.transact(state=>{state.seasons[2026].current=3;});assert.throws(()=>savePick(s,2026,2,actor,pick('Gotch',{trackingEntry:true,line:-3,odds:-110}),now),/current week/);s.close();
 });
+
+test('one standard bet plus one prop per game, in either order, for members and organizer tracking',()=>{
+ for(const trackingEntry of [false,true])for(const firstProp of [false,true])for(const standard of ['spread','total','ml']){
+  const s=setup(),now=trackingEntry?K+1000:T;
+  const actor=m=>trackingEntry?{role:'organizer',member:'Zach'}:member(m);
+  const bet=(m,prop)=>pick(m,{trackingEntry,market:prop?'prop':standard,side:standard==='total'?'over':'PHI',line:standard==='total'?47.5:-3.5,description:prop?'James Cook anytime TD':'',odds:-110});
+  savePick(s,2026,2,actor('Gotch'),bet('Gotch',firstProp),now);
+  savePick(s,2026,2,actor('CC'),bet('CC',!firstProp),now);
+  for(const market of ['spread','total','ml','prop'])assert.throws(()=>savePick(s,2026,2,actor('Hurd'),{...bet('Hurd',market==='prop'),market},now),/category was just picked/);
+  assert.equal(Object.keys(s.read().seasons[2026].weeks[2].picks).length,2);s.close();
+ }
+});

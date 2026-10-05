@@ -178,3 +178,17 @@ test('late tracking form is available only to verified organizers with deployed 
   if(visible){assert.match(h.host.innerHTML,/Original American odds/);assert.match(h.host.innerHTML,/includes started games/);}
  }
 });
+
+test('a standard selection leaves the same matchup available for a prop and tracking entry',async()=>{
+ const h=harness(true,'before',{supportsTrackingEntry:true},true),w=h.data.weeks.find(w=>w.week===2),taken=w.ticket.legs[0];
+ await h.window.LeagueParlay.paint(h.host);
+ const prop=h.host.innerHTML.match(/id="pn-prop-game"[\s\S]*?<\/select>/)[0];
+ assert.ok(prop.includes(`value="${taken.gameId}"`));
+ assert.ok(!h.host.innerHTML.includes(`data-game="${taken.gameId}"`));
+ await h.click({pn:'manage'});
+ const tracking=h.host.innerHTML.match(/id="pn-tracking-game"[\s\S]*?<\/select>/)[0];
+ assert.ok(tracking.includes(`value="${taken.gameId}"`));assert.match(tracking,/Player prop only/);
+ taken.market='prop';await h.click({pn:'manage'});
+ assert.ok(h.host.innerHTML.includes(`data-game="${taken.gameId}"`));
+ const updated=h.host.innerHTML.match(/id="pn-prop-game"[\s\S]*?<\/select>/)[0];assert.ok(!updated.includes(`value="${taken.gameId}"`));
+});

@@ -66,7 +66,7 @@ export function savePick(store,year,week,actor,input,now=Date.now()){
   if(input.clear){if(w.placedTicket?.legCount){w.placedTicket.legsConfirmed=false;w.ticketOddsRevision=(w.ticketOddsRevision||0)+1;}w.revisions[member]=revision;delete w.picks[member];w.audit.push({at:now,action:'clear',member,by:actor.role==='organizer'?'organizer':member});return {ok:true};}
   const g=w.games.find(g=>g.id===String(input.gameId));if(!g||(!tracking&&locked(g,now)))throw failure('This game is closed for picks.',409);
   if(!tracking&&(now-w.updatedAt>300000||now-g.seenAt>300000))throw failure('The board is stale. Wait for a fresh update before saving.',503);
-  if(Object.values(w.picks).some(p=>p.member!==member&&p.gameId===g.id))throw failure('That game was just picked. Choose another matchup.',409);
+  if(Object.values(w.picks).some(p=>p.member!==member&&p.gameId===g.id&&(p.market==='prop')===(input.market==='prop')))throw failure('That game’s bet category was just picked. Each game allows one spread/total/moneyline pick and one player prop.',409);
   const market=input.market,side=input.side,q=tracking?trackingQuote(g,input,now):market==='prop'?null:quoteFor(g,{market,side});
   if(market!=='prop'&&!q)throw failure('That DraftKings market is unavailable.',409);
   const description=String(input.description||'').trim();
