@@ -314,7 +314,7 @@ well as publishing `oracle.js` on Pages. Rankings still shows published sets
 by default, with unpublished completed weeks selectable. The Power Rankings Lab builds from actual fantasy scores
 after games, so the Tuesday cutoff does not invent results or publish a set.
 
-## Rankings Lab writing styles
+## v127 — Rankings Lab writing styles
 
 `rankings-styles.js` supplies offline, fact-based writing voices beside the
 existing League roast writer in `power.js`: Jameis-inspired comedy (original
