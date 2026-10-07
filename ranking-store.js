@@ -126,6 +126,7 @@
   }
   async function write(key, p, etag, year) {
     if (!Number.isInteger(key) || key < 0 || key > 25 || (p !== null && (!valid(p) || p.k !== key))) throw new Error('All twelve teams are required before publishing.');
+    if (p && window.RankingMedia && (p.o.some(r=>r[8]?.media && !window.RankingMedia.normalize(r[8].media)) || !window.RankingMedia.totalOK(p.o.map(r=>window.RankingMedia.fromRow(r))))) throw new Error('A ranking image is invalid or the images are too large.');
     if (!etag) throw new Error('Could not check the current version. Refresh and try again.');
     const endpoint = await url(key, year);
     const { data } = await request(endpoint + '?auth=' + encodeURIComponent(await token()), { method: 'PUT', headers: { 'Content-Type': 'application/json', 'if-match': etag }, body: JSON.stringify(p) });

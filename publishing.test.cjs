@@ -64,6 +64,7 @@ async function until(fn) { for(let i=0;i<100;i++){if(fn())return;await new Promi
  assert.equal(Object.keys(weeks).length,0);assert(!$('#pr-pubstate').textContent.includes('live for everyone'));
  fail=false;$('#pr-publish').click();await until(()=>$('#pr-share-out').textContent.includes('now live'));
  assert.equal(weeks[1].o.length,12);
+ weeks[1].o[0][8]={...(weeks[1].o[0][8]||{}),media:{kind:'reaction',id:'crown'}};
  weeks[3]={...JSON.parse(JSON.stringify(weeks[1])),k:3,l:'After Week 3'};
  const gap=await w.RankingStore.list();assert.deepEqual(Array.from(gap,p=>p.k),[3,1]);
  delete weeks[3];
@@ -88,6 +89,10 @@ async function until(fn) { for(let i=0;i<100;i++){if(fn())return;await new Promi
    const doc=ownerApp.window.document;
    doc.querySelector('[data-edit]').click();await until(()=>doc.querySelector('.lg-ranking-edit'));
    const original = JSON.parse(JSON.stringify(weeks[1]));
+   assert(doc.querySelector('[data-media-edit="0"] .rk-reaction-crown'));
+   doc.querySelector('[data-media-edit="0"] [data-reaction="fire"]').click();
+   await until(()=>doc.querySelector('[data-media-edit="0"] .rk-reaction-fire'));
+   original.o[0][8].media={kind:'reaction',id:'fire'};
    const note=doc.querySelector('[data-note="0"]');note.value='Updated on the shared view';note.dispatchEvent(new ownerApp.window.Event('input'));
    doc.querySelector('[data-down="0"]').click();
    doc.querySelector('.lg-ranking-edit').dispatchEvent(new ownerApp.window.Event('submit',{cancelable:true}));

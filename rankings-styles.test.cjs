@@ -46,7 +46,7 @@ test('Lab preserves text on style selection/cancel, generates explicitly, saves 
     w.RankingStore={restore:async()=>{},list:async()=>[],signedIn:()=>false};
     w.localStorage.setItem('powerlab:season',JSON.stringify({data:season}));
     Object.entries(saved).forEach(([k,v])=>w.localStorage.setItem(k,v));
-    for (const name of ['espn.js','rankings-styles.js','power.js']) w.eval(fs.readFileSync(name,'utf8'));
+    for (const name of ['espn.js','rankings-media.js','rankings-styles.js','power.js']) w.eval(fs.readFileSync(name,'utf8'));
     return dom;
   }
   const dom=open(), w=dom.window;

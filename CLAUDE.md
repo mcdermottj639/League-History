@@ -314,12 +314,53 @@ well as publishing `oracle.js` on Pages. Rankings still shows published sets
 by default, with unpublished completed weeks selectable. The Power Rankings Lab builds from actual fantasy scores
 after games, so the Tuesday cutoff does not invent results or publish a set.
 
+## v128 — Visual rankings and the weekly studio
+
+The Rankings Lab supports **Write-ups**, **No words**, and **Words + visuals**.
+Its top controls provide Quick hit / Full take length, generation, filling only
+empty teams, Undo for the last generation/format/media/reorder action, saved
+status, and a week preview. Format changes keep private text and media drafts;
+No words publishes empty commentary while retaining it in the device draft.
+Every team needs a visual before a No words week can publish. New source facts
+retain played zeroes and ties, use the selected week's index, and only declare
+league scoring leaders when all team scores are present. Callbacks to earlier
+rankings do not call a skipped week “last week.”
+
+`rankings-media.js` owns normalization, rendering, suggestions, and the shared
+media editor. It offers 16 animated CSS reactions, JPEG/PNG/WebP uploads (resized
+and compressed), GIF uploads (animation retained), and direct HTTPS image links.
+Reactions are editorial suggestions based on rank, score, movement, and form.
+Media is optional in **row[8].media** alongside frozen scores/outcomes/all-play;
+old rows remain valid. It renders in the Lab, members' Rankings, public shared
+views, and the existing published-week editor. No new database rules, API keys,
+private links, or authentication changes are required. Uploaded media is bounded
+per image and per week; SVG/active URLs are refused. Storage failures are shown
+and unsaved edits warn before leaving. CSS reactions respect reduced motion.
+
+The draft uses `powerlab:draft` with `year`, `format`, and `media`; voice and
+length preferences use `powerlab:style` and `powerlab:length`. Large media weeks
+share as `power.html#published=YEAR:WEEK` only when the draft matches the published
+snapshot. That public link reads the selected saved week before the author gate.
+It follows later edits to that week and reports unpublication; existing `#r=`
+links remain self-contained. The one-pager includes static reaction/image frames;
+external images without CORS fail with an upload-or-link alternative instead of
+silently omitting content. GIF motion remains in the app and live shared view.
+
+Regression coverage: media URL validation, storage size limits, draft retention,
+undo/fill/reorder, frozen snapshot facts, shared rendering, long-link handling,
+published edits, and GIF preservation in `rankings-media.test.cjs` and the
+existing publishing and release suites. Visual browser QA was unavailable in
+this execution environment; the headless browser download failed and the cloud
+browser could not reach the local preview.
+
 ## v127 — Rankings Lab writing styles
+
+Expanded in v128 with the studio controls and optional visual weeks above.
 
 `rankings-styles.js` supplies offline, fact-based writing voices beside the
 existing League roast writer in `power.js`: Jameis-inspired comedy (original
 parody), Straight analyst, Sports-radio hot takes, and Dramatic narrator.
-The Writing style picker and Generate this week's write-ups button sit above
+The Writing style picker and generation controls sit above
 the team list. `powerlab:style` stores the preferred voice on the device.
 Selecting a voice never changes existing comments; generation confirms before
 replacing text, retains the order and byline, and autosaves through the existing
@@ -328,7 +369,7 @@ drafts use the preference. The extra voices use actual supplied record, PPG,
 latest score, all-play, streak, and prior-rank facts; they invent no player news
 or personal history. They are template drafts, not a hosted AI service, and
 require no key or new backend. Publishing remains an explicit separate action;
-member views, published snapshots, capabilities, and private links are unchanged.
+capabilities and private links are unchanged. Optional visuals are supported by v128 above.
 
 ## v114 — Tuesday 4 AM ET opens the next parlay week
 

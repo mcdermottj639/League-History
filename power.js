@@ -100,6 +100,10 @@ const S = {
   key: null,         // rank key = weeks played (0 = preseason)
   order: [],         // [teamId] — the owner's order
   comments: {},      // teamId -> take
+  media: {},         // teamId -> reaction or image
+  format: 'words',   // words | visual | mixed
+  undo: null,
+  draftSaved: true,
   model: {},         // teamId -> the rank the MODEL gave, so a moved row can say so
   scores: {},        // teamId -> model score
   ready: false,      // did the model have anything to work with?
@@ -290,21 +294,25 @@ function restoreOrBuild() {
   S.scores = built.scores;
   S.rows = built.rows;
 
+  S.undo = null;
   const d = load(K_DRAFT, null);
   /* An in-progress draft is only restored for the SAME week. When a new week's
      results land, the key moves and the model builds a fresh ranking — that is
      the "pre-built each week" behaviour, and it can't silently overwrite edits,
      because last week's edits belong to a week that is already published. */
-  if (d && d.key === S.key && Array.isArray(d.order) && d.order.length) {
+  if (d && (!d.year || d.year === (S.season.year || new Date().getFullYear())) && d.key === S.key && Array.isArray(d.order) && d.order.length) {
     const live = new Set(S.season.teams.map((t) => t.teamId));
     // Drop anyone who left the league, append anyone who joined, so a roster
     // change can never make a team vanish from the rankings.
     S.order = d.order.filter((id) => live.has(id));
     S.season.teams.forEach((t) => { if (!S.order.includes(t.teamId)) S.order.push(t.teamId); });
     S.comments = d.comments || {};
+    S.media = Object.fromEntries(Object.entries(d.media || {}).map(([id,m]) => [id,window.RankingMedia.normalize(m)]).filter(([,m])=>m));
+    S.format = ['words','visual','mixed'].includes(d.format) ? d.format : 'words';
     S.byline = d.byline || defaultByline();
   } else {
     S.order = built.order.slice();
+    S.format = 'words'; S.media = {};
     // Pre-write the whole week. Opening the lab to twelve blank boxes is the
     // thing that makes a weekly column not happen; opening it to twelve drafts
     // with the numbers already right is a ten-minute edit.
@@ -323,18 +331,50 @@ function setSpice(v) { try { localStorage.setItem('powerlab:spice', v ? '1' : '0
 /* Choosing a voice never overwrites a saved draft. Rewrite is explicit. */
 function writingStyle() { return window.RankingStyles.normalize(load('powerlab:style', 'league')); }
 function setWritingStyle(id) { save('powerlab:style', window.RankingStyles.normalize(id)); }
+function writingLength() { return load('powerlab:length', 'full') === 'short' ? 'short' : 'full'; }
+function fitTake(text) {
+  if (writingLength() !== 'short' || writingStyle() !== 'league') return text || '';
+  return (String(text || '').match(/.*?(?:[!?]+|\.(?=\s|$)|$)/g) || []).filter(Boolean).slice(0,2).join(' ').replace(/\s+/g,' ').trim();
+}
+function rememberDraft() {
+  S.undo = JSON.parse(JSON.stringify({key:S.key,order:S.order,comments:S.comments,media:S.media,format:S.format,byline:S.byline}));
+}
+function updateDraftStatus() {
+  const status = $('#pr-draft-status');
+  if (status) { status.textContent = S.draftSaved ? 'Draft saved on this device' : 'Draft is only in memory: device storage is full. Remove an uploaded image or publish before leaving.'; status.classList.toggle('error', !S.draftSaved); }
+}
+function assignReactions(onlyEmpty = false) {
+  rememberDraft();
+  const variant = Math.floor(Math.random()*100);
+  takeFacts(S.season,S.order,S.key,prevOrder()).forEach(d => {
+    if(!onlyEmpty || !S.media[d.id]) S.media[d.id]=window.RankingMedia.suggest(d,variant);
+  });
+  persist();
+}
+function setTeamMedia(id, media) {
+  const next={...S.media}; if(media)next[id]=media;else delete next[id];
+  if(!window.RankingMedia.totalOK(next))throw new Error('This week has too many uploaded images. Use an image link for this team instead.');
+  rememberDraft(); S.media=next; persist();
+  const undo=$('#pr-undo'); if(undo)undo.disabled=false;
+  const count=$('#pr-visual-count');if(count)count.textContent=`${Object.keys(S.media).length} of ${S.order.length} teams have a visual`;
+  const preview=$('#pr-preview');if(preview)preview.open=false;
+}
+window.addEventListener('beforeunload',e=>{if(!S.draftSaved){e.preventDefault();e.returnValue='';}});
 
 /* Rewrite every take for this week. Discards edits, so it asks first. */
-function rewriteAll() {
-  S.comments = writeWeek(takeFacts(S.season, S.order, S.key, prevOrder()), { style: writingStyle(), spicy: spiceOn(), salt: String(Date.now()) });
+function rewriteAll(onlyEmpty = false) {
+  rememberDraft();
+  const generated = writeWeek(takeFacts(S.season, S.order, S.key, prevOrder()), { style: writingStyle(), spicy: spiceOn(), salt: String(Date.now()), length: writingLength() });
+  S.order.forEach(id => { if (!onlyEmpty || !(S.comments[id] || '').trim()) S.comments[id] = fitTake(generated[id]); });
   persist();
 }
 /* Reroll ONE line — the common case is that eleven are fine and one is flat. */
 function rewriteOne(id) {
+  rememberDraft();
   const facts = takeFacts(S.season, S.order, S.key, prevOrder());
   const one = facts.filter((f) => String(f.id) === String(id));
-  const w = writeWeek(one, { style: writingStyle(), spicy: spiceOn(), salt: String(Math.random()) });
-  S.comments[id] = w[id];
+  const w = writeWeek(one, { style: writingStyle(), spicy: spiceOn(), salt: String(Math.random()), length: writingLength() });
+  S.comments[id] = fitTake(w[id]);
   persist();
 }
 
@@ -369,14 +409,17 @@ function teamForMgr(code) {
 }
 
 function persist() {
-  save(K_DRAFT, { key: S.key, order: S.order, comments: S.comments, byline: S.byline, at: Date.now() });
+  try { localStorage.setItem(K_DRAFT, JSON.stringify({ key: S.key, year:S.season?.year || new Date().getFullYear(), order: S.order, comments: S.comments, media:S.media, format:S.format, byline: S.byline, at: Date.now() })); S.draftSaved=true; } catch (_) { S.draftSaved=false; }
+  updateDraftStatus();
 }
 
 function move(id, to) {
-  const from = S.order.indexOf(id);
+  const from = S.order.findIndex(x=>String(x)===String(id));
+  id = S.order[from];
   if (from < 0) return;
   to = Math.max(0, Math.min(S.order.length - 1, to));
   if (to === from) return;
+  rememberDraft();
   S.order.splice(from, 1);
   S.order.splice(to, 0, id);
   persist();
@@ -418,12 +461,14 @@ function payload() {
     o: S.order.map((id, i) => {
       const t = teamById(id);
       const row = (S.rows || {})[id];
-      const visuals = window.RankingVisuals.capture(S.season, id, S.key);
+      const visuals = window.RankingVisuals.capture(S.season, id, S.key) || {};
+      const media = S.format !== 'words' && window.RankingMedia.normalize(S.media[id]);
+      if (media) visuals.media = media;
       return [
         t.team || '',
         recordOf(t),
         row ? Math.round(row.ppg * 10) / 10 : null,
-        (S.comments[id] || '').slice(0, MAX_COMMENT),
+        S.format === 'visual' ? '' : (S.comments[id] || '').slice(0, MAX_COMMENT),
         S.model[id] || null,
         moveFor(prev, id, i),
         mgrLabel(t.team) || '',
@@ -433,12 +478,19 @@ function payload() {
            name (the "CC CC" rule), so keying off it would silently deny CC —
            and only CC — their own row. Same trap the crests hit in v208. */
         mgrFor(t.team) || '',
-        ...(visuals ? [visuals] : []),
+        ...(Object.keys(visuals).length ? [visuals] : []),
       ];
     }),
   };
 }
-const shareURL = () => location.href.split('#')[0] + '#r=' + b64u(JSON.stringify(payload()));
+function shareURL() {
+  const p=payload(), base=location.href.split('#')[0];
+  const url=base+'#r='+b64u(JSON.stringify(p));
+  if(url.length<=8000)return url;
+  const live=liveWeeks && liveWeeks.find(w=>w.k===S.key && JSON.stringify(w.o)===JSON.stringify(p.o) && w.b===p.b);
+  if(live)return base+'#published='+String(live.y || Number(p.d.slice(0,4)))+':'+p.k;
+  throw new Error('Publish this week first to share a short link with its images, or save the one-pager.');
+}
 
 /* ── 📤 PUBLISH TO THE LEAGUE APP ─────────────────────────────────────────
    The share LINK is a message; publishing is a RELEASE. Same payload either
@@ -659,6 +711,7 @@ function publishingSignIn(remove = false) {
 }
 async function saveLiveWeek(remove = false) {
   if (publishBusy) return;
+  if (!remove && S.format==='visual' && S.order.some(id=>!window.RankingMedia.normalize(S.media[id]))) { toast('Add a visual for every team, or use Fill empty teams first.'); return; }
   if (!window.LeagueOwner.is() && !window.RankingStore.signedIn()) { toast('Only the publisher can publish to the app. Share your draft with them.'); return; }
   if (!window.RankingStore.signedIn()) {
     await window.RankingStore.restore();
@@ -696,9 +749,9 @@ async function saveLiveWeek(remove = false) {
 async function doShare(kind) {
   publish();
   paintPubState();
-  const url = shareURL();
+  let url;
+  try { url = shareURL(); } catch(e) { toast(e.message); return; }
   const txt = kind === 'text' ? shareText() : url;
-  if (url.length > 8000) toast('Heads up — long takes make a long link. The text copy always works.');
   if (navigator.share) {
     try {
       await navigator.share(kind === 'text'
@@ -962,10 +1015,11 @@ const SHORTS = [
    which is the honest limit of a template engine. */
 function takeFacts(season, order, key, prev) {
   const teams = season.teams || [];
-  const ppgOf = (t) => { const ps = played(t.scores); return ps.length ? mean(ps) : 0; };
+  const indexed = t => Array.from({length:key},(_,i) => {const n=t.scores?.[i];return typeof n==='number' && Number.isFinite(n) && (n>0 || /^[WLT]$/.test(t.outcomes?.[i] || '')) ? n : null;});
+  const ppgOf = (t) => { const ps = indexed(t).filter(n=>n!==null); return ps.length ? mean(ps) : 0; };
   const ppgs = teams.map(ppgOf);
   const sortedPpg = ppgs.slice().sort((a, b) => b - a);
-  const weekly = teams.map((t) => { const ps = played(t.scores); return ps.length ? ps[ps.length - 1] : null; });
+  const weekly = teams.map((t) => indexed(t)[key-1] ?? null);
   const live = weekly.filter((x) => x != null);
   const hi = live.length ? Math.max(...live) : null;
   const lo = live.length ? Math.min(...live) : null;
@@ -974,10 +1028,10 @@ function takeFacts(season, order, key, prev) {
   return order.map((id, i) => {
     const t = teams.find((x) => x.teamId === id) || {};
     const ti = teams.indexOf(t);
-    const ps = played(t.scores);
-    const outs = (t.outcomes || []).slice(0, ps.length);
+    const outs = indexed(t).map((n,i)=>n===null ? '' : (t.outcomes || [])[i] || '');
     let sk = 0, skc = '';
     for (let j = outs.length - 1; j >= 0; j--) {
+      if(!outs[j])break;
       if (!skc) { skc = outs[j]; sk = 1; } else if (outs[j] === skc) sk++; else break;
     }
     const a = ap[id] || { w: 0, l: 0 };
@@ -986,12 +1040,12 @@ function takeFacts(season, order, key, prev) {
     return {
       id, rank: i + 1, prevRank: prev ? (prev.order.indexOf(id) + 1 || null) : null,
       team: t.team || '', nick: nickFor(t.team), mgr: mgrLabel(t.team), isMe: !!t.isMe,
-      rec: `${w}-${l}`, wins: w, losses: l,
+      rec: `${w}-${l}${Number(t.ties) ? '-'+Number(t.ties) : ''}`, wins: w, losses: l,
       ppg: Math.round(ppgs[ti] * 10) / 10,
       ppgRank: sortedPpg.indexOf(ppgs[ti]) + 1,
       score: weekly[ti] == null ? null : Math.round(weekly[ti] * 10) / 10,
-      topScore: weekly[ti] != null && weekly[ti] === hi,
-      lowScore: weekly[ti] != null && weekly[ti] === lo,
+      topScore: live.length === teams.length && weekly[ti] != null && weekly[ti] === hi,
+      lowScore: live.length === teams.length && weekly[ti] != null && weekly[ti] === lo,
       hundo: weekly[ti] != null && weekly[ti] >= 100,
       streak: sk >= 2 ? `${skc}${sk}` : '', streakN: sk, streakC: skc,
       apW: a.w || 0, apL: a.l || 0,
@@ -1022,11 +1076,11 @@ function specialOpen(d) {
   if (d.lucky > 0.28) out.push(() => `${d.rec} and only ${d.apW}-${d.apL} against the field.`);
   if (d.lucky < -0.28) out.push(() => `${d.apW}-${d.apL} against the whole league and sat at ${d.rec}. Absolute robbery.`);
   if (d.streakN >= 3) out.push(() => `${d.streakN} straight ${d.streakC}s at ${d.ppg} PPG.`);
-  if (d.prevRank && d.prevRank - d.rank >= 4) out.push(() => `Had u down at ${d.prevRank} last week. From garbage to glory.`);
-  if (d.prevRank && d.rank - d.prevRank >= 4) out.push(() => `Was ${d.prevRank} last week. Thats a fall, not a dip.`);
+  if (d.prevRank && d.prevRank - d.rank >= 4) out.push(() => `Had u down at ${d.prevRank} in the previous rankings. From garbage to glory.`);
+  if (d.prevRank && d.rank - d.prevRank >= 4) out.push(() => `Was ${d.prevRank} in the previous rankings. Thats a fall, not a dip.`);
   if (d.priorTake) {
     const frag = d.priorTake.split(/[.!?]/)[0].trim().slice(0, 46);
-    if (frag.length > 14) out.push(() => `Last week i said "${frag}".`);
+    if (frag.length > 14) out.push(() => `In the previous rankings i said "${frag}".`);
   }
   return out;
 }
@@ -1069,7 +1123,7 @@ function dedupeFacts(parts) {
    could be enforced from inside a per-team function. */
 function writeWeek(facts, opts) {
   const o = opts || {};
-  if (window.RankingStyles && window.RankingStyles.normalize(o.style) !== 'league') return window.RankingStyles.write(facts, o);
+  if (window.RankingStyles && window.RankingStyles.normalize(o.style) !== 'league') return window.RankingStyles.write(facts, {length:writingLength(),...o});
   const out = {};
   const used = new Set();
   const spicy = o.spicy !== false;
@@ -1488,7 +1542,7 @@ function onePager(p, loaded) {
   // Entries went from ~15 words to 25-45, so a 2-line wrap truncated most of
   // them — the exact fault the wrap was added to fix in the first place.
   const lines = rows.map((r) => (r[3] ? wrap(meas, r[3], takeW, 4) : []));
-  const heights = lines.map((ls) => OP.row + Math.max(0, ls.length - 1) * 28);
+  const heights = lines.map((ls,i) => OP.row + Math.max(0, ls.length - 1) * 28 + (window.RankingMedia.fromRow(rows[i]) ? 200 : 0));
   const h = OP.pad + OP.head + heights.reduce((a, b) => a + b + OP.gap, 0) + OP.foot + OP.pad;
 
   const cv = document.createElement('canvas');
@@ -1585,6 +1639,18 @@ function onePager(p, loaded) {
     ctx.fillStyle = C.text;
     ctx.font = F(22, 400);
     lines[i].forEach((ln, k) => ctx.fillText(ln, tx, y + 74 + k * 28));
+    const media=window.RankingMedia.fromRow(row);
+    if(media) {
+      const my=y+rh-194, mw=CW-188, mh=174;
+      ctx.fillStyle=C.bg;rr(ctx,tx,my,mw,mh,12);ctx.fill();
+      if(media.kind==='reaction') {
+        const reaction=window.RankingMedia.reactions.find(r=>r.id===media.id);
+        ctx.font='100px "Apple Color Emoji", "Segoe UI Emoji", sans-serif';ctx.textAlign='center';ctx.fillText(reaction.emoji,tx+mw/2,my+122);ctx.textAlign='left';
+      } else {
+        const img=loaded.get(media.src);
+        if(img) {const scale=Math.min(mw/img.naturalWidth,mh/img.naturalHeight);const iw=img.naturalWidth*scale,ih=img.naturalHeight*scale;ctx.drawImage(img,tx+(mw-iw)/2,my+(mh-ih)/2,iw,ih);}
+      }
+    }
     y += rh + OP.gap;
   });
 
@@ -1625,8 +1691,13 @@ async function saveOnePager(p) {
   for (const src of new Set(names.map(crestSrc).filter(Boolean))) {
     loaded.set(src, await CREST_IMG.get(src));
   }
+  try {
+    const images=[...new Set((p.o || []).map(row=>window.RankingMedia.fromRow(row)).filter(m=>m?.kind==='image').map(m=>m.src))];
+    await Promise.all(images.map(async src=>loaded.set(src,await window.RankingMedia.loadImage(src,true))));
+  } catch (_) { toast('This image host blocks image export. Upload that image instead, or share the published link.'); return; }
   const cv = onePager(p, loaded);
-  const blob = await canvasBlob(cv);
+  let blob;
+  try { blob = await canvasBlob(cv); } catch (_) { toast('Could not export these images. Upload the image files or share the published link.'); return; }
   if (!blob) { toast("Couldn't build the image"); return; }
   const fname = `power-rankings-${(p.l || '').toLowerCase().replace(/\s+/g, '-') || 'week'}.png`;
   const file = new File([blob], fname, { type: 'image/png' });
@@ -1824,10 +1895,23 @@ function paintRank() {
       </label>
       <p class="pr-note">The league sees this on the rankings you send, so they know whose take it is.</p>
       <div class="pr-writing">
-        <label class="pr-by"><span>Writing style</span><select id="pr-writing-style">${window.RankingStyles.styles.map(style => `<option value="${style.id}" ${style.id === writingStyle() ? 'selected' : ''}>${esc(style.label)}</option>`).join('')}</select></label>
-        <p class="pr-note" id="pr-style-description">${esc(window.RankingStyles.styles.find(style => style.id === writingStyle()).description)}</p>
-        <button type="button" class="pr-btn" id="pr-generate-style" ${S.ready ? '' : 'disabled'}>✍️ Generate this week's write-ups</button>
-        <p class="pr-note">Uses this week's league numbers and your ranking order. Edit any draft, or use 🎲 to rewrite one team. Changing the style keeps your existing text until you generate.</p>
+        <h3 class="pr-studio-title">Make this week's edition</h3>
+        <div class="pr-format-tabs" role="group" aria-label="Week format">${[['words','✍️ Write-ups'],['visual','🎬 No words'],['mixed','🖼️ Words + visuals']].map(([id,label])=>`<button type="button" class="pr-btn" data-format="${id}" aria-pressed="${S.format===id}">${label}</button>`).join('')}</div>
+        <div class="pr-writing-controls" ${S.format==='visual'?'hidden':''}>
+          <label class="pr-by"><span>Writing style</span><select id="pr-writing-style">${window.RankingStyles.styles.map(style => `<option value="${style.id}" ${style.id === writingStyle() ? 'selected' : ''}>${esc(style.label)}</option>`).join('')}</select></label>
+          <label class="pr-by"><span>Length</span><select id="pr-writing-length"><option value="short" ${writingLength()==='short'?'selected':''}>Quick hit</option><option value="full" ${writingLength()==='full'?'selected':''}>Full take</option></select></label>
+        </div>
+        <p class="pr-note" id="pr-style-description" ${S.format==='visual'?'hidden':''}>${esc(window.RankingStyles.styles.find(style => style.id === writingStyle()).description)}</p>
+        <p class="pr-note" ${S.format==='words'?'hidden':''}>One visual says it all. Assign reactions from the results, or choose a GIF or image for each team below.</p>
+        <div class="pr-studio-actions">
+          <button type="button" class="pr-btn primary" id="pr-generate-style" ${S.ready ? '' : 'disabled'}>${S.format==='visual'?'🎬 Assign reactions':'✍️ Generate write-ups'}</button>
+          <button type="button" class="pr-btn" id="pr-fill-empty" ${S.ready ? '' : 'disabled'}>Fill empty teams</button>
+          ${S.format==='mixed'?'<button type="button" class="pr-btn" id="pr-add-reactions">🎬 Fill missing visuals</button>':''}
+          <button type="button" class="pr-btn ghost" id="pr-undo" ${S.undo?'':'disabled'}>↩ Undo last action</button>
+        </div>
+        <p class="pr-visual-summary" id="pr-visual-count" ${S.format==='words'?'hidden':''}>${Object.keys(S.media).length} of ${S.order.length} teams have a visual</p>
+        <p class="pr-note">Everything stays editable. Switching formats keeps your saved words and visuals.</p>
+        <span class="pr-draft-status" id="pr-draft-status" role="status"></span>
       </div>
     </div>`;
 
@@ -1875,8 +1959,11 @@ function paintRank() {
           ${stats.length ? `<div class="pr-stats">${esc(stats.join(' · '))}</div>` : ''}
           ${form2.length ? `<div class="pr-stats pr-form">${esc(form2.join(' · '))}</div>` : ''}
           ${moved ? `<div class="pr-moved">Model had them <b>${modelRank}${ord(modelRank)}</b> — you moved them ${modelRank > i + 1 ? 'up' : 'down'}.</div>` : ''}
+          <div ${S.format==='visual'?'hidden':''}>
           <textarea class="pr-take" rows="3" maxlength="${MAX_COMMENT}" placeholder="Your take on ${esc(t.team)}…"></textarea>
           <div class="pr-count">${S.ready ? `<button type="button" class="pr-re" data-re aria-label="Rewrite the take for ${esc(t.team)}">🎲 rewrite</button>` : ''}<span class="pr-cn"><b class="pr-cnum">${c.length}</b>/${MAX_COMMENT}</span></div>
+          </div>
+          ${S.format!=='words'?'<div data-media-editor></div>':''}
         </div>
         <div class="pr-arrows">
           <button type="button" class="pr-ar" data-up aria-label="Move ${esc(t.team)} up"${i === 0 ? ' disabled' : ''}>▲</button>
@@ -1891,6 +1978,7 @@ function paintRank() {
       <button type="button" class="pr-btn" id="pr-share">📤 Share as a link</button>
       <button type="button" class="pr-btn" id="pr-copy">📋 Copy as text</button>
       <button type="button" class="pr-btn" id="pr-image">🖼️ Save the one-pager</button>
+      ${S.format!=='words'?'<p class="pr-note">GIFs animate in the app and shared links. The one-pager saves a still image.</p>':''}
       <p class="pr-note"><b>Publishing</b> is the one that puts this week on everyone's app — it saves the complete week to the shared rankings history after you sign in. The other three are messages: the <b>link</b> is the thing you send, the <b>text</b> is what pastes into the group chat, and the <b>one-pager</b> is a single image — save it to Photos and post it.</p>
       <p class="pr-note">Movement is measured against the last week saved in the app. Sharing a link, text or image does not publish it to the Rankings tab.</p>
       <div id="pr-share-out"></div>
@@ -1900,7 +1988,7 @@ function paintRank() {
            needs off the screen to make room for the thing he probably does
            not. State and its undo read last. -->
       <div id="pr-pubstate"></div>
-      <button type="button" class="pr-btn ghost" id="pr-rewrite">✍️ Rewrite all the takes</button>
+
       <label class="pr-spice"><input type="checkbox" id="pr-spicy" /> <span>Let the takes get profane (a few a week)</span></label>
       <button type="button" class="pr-btn ghost" id="pr-rebuild">🔄 Rebuild from the model</button>
       <p class="pr-note">Rebuilding throws away your order and takes for ${esc(keyLabel(S.key))} and starts again from the model.</p>
@@ -1926,11 +2014,11 @@ function paintRank() {
       </details>
     </div>`;
 
-  host.innerHTML = head + `<ol class="pr-list">${rows}</ol>` + foot + inviteHTML() + lockBarHTML();
+  host.innerHTML = head + `<details class="pr-card pr-preview" id="pr-preview"><summary>Preview this week</summary><ol class="pr-list" id="pr-preview-body"></ol></details><ol class="pr-list">${rows}</ol>` + foot + inviteHTML() + lockBarHTML();
 
   // Textareas get their value assigned, never interpolated into markup.
   $$('.pr-row', host).forEach((li) => {
-    const id = li.dataset.id;
+    const id = S.order.find(x=>String(x)===li.dataset.id);
     const ta = li.querySelector('.pr-take');
     ta.value = S.comments[id] || '';
     // Grow to fit. A pre-written take is ~15 words and the body column on a
@@ -1949,8 +2037,22 @@ function paintRank() {
     li.querySelector('.pr-jump').onchange = (e) => move(id, Number(e.target.value));
     const re = li.querySelector('[data-re]');
     if (re) re.onclick = () => { rewriteOne(id); paintRank(); };
+    const mediaHost=li.querySelector('[data-media-editor]');
+    if(mediaHost)window.RankingMedia.editor(mediaHost,S.media[id],m=>setTeamMedia(id,m),teamById(id).team);
   });
 
+  updateDraftStatus();
+  $('#pr-preview').ontoggle = () => {
+    if(!$('#pr-preview').open)return;
+    const p=payload(), data=window.RankingVisuals.facts(p,liveWeeks || []);
+    $('#pr-preview-body').innerHTML=window.RankingVisuals.rowsHTML(data,{crest:()=>'',me:null});
+    window.RankingMedia.hydrate($('#pr-preview-body'));
+  };
+  $$('[data-format]',host).forEach(button=>button.onclick=()=>{rememberDraft();S.format=button.dataset.format;persist();paintRank();});
+  $('#pr-writing-length').onchange=e=>save('powerlab:length',e.target.value);
+  $('#pr-undo').onclick=()=>{if(!S.undo || S.undo.key!==S.key)return;const previous=S.undo;S.undo=null;Object.assign(S,previous);persist();paintRank();toast('Previous draft restored');};
+  $('#pr-fill-empty').onclick=()=>{if(S.format==='visual')assignReactions(true);else rewriteAll(true);paintRank();toast('Empty teams filled');};
+  const addReactions=$('#pr-add-reactions');if(addReactions)addReactions.onclick=()=>{assignReactions(true);paintRank();};
   const by = $('#pr-byline');
   by.value = S.byline || '';   // assigned, never interpolated into markup
   by.addEventListener('input', () => { S.byline = by.value; persist(); });
@@ -1984,8 +2086,9 @@ function paintRank() {
   };
   $('#pr-generate-style').onclick = () => {
     if (!S.ready) return;
-    if (Object.values(S.comments).some(Boolean) && !confirm(`Replace this week's write-ups with ${window.RankingStyles.styles.find(style => style.id === writingStyle()).label} drafts? Your ranking order stays the same.`)) return;
-    rewriteAll(); paintRank(); toast('Write-ups generated — edit or publish when ready');
+    const visual=S.format==='visual';
+    if (Object.values(visual?S.media:S.comments).some(Boolean) && !confirm(`Replace this week's ${visual?'visuals':'write-ups'}? You can undo this action.`)) return;
+    if(visual)assignReactions();else rewriteAll(); paintRank(); toast('Draft generated — edit or publish when ready');
   };
   const rw = $('#pr-rewrite');
   if (rw) rw.onclick = () => {
@@ -1996,6 +2099,7 @@ function paintRank() {
   if (sp) { sp.checked = spiceOn(); sp.onchange = () => { setSpice(sp.checked); }; }
   $('#pr-rebuild').onclick = () => {
     if (!confirm(`Rebuild ${keyLabel(S.key)} from the model? Your order and takes for this week will be lost.`)) return;
+    rememberDraft();
     const built = buildModel(S.season);
     S.order = built.order.slice();
     S.comments = {};
@@ -2034,6 +2138,7 @@ function paintShared(p) {
         <div class="pr-body">
           <div class="pr-team"><img class="pr-helm-sm" src="${crestURL(name, 40)}" alt="" width="40" height="40" /><span class="pr-tn">${esc(name)}</span>${mgr ? ` <span class="pr-mgr">${esc(mgr)}</span>` : ''}</div>
           ${stats.length ? `<div class="pr-stats">${esc(stats.join(' · '))}</div>` : ''}
+          ${window.RankingMedia.render(window.RankingMedia.fromRow(row))}
           ${note ? `<div class="pr-take-ro">${esc(note)}</div>` : ''}
           ${moved ? `<div class="pr-moved">Numbers had them ${modelRank}${ord(modelRank)}.</div>` : ''}
         </div>
@@ -2055,6 +2160,7 @@ function paintShared(p) {
       <p class="pr-note">This is the league's own archive. <a href="index.html">Open the app</a> for thirteen seasons of history.</p>
     </div>`;
 
+  window.RankingMedia.hydrate($('#pr-shared'));
   $('#pr-ro-image').onclick = () => saveOnePager(p);
   $('#pr-ro-copy').onclick = async () => {
     const L = [`🏆 POWER RANKINGS — ${p.l || ''}`, p.b ? `${p.b}'s rankings` : '', ''].filter((x, i) => i !== 1 || x);
@@ -2272,6 +2378,16 @@ function sharedFromHash() {
 }
 
 async function boot() {
+  const published=/^#published=(20\d{2}):(\d{1,2})$/.exec(location.hash || '');
+  if(published) {
+    show('#pr-shared');$('#pr-shared').textContent='Loading the published week…';
+    try {
+      const {data}=await window.RankingStore.current(Number(published[2]),Number(published[1]));
+      if(!window.RankingStore.valid(data))throw new Error('This week is no longer published.');
+      paintShared(data);
+    } catch(e) { $('#pr-shared').textContent=e.message; }
+    return;
+  }
   /* A shared link is read-only and needs NO backend call — the payload carries
      everything. That is what makes it survive a sleeping backend, and what
      stops a recipient seeing a different ranking than the one that was sent. */

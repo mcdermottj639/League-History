@@ -3,12 +3,13 @@
   'use strict';
   const store = window.RankingStore;
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  let editing = false;
+  let editing = false, draftSaved = true;
+  window.addEventListener('beforeunload',e=>{if(editing && !draftSaved){e.preventDefault();e.returnValue='';}});
   const owner = () => store.signedIn() || !!(window.LeagueOwner && window.LeagueOwner.is());
   async function mount(host, snapshot, onChanged) {
     await store.restore();
     if (!host.isConnected || !owner()) return;
-    editing = false;
+    editing = false; draftSaved = true;
     host.innerHTML = `<div class="pr-card pr-actions">
       ${snapshot ? '<button type="button" class="pr-btn primary" data-edit>Edit rankings</button><button type="button" class="pr-btn" data-remove>Unpublish</button>' : ''}
       <a class="pr-btn" href="power.html">Prepare this week</a>
@@ -51,7 +52,7 @@
           const saved = JSON.parse(localStorage.getItem(key));
           if (saved && saved.etag === current.etag && store.valid(saved.draft)) draft = saved.draft;
         } catch (_) {}
-        const persist = () => { try { localStorage.setItem(key, JSON.stringify({etag:current.etag,draft})); } catch (_) {} };
+        const persist = () => { try { localStorage.setItem(key, JSON.stringify({etag:current.etag,draft})); draftSaved = true; } catch (_) { draftSaved = false; output.textContent = 'Draft is only in memory: device storage is full. Save changes or remove an uploaded image before leaving.'; } };
         const publishedList = host.nextElementSibling;
         if (publishedList && publishedList.matches('.pr-list')) publishedList.style.display = 'none';
         editing = true; output.textContent = 'Only you can see these edits until you save.';
@@ -62,12 +63,21 @@
               <b>${i+1}. ${esc(row[0])}</b>
               <div class="lg-ranking-move"><button type="button" class="pr-btn" data-up="${i}" ${i===0?'disabled':''} aria-label="Move ${esc(row[0])} up">↑ Up</button><button type="button" class="pr-btn" data-down="${i}" ${i===11?'disabled':''} aria-label="Move ${esc(row[0])} down">↓ Down</button></div>
               <label class="pr-by"><span>Write-up for ${esc(row[0])}</span><textarea class="pr-take" rows="4" maxlength="420" data-note="${i}">${esc(row[3])}</textarea></label>
+              <div data-media-edit="${i}"></div>
             </div></li>`).join('')}</ol>
             <button type="submit" class="pr-btn primary">Save changes for everyone</button>
             <button type="button" class="pr-btn ghost" data-cancel>Back to published rankings</button>
             <p data-save-status role="status" class="pr-note"></p>
           </form>`;
           const form = panel.querySelector('form');
+          form.querySelectorAll('[data-media-edit]').forEach(mediaHost=>{
+            const row=draft.o[Number(mediaHost.dataset.mediaEdit)];
+            window.RankingMedia.editor(mediaHost,window.RankingMedia.fromRow(row),media=>{
+              const next=JSON.parse(JSON.stringify(draft));window.RankingMedia.setRow(next.o[Number(mediaHost.dataset.mediaEdit)],media);
+              if(!window.RankingMedia.totalOK(next.o.map(r=>window.RankingMedia.fromRow(r))))throw new Error('This week has too many uploaded images. Use an image link instead.');
+              window.RankingMedia.setRow(row,media);persist();
+            },row[0]);
+          });
           form.elements.byline.oninput = e => { draft.b = e.target.value; persist(); };
           form.querySelectorAll('[data-note]').forEach(input => { input.oninput = () => { draft.o[Number(input.dataset.note)][3] = input.value; persist(); }; });
           form.querySelectorAll('[data-up],[data-down]').forEach(button => { button.onclick = () => {
@@ -89,7 +99,7 @@
               await store.write(snapshot.k, draft, current.etag, snapshot.y);
               try { localStorage.removeItem(key); } catch (_) {}
               editing = false; await onChanged();
-            } catch (err) { status.textContent = err.message + ' Your edits are saved on this device.'; }
+            } catch (err) { status.textContent = err.message + (draftSaved ? ' Your edits are saved on this device.' : ' Keep this page open: these edits are only in memory.'); }
             finally { controls.forEach(([b, was]) => b.disabled = was); }
           };
         }

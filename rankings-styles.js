@@ -54,6 +54,7 @@
     for (const d of facts) {
       const r = random(`${style}:${d.week}:${d.id}:${o.salt || ''}`);
       const extra = context(d);
+      if(o.length==='short' && style==='analyst') { result[d.id]=[`No. ${d.rank}: ${d.rec}, ${d.ppg} PPG.`,extra[0] || (d.score!=null ? `${d.score} in the latest completed week.` : '')].filter(Boolean).join(' '); continue; }
       if (style === 'analyst') {
         result[d.id] = [`No. ${d.rank}.`, evidence(d), ...extra].join(' ').slice(0,420);
         continue;
@@ -65,6 +66,7 @@
         const available = unused.length ? unused : choices;
         const value = available[Math.floor(r() * available.length)]; used.add(value); return value;
       };
+      if(o.length==='short') {result[d.id]=[pick(pool[band]),`${d.rec}. ${d.ppg} PPG.`].join(' ');continue;}
       result[d.id] = [pick(pool[band]), evidence(d), extra.length ? extra[Math.floor(r() * extra.length)] : '', pick(pool.close)].filter(Boolean).join(' ').slice(0,420);
     }
     return result;
