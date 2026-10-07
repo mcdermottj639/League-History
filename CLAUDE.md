@@ -314,6 +314,22 @@ well as publishing `oracle.js` on Pages. Rankings still shows published sets
 by default, with unpublished completed weeks selectable. The Power Rankings Lab builds from actual fantasy scores
 after games, so the Tuesday cutoff does not invent results or publish a set.
 
+## Rankings Lab writing styles
+
+`rankings-styles.js` supplies offline, fact-based writing voices beside the
+existing League roast writer in `power.js`: Jameis-inspired comedy (original
+parody), Straight analyst, Sports-radio hot takes, and Dramatic narrator.
+The Writing style picker and Generate this week's write-ups button sit above
+the team list. `powerlab:style` stores the preferred voice on the device.
+Selecting a voice never changes existing comments; generation confirms before
+replacing text, retains the order and byline, and autosaves through the existing
+draft path. Individual rewrites use the selected voice. New completed-week
+drafts use the preference. The extra voices use actual supplied record, PPG,
+latest score, all-play, streak, and prior-rank facts; they invent no player news
+or personal history. They are template drafts, not a hosted AI service, and
+require no key or new backend. Publishing remains an explicit separate action;
+member views, published snapshots, capabilities, and private links are unchanged.
+
 ## v114 — Tuesday 4 AM ET opens the next parlay week
 
 ESPN’s default scoreboard often stays on the completed week through Monday

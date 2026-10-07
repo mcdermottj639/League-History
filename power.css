@@ -422,3 +422,8 @@ body.pr-page {
 .lg-ranking-move { display: flex; gap: 8px; margin-top: 8px; }
 .lg-ranking-move .pr-btn { flex: 1; width: auto; margin: 0; }
 .lg-ranking-edit button:disabled { opacity: .5; cursor: default; }
+
+/* Writing controls stay beside the weekly draft, above the team list. */
+.pr-writing { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line, #d8d5ce); }
+.pr-writing select { width: 100%; max-width: 100%; min-height: 44px; padding: 10px; font: inherit; color: inherit; background: var(--card, #fff); border: 1px solid var(--line, #d8d5ce); border-radius: 8px; }
+.pr-writing .pr-btn { max-width: 100%; white-space: normal; }

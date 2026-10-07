@@ -308,7 +308,7 @@ function restoreOrBuild() {
     // Pre-write the whole week. Opening the lab to twelve blank boxes is the
     // thing that makes a weekly column not happen; opening it to twelve drafts
     // with the numbers already right is a ten-minute edit.
-    S.comments = S.ready ? writeWeek(takeFacts(S.season, S.order, S.key, prevOrder()), { spicy: spiceOn() }) : {};
+    S.comments = S.ready ? writeWeek(takeFacts(S.season, S.order, S.key, prevOrder()), { style: writingStyle(), spicy: spiceOn() }) : {};
     S.byline = S.byline || defaultByline();
     persist();
   }
@@ -320,16 +320,20 @@ function restoreOrBuild() {
 function spiceOn() { try { return localStorage.getItem('powerlab:spice') !== '0'; } catch (_) { return true; } }
 function setSpice(v) { try { localStorage.setItem('powerlab:spice', v ? '1' : '0'); } catch (_) {} }
 
+/* Choosing a voice never overwrites a saved draft. Rewrite is explicit. */
+function writingStyle() { return window.RankingStyles.normalize(load('powerlab:style', 'league')); }
+function setWritingStyle(id) { save('powerlab:style', window.RankingStyles.normalize(id)); }
+
 /* Rewrite every take for this week. Discards edits, so it asks first. */
 function rewriteAll() {
-  S.comments = writeWeek(takeFacts(S.season, S.order, S.key, prevOrder()), { spicy: spiceOn(), salt: String(Date.now()) });
+  S.comments = writeWeek(takeFacts(S.season, S.order, S.key, prevOrder()), { style: writingStyle(), spicy: spiceOn(), salt: String(Date.now()) });
   persist();
 }
 /* Reroll ONE line — the common case is that eleven are fine and one is flat. */
 function rewriteOne(id) {
   const facts = takeFacts(S.season, S.order, S.key, prevOrder());
-  const one = facts.filter((f) => f.id === id);
-  const w = writeWeek(one, { spicy: spiceOn(), salt: String(Math.random()) });
+  const one = facts.filter((f) => String(f.id) === String(id));
+  const w = writeWeek(one, { style: writingStyle(), spicy: spiceOn(), salt: String(Math.random()) });
   S.comments[id] = w[id];
   persist();
 }
@@ -1065,6 +1069,7 @@ function dedupeFacts(parts) {
    could be enforced from inside a per-team function. */
 function writeWeek(facts, opts) {
   const o = opts || {};
+  if (window.RankingStyles && window.RankingStyles.normalize(o.style) !== 'league') return window.RankingStyles.write(facts, o);
   const out = {};
   const used = new Set();
   const spicy = o.spicy !== false;
@@ -1818,6 +1823,12 @@ function paintRank() {
         <input id="pr-byline" type="text" maxlength="40" placeholder="Your name or team" />
       </label>
       <p class="pr-note">The league sees this on the rankings you send, so they know whose take it is.</p>
+      <div class="pr-writing">
+        <label class="pr-by"><span>Writing style</span><select id="pr-writing-style">${window.RankingStyles.styles.map(style => `<option value="${style.id}" ${style.id === writingStyle() ? 'selected' : ''}>${esc(style.label)}</option>`).join('')}</select></label>
+        <p class="pr-note" id="pr-style-description">${esc(window.RankingStyles.styles.find(style => style.id === writingStyle()).description)}</p>
+        <button type="button" class="pr-btn" id="pr-generate-style" ${S.ready ? '' : 'disabled'}>✍️ Generate this week's write-ups</button>
+        <p class="pr-note">Uses this week's league numbers and your ranking order. Edit any draft, or use 🎲 to rewrite one team. Changing the style keeps your existing text until you generate.</p>
+      </div>
     </div>`;
 
   const rows = S.order.map((id, i) => {
@@ -1966,6 +1977,16 @@ function paintRank() {
   $('#pr-share').onclick = () => doShare('link');
   $('#pr-copy').onclick = () => doShare('text');
   $('#pr-image').onclick = () => { publish(); paintPubState(); saveOnePager(payload()); };
+  const styleSelect = $('#pr-writing-style');
+  styleSelect.onchange = () => {
+    setWritingStyle(styleSelect.value);
+    $('#pr-style-description').textContent = window.RankingStyles.styles.find(style => style.id === writingStyle()).description;
+  };
+  $('#pr-generate-style').onclick = () => {
+    if (!S.ready) return;
+    if (Object.values(S.comments).some(Boolean) && !confirm(`Replace this week's write-ups with ${window.RankingStyles.styles.find(style => style.id === writingStyle()).label} drafts? Your ranking order stays the same.`)) return;
+    rewriteAll(); paintRank(); toast('Write-ups generated — edit or publish when ready');
+  };
   const rw = $('#pr-rewrite');
   if (rw) rw.onclick = () => {
     if (!confirm('Rewrite all 12 takes? Anything you have written for this week will be replaced.')) return;
