@@ -314,6 +314,20 @@ well as publishing `oracle.js` on Pages. Rankings still shows published sets
 by default, with unpublished completed weeks selectable. The Power Rankings Lab builds from actual fantasy scores
 after games, so the Tuesday cutoff does not invent results or publish a set.
 
+## v129 — Mobile GIF uploads
+
+Uploads identify JPEG/PNG/WebP/GIF from file signatures and then require browser
+image decoding, so mobile files with missing MIME metadata work without trusting
+extensions or accepting spoofed content. GIF bytes and animation are retained.
+Existing 8 MB input, per-image and per-week limits remain. Cancelling a picker
+preserves the current visual; resetting its value allows selecting the same file
+again after either success or an inline error. Both pages load media revision 2;
+app and service-worker caches advance to v129.
+Regression tests cover missing MIME, signature/type mismatch, decoder failure, size
+limits, selected/week previews, repeated uploads and cancellation. Full release
+checks pass. Real-browser QA remains blocked here: Chromium cannot create its
+socket, and the cloud browser cannot reach the local preview.
+
 ## v128 — Visual rankings and the weekly studio
 
 The Rankings Lab supports **Write-ups**, **No words**, and **Words + visuals**.

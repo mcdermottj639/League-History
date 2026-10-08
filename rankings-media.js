@@ -74,10 +74,20 @@
     });
   }
   async function readFile(file) {
-    if(!file || !['image/jpeg','image/png','image/webp','image/gif'].includes(file.type))throw new Error('Choose a JPG, PNG, WebP, or GIF file.');
+    const types=['image/jpeg','image/png','image/webp','image/gif'];
+    if(!file || (file.type && !types.includes(file.type)))throw new Error('Choose a JPG, PNG, WebP, or GIF file.');
     if(file.size>8*1024*1024)throw new Error('Choose an image smaller than 8 MB.');
-    const src=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(new Error('Could not read that file.'));r.readAsDataURL(file);});
-    if(file.type==='image/gif') {
+    // Mobile pickers may omit MIME metadata. Identify bytes, never trust a filename.
+    const header=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(new Uint8Array(r.result));r.onerror=()=>rej(new Error('Could not read that file.'));r.readAsArrayBuffer(file.slice(0,12));});
+    const starts=bytes=>bytes.every((b,i)=>header[i]===b);
+    const text=(start,end)=>String.fromCharCode(...header.slice(start,end));
+    const type=starts([0xff,0xd8,0xff])?'image/jpeg':
+      starts([137,80,78,71,13,10,26,10])?'image/png':
+      ['GIF87a','GIF89a'].includes(text(0,6))?'image/gif':
+      text(0,4)==='RIFF' && text(8,12)==='WEBP'?'image/webp':'';
+    if(!type || (file.type && file.type!==type))throw new Error('Choose a valid JPG, PNG, WebP, or GIF file.');
+    const src=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(new Error('Could not read that file.'));r.readAsDataURL(file.slice(0,file.size,type));});
+    if(type==='image/gif') {
       if(src.length>MAX_DATA)throw new Error('This GIF is too large to save in a week. Paste its direct image link instead to keep it animated.');
       await loadImage(src); return {kind:'image',src,alt:'Animated ranking reaction'};
     }
@@ -111,7 +121,11 @@
     }
     host.querySelectorAll('[data-reaction]').forEach(b=>b.onclick=()=>run(()=>apply({kind:'reaction',id:b.dataset.reaction})));
     host.querySelector('[data-media-remove]').onclick=()=>run(()=>apply(null));
-    host.querySelector('[data-media-file]').onchange=e=>run(async()=>apply(await readFile(e.target.files[0])));
+    host.querySelector('[data-media-file]').onchange=e=>{
+      const input=e.target, file=input.files[0];
+      if(!file)return; // Dismissing the picker leaves the current visual untouched.
+      return run(async()=>{try{await apply(await readFile(file));}finally{input.value='';}});
+    };
     host.querySelector('[data-media-use]').onclick=()=>run(async()=>{
       const src=safeSource(host.querySelector('[data-media-url]').value.trim());
       if(!src || src.startsWith('data:'))throw new Error('Use a public HTTPS image link. You can upload a file above.');

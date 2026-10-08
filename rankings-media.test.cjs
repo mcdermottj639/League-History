@@ -91,3 +91,42 @@ test('GIF uploads retain their original data and image failures expose a useful 
    const img=a.w.document.querySelector('.rk-media img');img.dispatchEvent(new a.w.Event('error'));assert.equal(img.hidden,true);assert.equal(img.nextElementSibling.hidden,false);
  }finally{a.dom.window.close();}
 });
+
+test('mobile files are identified by bytes, with typed spoofing and size limits rejected',async()=>{
+ const a=lab();try{
+   await settle();a.w.Image=class{set src(value){queueMicrotask(()=>this.onload());}};
+   const gif=Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7','base64');
+   for(const name of ['reaction.gif','mobile-download','wrong.png']){
+     const m=await a.w.RankingMedia.readFile(new a.w.File([gif],name));
+     assert.equal(m.src,'data:image/gif;base64,'+gif.toString('base64'));
+   }
+   for(const [bytes,name,type] of [[gif,'wrong.png','image/png'],['<svg/>','fake.gif',''],['bad','fake.gif','image/gif'],['','empty.gif','']]){
+     await assert.rejects(a.w.RankingMedia.readFile(new a.w.File([bytes],name,{type})),/valid JPG/);
+   }
+   await assert.rejects(a.w.RankingMedia.readFile(new a.w.File([new Uint8Array(8*1024*1024+1)],'large.gif')),/smaller than 8 MB/);
+   await assert.rejects(a.w.RankingMedia.readFile(new a.w.File([gif,new Uint8Array(700000)],'large.gif')),/too large to save/);
+   // Decoding is stubbed here; these fixtures exercise signature routing only.
+   for(const [bytes,name] of [[Buffer.from(PNG.split(',')[1],'base64'),'image'],[Buffer.from([255,216,255,224]),'photo'],[Buffer.from('RIFF0000WEBP'),'picture']]){
+     const m=await a.w.RankingMedia.readFile(new a.w.File([bytes],name));assert.ok(m.src.startsWith('data:image/'));
+   }
+   a.w.Image=class{set src(value){queueMicrotask(()=>this.onerror());}};
+   await assert.rejects(a.w.RankingMedia.readFile(new a.w.File(['GIF89a'],'truncated.gif')),/Image did not load/);
+ }finally{a.dom.window.close();}
+});
+
+test('upload cancellation and repeat selections preserve selected and week previews',async()=>{
+ const a=lab();try{
+   await settle();a.w.Image=class{set src(value){queueMicrotask(()=>this.onload());}};
+   a.$('[data-format="mixed"]').click();
+   const input=a.$('[data-media-file]'), host=input.closest('[data-media-editor]');
+   const file=new a.w.File([Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7','base64')],'mobile.gif');
+   Object.defineProperty(input,'files',{configurable:true,value:[file]});await input.onchange({target:input});
+   assert.ok(host.querySelector('.rk-media-current img'));assert.match(host.querySelector('[data-media-status]').textContent,/Visual added/);
+   a.$('#pr-preview').open=true;await settle();assert.ok(a.$('#pr-preview-body .rk-media img'));
+   Object.defineProperty(input,'files',{configurable:true,value:[]});await input.onchange({target:input});
+   assert.match(host.querySelector('[data-media-status]').textContent,/Visual added/);
+   Object.defineProperty(input,'files',{configurable:true,value:[file]});await input.onchange({target:input});assert.equal(input.value,'');
+   Object.defineProperty(input,'files',{configurable:true,value:[new a.w.File([file,new Uint8Array(700000)],'large.gif')]});await input.onchange({target:input});
+   assert.match(host.querySelector('[data-media-status]').textContent,/too large to save/);assert.ok(host.querySelector('.rk-media-current img'));assert.equal(input.disabled,false);
+ }finally{a.dom.window.close();}
+});
