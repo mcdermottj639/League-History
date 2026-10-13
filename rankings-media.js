@@ -329,6 +329,38 @@
   // Aim well under MAX_DATA so a week still has room for other uploads.
   const GIF_TARGET = 600000;
 
+  /* v131: the whole week shares MAX_TOTAL (it is saved in one draft on the
+     phone, and Safari's storage is small). When a new visual would overflow
+     it, re-shrink the uploaded GIFs instead of refusing: each gets an equal
+     share of what is left, smallest first, so a GIF already under its share
+     keeps full quality. Returns a copy; throws only if even that cannot fit. */
+  const b64ToBytes = b64 => { const bin = atob(b64), out = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out; };
+  const bytesToB64 = bytes => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s); };
+  const isGifUpload = m => m && m.kind === 'image' && typeof m.src === 'string' && m.src.startsWith('data:image/gif;base64,');
+  async function fitWeek(media) {
+    if (totalOK(media)) return { media, shrunk: [] };
+    const out = Array.isArray(media) ? media.slice() : { ...media };
+    const keys = Object.keys(out).filter(k => isGifUpload(out[k])).sort((a, b) => out[a].src.length - out[b].src.length);
+    const full = () => new Error('This week has too many uploaded images. Use an image link for this team instead.');
+    if (!keys.length) throw full();
+    const others = JSON.stringify(Object.keys(out).filter(k => !keys.includes(k)).map(k => out[k])).length;
+    let left = MAX_TOTAL - others - 300 * keys.length;
+    const shrunk = [];
+    for (let i = 0; i < keys.length; i++) {
+      const k = keys[i], m = out[k], share = Math.floor(left / (keys.length - i));
+      if (share < 20000) throw full();
+      if (m.src.length > share) {
+        await new Promise(r => setTimeout(r, 0));
+        let small;
+        try { small = GIF.shrink(b64ToBytes(m.src.slice(22)), bytesFor(share)); } catch (_) { throw full(); }
+        out[k] = { ...m, src: 'data:image/gif;base64,' + bytesToB64(small.bytes) };
+        shrunk.push(k);
+      }
+      left -= out[k].src.length;
+    }
+    if (!totalOK(out)) throw full();
+    return { media: out, shrunk };
+  }
   async function readFile(file) { return (await readFileInfo(file)).media; }
   async function readFileInfo(file) {
     const types=['image/jpeg','image/png','image/webp','image/gif'];
@@ -376,11 +408,11 @@
     const status=host.querySelector('[data-media-status]');
     const apply=async (m,note)=>{
       if(!host.isConnected)return;
-      await onChange(m); current=m;
+      const extra=await onChange(m); current=m;
       host.querySelector('.rk-media-current').innerHTML=render(m);hydrate(host);
       host.querySelector('summary').textContent=`${m?'Change':'Add'} reaction, GIF, or image`;
       host.querySelectorAll('[data-reaction]').forEach(b=>b.setAttribute('aria-pressed',String(m?.id===b.dataset.reaction)));
-      status.textContent=note||(m?'Visual added to this draft.':'Visual removed.');
+      status.textContent=[note||(m?'Visual added to this draft.':'Visual removed.'),typeof extra==='string'?extra:''].filter(Boolean).join(' ');
     };
     async function run(work) {
       const controls=[...host.querySelectorAll('button,input')];controls.forEach(b=>b.disabled=true);status.textContent='Preparing image…';
@@ -400,7 +432,7 @@
     });hydrate(host);
   }
   if(root && root.document) root.document.addEventListener('error',e=>{const img=e.target;if(img.matches?.('.rk-media img')){img.hidden=true;if(img.nextElementSibling)img.nextElementSibling.hidden=false;}},true);
-  const api={reactions,normalize,fromRow,setRow,render,hydrate,suggest,totalOK,loadImage,readFile,editor,gif:GIF,MAX_DATA,GIF_TARGET};
+  const api={reactions,normalize,fromRow,setRow,render,hydrate,suggest,totalOK,fitWeek,loadImage,readFile,editor,gif:GIF,MAX_DATA,MAX_TOTAL,GIF_TARGET};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   if(root)root.RankingMedia=api;
 })(typeof window!=='undefined'?window:null);

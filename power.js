@@ -351,13 +351,18 @@ function assignReactions(onlyEmpty = false) {
   });
   persist();
 }
-function setTeamMedia(id, media) {
-  const next={...S.media}; if(media)next[id]=media;else delete next[id];
-  if(!window.RankingMedia.totalOK(next))throw new Error('This week has too many uploaded images. Use an image link for this team instead.');
+async function setTeamMedia(id, media) {
+  let next={...S.media}; if(media)next[id]=media;else delete next[id];
+  // Over the week's upload budget: shrink the uploaded GIFs to make room
+  // instead of refusing the new one (v131).
+  const fit=await window.RankingMedia.fitWeek(next);
+  next=fit.media;
+  const others=fit.shrunk.filter(k=>String(k)!==String(id)).length;
   rememberDraft(); S.media=next; persist();
   const undo=$('#pr-undo'); if(undo)undo.disabled=false;
   const count=$('#pr-visual-count');if(count)count.textContent=`${Object.keys(S.media).length} of ${S.order.length} teams have a visual`;
   const preview=$('#pr-preview');if(preview)preview.open=false;
+  return others?`Made room by shrinking ${others} other GIF${others>1?'s':''} this week.`:'';
 }
 window.addEventListener('beforeunload',e=>{if(!S.draftSaved){e.preventDefault();e.returnValue='';}});
 

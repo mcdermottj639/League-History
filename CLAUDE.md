@@ -314,6 +314,20 @@ well as publishing `oracle.js` on Pages. Rankings still shows published sets
 by default, with unpublished completed weeks selectable. The Power Rankings Lab builds from actual fantasy scores
 after games, so the Tuesday cutoff does not invent results or publish a set.
 
+## v131 — A full week makes room for more GIFs
+
+v130 fixed single over-limit GIFs, but the whole week's uploads also share
+`MAX_TOTAL` (1.8M chars — it all lives in one device draft, and Safari's
+storage is small). Once a few GIFs were in, the next upload was refused even
+though it was small. Now `RankingMedia.fitWeek(media)` runs whenever a visual
+is set (Lab `setTeamMedia`, now async, and the published-week editor): if the
+week would overflow, the uploaded GIFs are re-shrunk — smallest first, each to
+an equal share of what is left, so GIFs already under their share are untouched —
+and the editor says "Made room by shrinking N other GIFs this week." It throws
+only when even ~20K chars per GIF cannot fit. Undo restores the pre-shrink
+draft. Test: six ~400K-char GIFs on six teams all attach, stay animated, and
+the week stays under `MAX_TOTAL`. Versions: v131, media revision 4, power.js 21.
+
 ## v130 — GIF auto-compress, faithful preview, steady reordering
 
 **Oversized GIFs are compressed, not refused.** An uploaded GIF over the
@@ -324,7 +338,7 @@ progressively stronger settings — long edge 360→120 px, every frame → ever
 4th (dropped frames' delays merge into the kept one, so loop length is
 unchanged), 255→32 colours (median cut), and skipping near-identical pixels on
 opaque GIFs — until the file fits `GIF_TARGET` (600,000 chars), leaving room in
-the week's 1.8M total for other uploads. Transparency, disposal and interlaced
+the week's 1.8M total for other uploads (⚠️ SUPERSEDED in v131: a full week now re-shrinks GIFs to make room rather than refusing). Transparency, disposal and interlaced
 GIFs are handled. The editor reports e.g. "GIF compressed to fit (732 KB →
 382 KB)". GIFs already under the limit are stored byte-for-byte as before. A
 file that cannot be decoded, or would need more than 60M decoded pixels, is

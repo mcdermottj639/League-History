@@ -201,3 +201,25 @@ test('No words keeps stats, highlights, trends and the model note in the preview
   const html=Visuals.rowsHTML(Visuals.facts(p,[]),{crest:()=>'',me:null});
   assert.match(html,/The numbers had them 3rd/);
 });
+
+test('a full week makes room: earlier uploaded GIFs are re-shrunk instead of the new one being refused',async()=>{
+  const a=lab();try{
+    await settle();a.w.Image=class{set src(v){queueMicrotask(()=>this.onload());}};
+    a.$('[data-format="visual"]').click();await settle();
+    const gif=noisyGif(200,150,10,90);
+    const hosts=()=>[...a.w.document.querySelectorAll('#pr-rank > .pr-list > .pr-row [data-media-editor]')];
+    let last='';
+    for(let i=0;i<6;i++){
+      const input=hosts()[i].querySelector('[data-media-file]');
+      Object.defineProperty(input,'files',{configurable:true,value:[new a.w.File([gif],'team'+i+'.gif')]});
+      await input.onchange({target:input});
+      last=hosts()[i].querySelector('[data-media-status]').textContent;
+      assert.doesNotMatch(last,/too many/,'upload '+(i+1)+' accepted');
+    }
+    assert.match(last,/Made room by shrinking \d+ other GIF/);
+    const media=a.draft().media, gifs=Object.values(media).filter(m=>m.src&&m.src.startsWith('data:image/gif'));
+    assert.equal(gifs.length,6);
+    assert.ok(Media.totalOK(media),'week stays within its total');
+    for(const m of gifs)assert.ok(Media.gif.parse(Buffer.from(m.src.slice(22),'base64')).frames.length>1,'still animated');
+  }finally{a.dom.window.close();}
+});
