@@ -72,12 +72,10 @@
           const form = panel.querySelector('form');
           form.querySelectorAll('[data-media-edit]').forEach(mediaHost=>{
             const row=draft.o[Number(mediaHost.dataset.mediaEdit)];
-            window.RankingMedia.editor(mediaHost,window.RankingMedia.fromRow(row),async media=>{
-              const at=Number(mediaHost.dataset.mediaEdit), list=draft.o.map(r=>window.RankingMedia.fromRow(r));list[at]=window.RankingMedia.normalize(media);
-              const fit=await window.RankingMedia.fitWeek(list); // v131: shrink GIFs to make room
-              fit.media.forEach((m,i)=>window.RankingMedia.setRow(draft.o[i],m));persist();
-              const others=fit.shrunk.filter(i=>Number(i)!==at).length;
-              return others?`Made room by shrinking ${others} other GIF${others>1?'s':''} this week.`:'';
+            window.RankingMedia.editor(mediaHost,window.RankingMedia.fromRow(row),media=>{
+              const next=JSON.parse(JSON.stringify(draft));window.RankingMedia.setRow(next.o[Number(mediaHost.dataset.mediaEdit)],media);
+              if(!window.RankingMedia.totalOK(next.o.map(r=>window.RankingMedia.fromRow(r))))throw new Error('This week has too many uploaded images. Use an image link instead.');
+              window.RankingMedia.setRow(row,media);persist();
             },row[0]);
           });
           form.elements.byline.oninput = e => { draft.b = e.target.value; persist(); };

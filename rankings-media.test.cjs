@@ -104,10 +104,7 @@ test('mobile files are identified by bytes, with typed spoofing and size limits 
      await assert.rejects(a.w.RankingMedia.readFile(new a.w.File([bytes],name,{type})),/valid JPG/);
    }
    await assert.rejects(a.w.RankingMedia.readFile(new a.w.File([new Uint8Array(8*1024*1024+1)],'large.gif')),/smaller than 8 MB/);
-   // v130: an oversized GIF is re-encoded to fit instead of refused.
-   const padded=await a.w.RankingMedia.readFile(new a.w.File([gif,new Uint8Array(700000)],'large.gif'));
-   assert.ok(padded.src.startsWith('data:image/gif;base64,') && padded.src.length<=Media.MAX_DATA);
-   await assert.rejects(a.w.RankingMedia.readFile(new a.w.File(['GIF89a',new Uint8Array(700000)],'junk.gif')),/direct image link/);
+   await assert.rejects(a.w.RankingMedia.readFile(new a.w.File([gif,new Uint8Array(700000)],'large.gif')),/Sign in to publishing/);
    // Decoding is stubbed here; these fixtures exercise signature routing only.
    for(const [bytes,name] of [[Buffer.from(PNG.split(',')[1],'base64'),'image'],[Buffer.from([255,216,255,224]),'photo'],[Buffer.from('RIFF0000WEBP'),'picture']]){
      const m=await a.w.RankingMedia.readFile(new a.w.File([bytes],name));assert.ok(m.src.startsWith('data:image/'));
@@ -130,49 +127,11 @@ test('upload cancellation and repeat selections preserve selected and week previ
    assert.match(host.querySelector('[data-media-status]').textContent,/Visual added/);
    Object.defineProperty(input,'files',{configurable:true,value:[file]});await input.onchange({target:input});assert.equal(input.value,'');
    Object.defineProperty(input,'files',{configurable:true,value:[new a.w.File([file,new Uint8Array(700000)],'large.gif')]});await input.onchange({target:input});
-   assert.match(host.querySelector('[data-media-status]').textContent,/GIF compressed to fit/);assert.ok(host.querySelector('.rk-media-current img'));assert.equal(input.disabled,false);
-   Object.defineProperty(input,'files',{configurable:true,value:[new a.w.File(['GIF89a',new Uint8Array(700000)],'broken.gif')]});await input.onchange({target:input});
-   assert.match(host.querySelector('[data-media-status]').textContent,/direct image link/);assert.ok(host.querySelector('.rk-media-current img'),'a failed upload keeps the current visual');assert.equal(input.disabled,false);
+   assert.match(host.querySelector('[data-media-status]').textContent,/Sign in to publishing/);assert.ok(host.querySelector('.rk-media-current img'));assert.equal(input.disabled,false);
  }finally{a.dom.window.close();}
 });
 
-/* ---- v130 -------------------------------------------------------------- */
-function noisyGif(w,h,frames,delay){
-  let seed=7;const rnd=()=>(seed=(Math.imul(seed,1103515245)+12345)>>>0)>>>24;
-  const pal=Array.from({length:255},(_,i)=>[(i*37)&255,(i*91)&255,(i*53)&255]);
-  const rgba=Array.from({length:frames},()=>{const f=new Uint8Array(w*h*4);for(let o=0;o<f.length;o+=4){const c=pal[rnd()%255];f[o]=c[0];f[o+1]=c[1];f[o+2]=c[2];f[o+3]=255;}return f;});
-  return Media.gif.encode(w,h,rgba,Array(frames).fill(delay),pal,0);
-}
-
-test('GIF codec round-trips frames, timing and transparency exactly at full quality',()=>{
-  const w=6,h=4,pal=[[255,0,0],[0,0,255],[10,200,30]];
-  const frame=(c)=>{const f=new Uint8Array(w*h*4);for(let i=0;i<w*h;i++){const k=(i+c)%4;if(k===3)continue;f.set([...pal[k],255],i*4);}return f;};
-  const src=[frame(0),frame(1),frame(2)], bytes=Media.gif.encode(w,h,src,[70,120,40],pal,0);
-  const g=Media.gif.parse(bytes);assert.deepEqual([g.width,g.height,g.frames.length],[w,h,3]);
-  assert.deepEqual(g.frames.map(f=>f.delay),[70,120,40]);
-  const seen=[];Media.gif.composite(g,rgba=>seen.push(Array.from(rgba)));
-  src.forEach((f,i)=>assert.deepEqual(seen[i],Array.from(f),'frame '+i));
-});
-
-test('an oversized GIF upload is compressed under the week limit, keeps animation and total timing',async()=>{
-  const big=noisyGif(320,240,24,80);assert.ok(big.length>Media.MAX_DATA,'fixture must exceed the old limit');
-  const out=Media.gif.shrink(big,Math.floor((Media.GIF_TARGET-32)*3/4));
-  const g=Media.gif.parse(out.bytes);
-  assert.ok(g.frames.length>1,'still animated');
-  assert.equal(g.frames.reduce((a,f)=>a+f.delay,0),24*80,'total loop time kept');
-  const a=lab();try{
-    await settle();a.w.Image=class{set src(v){queueMicrotask(()=>this.onload());}};
-    const host=a.w.document.createElement('div');a.w.document.body.append(host);let saved=null;
-    a.w.RankingMedia.editor(host,null,m=>{saved=m;},'Team 1');
-    const input=host.querySelector('[data-media-file]');
-    Object.defineProperty(input,'files',{value:[new a.w.File([big],'huge.gif')]});
-    await input.onchange({target:input});
-    assert.ok(saved && saved.src.startsWith('data:image/gif;base64,'));
-    assert.ok(saved.src.length<=Media.GIF_TARGET,'leaves room for other uploads');
-    assert.match(host.querySelector('[data-media-status]').textContent,/GIF compressed to fit/);
-  }finally{a.dom.window.close();}
-});
-
+/* ---- v130 / v132 ------------------------------------------------------ */
 test('moving a team keeps that row where it was on screen and keeps focus on the arrow',async()=>{
   const a=lab();try{
     await settle();
@@ -202,24 +161,18 @@ test('No words keeps stats, highlights, trends and the model note in the preview
   assert.match(html,/The numbers had them 3rd/);
 });
 
-test('a full week makes room: earlier uploaded GIFs are re-shrunk instead of the new one being refused',async()=>{
+test('signed in: a GIF of any size is uploaded byte-for-byte and the week stores only its link',async()=>{
   const a=lab();try{
-    await settle();a.w.Image=class{set src(v){queueMicrotask(()=>this.onload());}};
-    a.$('[data-format="visual"]').click();await settle();
-    const gif=noisyGif(200,150,10,90);
-    const hosts=()=>[...a.w.document.querySelectorAll('#pr-rank > .pr-list > .pr-row [data-media-editor]')];
-    let last='';
-    for(let i=0;i<6;i++){
-      const input=hosts()[i].querySelector('[data-media-file]');
-      Object.defineProperty(input,'files',{configurable:true,value:[new a.w.File([gif],'team'+i+'.gif')]});
-      await input.onchange({target:input});
-      last=hosts()[i].querySelector('[data-media-status]').textContent;
-      assert.doesNotMatch(last,/too many/,'upload '+(i+1)+' accepted');
-    }
-    assert.match(last,/Made room by shrinking \d+ other GIF/);
-    const media=a.draft().media, gifs=Object.values(media).filter(m=>m.src&&m.src.startsWith('data:image/gif'));
-    assert.equal(gifs.length,6);
-    assert.ok(Media.totalOK(media),'week stays within its total');
-    for(const m of gifs)assert.ok(Media.gif.parse(Buffer.from(m.src.slice(22),'base64')).frames.length>1,'still animated');
+    await settle();a.w.Image=class{set src(v){this.value=v;queueMicrotask(()=>this.onload());}};
+    const sent=[];a.w.RankingStore.hasSession=()=>true;a.w.RankingStore.idToken=async()=>'id-token';
+    a.w.fetch=async(url,opt)=>{if(String(url).includes('league-media')){sent.push({url,opt,bytes:Buffer.from(await opt.body.arrayBuffer())});return {ok:true,status:200,json:async()=>({url:'https://oqrfdhoyyogjmiqmjhnp.supabase.co/storage/v1/object/public/league-media/ranking/abc.gif'})};}return {ok:true,json:async()=>season};};
+    const gif=Buffer.concat([Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7','base64'),Buffer.alloc(2_000_000,1)]);
+    const m=await a.w.RankingMedia.readFile(new a.w.File([gif],'big.gif'));
+    assert.equal(m.src,'https://oqrfdhoyyogjmiqmjhnp.supabase.co/storage/v1/object/public/league-media/ranking/abc.gif');
+    assert.equal(sent.length,1);assert.equal(sent[0].opt.headers.Authorization,'Bearer id-token');
+    assert.ok(sent[0].bytes.equals(gif),'original bytes sent untouched');
+    assert.ok(Media.totalOK({a:m,b:m,c:m,d:m,e:m,f:m,g:m,h:m,i:m,j:m,k:m,l:m}),'twelve hosted GIFs fit a week easily');
+    a.w.fetch=async()=>({ok:false,status:401,json:async()=>({error:'Your sign-in has expired. Sign in to publishing again.'})});
+    await assert.rejects(a.w.RankingMedia.readFile(new a.w.File([gif],'big.gif')),/sign-in has expired/);
   }finally{a.dom.window.close();}
 });

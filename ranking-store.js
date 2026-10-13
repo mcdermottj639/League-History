@@ -141,6 +141,6 @@
     generation++; refreshing = null; session = readSession();
     window.dispatchEvent(new Event('publisher-session-changed'));
   });
-  window.RankingStore = { list, valid, signIn, signedIn, signOut, restore, signInForm, hasSession: () => !!session,
+  window.RankingStore = { list, valid, signIn, signedIn, signOut, restore, signInForm, hasSession: () => !!session, idToken: token,
     current: async (key, year) => request(await url(key, year), { headers: { 'X-Firebase-ETag': 'true' } }), write };
 })();

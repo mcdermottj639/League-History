@@ -6,3 +6,7 @@ verify_jwt = false
 # Oracle uses a private capability exchanged for a server-verified editor session.
 [functions.league-oracle]
 verify_jwt = false
+
+# Ranking media uploads authorize the publisher's Firebase ID token in the handler.
+[functions.league-media]
+verify_jwt = false

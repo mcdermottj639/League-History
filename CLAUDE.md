@@ -314,7 +314,34 @@ well as publishing `oracle.js` on Pages. Rankings still shows published sets
 by default, with unpublished completed weeks selectable. The Power Rankings Lab builds from actual fantasy scores
 after games, so the Tuesday cutoff does not invent results or publish a set.
 
-## v131 — A full week makes room for more GIFs
+## v132 — GIFs are hosted as files, never compressed
+
+Compressing GIFs to fit inside the week (v130/v131) dropped frames and smeared
+motion. The root cause was storing image bytes inside the week JSON, which has
+a small budget (one device draft; all weeks are downloaded together). Now, when
+the Lab is signed in to publishing, an uploaded **GIF is stored byte-for-byte
+as a file** and the week keeps only its link:
+
+- `supabase/functions/league-media` (in the shared `oqrfdhoyyogjmiqmjhnp`
+  project, `verify_jwt = false`, auth in the handler) accepts `POST /upload`
+  with the Lab's Firebase ID token (`RankingStore.idToken()`), verifies it
+  against Google's securetoken keys pinned to Firebase project
+  `nectars-bologna` and the publisher uid, sniffs JPEG/PNG/GIF/WebP bytes
+  (≤ 8 MB), and writes `ranking/<sha256>.<ext>` to the public `league-media`
+  bucket (migration `20261013113000_league_media_bucket.sql`; no client write
+  policies — only the function's service role writes). It returns the public URL.
+- No keys ship to the static app; reads are plain public URLs.
+- Not signed in: GIFs ≤ `MAX_DATA` are still embedded untouched (old path);
+  bigger ones ask the owner to sign in via 🚀 Publish, or paste a link.
+- The GIF codec, `fitWeek` and all compression from v130/v131 are removed.
+  JPEG/PNG/WebP stills keep their small resize (unchanged since v128).
+
+Tests: hosted upload sends the original bytes with the bearer token and stores
+only the link; expired sign-in surfaces the server message; unsigned oversize
+GIFs are refused with the sign-in hint. Live checks: `/health` reports v132 and
+the project; unsigned and forged tokens get 401. Versions: v132, media 5, power.js 22.
+
+## v131 — A full week makes room ⚠️ SUPERSEDED in v132 (GIFs hosted as files; fitWeek removed) for more GIFs
 
 v130 fixed single over-limit GIFs, but the whole week's uploads also share
 `MAX_TOTAL` (1.8M chars — it all lives in one device draft, and Safari's
@@ -329,6 +356,9 @@ draft. Test: six ~400K-char GIFs on six teams all attach, stay animated, and
 the week stays under `MAX_TOTAL`. Versions: v131, media revision 4, power.js 21.
 
 ## v130 — GIF auto-compress, faithful preview, steady reordering
+
+⚠️ SUPERSEDED in v132: the GIF compression below is removed (GIFs are hosted
+as files). The preview and reordering fixes in this entry still stand.
 
 **Oversized GIFs are compressed, not refused.** An uploaded GIF over the
 per-image limit (`MAX_DATA`, 900,000 data-URL characters ≈ 660 KB) is re-encoded
@@ -393,8 +423,8 @@ rankings do not call a skipped week “last week.”
 
 `rankings-media.js` owns normalization, rendering, suggestions, and the shared
 media editor. It offers 16 animated CSS reactions, JPEG/PNG/WebP uploads (resized
-and compressed), GIF uploads (animation retained; over-limit GIFs re-encoded to
-fit since v130), and direct HTTPS image links.
+and compressed), GIF uploads (animation retained; hosted untouched as files via
+the `league-media` function when signed in, since v132), and direct HTTPS image links.
 Reactions are editorial suggestions based on rank, score, movement, and form.
 Media is optional in **row[8].media** alongside frozen scores/outcomes/all-play;
 old rows remain valid. It renders in the Lab, members' Rankings, public shared

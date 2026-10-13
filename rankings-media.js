@@ -73,296 +73,21 @@
       img.src=src;
     });
   }
-  /* ---- GIF shrinking (v130) ------------------------------------------------
-     An uploaded GIF is stored inside the week itself, so it has to fit
-     MAX_DATA. Browsers can decode a GIF but cannot ENCODE one, so this is a
-     small self-contained GIF89a decoder + encoder: no library, no build step.
-     A GIF that is too large is re-encoded with progressively stronger settings
-     (fewer frames, smaller size, fewer colours, skipped near-identical pixels)
-     until it fits. Animation and loop timing are kept. */
-  const GIF = (() => {
-    function lzwDecode(minSize, data, count) {
-      const out = new Uint8Array(count), clear = 1 << minSize, eoi = clear + 1;
-      const prefix = new Int16Array(4096), suffix = new Uint8Array(4096), stack = new Uint8Array(4097);
-      for (let c = 0; c < clear; c++) suffix[c] = c;
-      let size = minSize + 1, mask = (1 << size) - 1, avail = clear + 2, old = -1, first = 0, bits = 0, datum = 0, i = 0, op = 0;
-      while (op < count) {
-        while (bits < size) { if (i >= data.length) return out; datum |= data[i++] << bits; bits += 8; }
-        let code = datum & mask; datum >>>= size; bits -= size;
-        if (code === clear) { size = minSize + 1; mask = (1 << size) - 1; avail = clear + 2; old = -1; continue; }
-        if (code === eoi) break;
-        if (old === -1) { if (code >= clear) break; out[op++] = suffix[code]; old = first = code; continue; }
-        if (code > avail) break; // corrupt stream: keep what decoded
-        const incoming = code; let top = 0;
-        if (code === avail) { stack[top++] = first; code = old; }
-        while (code >= clear) { stack[top++] = suffix[code]; code = prefix[code]; }
-        first = suffix[code]; stack[top++] = first;
-        if (avail < 4096) {
-          prefix[avail] = old; suffix[avail] = first; avail++;
-          if ((avail & mask) === 0 && avail < 4096) { size++; mask += avail; }
-        }
-        old = incoming;
-        while (top > 0 && op < count) out[op++] = stack[--top];
-      }
-      return out;
-    }
-
-    // Parse to raw frames. Throws on anything that is not a GIF.
-    function parse(bytes) {
-      let p = 0;
-      const u8 = () => bytes[p++], u16 = () => { const v = bytes[p] | (bytes[p + 1] << 8); p += 2; return v; };
-      const sig = String.fromCharCode(...bytes.subarray(0, 6));
-      if (!/^GIF8[79]a$/.test(sig)) throw new Error('Not a GIF.');
-      p = 6;
-      const width = u16(), height = u16(), flags = u8(); p += 2;
-      let gct = null;
-      if (flags & 0x80) { const n = 2 << (flags & 7); gct = bytes.subarray(p, p + 3 * n); p += 3 * n; }
-      const skip = () => { let n; while (p < bytes.length && (n = u8())) p += n; };
-      const frames = []; let gce = { delay: 0, trans: -1, disposal: 0 };
-      while (p < bytes.length) {
-        const b = u8();
-        if (b === 0x3b) break;
-        if (b === 0x21) {
-          const label = u8();
-          if (label === 0xf9) {
-            const size = u8(), start = p, f = u8(), delay = u16(), t = u8();
-            gce = { disposal: (f >> 2) & 7, trans: f & 1 ? t : -1, delay: delay * 10 };
-            p = start + size; skip();
-          } else skip();
-        } else if (b === 0x2c) {
-          const x = u16(), y = u16(), w = u16(), h = u16(), f = u8();
-          let pal = gct;
-          if (f & 0x80) { const n = 2 << (f & 7); pal = bytes.subarray(p, p + 3 * n); p += 3 * n; }
-          const minSize = u8(), chunks = []; let len = 0, n;
-          while (p < bytes.length && (n = u8())) { chunks.push(bytes.subarray(p, p + n)); len += n; p += n; }
-          const data = new Uint8Array(len); let o = 0; for (const c of chunks) { data.set(c, o); o += c.length; }
-          if (w && h && pal && minSize >= 1 && minSize <= 11) {
-            let idx = lzwDecode(minSize, data, w * h);
-            if (f & 0x40) { // de-interlace
-              const rows = new Uint8Array(w * h); let r = 0;
-              for (const [s, st] of [[0, 8], [4, 8], [2, 4], [1, 2]]) for (let yy = s; yy < h; yy += st) { rows.set(idx.subarray(r * w, r * w + w), yy * w); r++; }
-              idx = rows;
-            }
-            frames.push({ x, y, w, h, pal, idx, ...gce });
-          }
-          gce = { delay: 0, trans: -1, disposal: 0 };
-        } else break; // unknown block: stop rather than misread
-      }
-      if (!frames.length || !width || !height) throw new Error('This GIF has no frames.');
-      return { width, height, frames };
-    }
-
-    // Composite every frame onto a full canvas (RGBA), honouring disposal.
-    // `visit(rgba, frameIndex)` sees each finished frame; the buffer is reused.
-    function composite(gif, visit) {
-      const { width: W, height: H } = gif, canvas = new Uint8Array(W * H * 4);
-      gif.frames.forEach((f, n) => {
-        const saved = f.disposal === 3 ? canvas.slice() : null;
-        for (let yy = 0; yy < f.h; yy++) {
-          const cy = f.y + yy; if (cy >= H) break;
-          for (let xx = 0; xx < f.w; xx++) {
-            const cx = f.x + xx; if (cx >= W) break;
-            const c = f.idx[yy * f.w + xx]; if (c === f.trans || c * 3 + 2 >= f.pal.length) continue;
-            const o = (cy * W + cx) * 4;
-            canvas[o] = f.pal[c * 3]; canvas[o + 1] = f.pal[c * 3 + 1]; canvas[o + 2] = f.pal[c * 3 + 2]; canvas[o + 3] = 255;
-          }
-        }
-        visit(canvas, n);
-        if (f.disposal === 2) for (let yy = f.y; yy < Math.min(H, f.y + f.h); yy++) canvas.fill(0, (yy * W + f.x) * 4, (yy * W + Math.min(W, f.x + f.w)) * 4);
-        else if (saved) canvas.set(saved);
-      });
-    }
-
-    // Box-filter downscale. A pixel is transparent when most of its block is.
-    function scale(src, W, H, w, h) {
-      if (w === W && h === H) return src.slice();
-      const out = new Uint8Array(w * h * 4);
-      for (let y = 0; y < h; y++) {
-        const y0 = Math.floor(y * H / h), y1 = Math.max(y0 + 1, Math.floor((y + 1) * H / h));
-        for (let x = 0; x < w; x++) {
-          const x0 = Math.floor(x * W / w), x1 = Math.max(x0 + 1, Math.floor((x + 1) * W / w));
-          let r = 0, g = 0, b = 0, n = 0, t = 0;
-          for (let yy = y0; yy < y1; yy++) for (let xx = x0; xx < x1; xx++) {
-            const o = (yy * W + xx) * 4;
-            if (src[o + 3] < 128) { t++; continue; }
-            r += src[o]; g += src[o + 1]; b += src[o + 2]; n++;
-          }
-          const o = (y * w + x) * 4;
-          if (n && n >= t) { out[o] = r / n; out[o + 1] = g / n; out[o + 2] = b / n; out[o + 3] = 255; }
-        }
-      }
-      return out;
-    }
-
-    // Median cut over a 15-bit colour histogram of every kept frame.
-    function palette(frames, k) {
-      const hist = new Uint32Array(32768);
-      for (const f of frames) for (let o = 0; o < f.length; o += 4) if (f[o + 3]) hist[((f[o] >> 3) << 10) | ((f[o + 1] >> 3) << 5) | (f[o + 2] >> 3)]++;
-      const bins = []; for (let i = 0; i < 32768; i++) if (hist[i]) bins.push(i);
-      const ch = (bin, c) => (bin >> (10 - c * 5)) & 31;
-      const boxes = [bins];
-      while (boxes.length < k) {
-        let best = -1, bestScore = 0, bestAxis = 0;
-        boxes.forEach((box, i) => {
-          if (box.length < 2) return;
-          let count = 0; const lo = [31, 31, 31], hi = [0, 0, 0];
-          for (const bin of box) { count += hist[bin]; for (let c = 0; c < 3; c++) { const v = ch(bin, c); if (v < lo[c]) lo[c] = v; if (v > hi[c]) hi[c] = v; } }
-          const axis = [0, 1, 2].reduce((a, c) => hi[c] - lo[c] > hi[a] - lo[a] ? c : a, 0), score = (hi[axis] - lo[axis] + 1) * count;
-          if (score > bestScore) { best = i; bestScore = score; bestAxis = axis; }
-        });
-        if (best < 0) break;
-        const box = boxes[best].sort((a, b) => ch(a, bestAxis) - ch(b, bestAxis));
-        let total = 0; for (const bin of box) total += hist[bin];
-        let acc = 0, cut = 1;
-        for (let i = 0; i < box.length - 1; i++) { acc += hist[box[i]]; if (acc * 2 >= total) { cut = i + 1; break; } cut = i + 1; }
-        boxes.splice(best, 1, box.slice(0, cut), box.slice(cut));
-      }
-      return boxes.filter(b => b.length).map(box => {
-        let n = 0, r = 0, g = 0, b = 0;
-        for (const bin of box) { const c = hist[bin]; n += c; r += c * (ch(bin, 0) * 8 + 4); g += c * (ch(bin, 1) * 8 + 4); b += c * (ch(bin, 2) * 8 + 4); }
-        return [Math.round(r / n), Math.round(g / n), Math.round(b / n)];
-      });
-    }
-
-    function lzwEncode(minSize, idx) {
-      const clear = 1 << minSize, eoi = clear + 1, out = []; const dict = new Map();
-      let size = minSize + 1, next = eoi + 1, acc = 0, n = 0;
-      const emit = c => { acc |= c << n; n += size; while (n >= 8) { out.push(acc & 255); acc >>>= 8; n -= 8; } };
-      const data = c => { emit(c); if (next >= (1 << size) && size < 12) size++; };
-      emit(clear);
-      let prefix = idx[0];
-      for (let i = 1; i < idx.length; i++) {
-        const k = idx[i], key = prefix * 256 + k, hit = dict.get(key);
-        if (hit !== undefined) { prefix = hit; continue; }
-        data(prefix);
-        if (next < 4096) dict.set(key, next++);
-        else { emit(clear); dict.clear(); size = minSize + 1; next = eoi + 1; }
-        prefix = k;
-      }
-      data(prefix); emit(eoi);
-      if (n > 0) out.push(acc & 255);
-      return out;
-    }
-
-    // Index 0 is always transparent; colours start at 1.
-    function encode(width, height, frames, delays, pal, tolerance) {
-      const depth = Math.max(1, Math.ceil(Math.log2(pal.length + 1))), size = 1 << depth, out = [];
-      const push16 = v => out.push(v & 255, (v >> 8) & 255);
-      const blocks = bytes => { for (let i = 0; i < bytes.length; i += 255) { const c = bytes.slice(i, i + 255); out.push(c.length, ...c); } out.push(0); };
-      out.push(...[71, 73, 70, 56, 57, 97]); push16(width); push16(height); out.push(0x80 | ((depth - 1) << 4) | (depth - 1), 0, 0);
-      for (let i = 0; i < size; i++) { const c = i && pal[i - 1] || [0, 0, 0]; out.push(c[0], c[1], c[2]); }
-      out.push(0x21, 0xff, 11, ...[...'NETSCAPE2.0'].map(c => c.charCodeAt(0)), 3, 1, 0, 0, 0);
-      const cache = new Int16Array(32768).fill(-1);
-      const nearest = (r, g, b) => {
-        const key = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
-        if (cache[key] >= 0) return cache[key];
-        let best = 1, bd = Infinity;
-        for (let i = 0; i < pal.length; i++) { const c = pal[i], d = (c[0] - r) ** 2 + (c[1] - g) ** 2 + (c[2] - b) ** 2; if (d < bd) { bd = d; best = i + 1; } }
-        return (cache[key] = best);
-      };
-      const hasAlpha = frames.some(f => { for (let o = 3; o < f.length; o += 4) if (!f[o]) return true; return false; });
-      const shown = new Uint8Array(width * height), tol = tolerance * tolerance;
-      frames.forEach((f, n) => {
-        const cur = new Uint8Array(width * height);
-        for (let i = 0, o = 0; i < cur.length; i++, o += 4) cur[i] = f[o + 3] ? nearest(f[o], f[o + 1], f[o + 2]) : 0;
-        // Transparency in the source means every frame is drawn whole on a
-        // cleared canvas; an opaque GIF only redraws the pixels that changed.
-        let x0 = 0, y0 = 0, x1 = width - 1, y1 = height - 1, idx = cur;
-        if (!hasAlpha && n > 0) {
-          x0 = width; y0 = height; x1 = -1; y1 = -1;
-          const diff = new Uint8Array(width * height);
-          for (let i = 0; i < cur.length; i++) {
-            const a = pal[cur[i] - 1], b = pal[shown[i] - 1];
-            if (cur[i] === shown[i] || (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2 <= tol) continue;
-            diff[i] = cur[i]; shown[i] = cur[i];
-            const x = i % width, y = (i - x) / width;
-            if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
-          }
-          if (x1 < 0) { x0 = y0 = x1 = y1 = 0; }
-          const w = x1 - x0 + 1, h = y1 - y0 + 1; idx = new Uint8Array(w * h);
-          for (let y = 0; y < h; y++) idx.set(diff.subarray((y0 + y) * width + x0, (y0 + y) * width + x0 + w), y * w);
-        } else shown.set(cur);
-        const w = x1 - x0 + 1, h = y1 - y0 + 1;
-        out.push(0x21, 0xf9, 4, ((hasAlpha ? 2 : 1) << 2) | 1); push16(Math.round(delays[n] / 10)); out.push(0, 0);
-        out.push(0x2c); push16(x0); push16(y0); push16(w); push16(h); out.push(0);
-        const minSize = Math.max(2, depth); out.push(minSize); blocks(lzwEncode(minSize, idx));
-      });
-      out.push(0x3b);
-      return new Uint8Array(out);
-    }
-
-    // Strongest last. Each level must fit before the next is tried.
-    const LEVELS = [
-      { edge: 360, step: 1, colors: 255, tol: 0 },
-      { edge: 360, step: 1, colors: 128, tol: 8 },
-      { edge: 320, step: 2, colors: 128, tol: 12 },
-      { edge: 280, step: 2, colors: 96, tol: 16 },
-      { edge: 240, step: 2, colors: 64, tol: 20 },
-      { edge: 200, step: 3, colors: 64, tol: 24 },
-      { edge: 160, step: 3, colors: 48, tol: 28 },
-      { edge: 120, step: 4, colors: 32, tol: 32 },
-    ];
-    const MAX_PIXELS = 60e6; // decoded work cap, so a huge GIF fails fast instead of freezing a phone
-
-    function shrink(bytes, maxBytes, levels = LEVELS) {
-      const gif = parse(bytes), W = gif.width, H = gif.height;
-      if (W * H * gif.frames.length > MAX_PIXELS) throw new Error('This GIF is too long or too large to shrink. Paste its direct image link instead.');
-      const timing = gif.frames.map(f => f.delay < 20 ? 100 : f.delay); // browsers show <20ms as 100ms
-      for (const level of levels) {
-        const s = Math.min(1, level.edge / Math.max(W, H)), w = Math.max(1, Math.round(W * s)), h = Math.max(1, Math.round(H * s));
-        const frames = [], delays = [];
-        composite(gif, (rgba, n) => {
-          if (n % level.step === 0) { frames.push(scale(rgba, W, H, w, h)); delays.push(timing[n]); }
-          else delays[delays.length - 1] += timing[n];
-        });
-        const pal = palette(frames, level.colors);
-        if (!pal.length) pal.push([0, 0, 0]);
-        const out = encode(w, h, frames, delays, pal, level.tol);
-        if (out.length <= maxBytes) return { bytes: out, width: w, height: h, frames: frames.length, from: { width: W, height: H, frames: gif.frames.length } };
-      }
-      throw new Error('This GIF is too large to shrink enough for a week. Paste its direct image link instead.');
-    }
-    return { parse, composite, shrink, encode, palette, LEVELS };
-  })();
-  // Base64 grows bytes by 4/3; leave room for the "data:image/gif;base64," prefix.
-  const bytesFor = chars => Math.floor((chars - 32) * 3 / 4);
-  // Aim well under MAX_DATA so a week still has room for other uploads.
-  const GIF_TARGET = 600000;
-
-  /* v131: the whole week shares MAX_TOTAL (it is saved in one draft on the
-     phone, and Safari's storage is small). When a new visual would overflow
-     it, re-shrink the uploaded GIFs instead of refusing: each gets an equal
-     share of what is left, smallest first, so a GIF already under its share
-     keeps full quality. Returns a copy; throws only if even that cannot fit. */
-  const b64ToBytes = b64 => { const bin = atob(b64), out = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out; };
-  const bytesToB64 = bytes => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s); };
-  const isGifUpload = m => m && m.kind === 'image' && typeof m.src === 'string' && m.src.startsWith('data:image/gif;base64,');
-  async function fitWeek(media) {
-    if (totalOK(media)) return { media, shrunk: [] };
-    const out = Array.isArray(media) ? media.slice() : { ...media };
-    const keys = Object.keys(out).filter(k => isGifUpload(out[k])).sort((a, b) => out[a].src.length - out[b].src.length);
-    const full = () => new Error('This week has too many uploaded images. Use an image link for this team instead.');
-    if (!keys.length) throw full();
-    const others = JSON.stringify(Object.keys(out).filter(k => !keys.includes(k)).map(k => out[k])).length;
-    let left = MAX_TOTAL - others - 300 * keys.length;
-    const shrunk = [];
-    for (let i = 0; i < keys.length; i++) {
-      const k = keys[i], m = out[k], share = Math.floor(left / (keys.length - i));
-      if (share < 20000) throw full();
-      if (m.src.length > share) {
-        await new Promise(r => setTimeout(r, 0));
-        let small;
-        try { small = GIF.shrink(b64ToBytes(m.src.slice(22)), bytesFor(share)); } catch (_) { throw full(); }
-        out[k] = { ...m, src: 'data:image/gif;base64,' + bytesToB64(small.bytes) };
-        shrunk.push(k);
-      }
-      left -= out[k].src.length;
-    }
-    if (!totalOK(out)) throw full();
-    return { media: out, shrunk };
+  const MEDIA_API = 'https://oqrfdhoyyogjmiqmjhnp.supabase.co/functions/v1/league-media/upload';
+  async function uploadOriginal(file, type, store) {
+    const send = async () => {
+      const ctl=new AbortController(), timer=setTimeout(()=>ctl.abort(),60000);
+      try {
+        return await fetch(MEDIA_API,{method:'POST',headers:{'Content-Type':type,Authorization:'Bearer '+await store.idToken()},body:file.slice(0,file.size,type),signal:ctl.signal});
+      } catch (e) { throw new Error(e.name==='AbortError'?'The upload timed out. Check your connection and try again.':'The upload could not reach the server. Check your connection and try again.'); }
+      finally { clearTimeout(timer); }
+    };
+    const r = await send();
+    const data = await r.json().catch(()=>({}));
+    if(!r.ok || typeof data.url!=='string' || !safeSource(data.url))throw new Error(data.error||'The upload could not be saved. Try again.');
+    return data.url;
   }
-  async function readFile(file) { return (await readFileInfo(file)).media; }
-  async function readFileInfo(file) {
+  async function readFile(file) {
     const types=['image/jpeg','image/png','image/webp','image/gif'];
     if(!file || (file.type && !types.includes(file.type)))throw new Error('Choose a JPG, PNG, WebP, or GIF file.');
     if(file.size>8*1024*1024)throw new Error('Choose an image smaller than 8 MB.');
@@ -377,18 +102,15 @@
     if(!type || (file.type && file.type!==type))throw new Error('Choose a valid JPG, PNG, WebP, or GIF file.');
     const src=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(new Error('Could not read that file.'));r.readAsDataURL(file.slice(0,file.size,type));});
     if(type==='image/gif') {
-      if(src.length<=MAX_DATA){await loadImage(src); return {media:{kind:'image',src,alt:'Animated ranking reaction'}};}
-      // Too big to store: re-encode smaller instead of refusing it.
-      const bytes=new Uint8Array(await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(new Error('Could not read that file.'));r.readAsArrayBuffer(file);}));
-      await new Promise(r=>setTimeout(r,0)); // let "Preparing image…" paint before the work
-      let small;
-      try { small=GIF.shrink(bytes,bytesFor(GIF_TARGET)); }
-      catch(e){ throw new Error(/link instead/.test(e.message)?e.message:'Could not shrink this GIF. Paste its direct image link instead.'); }
-      const out=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(new Error('Could not prepare that GIF.'));r.readAsDataURL(new Blob([small.bytes],{type:'image/gif'}));});
-      if(out.length>MAX_DATA)throw new Error('This GIF is too large to save in a week. Paste its direct image link instead to keep it animated.');
-      await loadImage(out);
-      const kb=n=>Math.max(1,Math.round(n/1024))+' KB';
-      return {media:{kind:'image',src:out,alt:'Animated ranking reaction'},note:`GIF compressed to fit (${kb(file.size)} → ${kb(small.bytes.length)}) and added to this draft.`};
+      // v132: GIFs are stored as files, untouched — never compressed. The week
+      // keeps only the link, so it has no size budget to fight.
+      const store=root && root.RankingStore;
+      if(store && store.hasSession && store.hasSession() && store.idToken) {
+        const url=await uploadOriginal(file,type,store);
+        await loadImage(url); return {kind:'image',src:url,alt:'Animated ranking reaction'};
+      }
+      if(src.length>MAX_DATA)throw new Error('Sign in to publishing (🚀 Publish to the app) once on this device, then upload again — your GIF is stored as-is with no size squeeze. Or paste its direct link.');
+      await loadImage(src); return {kind:'image',src,alt:'Animated ranking reaction'};
     }
     const img=await loadImage(src), canvas=document.createElement('canvas');
     let edge=640, result='';
@@ -400,19 +122,19 @@
       if(result.length<=140000)break; edge*=0.75;
     }
     if(result.length>140000)throw new Error('Could not shrink this image. Choose a smaller file.');
-    return {media:{kind:'image',src:result,alt:'Ranking reaction'}};
+    return {kind:'image',src:result,alt:'Ranking reaction'};
   }
   function editor(host, value, onChange, team='team') {
     let current=normalize(value);
     host.innerHTML=`<div class="rk-media-current">${render(current)}</div><details class="rk-media-picker"><summary>${current?'Change':'Add'} reaction, GIF, or image</summary><div class="rk-reaction-grid">${reactions.map(r=>`<button type="button" data-reaction="${r.id}" title="${esc(r.label)}" aria-label="${esc(r.label)} for ${esc(team)}" aria-pressed="${current?.id===r.id}">${r.emoji}<small>${esc(r.label)}</small></button>`).join('')}</div><label class="pr-by"><span>Upload image or GIF</span><input type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-media-file aria-label="Upload image or GIF for ${esc(team)}"></label><label class="pr-by"><span>Or paste a direct GIF / image link</span><input type="url" placeholder="https://…" data-media-url aria-label="Image link for ${esc(team)}"></label><button type="button" class="pr-btn" data-media-use>Use image link</button><button type="button" class="pr-btn ghost" data-media-remove>Remove visual</button><p class="pr-note" data-media-status role="status"></p></details>`;
     const status=host.querySelector('[data-media-status]');
-    const apply=async (m,note)=>{
+    const apply=async m=>{
       if(!host.isConnected)return;
-      const extra=await onChange(m); current=m;
+      await onChange(m); current=m;
       host.querySelector('.rk-media-current').innerHTML=render(m);hydrate(host);
       host.querySelector('summary').textContent=`${m?'Change':'Add'} reaction, GIF, or image`;
       host.querySelectorAll('[data-reaction]').forEach(b=>b.setAttribute('aria-pressed',String(m?.id===b.dataset.reaction)));
-      status.textContent=[note||(m?'Visual added to this draft.':'Visual removed.'),typeof extra==='string'?extra:''].filter(Boolean).join(' ');
+      status.textContent=m?'Visual added to this draft.':'Visual removed.';
     };
     async function run(work) {
       const controls=[...host.querySelectorAll('button,input')];controls.forEach(b=>b.disabled=true);status.textContent='Preparing image…';
@@ -423,7 +145,7 @@
     host.querySelector('[data-media-file]').onchange=e=>{
       const input=e.target, file=input.files[0];
       if(!file)return; // Dismissing the picker leaves the current visual untouched.
-      return run(async()=>{try{const got=await readFileInfo(file);await apply(got.media,got.note);}finally{input.value='';}});
+      return run(async()=>{try{await apply(await readFile(file));}finally{input.value='';}});
     };
     host.querySelector('[data-media-use]').onclick=()=>run(async()=>{
       const src=safeSource(host.querySelector('[data-media-url]').value.trim());
@@ -432,7 +154,7 @@
     });hydrate(host);
   }
   if(root && root.document) root.document.addEventListener('error',e=>{const img=e.target;if(img.matches?.('.rk-media img')){img.hidden=true;if(img.nextElementSibling)img.nextElementSibling.hidden=false;}},true);
-  const api={reactions,normalize,fromRow,setRow,render,hydrate,suggest,totalOK,fitWeek,loadImage,readFile,editor,gif:GIF,MAX_DATA,MAX_TOTAL,GIF_TARGET};
+  const api={reactions,normalize,fromRow,setRow,render,hydrate,suggest,totalOK,loadImage,readFile,editor};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   if(root)root.RankingMedia=api;
 })(typeof window!=='undefined'?window:null);
