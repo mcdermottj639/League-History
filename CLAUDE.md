@@ -314,12 +314,49 @@ well as publishing `oracle.js` on Pages. Rankings still shows published sets
 by default, with unpublished completed weeks selectable. The Power Rankings Lab builds from actual fantasy scores
 after games, so the Tuesday cutoff does not invent results or publish a set.
 
+## v130 — GIF auto-compress, faithful preview, steady reordering
+
+**Oversized GIFs are compressed, not refused.** An uploaded GIF over the
+per-image limit (`MAX_DATA`, 900,000 data-URL characters ≈ 660 KB) is re-encoded
+in the browser by a small self-contained GIF89a decoder/encoder inside
+`rankings-media.js` (`RankingMedia.gif`; no library, no build step). It tries
+progressively stronger settings — long edge 360→120 px, every frame → every
+4th (dropped frames' delays merge into the kept one, so loop length is
+unchanged), 255→32 colours (median cut), and skipping near-identical pixels on
+opaque GIFs — until the file fits `GIF_TARGET` (600,000 chars), leaving room in
+the week's 1.8M total for other uploads. Transparency, disposal and interlaced
+GIFs are handled. The editor reports e.g. "GIF compressed to fit (732 KB →
+382 KB)". GIFs already under the limit are stored byte-for-byte as before. A
+file that cannot be decoded, or would need more than 60M decoded pixels, is
+refused with the paste-a-link alternative.
+
+**The Lab preview matches the members' Rankings tab.** It now shows the week
+highlights (top scorer, biggest climb, closest scoring) and every team's
+"View trends & stats" breakdown, styled in `power.css` under `.pr-preview`
+(mirroring league.css's rk-* rules). Previously the preview hid trends, which
+read as No words dropping stats — members always saw them. "The numbers had
+them Nth" now shows on a No words card too (it used to live only inside the
+write-up box).
+
+**Moving a team no longer throws the page to the bottom.** `move()` records the
+moved row's position on screen, repaints, scrolls so that row is back under
+the same spot, restores focus to the same ▲/▼/position control without
+scrolling, and re-checks after layout and late image loads.
+
+Tests (`rankings-media.test.cjs`): exact codec round-trip of frames, timing and
+transparency; a 320×240×24 noise GIF over the limit compresses below
+`GIF_TARGET`, stays animated and keeps total loop time; undecodable oversize
+files are refused; scroll anchoring and focus after a move; No words preview
+shows highlights, stats and trends and members see the model note. Real-device
+iPhone QA of the scroll fix is still pending. App, service-worker cache and
+script versions advance to v130; media revision 3; power.js 20.
+
 ## v129 — Mobile GIF uploads
 
 Uploads identify JPEG/PNG/WebP/GIF from file signatures and then require browser
 image decoding, so mobile files with missing MIME metadata work without trusting
 extensions or accepting spoofed content. GIF bytes and animation are retained.
-Existing 8 MB input, per-image and per-week limits remain. Cancelling a picker
+Existing 8 MB input, per-image and per-week limits remain. ⚠️ SUPERSEDED in v130: an over-limit GIF is now compressed to fit instead of refused. Cancelling a picker
 preserves the current visual; resetting its value allows selecting the same file
 again after either success or an inline error. Both pages load media revision 2;
 app and service-worker caches advance to v129.
@@ -342,7 +379,8 @@ rankings do not call a skipped week “last week.”
 
 `rankings-media.js` owns normalization, rendering, suggestions, and the shared
 media editor. It offers 16 animated CSS reactions, JPEG/PNG/WebP uploads (resized
-and compressed), GIF uploads (animation retained), and direct HTTPS image links.
+and compressed), GIF uploads (animation retained; over-limit GIFs re-encoded to
+fit since v130), and direct HTTPS image links.
 Reactions are editorial suggestions based on rank, score, movement, and form.
 Media is optional in **row[8].media** alongside frozen scores/outcomes/all-play;
 old rows remain valid. It renders in the Lab, members' Rankings, public shared

@@ -155,7 +155,7 @@
         <div class="rk-team-head"><span class="pr-n big">${r.rank}</span>${code?crest(code,40):''}<div class="rk-team-name"><h3 class="pr-tn">${esc(name)}</h3><span class="pr-mgr">${esc(own || '')}</span>${mine?' <span class="lg-you">YOU</span>':''}</div><div class="rk-movement"><b class="${move>0?'rk-up':move<0?'rk-down':''}">${movement}</b><small>${baseline}</small></div></div>
         <div class="rk-stats"><div><b>${esc(rec || '—')}</b><span>Record</span></div><div><b>${data.p.r?fmt(ppg):'—'}</b><span>PPG</span></div><div><b>${r.scoringRank?(r.tied?'T-':'')+ordinal(r.scoringRank):'—'}</b><span>Scoring</span></div></div>
         ${media.render(media.fromRow(r.row))}
-        ${note?`<div class="rk-writeup">${icon('quote')}<div><h4>The write-up</h4><div class="pr-take-ro">${esc(note)}</div>${modelRank && modelRank !== r.rank?`<p class="pr-moved">The numbers had them ${ordinal(modelRank)}.</p>`:''}</div></div>`:''}
+        ${note?`<div class="rk-writeup">${icon('quote')}<div><h4>The write-up</h4><div class="pr-take-ro">${esc(note)}</div>${modelRank && modelRank !== r.rank?`<p class="pr-moved">The numbers had them ${ordinal(modelRank)}.</p>`:''}</div></div>`:modelRank && modelRank !== r.rank?`<p class="pr-moved">The numbers had them ${ordinal(modelRank)}.</p>`:''}
         <details class="rk-details" data-rank-detail="${esc(identity(r.row))}"${r.rank===1?' open':''}><summary><span class="rk-closed-label">View trends &amp; stats</span><span class="rk-open-label">Season breakdown</span><i aria-hidden="true"></i></summary><div class="rk-detail-body">${breakdown(r,data)}<button type="button" class="rk-hide">Hide details <span aria-hidden="true">⌃</span></button></div></details>
       </li>`;
     }).join('');

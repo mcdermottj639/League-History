@@ -440,7 +440,58 @@ body.pr-page {
 .pr-draft-status.error { color:var(--neg); }
 .pr-preview { margin:12px 0; }
 .pr-preview > summary { cursor:pointer; font-weight:800; padding:12px; }
-.pr-preview .rk-details { display:none; }
+/* v130: the preview shows everything members see — week highlights and each
+   team's trends & stats — not just the cards. Mirrors league.css's rk-* rules,
+   mapped to this page's tokens. */
+.pr-preview .rk-highlights { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; margin:4px 0 12px; }
+.pr-preview .rk-highlight { display:flex; flex-direction:column; align-items:center; text-align:center; min-width:0; padding:12px 5px; border:1px solid var(--line); border-radius:12px; background:var(--card); gap:5px; }
+.pr-preview .rk-highlight .rk-icon { color:var(--accent); }
+.pr-preview .rk-highlight span { font-size:11px; font-weight:600; color:var(--muted); line-height:1.3; }
+.pr-preview .rk-highlight b { font-size:12px; font-weight:800; line-height:1.3; overflow-wrap:anywhere; }
+.pr-preview .rk-highlight strong { margin-top:auto; font-size:clamp(15px,4.2vw,23px); line-height:1.2; font-weight:900; color:var(--accent); font-variant-numeric:tabular-nums; }
+.pr-preview .rk-up { color:var(--pos) !important; }
+.pr-preview .rk-down { color:var(--neg) !important; }
+.pr-preview .rk-card .pr-moved { color:var(--muted); font-size:12px; margin:7px 0 0; }
+.pr-preview .rk-details { border-top:1px solid var(--line); margin-top:12px; }
+.pr-preview .rk-details > summary { display:flex; align-items:center; justify-content:center; gap:10px; min-height:44px; padding:5px 0; font-size:13px; font-weight:800; cursor:pointer; list-style:none; }
+.pr-preview .rk-details > summary::-webkit-details-marker { display:none; }
+.pr-preview .rk-details > summary i { width:7px; height:7px; border:solid var(--muted); border-width:0 2px 2px 0; transform:rotate(45deg); margin-top:-4px; }
+.pr-preview .rk-details .rk-open-label { display:none; }
+.pr-preview .rk-details[open] > summary { justify-content:space-between; }
+.pr-preview .rk-details[open] > summary i { transform:rotate(225deg); margin-top:4px; }
+.pr-preview .rk-details[open] > summary .rk-open-label { display:inline; }
+.pr-preview .rk-details[open] > summary .rk-closed-label { display:none; }
+.pr-preview .rk-chart,.pr-preview .rk-comparison,.pr-preview .rk-form-grid > section { padding:12px; border:1px solid var(--line); border-radius:10px; background:var(--card); min-width:0; }
+.pr-preview .rk-chart { border-bottom-left-radius:0; border-bottom-right-radius:0; }
+.pr-preview .rk-chart h4,.pr-preview .rk-comparison h4,.pr-preview .rk-form-grid h4 { margin:0 0 7px; }
+.pr-preview .rk-chart-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.pr-preview .rk-chart svg { width:100%; display:block; font:11px Archivo, system-ui, sans-serif; }
+.pr-preview .rk-chart svg text { fill:var(--muted); }
+.pr-preview .rk-chart svg line { stroke:var(--line); stroke-width:1; }
+.pr-preview .rk-chart svg .rk-trend { stroke:var(--accent); stroke-width:2.5; }
+.pr-preview .rk-chart svg circle { fill:var(--accent); stroke:var(--card); stroke-width:1.5; }
+.pr-preview .rk-trend-note { font-size:12px; font-weight:600; line-height:1.45; margin:9px 0 0; color:var(--muted); }
+.pr-preview .rk-comparison { border-top:0; border-top-left-radius:0; border-top-right-radius:0; }
+.pr-preview .rk-comparison h4 span { font-size:11px; font-weight:500; color:var(--muted); }
+.pr-preview .rk-bar { display:grid; grid-template-columns:minmax(42px,.8fr) minmax(40px,2fr) 43px; align-items:center; gap:9px; margin-top:10px; font-size:12px; }
+.pr-preview .rk-bar > span { overflow-wrap:anywhere; }
+.pr-preview .rk-bar b { font-variant-numeric:tabular-nums; font-size:13px; text-align:right; }
+.pr-preview .rk-track { height:11px; }
+.pr-preview .rk-track i { display:block; height:100%; border-radius:20px; background:var(--accent); }
+.pr-preview .rk-track .rk-league-bar { background:var(--line); }
+.pr-preview .rk-form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; margin-top:8px; }
+.pr-preview .rk-form-grid h4 { text-transform:uppercase; font-size:11px; letter-spacing:.04em; }
+.pr-preview .rk-ap { font-size:23px; font-weight:900; font-variant-numeric:tabular-nums; }
+.pr-preview .rk-form-grid p,.pr-preview .rk-empty { font-size:11px; line-height:1.45; color:var(--muted); margin:4px 0 0; }
+.pr-preview .rk-form { display:flex; gap:5px; }
+.pr-preview .rk-result { display:flex; flex-direction:column; align-items:center; gap:5px; min-width:0; flex:1; max-width:36px; }
+.pr-preview .rk-result b { display:flex; justify-content:center; align-items:center; min-height:29px; width:100%; border-radius:8px; font-size:13px; background:var(--card-2); color:var(--muted); }
+.pr-preview .rk-result .rk-W { background:var(--pos); color:var(--card); }
+.pr-preview .rk-result .rk-L { background:var(--neg); color:var(--card); }
+.pr-preview .rk-result small { color:var(--muted); font-size:9px; }
+.pr-preview .rk-hide { width:100%; min-height:44px; border:1px solid var(--line); border-radius:10px; background:var(--card); color:var(--text); font:800 13px Archivo, system-ui, sans-serif; margin-top:8px; cursor:pointer; }
+.pr-preview .rk-hide span { margin-left:7px; }
+@media(max-width:520px) { .pr-preview .rk-highlights { gap:5px; } .pr-preview .rk-highlight { padding:10px 3px; } .pr-preview .rk-highlight span { font-size:10px; } .pr-preview .rk-form-grid > section { padding:9px; } }
 .rk-reaction { position:relative; display:grid; place-items:center; overflow:hidden; min-height:150px; border-radius:14px; margin:12px 0; background:color-mix(in srgb,var(--reaction-color) 18%,var(--card)); border:1px solid color-mix(in srgb,var(--reaction-color) 30%,transparent); }
 .rk-reaction > span { font-size:76px; line-height:1.4; z-index:1; animation:rk-bob 3s ease-in-out infinite; filter:drop-shadow(0 10px 10px #0002); }
 .rk-reaction > i { position:absolute; width:140px; height:140px; border-radius:50%; border:1px solid color-mix(in srgb,var(--reaction-color) 35%,transparent); box-shadow:0 0 0 25px #ffffff0b,0 0 0 50px #ffffff09; }

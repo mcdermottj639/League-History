@@ -420,10 +420,45 @@ function move(id, to) {
   to = Math.max(0, Math.min(S.order.length - 1, to));
   if (to === from) return;
   rememberDraft();
+  const anchor = rowAnchor(id);
   S.order.splice(from, 1);
   S.order.splice(to, 0, id);
   persist();
   paintRank();
+  keepInPlace(id, anchor);
+}
+
+/* Moving a team repaints the whole list, and on iPhone that threw the page to
+   the bottom. Keep the moved team where his thumb was: put its row back at
+   the same height on screen, and keep focus on the same control, so he can
+   keep tapping ▲/▼ on one team. Re-checked after layout and image loads,
+   because GIFs and reactions above the row settle a moment later. */
+function rowAnchor(id) {
+  const li = rowEl(id);
+  const ae = document.activeElement;
+  const ctl = ae && li && li.contains(ae) ? (ae.matches('[data-up]') ? '[data-up]' : ae.matches('[data-down]') ? '[data-down]' : ae.matches('.pr-jump') ? '.pr-jump' : '') : '';
+  return li ? { top: li.getBoundingClientRect().top, ctl } : null;
+}
+function rowEl(id) {
+  return $$('#pr-rank > .pr-list > .pr-row').find((li) => li.dataset.id === String(id)) || null;
+}
+function keepInPlace(id, anchor) {
+  if (!anchor) return;
+  const fix = () => {
+    const li = rowEl(id);
+    if (!li) return;
+    const d = li.getBoundingClientRect().top - anchor.top;
+    if (Math.abs(d) > 1) window.scrollBy(0, d);
+  };
+  const li = rowEl(id);
+  if (li && anchor.ctl) {
+    const c = li.querySelector(anchor.ctl);
+    if (c && !c.disabled) { try { c.focus({ preventScroll: true }); } catch (_) {} }
+  }
+  fix();
+  if (window.requestAnimationFrame) requestAnimationFrame(fix);
+  const until = Date.now() + 1500;
+  $$('#pr-rank img').forEach((img) => { if (!img.complete) img.addEventListener('load', () => { if (Date.now() < until) fix(); }, { once: true }); });
 }
 
 /* ------------------------------------------------------------ share I/O --- */
@@ -2014,7 +2049,7 @@ function paintRank() {
       </details>
     </div>`;
 
-  host.innerHTML = head + `<details class="pr-card pr-preview" id="pr-preview"><summary>Preview this week</summary><ol class="pr-list" id="pr-preview-body"></ol></details><ol class="pr-list">${rows}</ol>` + foot + inviteHTML() + lockBarHTML();
+  host.innerHTML = head + `<details class="pr-card pr-preview" id="pr-preview"><summary>Preview this week</summary><div id="pr-preview-top"></div><ol class="pr-list" id="pr-preview-body"></ol></details><ol class="pr-list">${rows}</ol>` + foot + inviteHTML() + lockBarHTML();
 
   // Textareas get their value assigned, never interpolated into markup.
   $$('.pr-row', host).forEach((li) => {
@@ -2045,8 +2080,12 @@ function paintRank() {
   $('#pr-preview').ontoggle = () => {
     if(!$('#pr-preview').open)return;
     const p=payload(), data=window.RankingVisuals.facts(p,liveWeeks || []);
+    // Same pieces the members' Rankings tab shows: week highlights, stats,
+    // visual or write-up, and each team's trends & stats breakdown.
+    $('#pr-preview-top').innerHTML=window.RankingVisuals.highlights(data);
     $('#pr-preview-body').innerHTML=window.RankingVisuals.rowsHTML(data,{crest:()=>'',me:null});
     window.RankingMedia.hydrate($('#pr-preview-body'));
+    $$('.rk-hide',$('#pr-preview-body')).forEach(button=>button.onclick=()=>{const d=button.closest('details');d.open=false;d.querySelector('summary').focus();});
   };
   $$('[data-format]',host).forEach(button=>button.onclick=()=>{rememberDraft();S.format=button.dataset.format;persist();paintRank();});
   $('#pr-writing-length').onchange=e=>save('powerlab:length',e.target.value);

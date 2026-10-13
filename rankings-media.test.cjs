@@ -104,7 +104,10 @@ test('mobile files are identified by bytes, with typed spoofing and size limits 
      await assert.rejects(a.w.RankingMedia.readFile(new a.w.File([bytes],name,{type})),/valid JPG/);
    }
    await assert.rejects(a.w.RankingMedia.readFile(new a.w.File([new Uint8Array(8*1024*1024+1)],'large.gif')),/smaller than 8 MB/);
-   await assert.rejects(a.w.RankingMedia.readFile(new a.w.File([gif,new Uint8Array(700000)],'large.gif')),/too large to save/);
+   // v130: an oversized GIF is re-encoded to fit instead of refused.
+   const padded=await a.w.RankingMedia.readFile(new a.w.File([gif,new Uint8Array(700000)],'large.gif'));
+   assert.ok(padded.src.startsWith('data:image/gif;base64,') && padded.src.length<=Media.MAX_DATA);
+   await assert.rejects(a.w.RankingMedia.readFile(new a.w.File(['GIF89a',new Uint8Array(700000)],'junk.gif')),/direct image link/);
    // Decoding is stubbed here; these fixtures exercise signature routing only.
    for(const [bytes,name] of [[Buffer.from(PNG.split(',')[1],'base64'),'image'],[Buffer.from([255,216,255,224]),'photo'],[Buffer.from('RIFF0000WEBP'),'picture']]){
      const m=await a.w.RankingMedia.readFile(new a.w.File([bytes],name));assert.ok(m.src.startsWith('data:image/'));
@@ -127,6 +130,74 @@ test('upload cancellation and repeat selections preserve selected and week previ
    assert.match(host.querySelector('[data-media-status]').textContent,/Visual added/);
    Object.defineProperty(input,'files',{configurable:true,value:[file]});await input.onchange({target:input});assert.equal(input.value,'');
    Object.defineProperty(input,'files',{configurable:true,value:[new a.w.File([file,new Uint8Array(700000)],'large.gif')]});await input.onchange({target:input});
-   assert.match(host.querySelector('[data-media-status]').textContent,/too large to save/);assert.ok(host.querySelector('.rk-media-current img'));assert.equal(input.disabled,false);
+   assert.match(host.querySelector('[data-media-status]').textContent,/GIF compressed to fit/);assert.ok(host.querySelector('.rk-media-current img'));assert.equal(input.disabled,false);
+   Object.defineProperty(input,'files',{configurable:true,value:[new a.w.File(['GIF89a',new Uint8Array(700000)],'broken.gif')]});await input.onchange({target:input});
+   assert.match(host.querySelector('[data-media-status]').textContent,/direct image link/);assert.ok(host.querySelector('.rk-media-current img'),'a failed upload keeps the current visual');assert.equal(input.disabled,false);
  }finally{a.dom.window.close();}
+});
+
+/* ---- v130 -------------------------------------------------------------- */
+function noisyGif(w,h,frames,delay){
+  let seed=7;const rnd=()=>(seed=(Math.imul(seed,1103515245)+12345)>>>0)>>>24;
+  const pal=Array.from({length:255},(_,i)=>[(i*37)&255,(i*91)&255,(i*53)&255]);
+  const rgba=Array.from({length:frames},()=>{const f=new Uint8Array(w*h*4);for(let o=0;o<f.length;o+=4){const c=pal[rnd()%255];f[o]=c[0];f[o+1]=c[1];f[o+2]=c[2];f[o+3]=255;}return f;});
+  return Media.gif.encode(w,h,rgba,Array(frames).fill(delay),pal,0);
+}
+
+test('GIF codec round-trips frames, timing and transparency exactly at full quality',()=>{
+  const w=6,h=4,pal=[[255,0,0],[0,0,255],[10,200,30]];
+  const frame=(c)=>{const f=new Uint8Array(w*h*4);for(let i=0;i<w*h;i++){const k=(i+c)%4;if(k===3)continue;f.set([...pal[k],255],i*4);}return f;};
+  const src=[frame(0),frame(1),frame(2)], bytes=Media.gif.encode(w,h,src,[70,120,40],pal,0);
+  const g=Media.gif.parse(bytes);assert.deepEqual([g.width,g.height,g.frames.length],[w,h,3]);
+  assert.deepEqual(g.frames.map(f=>f.delay),[70,120,40]);
+  const seen=[];Media.gif.composite(g,rgba=>seen.push(Array.from(rgba)));
+  src.forEach((f,i)=>assert.deepEqual(seen[i],Array.from(f),'frame '+i));
+});
+
+test('an oversized GIF upload is compressed under the week limit, keeps animation and total timing',async()=>{
+  const big=noisyGif(320,240,24,80);assert.ok(big.length>Media.MAX_DATA,'fixture must exceed the old limit');
+  const out=Media.gif.shrink(big,Math.floor((Media.GIF_TARGET-32)*3/4));
+  const g=Media.gif.parse(out.bytes);
+  assert.ok(g.frames.length>1,'still animated');
+  assert.equal(g.frames.reduce((a,f)=>a+f.delay,0),24*80,'total loop time kept');
+  const a=lab();try{
+    await settle();a.w.Image=class{set src(v){queueMicrotask(()=>this.onload());}};
+    const host=a.w.document.createElement('div');a.w.document.body.append(host);let saved=null;
+    a.w.RankingMedia.editor(host,null,m=>{saved=m;},'Team 1');
+    const input=host.querySelector('[data-media-file]');
+    Object.defineProperty(input,'files',{value:[new a.w.File([big],'huge.gif')]});
+    await input.onchange({target:input});
+    assert.ok(saved && saved.src.startsWith('data:image/gif;base64,'));
+    assert.ok(saved.src.length<=Media.GIF_TARGET,'leaves room for other uploads');
+    assert.match(host.querySelector('[data-media-status]').textContent,/GIF compressed to fit/);
+  }finally{a.dom.window.close();}
+});
+
+test('moving a team keeps that row where it was on screen and keeps focus on the arrow',async()=>{
+  const a=lab();try{
+    await settle();
+    const scrolls=[];a.w.scrollBy=(x,y)=>scrolls.push(y);
+    a.w.HTMLElement.prototype.getBoundingClientRect=function(){const rows=[...this.ownerDocument.querySelectorAll('#pr-rank > .pr-list > .pr-row')];const i=rows.indexOf(this);return {top:i<0?0:i*300,bottom:0,left:0,right:0,width:0,height:0};};
+    const first=a.$('#pr-rank > .pr-list > .pr-row'), id=first.dataset.id;
+    first.querySelector('[data-down]').focus();first.querySelector('[data-down]').click();
+    const moved=[...a.w.document.querySelectorAll('#pr-rank > .pr-list > .pr-row')].findIndex(li=>li.dataset.id===id);
+    assert.equal(moved,1);
+    assert.equal(scrolls[0],300,'page follows the moved row instead of jumping');
+    assert.equal(a.w.document.activeElement,a.w.document.querySelectorAll('#pr-rank > .pr-list > .pr-row')[1].querySelector('[data-down]'));
+  }finally{a.dom.window.close();}
+});
+
+test('No words keeps stats, highlights, trends and the model note in the preview and for members',async()=>{
+  const a=lab({'powerlab:draft':{key:2,year:2026,order:[],comments:{},media:{},format:'visual'}});try{
+    await settle();a.$('[data-format="visual"]').click();await settle();
+    a.$('#pr-preview').open=true;await settle();
+    const preview=a.$('#pr-preview');
+    assert.ok(preview.querySelector('.rk-highlights'),'week highlights');
+    assert.equal(preview.querySelectorAll('#pr-preview-body .rk-stats').length,12);
+    assert.equal(preview.querySelectorAll('#pr-preview-body .rk-details').length,12,'trends & stats');
+    assert.equal(preview.querySelectorAll('.rk-writeup').length,0,'no words');
+  }finally{a.dom.window.close();}
+  const p={v:1,k:2,l:'After Week 2',b:'',d:'2026-10-13',r:1,o:Array.from({length:12},(_,i)=>['Team '+(i+1),'1-1',100+i,'',i===0?3:i+1,0,'Own','C'+i,{scores:[100,100+i],outcomes:['W','L']}])};
+  const html=Visuals.rowsHTML(Visuals.facts(p,[]),{crest:()=>'',me:null});
+  assert.match(html,/The numbers had them 3rd/);
 });
