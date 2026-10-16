@@ -102,6 +102,19 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   even then the old hash stays valid until he says otherwise. Generate nothing
   that would require anyone to open a new link.
 
+## v133 — Thursday reset choices
+
+Ticket offers reset everyone or reset only a named losing Thursday picker.
+Selective resets preserve other picks and revisions, archive the full lost attempt,
+clear placed-ticket odds, and open one upcoming-game replacement slot. Organizer
+access, current week and selected-pick/odds revision checks apply. The missed-bet
+reset remains separate; Thursday losses remain in history. Individual Season
+records deduplicate carried selections across attempts; ticket totals still count
+actual attempts separately. UI is gated by supportsSelectiveThursdayReset; deploy
+league-parlay with the updated server modules before enabling the selective option.
+No existing private links, sessions or production picks are changed by deployment.
+This extends the earlier all-picks Thursday reset behavior.
+
 ## v99 — Version only in help
 
 The version stamp is removed from the main app footer and appears once, after

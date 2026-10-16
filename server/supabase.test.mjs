@@ -169,3 +169,13 @@ test('organizer can review a completed prop without giving a reason',async()=>{
  assert.equal((await b.request('api/parlay/review',body,admin.token)).status,200);
  const w=b.store.read().seasons[2026].weeks[1];assert.equal(w.picks.CC.manualResult,'hit');assert.equal(w.picks.CC.reviewNote,'');assert.equal(w.audit.at(-1).action,'review');
 });
+
+test('Edge selective Thursday reset forwards scope and preserves another member',async()=>{
+ const b=await backend();activate(b.store);const admin=await(await b.request('api/parlay/session',{key:'test-private-key'})).json();
+ await b.request('api/parlay/pick',pick('Hurd'),admin.token);await b.request('api/parlay/pick',pick('McD',1),admin.token);
+ b.store.transact(state=>{const w=state.seasons[2026].weeks[1],p=w.picks.Hurd,g=w.games.find(x=>x.id===p.gameId);g.kick=Date.UTC(2026,8,18,0,15);g.state='post';g.completed=true;g.status='STATUS_FINAL';g.homeScore=20;g.awayScore=24;p.lockedAt=g.kick;});
+ const kept=structuredClone(b.store.read().seasons[2026].weeks[1].picks.McD);
+ assert.equal((await b.request('api/parlay/reset',{year:2026,week:1,mode:'member',member:'Hurd',revision:1,ticketOddsRevision:0},admin.token)).status,200);
+ assert.deepEqual(b.store.read().seasons[2026].weeks[1].picks.McD,kept);assert.equal(b.store.read().seasons[2026].weeks[1].picks.Hurd,undefined);
+ const state=await(await b.request('api/parlay/state')).json();assert.equal(state.supportsSelectiveThursdayReset,true);
+});

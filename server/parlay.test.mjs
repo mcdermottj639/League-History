@@ -354,3 +354,28 @@ test('props without odds save and grade while unknown prices remain unknown',()=
   assert.equal(t.legs[0].quote.odds,null);assert.equal(t.legs[0].result,'hit');assert.equal(t.combinedOdds,null);assert.equal(t.estimatedReturn,null);s.close();
  }
 });
+
+test('selective Thursday reset archives the loss and preserves other picks, revisions and locks',()=>{
+ const s=newStore(),thu=Date.UTC(2026,8,18,0,15),before=thu-60000,after=thu+10800000,sun=thu+259200000,organizer={role:'organizer',member:'Zach'};
+ try{
+  const board=payload([event('thu',thu),event('sun',sun),event('late',sun+10800000)]);
+  ingest(s,2026,2,board,before);
+  savePick(s,2026,2,member('McD'),pick('McD',{gameId:'thu'}),before);
+  savePick(s,2026,2,member('Hurd'),pick('Hurd',{gameId:'sun'}),before);
+  const c=board.events[0].competitions[0];c.status.type={state:'post',completed:true,name:'STATUS_FINAL'};c.competitors.find(x=>x.homeAway==='home').score='20';c.competitors.find(x=>x.homeAway==='away').score='24';
+  ingest(s,2026,2,board,after);
+  const original=structuredClone(s.read().seasons[2026].weeks[2].picks.Hurd),request={mode:'member',member:'McD',revision:1,ticketOddsRevision:0};
+  assert.throws(()=>resetParlay(s,2026,2,member('McD'),after,request),/Organizer/);
+  assert.throws(()=>resetParlay(s,2026,2,organizer,after,{...request,member:'Hurd'}),/losing Thursday/);
+  assert.throws(()=>resetParlay(s,2026,2,organizer,after,{...request,revision:0}),/changed/);
+  assert.throws(()=>resetParlay(s,2026,2,organizer,after,{...request,ticketOddsRevision:1}),/changed/);
+  resetParlay(s,2026,2,organizer,after,request);
+  const w=s.read().seasons[2026].weeks[2];assert.deepEqual(w.picks.Hurd,original);assert.equal(w.revisions.Hurd,1);assert.equal(w.picks.McD,undefined);assert.equal(w.replacementSlots.McD,'thursday-miss');assert.equal(w.ticketOddsRevision,1);
+  assert.equal(publicWeek(w,after).priorTickets[0].ticket.miss,1);assert.equal(publicWeek(w,after).priorTickets[0].ticket.legs.length,2);
+  assert.throws(()=>resetParlay(s,2026,2,organizer,after,request),/Thursday leg misses/);
+  assert.throws(()=>savePick(s,2026,2,member('McD'),pick('McD',{gameId:'thu',revision:2}),after),/closed/);
+  savePick(s,2026,2,member('McD'),pick('McD',{gameId:'late',revision:2}),after);
+  assert.deepEqual(s.read().seasons[2026].weeks[2].picks.Hurd,original);
+  assert.equal(s.read().seasons[2026].weeks[2].replacementSlots.McD,undefined);
+ }finally{s.close();}
+});

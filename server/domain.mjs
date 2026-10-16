@@ -76,14 +76,14 @@ export function ticket(picks,games,now=Date.now(),stake=STAKE){
      The reset escape hatch deliberately needs a completed Thursday miss. NFL
      Thursday kickoffs cross midnight UTC, so use the league's Eastern time. */
   const ticketLocked=legs.some(l=>l.lockedAt||(l.game&&locked(l.game,now)));
-  const thursdayMiss=legs.some(l=>l.result==='miss'&&l.game?.kick&&new Intl.DateTimeFormat('en-US',{weekday:'long',timeZone:'America/New_York'}).format(new Date(l.game.kick))==='Thursday');
+  const thursdayResetMembers=legs.filter(l=>l.result==='miss'&&l.game?.kick&&new Intl.DateTimeFormat('en-US',{weekday:'long',timeZone:'America/New_York'}).format(new Date(l.game.kick))==='Thursday').map(l=>l.member);
   const settled=legs.length>0&&legs.every(l=>['hit','miss','push'].includes(l.result));
   const priced=legs.filter(l=>l.result!=='push'),known=priced.every(l=>odds(l.quote?.odds)!==null&&!l.missingQuote);
   const mult=known?priced.reduce((n,l)=>n*decimal(l.quote.odds),1):null;
   const full=legs.length===ROSTER.length,status=miss?'lost':!legs.length?'empty':settled?full?(push===legs.length?'refunded':'won'):'incomplete':legs.some(l=>l.lockedAt)?'live':'collecting';
   // Incomplete collections never become a supposedly placed/winning twelve-leg ticket.
   const returned=status==='lost'?0:(status==='won'||status==='refunded')&&mult!==null?stake*mult:null;
-  return {legs,hit,miss,push,locked:ticketLocked,resetEligible:ticketLocked&&thursdayMiss,settled,full,status,stake,decimal:mult,combinedOdds:mult===null||mult===1?null:mult>=2?Math.round((mult-1)*100):-Math.round(100/(mult-1)),estimatedReturn:mult===null?null:stake*mult,returned,net:returned===null?null:returned-stake,at:now};
+  return {legs,hit,miss,push,locked:ticketLocked,resetEligible:ticketLocked&&thursdayResetMembers.length>0,thursdayResetMembers,settled,full,status,stake,decimal:mult,combinedOdds:mult===null||mult===1?null:mult>=2?Math.round((mult-1)*100):-Math.round(100/(mult-1)),estimatedReturn:mult===null?null:stake*mult,returned,net:returned===null?null:returned-stake,at:now};
 }
 export function migratePick(m,row,games){
   const text=String(row.p||''),tokens=text.toUpperCase().split(/[^A-Z0-9]+/),matches=games.filter(g=>tokens.includes(g.away)||tokens.includes(g.home));

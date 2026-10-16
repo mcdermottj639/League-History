@@ -202,3 +202,21 @@ test('saved pick card labels settled results without treating live or pending pi
   else assert.ok(!card.includes('pn-pick-outcome'));
  }
 });
+
+test('Thursday reset offers full or named picker reset and submits scoped revisions',async()=>{
+ const h=harness(true,'before',{supportsSelectiveThursdayReset:true},true);
+ const w=h.data.weeks.find(w=>w.week===2);w.ticket.resetEligible=true;w.ticket.thursdayResetMembers=['McD'];w.revisions={McD:4};w.ticketOddsRevision=3;
+ await h.window.LeagueParlay.paint(h.host);await h.click({pn:'tab',tab:'ticket'});
+ assert.match(h.host.innerHTML,/Reset everyone’s picks/);assert.match(h.host.innerHTML,/Reset only McD’s pick/);
+ await h.click({pn:'reset-thursday-member',member:'McD'});
+ const call=h.requests.find(r=>r.url.endsWith('/reset'));assert.ok(call);
+ assert.deepEqual(JSON.parse(call.options.body),{year:2026,week:2,mode:'member',member:'McD',revision:4,ticketOddsRevision:3});
+});
+
+test('carried picks count once in individual season records',async()=>{
+ const h=harness(true,'before'),w=h.data.weeks.find(w=>w.week===2);
+ const leg={member:'McD',gameId:'same',createdAt:1,revision:1,result:'hit',lockedAt:2,quote:{odds:100}};
+ w.ticket={...w.ticket,legs:[leg],hit:1,miss:0,push:0};w.priorTickets=[{ticket:structuredClone(w.ticket)}];
+ await h.window.LeagueParlay.paint(h.host);await h.click({pn:'tab',tab:'season'});
+ assert.match(h.host.innerHTML,/1–0 · 100%/);assert.doesNotMatch(h.host.innerHTML,/2–0 · 100%/);
+});

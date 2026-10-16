@@ -97,15 +97,22 @@ export function resetPick(store,year,week,actor,input,now=Date.now()){
   return {ok:true};
  });
 }
-export function resetParlay(store,year,week,actor,now=Date.now()){
+export function resetParlay(store,year,week,actor,now=Date.now(),input={}){
  if(actor.role!=='organizer')throw failure('Organizer access required',403);
  return store.transact(state=>{const w=state.seasons[year]?.weeks[week];if(!w)throw failure('Unknown ticket',404);lockDue(w,now);
   const current=ticket(Object.values(w.picks),w.games,now,w.stake);
   if(!current.resetEligible)throw failure('Reset is available only after a completed Thursday leg misses.',409);
-  w.resets??=[];w.resets.push({at:now,by:'organizer',reason:'thursday-miss',ticket:structuredClone(current),picks:structuredClone(Object.values(w.picks)),placedTicket:structuredClone(w.placedTicket||null)});
-  w.revisions??={};Object.keys(w.picks).forEach(member=>{w.revisions[member]=Number(w.revisions[member]??w.picks[member].revision??0)+1;});
-  w.picks={};w.replacementSlots={};w.ticketOpenedAt=now;w.placedTicket=null;w.ticketOddsRevision=(w.ticketOddsRevision||0)+1;
-  w.audit.push({at:now,action:'reset-parlay',by:'organizer',reason:'thursday-miss'});
+  const mode=input.mode||'all';
+  if(!['all','member'].includes(mode))throw failure('Choose a reset option.');
+  if(mode==='member'&&!current.thursdayResetMembers.includes(input.member))throw failure('Choose a losing Thursday picker.',409);
+  if(mode==='member'&&(input.revision!==Number(w.revisions?.[input.member]??w.picks[input.member]?.revision??0)||input.ticketOddsRevision!==(w.ticketOddsRevision||0)))throw failure('This pick or ticket odds changed. Refresh before resetting it.',409);
+  const members=mode==='member'?[input.member]:Object.keys(w.picks);
+  w.resets??=[];w.resets.push({at:now,by:'organizer',reason:'thursday-miss',mode,member:input.member||null,ticket:structuredClone(current),picks:structuredClone(Object.values(w.picks)),placedTicket:structuredClone(w.placedTicket||null)});
+  w.revisions??={};members.forEach(member=>{w.revisions[member]=Number(w.revisions[member]??w.picks[member].revision??0)+1;});
+  if(mode==='all'){w.picks={};w.replacementSlots={};}
+  else {delete w.picks[input.member];w.replacementSlots??={};w.replacementSlots[input.member]='thursday-miss';}
+  w.ticketOpenedAt=now;w.placedTicket=null;w.ticketOddsRevision=(w.ticketOddsRevision||0)+1;
+  w.audit.push({at:now,action:'reset-parlay',by:'organizer',reason:'thursday-miss',mode,members});
   return {ok:true};
  });
 }

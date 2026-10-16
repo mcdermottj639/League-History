@@ -54,7 +54,7 @@ export function edgeApp(rpc,{clock=Date.now,fetchJSON,managerFor}={}){
      store.transact(state=>{ensure(state,year,config.launch_week);for(const w of Object.values(state.seasons[year].weeks))lockDue(w,clock());});
      const s=store.read().seasons[year],w=s.weeks[s.current];
      if(path.endsWith('/readiness'))return {preview:false,year,current:s.current,collectorEnabled:config.collection_enabled,organizerConfigured:/^[a-f0-9]{64}$/.test(config.organizer_hash||''),durableStorage:true,imported:!!s.weeks[s.release?.cutoverWeek??s.current]?.imported,writable:writable(s),cutoverWeek:s.release?.cutoverWeek??null,unresolved:w.unmapped.length,lastCollection:s.collector?.lastSuccess||null};
-     return {v:2,supportsPickReset:true,supportsTrackingEntry:true,supportsTicketReceipt:true,year,current:s.current,roster:ROSTER,preview:false,writable:writable(s),weeks:Object.values(s.weeks).filter(w=>w.week>=startWeek).sort((a,b)=>b.week-a.week).map(w=>publicWeek(w,clock()))};
+     return {v:2,supportsPickReset:true,supportsSelectiveThursdayReset:true,supportsTrackingEntry:true,supportsTicketReceipt:true,year,current:s.current,roster:ROSTER,preview:false,writable:writable(s),weeks:Object.values(s.weeks).filter(w=>w.week>=startWeek).sort((a,b)=>b.week-a.week).map(w=>publicWeek(w,clock()))};
     }));
    }
    if(['/api/parlay/pick','/api/parlay/placed-odds','/api/parlay/review','/api/parlay/reset','/api/parlay/reset-pick'].includes(path)&&req.method==='POST'){
@@ -70,7 +70,7 @@ export function edgeApp(rpc,{clock=Date.now,fetchJSON,managerFor}={}){
      }
      if(b.week>s.current)throw failure('Invalid season or week');
      if(path==='/api/parlay/reset-pick')return resetPick(store,year,b.week,actor,b,clock());
-     if(path==='/api/parlay/reset'){if(b.week!==s.current)throw failure('Only the current parlay can be reset.',409);return resetParlay(store,year,b.week,actor,clock());}
+     if(path==='/api/parlay/reset'){if(b.week!==s.current)throw failure('Only the current parlay can be reset.',409);return resetParlay(store,year,b.week,actor,clock(),b);}
      if(path==='/api/parlay/placed-odds')return savePlacedOdds(store,year,b.week,actor,b,clock());
      if(!ROSTER.includes(b.member)||!['hit','miss','push','pending'].includes(b.result))throw failure('Invalid review');
      const note=String(b.note||'').trim();if(note.length>300)throw failure('Optional note must be 300 characters or less.');
