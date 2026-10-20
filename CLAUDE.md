@@ -102,6 +102,17 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   even then the old hash stays valid until he says otherwise. Generate nothing
   that would require anyone to open a new link.
 
+## v134 — Collapsed "Who carries the ticket" explainer
+
+On the Parlay season view, the paragraph under **Who carries the ticket**
+(how record, hit rate and average locked odds are counted, plus the unpriced-leg
+count) now sits closed inside a "How this is counted" disclosure
+(`details.pn-explain`, `data-detail="carry-note"`), so the leaderboard starts
+right under the heading. render() already remembers open `data-detail`
+disclosures, so a reader who opens it keeps it open across the 20-second
+refresh. The empty-state line ("No picks settled yet…") stays visible. Display
+only; no data, backend or stats change.
+
 ## v133 — Thursday reset choices
 
 Ticket offers reset everyone or reset only a named losing Thursday picker.
