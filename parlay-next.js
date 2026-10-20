@@ -5,7 +5,7 @@
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const read=k=>{try{return JSON.parse(localStorage.getItem(k)||'null');}catch{return null;}},write=(k,v)=>{try{v?localStorage.setItem(k,JSON.stringify(v)):localStorage.removeItem(k);}catch{}};
  let invite=null,configRequest=null,paintId=0,sharedPick=null,receipt=null;try{const m=/(?:^#|&)parlay-organizer=([A-Za-z0-9_-]{43})(?:&|$)/.exec(location.hash);if(m){invite=m[1];history.replaceState(null,'',location.pathname+location.search);}}catch{}
- const S={host:null,cr:null,config:null,data:null,tab:'picks',week:null,manualWeek:false,manage:false,target:'',draft:null,editing:false,busy:false,message:'',error:false,session:read(KEY),pending:false,authTried:false,verified:false,configError:false,refreshing:false,checking:false};
+ const S={host:null,cr:null,config:null,data:null,tab:'picks',week:null,manualWeek:false,manage:false,target:'',draft:null,editing:false,busy:false,message:'',error:false,session:read(KEY),pending:false,authTried:false,verified:false,configError:false,refreshing:false,checking:false,props:{}};
  window.ParlayNext={entry:!!invite};
  const money=n=>n==null?'—':n.toLocaleString(undefined,{style:'currency',currency:'USD'}),sign=n=>n==null?'—':(n>0?'+':'')+n.toLocaleString();
  const name=m=>LH?.name(m)||m,me=()=>LH?.me(),owns=()=>S.host?.dataset.view==='parlay'&&S.host?.dataset.parlayMode==='next',admin=()=>S.verified&&S.session?.role==='organizer',week=()=>S.data?.weeks.find(w=>w.week===S.week),member=()=>S.manage&&admin()?S.target:me();
@@ -50,9 +50,14 @@
  const pickLocked=()=>week().ticket.locked&&!week().replacementSlots?.[member()];
  const categoryOpen=(g,market)=>!week().ticket.legs.some(p=>p.member!==member()&&p.gameId===g.id&&(p.market==='prop')===(market==='prop'));
  const available=(g,market='spread')=>g.state==='pre'&&Date.now()<g.kick&&categoryOpen(g,market);
- function gameHTML(g){
+ function gameHTML(g,canPick){
   const cols=[['Spread','spread',[g.away,g.home]],['Total','total',['over','under']],['Moneyline','ml',[g.away,g.home]]];
-  return `<article class="pn-game"><div class="pn-row"><b>${esc(g.away)} at ${esc(g.home)}</b><small>${esc(kickoff(g.kick))}</small></div><div class="pn-markets">${cols.map(([title,market,sides])=>`<div><small>${title}</small>${sides.map(side=>{const q=g.markets.find(q=>q.market===market&&q.side===side),on=S.draft?.gameId===g.id&&S.draft?.market===market&&S.draft?.side===side;return `<button type="button" data-pn="select" data-game="${esc(g.id)}" data-market="${market}" data-side="${side}" aria-pressed="${!!on}" ${!q||S.pending||pickLocked()?'disabled':''} aria-label="${esc(q?.label||side+' unavailable')}"><b>${market==='total'?`${side==='over'?'Over':'Under'} ${q?.line??'—'}`:market==='spread'?`${esc(side)} ${sign(q?.line)}`:esc(side)}</b><span>${sign(q?.odds)}</span></button>`;}).join('')}</div>`).join('')}</div></article>`;
+  return `<article class="pn-game"><div class="pn-row"><b>${esc(g.away)} at ${esc(g.home)}</b><small>${esc(kickoff(g.kick))}</small></div>${!available(g)?'<p class="pn-note">Line already taken · prop still open</p>':`<div class="pn-markets">${cols.map(([title,market,sides])=>`<div><small>${title}</small>${sides.map(side=>{const q=g.markets.find(q=>q.market===market&&q.side===side),on=S.draft?.gameId===g.id&&S.draft?.market===market&&S.draft?.side===side;return `<button type="button" data-pn="select" data-game="${esc(g.id)}" data-market="${market}" data-side="${side}" aria-pressed="${!!on}" ${!q||S.pending||pickLocked()?'disabled':''} aria-label="${esc(q?.label||side+' unavailable')}"><b>${market==='total'?`${side==='over'?'Over':'Under'} ${q?.line??'—'}`:market==='spread'?`${esc(side)} ${sign(q?.line)}`:esc(side)}</b><span>${sign(q?.odds)}</span></button>`;}).join('')}</div>`).join('')}</div>`}${canPick?propLineHTML(g):''}</article>`;
+ }
+ function propLineHTML(g){
+  if(!available(g,'prop'))return '<p class="pn-prop-line pn-note">Prop already taken for this game</p>';
+  const id=esc(g.id),d=S.props[g.id]||{};
+  return `<div class="pn-prop-line"><small>Prop bet (write-in)</small><div class="pn-prop-row"><input data-prop-text="${id}" maxlength="120" placeholder="Player and exact bet" value="${esc(d.t||'')}" aria-label="Prop bet for ${esc(g.away)} at ${esc(g.home)}"><input data-prop-odds="${id}" inputmode="text" maxlength="8" placeholder="Odds" value="${esc(d.o||'')}" aria-label="Odds, optional"><button type="button" data-pn="prop-line" data-game="${id}" ${S.pending||S.busy||pickLocked()?'disabled':''}>Add</button></div></div>`;
  }
  function rowHTML(p){
   const g=p.game,stale=g&&Date.now()-g.seenAt>90000;
@@ -81,11 +86,10 @@
   if(unmapped)out+=`<div class="pn-card"><b>Existing pick needs a matchup</b><p>${esc(unmapped.original?.label)}</p><small>Select its game below to keep tracking it. The original entry has been retained.</small></div>`;
   if(!member())out+='<p class="pn-note">Choose your name in the app header to save a pick. You can still view the shared ticket.</p>';
   if(pickLocked())out+='<p class="pn-note"><b>This parlay is locked.</b> A game on this ticket has started, so picks are locked.</p>';
-  if((!p||S.editing)&&!(S.manage&&admin()&&S.data.supportsTrackingEntry&&!p&&(w.ticket.locked||!w.games.some(g=>g.state==='pre'&&Date.now()<g.kick)))){const games=w.games.filter(g=>available(g)),propGames=w.games.filter(g=>available(g,'prop'));out+=`<p class="pn-note">DraftKings via ESPN · Updated ${esc(age(w.updatedAt))}${w.feedError?' · Feed delayed':''}</p>`;
-   out+=games.length?games.map(gameHTML).join(''):'<div class="pn-card">No available games with open kickoffs. Check back for the next board.</div>';
+  if((!p||S.editing)&&!(S.manage&&admin()&&S.data.supportsTrackingEntry&&!p&&(w.ticket.locked||!w.games.some(g=>g.state==='pre'&&Date.now()<g.kick)))){const games=[...w.games.filter(g=>available(g)),...w.games.filter(g=>!available(g)&&canPick&&available(g,'prop'))];out+=`<p class="pn-note">DraftKings via ESPN · Updated ${esc(age(w.updatedAt))}${w.feedError?' · Feed delayed':''}</p>`;
+   out+=games.length?games.map(g=>gameHTML(g,canPick)).join(''):'<div class="pn-card">No available games with open kickoffs. Check back for the next board.</div>';
    if(canPick&&S.draft&&S.draft.market!=='prop'){const g=w.games.find(g=>g.id===S.draft.gameId),q=g&&available(g)&&g.markets.find(q=>q.market===S.draft.market&&q.side===S.draft.side);out+=`<div class="pn-card pn-saved pn-draft"><b>${esc(q?.label||'Selection unavailable')} · ${sign(q?.odds)}</b><button class="pn-primary" data-pn="save" ${!q||S.pending||S.busy?'disabled':''}>${S.busy?'Saving…':S.manage?'Save for '+esc(name(member())):'Save my pick'}</button></div>`;}
-   if(canPick)out+=`<details class="pn-card" data-detail="prop"><summary>Other bet / player prop</summary><label>Matchup<select id="pn-prop-game"><option value="">Choose a game</option>${propGames.map(g=>`<option value="${esc(g.id)}">${esc(g.away)} at ${esc(g.home)}</option>`).join('')}</select></label><label>Pick<input id="pn-prop" maxlength="120" placeholder="Player and exact bet"></label><label>Odds (optional)<input id="pn-prop-odds" inputmode="decimal" placeholder="−110"></label><small>Anytime TDs, yards and receptions grade from the ESPN box score after the game. Anything we cannot read stays pending for organizer review.</small><button data-pn="prop" ${S.pending?'disabled':''}>Save prop${S.manage?' for '+esc(name(member())):''}</button></details>`;
-   out+='<p class="pn-note">Each game allows one spread, total or moneyline pick plus one player prop. One pick per member.</p>';
+   out+='<p class="pn-note">Each game allows one spread, total or moneyline pick plus one player prop. One pick per member. Odds on a prop are optional. Anytime TDs, yards and receptions grade from the ESPN box score after the game; anything else stays pending for organizer review.</p>';
   }
   out+=`<section class="pn-card pn-members"><details data-detail="who"><summary>Who is in · ${w.ticket.legs.length} members</summary><p class="pn-note">Updated ${esc(age(w.updatedAt))}${w.feedError?' · Feed delayed':''} · Lines update until kickoff.</p>${w.ticket.legs.map(rowHTML).join('')||'<p>Nobody has submitted yet.</p>'}</details><details data-detail="missing"><summary>Still to pick · ${12-w.ticket.legs.length} members</summary><p>${S.data.roster.filter(m=>!pickFor(m)).map(m=>esc(name(m))).join(' · ')||'Everyone is in.'}</p></details></section>`;return out;
  }
@@ -168,7 +172,9 @@
    const v=id=>S.host.querySelector('#pn-tracking-'+id).value,g=week().games.find(g=>g.id===v('game')),side=v('side');
    await save({trackingEntry:true,gameId:v('game'),market:v('market'),side:['home','away'].includes(side)?g?.[side]:side,line:v('line'),description:v('description'),odds:v('odds')});
   }
-  if(act==='prop'){await save({gameId:document.getElementById('pn-prop-game').value,market:'prop',description:document.getElementById('pn-prop').value,odds:document.getElementById('pn-prop-odds').value});}
+  if(act==='prop-line'){const id=b.dataset.game,q=a=>[...S.host.querySelectorAll(`[${a}]`)].find(e=>e.getAttribute(a)===id),text=q('data-prop-text')?.value.trim()||'',odds=q('data-prop-odds')?.value.trim()||'';
+   if(!text){say('Write the prop first, then tap Add.',true);render();return;}
+   S.props[id]={t:text,o:odds};await save({gameId:id,market:'prop',description:text,odds});if(!S.error)delete S.props[id];render();}
   if(act==='cancel-receipt'){if(receipt)URL.revokeObjectURL(receipt.url);receipt=null;render();}
   if(act==='save-receipt'&&admin()&&!S.pending&&receipt?.week===S.week){
    const r=receipt,v=id=>S.host.querySelector(id).value;
@@ -196,7 +202,7 @@
    S.busy=true;render();try{Object.assign(r,await globalThis.LeagueTicketPhoto.read(file));}catch(err){r.error=err.message;}finally{r.reading=false;S.busy=false;render();}return;
   }
   if(e.target.id==='pn-demo'&&e.target.value){try{await api('demo',{stage:e.target.value});S.draft=null;S.editing=false;await refresh();}catch(err){say(err.message,true);}render();return;}if(e.target.id==='pn-week'){S.week=Number(e.target.value);S.manualWeek=true;S.draft=null;S.editing=false;render();}if(e.target.id==='pn-target'){S.target=e.target.value;S.draft=null;S.editing=false;render();}});
- document.addEventListener('input',e=>{if(!owns()||!receipt)return;const fields={'pn-receipt-odds':'odds','pn-receipt-stake':'stake','pn-receipt-return':'potentialReturn','pn-receipt-count':'legCount'};if(fields[e.target.id])receipt[fields[e.target.id]]=e.target.value;if(e.target.id==='pn-receipt-confirm')receipt.legsConfirmed=e.target.checked;});
+ document.addEventListener('input',e=>{if(!owns())return;const pt=e.target.getAttribute?.('data-prop-text'),po=e.target.getAttribute?.('data-prop-odds');if(pt||po){const k=pt||po,d=S.props[k]=S.props[k]||{};d[pt?'t':'o']=e.target.value;return;}if(!receipt)return;const fields={'pn-receipt-odds':'odds','pn-receipt-stake':'stake','pn-receipt-return':'potentialReturn','pn-receipt-count':'legCount'};if(fields[e.target.id])receipt[fields[e.target.id]]=e.target.value;if(e.target.id==='pn-receipt-confirm')receipt.legsConfirmed=e.target.checked;});
  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&owns()&&S.config?.enabled)refresh();});
  setInterval(()=>{if(owns()&&S.config?.enabled&&document.visibilityState!=='hidden'&&!S.busy&&!S.host.querySelector('details.pn-review[open],details[data-detail="prop"][open],details[data-detail="tracking"][open],details[data-detail="placed-odds"][open],details[data-detail="receipt"][open]'))refresh();},20000);
  window.LeagueParlay={...legacy,take(payload){

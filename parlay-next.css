@@ -11,3 +11,6 @@
 .pn .pn-saved-hit{border-color:#2f8050;border-left:5px solid #2f8050;background:#f0f8f2}.pn .pn-saved-miss{border-color:#bd3b35;border-left:5px solid #bd3b35;background:#fff2ef}.pn .pn-saved-push{border-left:5px solid #81827e}.pn .pn-pick-outcome{display:block;font-size:18px;line-height:1.3;margin-bottom:5px}.pn .pn-saved-hit .pn-pick-outcome{color:#20613b}.pn .pn-saved-miss .pn-pick-outcome{color:#922d28}.pn .pn-saved-push .pn-pick-outcome{color:var(--ink)}
 
 .pn .pn-explain summary{min-height:44px;padding:6px 0;font-weight:600;font-size:.9em;color:var(--mu)}.pn .pn-explain p{margin:0 0 6px}
+
+/* v135: write-in prop line inside each game card. */
+.pn .pn-prop-line{margin:10px 0 0;padding-top:10px;border-top:1px dashed var(--tr2)}.pn .pn-prop-line>small{display:block;margin-bottom:6px;color:var(--mu)}.pn .pn-prop-row{display:flex;gap:6px}.pn .pn-prop-row input{flex:1 1 auto;min-width:0;font-size:16px}.pn .pn-prop-row input[data-prop-odds]{flex:0 0 76px}.pn .pn-prop-row button{flex:0 0 auto}

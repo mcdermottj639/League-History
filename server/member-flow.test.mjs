@@ -172,3 +172,18 @@ test('screenshot review saves only confirmed totals, keeps mismatch visible and 
   assert.match(h.$('.pn-ticket-summary').textContent,/11 picks on ticket · 4 tracked/);
  }finally{await h.close();}
 });
+
+test('member writes a prop on a game card with blank odds and it becomes that game\'s pick',async()=>{
+ const h=await app();try{
+  h.$('[data-l1="parlay"]').click();await until(()=>h.$('[data-pn="prop-line"]'));
+  const add=h.$('[data-pn="prop-line"]'),id=add.dataset.game;
+  add.click();await until(()=>h.$('.pn-message')?.textContent.includes('Write the prop first'));
+  assert.equal(h.store.read().seasons[2026].weeks[2].picks.Gotch,undefined);
+  const text=[...h.w.document.querySelectorAll('[data-prop-text]')].find(e=>e.getAttribute('data-prop-text')===id);
+  text.value='Loveland ATTD';text.dispatchEvent(new h.w.Event('input',{bubbles:true}));
+  [...h.w.document.querySelectorAll('[data-pn="prop-line"]')].find(b=>b.dataset.game===id).click();
+  await until(()=>h.$('.pn-message')?.textContent.includes('Saved'));
+  const p=h.store.read().seasons[2026].weeks[2].picks.Gotch;
+  assert.equal(p.market,'prop');assert.equal(p.gameId,id);assert.equal(p.description,'Loveland ATTD');assert.equal(p.quote?.odds??null,null);
+ }finally{await h.close();}
+});

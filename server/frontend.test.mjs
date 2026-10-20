@@ -140,7 +140,7 @@ test('evens normalize to +100 and invalid prices are excluded',async()=>{
  });
  test('reset member can select an upcoming replacement while other legs keep the ticket locked',async()=>{
   const h=harness(true,'live');const w=h.data.weeks.find(w=>w.week===2);w.ticket.legs=w.ticket.legs.filter(p=>p.member!=='McD');w.replacementSlots={McD:true};
-  await h.window.LeagueParlay.paint(h.host);assert.match(h.host.innerHTML,/Your pick was reset/);assert.doesNotMatch(h.host.innerHTML,/This parlay is locked/);assert.doesNotMatch(h.host.innerHTML,/data-pn="select"[^>]*disabled/);assert.match(h.host.innerHTML,/data-pn="prop"/);
+  await h.window.LeagueParlay.paint(h.host);assert.match(h.host.innerHTML,/Your pick was reset/);assert.doesNotMatch(h.host.innerHTML,/This parlay is locked/);assert.match(h.host.innerHTML,/<button(?![^>]*disabled)[^>]*data-pn="select"[^>]*>/);assert.match(h.host.innerHTML,/data-pn="prop-line"/);
  });
 
 test('older backend never offers or sends an unsupported pick reset',async()=>{
@@ -181,16 +181,27 @@ test('late tracking form is available only to verified organizers with deployed 
 
 test('a standard selection leaves the same matchup available for a prop and tracking entry',async()=>{
  const h=harness(true,'before',{supportsTrackingEntry:true},true),w=h.data.weeks.find(w=>w.week===2),taken=w.ticket.legs[0];
+ const card=id=>(h.host.innerHTML.match(new RegExp(`<article class="pn-game">(?:(?!</article>).)*?data-game="${id}"(?:(?!</article>).)*</article>`,'s'))||[''])[0];
  await h.window.LeagueParlay.paint(h.host);
- const prop=h.host.innerHTML.match(/id="pn-prop-game"[\s\S]*?<\/select>/)[0];
- assert.ok(prop.includes(`value="${taken.gameId}"`));
- assert.ok(!h.host.innerHTML.includes(`data-game="${taken.gameId}"`));
+ assert.ok(card(taken.gameId).includes(`data-prop-text="${taken.gameId}"`));
+ assert.doesNotMatch(card(taken.gameId),/data-pn="select"/);assert.match(card(taken.gameId),/prop still open/);
  await h.click({pn:'manage'});
  const tracking=h.host.innerHTML.match(/id="pn-tracking-game"[\s\S]*?<\/select>/)[0];
  assert.ok(tracking.includes(`value="${taken.gameId}"`));assert.match(tracking,/Player prop only/);
  taken.market='prop';await h.click({pn:'manage'});
- assert.ok(h.host.innerHTML.includes(`data-game="${taken.gameId}"`));
- const updated=h.host.innerHTML.match(/id="pn-prop-game"[\s\S]*?<\/select>/)[0];assert.ok(!updated.includes(`value="${taken.gameId}"`));
+ assert.match(card(taken.gameId),/<button(?![^>]*disabled)[^>]*data-pn="select"/);
+ assert.ok(!card(taken.gameId).includes('data-prop-text'));assert.match(card(taken.gameId),/Prop already taken for this game/);
+});
+
+test('each open game card carries a write-in prop line with optional odds and keeps typed text across refresh',async()=>{
+ const h=harness(true,'before');await h.window.LeagueParlay.paint(h.host);
+ const html=()=>h.host.innerHTML,games=html().match(/<article class="pn-game">/g)||[],lines=html().match(/<div class="pn-prop-line">/g)||[];
+ assert.ok(games.length>0);assert.equal(lines.length,games.length);
+ assert.doesNotMatch(html(),/Other bet \/ player prop/);assert.match(html(),/aria-label="Odds, optional"/);assert.match(html(),/Odds on a prop are optional/);
+ const id=html().match(/data-prop-text="([^"]+)"/)[1];
+ h.events.input({target:{getAttribute:a=>a==='data-prop-text'?id:null,value:'Loveland ATTD'}});
+ await h.click({pn:'refresh'});
+ assert.ok(html().includes(`data-prop-text="${id}" maxlength="120" placeholder="Player and exact bet" value="Loveland ATTD"`));
 });
 
 test('saved pick card labels settled results without treating live or pending picks as wins',async()=>{

@@ -102,6 +102,29 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   even then the old hash stays valid until he says otherwise. Generate nothing
   that would require anyone to open a new link.
 
+## v135 — Write-in prop line on every game card
+
+Owner: *"On this screen for each game put in a line where they can write in a
+prop bet."* Each game card on Parlay → Picks now ends with a **Prop bet
+(write-in)** row: a text field, a small optional odds field and **Add**. It
+replaces the separate "Other bet / player prop" card and its matchup dropdown —
+the game is the card you type on. Same save as before (`market:'prop'` on the
+existing `pick` route), so the prop **is that member's one pick for the week**,
+reserves the game's prop category (v122), and grades from the ESPN box score
+with the organizer's Review result as the fallback. Blank odds save as null
+(v123). Frontend only; no backend, data, link or capability change.
+
+- Fully open games list first (kickoff order). A game whose spread/total/
+  moneyline is already taken by someone else follows them, with "Line already
+  taken · prop still open" instead of the odds buttons; a taken prop shows
+  "Prop already taken for this game".
+- Unsaved prop text and odds live in `S.props` (memory only, keyed by game id)
+  so the 20-second refresh repaint does not wipe what someone typed. Cleared on
+  a successful save.
+- Tests: frontend.test.mjs (line on every open card, optional-odds labelling,
+  typed text survives refresh — fault-injected; taken categories) and a jsdom
+  member-flow test that saves a prop with blank odds through the real app.
+
 ## v134 — Collapsed "Who carries the ticket" explainer
 
 On the Parlay season view, the paragraph under **Who carries the ticket**
@@ -1759,7 +1782,7 @@ Verified organizers (Jack and Zach through existing access) can use Manage picks
 
 ## v122 — One standard pick plus one prop per matchup
 
-Each matchup reserves two independent categories: one spread/total/moneyline pick and one player prop. Both normal member entry and organizer tracking enforce this on the server. The prop dropdown includes games with an existing standard pick; the tracking dropdown labels remaining categories and disables taken bet types. One pick per member, kickoff locks, existing records and links remain unchanged.
+Each matchup reserves two independent categories: one spread/total/moneyline pick and one player prop. Both normal member entry and organizer tracking enforce this on the server. The prop dropdown includes games with an existing standard pick (⚠️ SUPERSEDED in v135: the dropdown is gone; each game card carries its own prop line); the tracking dropdown labels remaining categories and disables taken bet types. One pick per member, kickoff locks, existing records and links remain unchanged.
 
 ## v123 — Compact tracking entry and optional odds
 
