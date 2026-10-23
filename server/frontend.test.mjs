@@ -14,10 +14,26 @@ function harness(enabled=true,stage='before',dataOverride=null,organizer=false,c
  const window={LeagueOwner:{is:()=>owner},LeagueOwnerLinks:{parlayKey:()=> 'A'.repeat(43)},LeagueParlay:{paint(){legacyCalls++;}},LeagueHistory:{name:x=>x,me:()=> 'McD'},scrollY:0,scrollTo(){}};
  const context={window,location:{hash:'',pathname:'/',search:''},history:{replaceState(){}},confirm:()=>confirmReset,localStorage:{getItem:k=>organizer&&k==='lh:parlay-session:v2'?JSON.stringify({token:'test',role:'organizer',member:'Zach'}):null,setItem(){},removeItem(){}},document:{addEventListener:(n,fn)=>events[n]=fn,visibilityState:'visible'},setInterval(){},AbortSignal,Date,fetch:async(url,options)=>{requests.push({url,options});return {ok:true,json:async()=>url==='parlay/config.json'?{enabled,api:'',year:2026}:url.endsWith('/me')||url.endsWith('/session')?{token:'test',role:'organizer',member:'Zach'}:data};}};
  vm.runInNewContext(readFileSync(new URL('../ticket-values.js',import.meta.url),'utf8'),context);
+ vm.runInNewContext(readFileSync(new URL('../spread-pricing.js',import.meta.url),'utf8'),context);
  vm.runInNewContext(source,context);
  return {data,window,host,events,requests,get legacyCalls(){return legacyCalls;},click:async dataset=>events.click({target:{closest:()=>({dataset})}})};
 }
 test('disabled launch gate renders original parlay and never requests new service',async()=>{const h=harness(false);await h.window.LeagueParlay.paint(h.host);assert.equal(h.legacyCalls,1);assert.equal(h.requests.length,1);});
+test('half-point controls require backend support and submit only the chosen spread',async()=>{
+ for(const supported of [false,true]){
+  const h=harness(true,'before',{supportsAdjustedSpreads:supported});await h.window.LeagueParlay.paint(h.host);
+  const g=h.data.weeks.find(w=>w.week===2).games.find(g=>!h.data.weeks.find(w=>w.week===2).ticket.legs.some(p=>p.gameId===g.id)),q=g.markets.find(q=>q.market==='spread');
+  await h.click({pn:'select',game:g.id,market:'spread',side:q.side});
+  assert.equal(h.host.innerHTML.includes('data-pn="spread-up"'),supported);
+  if(supported){
+   await h.click({pn:'spread-up'});await h.click({pn:'spread-up'});assert.match(h.host.innerHTML,/Odds estimated automatically/);
+   await h.click({pn:'save'});const request=h.requests.find(r=>r.url.endsWith('/pick')),body=JSON.parse(request.options.body);
+   assert.equal(body.adjustedLine,q.line+1);assert.equal(body.odds,undefined);
+   await h.click({pn:'select',game:g.id,market:'spread',side:q.side});await h.click({pn:'spread-down'});await h.click({pn:'spread-reset'});
+   await h.click({pn:'save'});assert.equal(JSON.parse(h.requests.filter(r=>r.url.endsWith('/pick')).at(-1).options.body).adjustedLine,undefined);
+  }
+ }
+});
 test('enabled UI renders all six market choices, tab order and ticket/season navigation',async()=>{const h=harness();await h.window.LeagueParlay.paint(h.host);const html=h.host.innerHTML;assert.ok(html.indexOf('data-tab="picks"')<html.indexOf('data-tab="ticket"'));assert.ok(html.indexOf('data-tab="ticket"')<html.indexOf('data-tab="season"'));assert.match(html,/Spread/);assert.match(html,/Moneyline/);assert.match(html,/data-side="over"/);assert.match(html,/data-side="under"/);assert.equal((html.match(/data-pn="select"/g)||[]).length%6,0);assert.doesNotMatch(html,/data-pn="manage"/);
  await h.click({pn:'tab',tab:'ticket'});assert.match(h.host.innerHTML,/Weekly stake/);assert.match(h.host.innerHTML,/partial ticket/);assert.match(h.host.innerHTML,/actual ticket may differ/);
  await h.click({pn:'tab',tab:'season'});assert.match(h.host.innerHTML,/Past tickets/);assert.match(h.host.innerHTML,/No picks settled yet/);
@@ -61,6 +77,16 @@ test('season weekly odds prefer the placed ticket and name how many weeks each s
  assert.match(html,/<strong>\+525<\/strong><small>Avg weekly odds<\/small>/);
  assert.doesNotMatch(html,/Season odds total/);
  assert.match(html,/2 of 2 tickets · 1 from the placed ticket, 1 tracked at kickoff\. Averaged, not parlay math\./);
+});
+test('season distinguishes estimated prices and returns while keeping actual placed odds authoritative',async()=>{
+ const data=oddsSeason(),t=data.weeks[1].ticket;
+ Object.assign(t,{status:'won',full:true,returned:50,net:40,oddsEstimated:true});t.legs[0].quote.estimated=true;
+ let html=await seasonView(data);
+ assert.match(html,/Avg weekly odds \(est\.\)/);assert.match(html,/1 from the placed ticket, 0 tracked at kickoff, 1 estimated/);
+ assert.match(html,/-150 avg \(est\.\)/);assert.match(html,/Est\. return/);assert.match(html,/Estimated net/);
+ data.weeks[1].placedTicket={odds:400};html=await seasonView(data);
+ assert.doesNotMatch(html,/Avg weekly odds \(est\.\)/);assert.match(html,/2 from the placed ticket, 0 tracked at kickoff/);
+ assert.match(html,/-150 avg \(est\.\)/,'individual estimated prices retain provenance');
 });
 
 test('unlocked, unpriced and flagged legs are excluded from the odds tally and the shortfall is visible',async()=>{

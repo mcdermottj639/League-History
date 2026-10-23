@@ -45,6 +45,25 @@ test('ordinary Zach and all other member names have no organizer controls; membe
  h.$('[data-tab="ticket"]').click();assert.match(h.$('#lg-body').textContent,/Weekly stake/);h.$('[data-tab="season"]').click();assert.match(h.$('#lg-body').textContent,/Past tickets/);
  }finally{await h.close();}
 });
+test('member adjusts a spread without odds entry, saves it, reloads it and sees the estimated ticket payout',async()=>{
+ const h=await app();let reopened;try{
+  h.$('[data-l1="parlay"]').click();await until(()=>h.$('[data-pn="select"]'));
+  const select=h.$('[data-pn="select"][data-market="spread"]'),gameId=select.dataset.game,side=select.dataset.side;
+  const base=h.store.read().seasons[2026].weeks[2].games.find(g=>g.id===gameId).markets.find(q=>q.market==='spread'&&q.side===side);
+  select.click();assert.equal(h.$('.pn-draft input'),null);assert.ok(h.$('.pn-game .pn-draft'));
+  h.$('[data-pn="spread-up"]').click();h.$('[data-pn="spread-up"]').click();
+  assert.equal(h.$('output[aria-label="Selected spread"]').textContent,side+' '+(base.line+1>0?'+':'')+(base.line+1));
+  assert.match(h.$('.pn-draft').textContent,/Estimated/);h.$('[data-pn="save"]').click();await until(()=>h.$('.pn-message')?.textContent.includes('Saved'));
+  const p=h.store.read().seasons[2026].weeks[2].picks.Gotch;assert.equal(p.quote.line,base.line+1);assert.equal(p.quote.estimated,true);assert.notEqual(p.quote.odds,base.odds);
+  assert.match(h.$('.pn-saved').textContent,/spread fixed · Estimated odds/);
+  h.$('[data-tab="ticket"]').click();assert.match(h.$('.pn-ticket-summary').textContent,/Estimated odds/);assert.match(h.$('.pn-ticket-summary').textContent,/Est. return/);
+  reopened=await app({backend:h});reopened.$('[data-l1="parlay"]').click();await until(()=>reopened.$('.pn-saved'));
+  assert.match(reopened.$('.pn-saved').textContent,/spread fixed · Estimated odds/);
+  reopened.$('[data-pn="edit"]').click();assert.equal(reopened.$('output[aria-label="Selected spread"]').textContent,side+' '+(p.quote.line>0?'+':'')+p.quote.line);
+  reopened.$('[data-pn="spread-down"]').click();reopened.$('[data-pn="spread-reset"]').click();reopened.$('[data-pn="save"]').click();
+  await until(()=>reopened.$('.pn-message')?.textContent.includes('Saved'));assert.equal(h.store.read().seasons[2026].weeks[2].picks.Gotch.adjustedSpread,undefined);
+ }finally{if(reopened)await reopened.close();await h.close();}
+});
 test('delayed parlay configuration never overwrites History after navigating away',async()=>{
  let release;const pending=new Promise(r=>release=r);const h=await app({slowConfig:pending,enabled:false});try{h.$('[data-l1="parlay"]').click();assert.match(h.$('#lg-body').textContent,/Loading the shared parlay/);assert.equal(h.$('#lg-jump').hidden,true);assert.equal(h.$('#lg-jump').innerHTML,'');h.$('[data-l1="hist"]').click();const html=h.$('#lg-body').innerHTML;release();await new Promise(r=>setTimeout(r,30));assert.equal(h.$('#lg-body').dataset.view,'hist');assert.equal(h.$('#lg-body').innerHTML,html);
  }finally{release();await h.close();}

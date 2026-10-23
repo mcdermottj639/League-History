@@ -75,6 +75,15 @@ test('Separate Edge workers cannot claim the same game; CAS retry preserves winn
  const responses=await Promise.all([b.request('api/parlay/pick',pick('McD'),m.token),b.request('api/parlay/pick',pick('Hurd'),h.token)]);
  assert.deepEqual(responses.map(r=>r.status).sort(),[200,409]);assert.equal(Object.keys(b.store.read().seasons[2026].weeks[1].picks).length,1);
 });
+test('Edge advertises adjusted spreads and saves server-priced half-points through the member route',async()=>{
+ const b=await backend();activate(b.store);const m=await b.session('McD');
+ let data=await(await b.request('api/parlay/state')).json();assert.equal(data.supportsAdjustedSpreads,true);
+ const g=data.weeks[0].games[0],q=g.markets.find(q=>q.market==='spread'&&q.side===g.home);
+ const response=await b.request('api/parlay/pick',{...pick('McD'),market:'spread',adjustedLine:q.line+.5,odds:99999},m.token);
+ assert.equal(response.status,200);
+ data=await(await b.request('api/parlay/state')).json();const p=data.weeks[0].ticket.legs[0];
+ assert.equal(p.quote.line,q.line+.5);assert.equal(p.quote.estimated,true);assert.equal(p.baseQuote.odds,q.odds);assert.notEqual(p.quote.odds,99999);assert.equal(data.weeks[0].ticket.oddsEstimated,true);
+});
 test('Edge state and saves stay open after an unpicked game, then close at a selected kickoff',async()=>{
  const b=await backend();activate(b.store);
  b.store.transact(state=>{const g=state.seasons[2026].weeks[1].games[0];g.kick=T-3600000;g.state='post';g.completed=true;g.status='STATUS_FINAL';});

@@ -16,7 +16,7 @@
    else if(t.push){status='pending';}
    else {status='won';returned=estimatedReturn;}
   }
-  return {...t,full,status,stake,combinedOdds:p.odds,estimatedReturn,returned,net:returned===null?null:round(returned-stake),calculatedOdds:t.calculatedOdds??t.combinedOdds,oddsSource:'placed',ticketLegCount:p.legCount??null,ticketMismatch:mismatch,ticketUnverified:unverified};
+  return {...t,full,status,stake,combinedOdds:p.odds,estimatedReturn,returned,net:returned===null?null:round(returned-stake),calculatedOdds:t.calculatedOdds??t.combinedOdds,oddsSource:'placed',oddsEstimated:false,ticketLegCount:p.legCount??null,ticketMismatch:mismatch,ticketUnverified:unverified};
  }
  function parse(text){
   const s=String(text||'').replace(/[−–]/g,'-').replace(/\u00a0/g,' ');
