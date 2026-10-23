@@ -275,12 +275,15 @@
 :root[data-palette] .fh-lx-v.hold { color: var(--mu2); }
 :root[data-palette] .fh-lx-bar span.hold { background: var(--mu2); }
 
+/* v136: compact equal-width section navigation, with all destinations visible.
+   Headings remain full-length; only the navigation labels are shortened. */
 /* ── jump nav ────────────────────────────────────────────────────────────
    One chip per card. It WRAPS rather than scrolling sideways: a horizontal
    scroller hides its own tail with no visual hint, which is exactly how
    Sports-Hub lost three tabs off the right edge for twenty versions. */
 :root[data-palette] .lg-jump {
-  display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 0 2px;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px; padding: 4px 0 6px;
   border-bottom: 1px solid var(--tr); margin-bottom: 4px; }
 /* 🚨 `el.hidden = true` is a VISUAL NO-OP without this. The UA sheet's
    `[hidden] { display: none }` is (0,1,0) and the rule directly above is
@@ -292,10 +295,11 @@
    specificity. */
 :root[data-palette] .lg-jump[hidden] { display: none; }
 :root[data-palette] .lg-jump .chip {
-  min-height: 38px; padding: 0 11px; border-radius: 999px;
-  border: 1px solid var(--tr2); background: var(--sf); color: var(--mu);
-  font: 800 11px/1 Archivo, system-ui, sans-serif; letter-spacing: .01em;
-  text-transform: none; cursor: pointer; white-space: nowrap; }
+  min-width: 0; min-height: 44px; padding: 5px 6px; border-radius: 8px;
+  justify-content: center; text-align: center;
+  border: 1px solid var(--tr2); background: var(--sf); color: var(--ink);
+  font: 700 12px/1.2 Archivo, system-ui, sans-serif; letter-spacing: 0;
+  text-transform: none; cursor: pointer; white-space: normal; overflow-wrap: anywhere; }
 /* the card you are actually in, not just one you can reach */
 :root[data-palette] .lg-jump .chip.here {
   background: var(--grad); border-color: transparent; color: var(--on-ac); }
@@ -920,3 +924,27 @@
 #lg-owner-links details { margin-top: 16px; }
 #lg-owner-links summary { cursor: pointer; padding: 10px 0; }
 #lg-owner-links button:disabled { opacity: .5; cursor: default; }
+
+/* v136: shared navigation rhythm. Preserve every hidden-state rule above. */
+:root[data-palette] .lg-main > .ai-sub { margin-top: 4px; padding-bottom: 3px; gap: 2px; }
+:root[data-palette] #lg-sub button,
+:root[data-palette] #lg-sub2 button {
+  min-height: 44px; min-width: min-content; padding: 5px 3px; line-height: 1.2;
+  white-space: normal; overflow: visible; border-radius: 8px;
+}
+:root[data-palette] #lg-sub button { font-size: 13px; }
+:root[data-palette] #lg-sub2 button { font-size: 12px; }
+:root[data-palette] .lg-jump .chip:focus-visible {
+  outline: 2px solid var(--ink); outline-offset: 1px;
+}
+:root[data-palette] .lg-jump.lg-jump-years { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (min-width: 700px) {
+  :root[data-palette] .lg-jump { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  :root[data-palette] .lg-jump.lg-jump-years { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  :root[data-palette] #lg-sub button { font-size: 15px; }
+  :root[data-palette] #lg-sub2 button { font-size: 13px; }
+}
+@media (max-width: 360px) {
+  :root[data-palette] #lg-sub button { font-size: 12px; padding-inline: 1px; }
+  :root[data-palette] #lg-sub2 button { font-size: 11px; padding-inline: 1px; }
+}

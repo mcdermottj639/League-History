@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v135';
+  const APP_VERSION = 'v136';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -663,9 +663,15 @@
     if (items.length < 2) { nav.hidden = true; nav.innerHTML = ''; return; }
     items.forEach((x, i) => { if (!x.el.id) x.el.id = 'lg-sec-' + i; });
     nav.hidden = false;
-    nav.innerHTML = items.map((x) => `<button type="button" class="chip" data-jump="${esc(x.el.id)}">${esc(x.label)}</button>`).join('');
+    nav.classList.toggle('lg-jump-years', items.every((x) => /^\d{4}$/.test(x.label)));
+    nav.innerHTML = items.map((x) => `<button type="button" class="chip" data-jump="${esc(x.el.id)}" title="${esc(x.label)}">${esc(compactLabel(x.label))}</button>`).join('');
     spy();
   }
+
+  // Background refreshes replace headings after paint() resolves. Rebuild
+  // destinations when the visible body's direct children change, so links
+  // never point at headings removed by a late Season refresh.
+  new MutationObserver(buildJump).observe($('#lg-body'), { childList: true });
 
   /* The badge and any control inside a heading are real content there and
      noise in a one-word chip — the same strip Sports-Hub's rail needs. */
@@ -673,6 +679,23 @@
     const c = h.cloneNode(true);
     c.querySelectorAll('.fh-src, button, .chips').forEach((n) => n.remove());
     return c.textContent.trim().replace(/\s+/g, ' ');
+  }
+
+  // Short navigation labels only; original section headings/content stay intact.
+  function compactLabel(label) {
+    const plain = label.replace(/^[^\p{L}\p{N}]+/u, '').trim();
+    const names = {
+      'Your season': 'Season', 'What yours hinges on': 'Key factors',
+      'Your schedule': 'Schedule', 'The trophy case': 'Trophy case',
+      'The luck index': 'Luck index', 'The record book': 'Record book',
+      "The champion's curse": "Champion's curse",
+      'All-time playoff PPG': 'Playoff PPG', 'All-time standings': 'Standings',
+      'Playoff scoring lift': 'Scoring lift', 'Playoff appearances': 'Playoff berths',
+      'Your playoff head-to-head': 'Playoff H2H', 'Playoff head-to-head': 'Playoff H2H',
+      'Your career': 'Career', 'Your storylines': 'Storylines',
+      'Your franchises': 'Franchises', 'Season by season': 'By season'
+    };
+    return names[plain] || plain;
   }
 
   /* Flag the card you are actually in, not just the ones you can reach. */
@@ -683,7 +706,11 @@
     let here = null;
     chips.forEach((c) => { const t = document.getElementById(c.dataset.jump);
       if (t && t.getBoundingClientRect().top - JUMP_PAD <= 1) here = c; });
-    chips.forEach((c) => c.classList.toggle('here', c === here));
+    chips.forEach((c) => {
+      c.classList.toggle('here', c === here);
+      if (c === here) c.setAttribute('aria-current', 'location');
+      else c.removeAttribute('aria-current');
+    });
   }
   addEventListener('scroll', spy, { passive: true });
   addEventListener('resize', spy, { passive: true });

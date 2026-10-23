@@ -14,3 +14,7 @@
 
 /* v135: write-in prop line inside each game card. */
 .pn .pn-prop-line{margin:10px 0 0;padding-top:10px;border-top:1px dashed var(--tr2)}.pn .pn-prop-line>small{display:block;margin-bottom:6px;color:var(--mu)}.pn .pn-prop-row{display:flex;gap:6px}.pn .pn-prop-row input{flex:1 1 auto;min-width:0;font-size:16px}.pn .pn-prop-row input[data-prop-odds]{flex:0 0 76px}.pn .pn-prop-row button{flex:0 0 auto}
+
+/* v136: compact navigation, retaining touch targets and selected state. */
+.pn .pn-tabs{padding:2px;margin:4px 0 6px;gap:2px;border-radius:10px}
+.pn .pn-tabs button{min-height:44px;padding:5px 6px;border-radius:8px;font-size:13px;line-height:1.2}

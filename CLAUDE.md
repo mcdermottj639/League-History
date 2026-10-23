@@ -102,6 +102,23 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   even then the old hash stays valid until he says otherwise. Generate nothing
   that would require anyone to open a new link.
 
+## v136 — Compact navigation throughout the app
+
+Jack approved the compact mockup for the whole app. Shared section links now
+use a three-column mobile / six-column desktop grid, 44px minimum tap targets,
+4px gaps, modest corner radii and short text labels without leading emoji.
+Full headings, routes and content are unchanged. Year links use four/seven
+columns. Current section carries aria-current; keyboard focus remains visible.
+Main/History tab spacing, Parlay tabs, Oracle week/matchup controls and Lab
+format controls follow the same compact rhythm. Oracle keeps its own palette.
+The jump nav remains DOM-derived and wraps; do not hide destinations or truncate
+labels. This supersedes the earlier pill shape and jump-label emoji treatment.
+No changes to roles, existing private links, picks, scores or publishing logic.
+Shared asset references and service-worker cache are v136. A direct-child
+observer rebuilds jump destinations after background Season renders replace
+headings; it does not observe attributes or nested content. Regression covered
+in the fixture member-flow suite.
+
 ## v135 — Write-in prop line on every game card
 
 Owner: *"On this screen for each game put in a line where they can write in a

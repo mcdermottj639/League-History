@@ -187,3 +187,23 @@ test('member writes a prop on a game card with blank odds and it becomes that ga
   assert.equal(p.market,'prop');assert.equal(p.gameId,id);assert.equal(p.description,'Loveland ATTD');assert.equal(p.quote?.odds??null,null);
  }finally{await h.close();}
 });
+
+
+test('compact section navigation keeps destinations after asynchronous Season refresh',async()=>{
+ const h=await app({member:'Gotch'});try{
+  h.$('[data-l1="season"]').click();
+  await until(()=>h.$('#lg-jump')?.textContent.includes('Key factors'));
+  await new Promise(r=>setTimeout(r,50));
+  const headings=[...h.w.document.querySelectorAll('#lg-body .section-title')].map(e=>e.textContent);
+  assert.ok(headings.some(t=>t.includes('What yours hinges on')),'full heading remains');
+  const buttons=[...h.w.document.querySelectorAll('#lg-jump [data-jump]')];
+  assert.ok(buttons.some(b=>b.textContent==='Season'));
+  assert.ok(buttons.some(b=>b.textContent==='Schedule'));
+  for(const b of buttons)assert.ok(h.w.document.getElementById(b.dataset.jump),'live target for '+b.textContent);
+  // Replace the actual rendered headings as a background paint does.
+  h.$('#lg-body').innerHTML=h.$('#lg-body').innerHTML.replace(/ id="lg-sec-\d+"/g,'');
+  await until(()=>[...h.w.document.querySelectorAll('#lg-jump [data-jump]')].every(b=>h.w.document.getElementById(b.dataset.jump)));
+  h.$('[data-l1="parlay"]').click();await until(()=>h.$('.pn-tabs'));
+  assert.equal(h.$('#lg-jump').hidden,true);
+ }finally{await h.close();}
+});

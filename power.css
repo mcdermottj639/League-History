@@ -528,3 +528,7 @@ body.pr-page {
 .pr-preview .rk-icon { width:22px; height:22px; flex-shrink:0; }
 .pr-preview h4 { margin:0; font-size:12px; }
 .pr-preview .pr-take-ro { overflow-wrap:anywhere; }
+
+/* v136: compact format navigation in the commissioner's Lab. */
+.pr-format-tabs{gap:4px}
+.pr-format-tabs button{min-width:0;min-height:44px;padding:5px 6px;border-radius:8px;font-size:12px;line-height:1.2}

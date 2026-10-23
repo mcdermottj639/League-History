@@ -96,3 +96,11 @@
 .or-score-result th:first-child{width:40%;text-align:left;overflow-wrap:anywhere}
 .or-score-result thead th{font-size:10px}.or-score-result>b{display:block;margin-top:10px;color:#5f3c83;font-size:13px}
 .or-card .or-result-pending{font-size:12px;line-height:1.5;color:#675274}
+
+/* v136: compact week/matchup navigation; keep Oracle's purple/gold identity. */
+.oracle .or-nav{padding:4px 8px;border-radius:10px;gap:6px;flex-wrap:wrap}
+.oracle .or-nav select{min-height:44px;padding:5px 8px}
+.or-matchup-nav{padding:6px 0}
+.or-matchup-nav>span{margin-bottom:4px}
+.or-matchup-nav>div{gap:4px;padding:2px 0 4px}
+.or-matchup-nav button{min-height:44px;padding:5px 8px;border-radius:8px;line-height:1.2}
