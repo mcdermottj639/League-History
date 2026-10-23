@@ -51,7 +51,7 @@ test('member adjusts a spread without odds entry, saves it, reloads it and sees 
   const select=h.$('[data-pn="select"][data-market="spread"]'),gameId=select.dataset.game,side=select.dataset.side;
   const base=h.store.read().seasons[2026].weeks[2].games.find(g=>g.id===gameId).markets.find(q=>q.market==='spread'&&q.side===side);
   select.click();assert.equal(h.$('.pn-draft input'),null);assert.ok(h.$('.pn-game .pn-draft'));
-  h.$('[data-pn="spread-up"]').click();h.$('[data-pn="spread-up"]').click();
+  h.$('[data-pn="line-up"]').click();h.$('[data-pn="line-up"]').click();
   assert.equal(h.$('output[aria-label="Selected spread"]').textContent,side+' '+(base.line+1>0?'+':'')+(base.line+1));
   assert.match(h.$('.pn-draft').textContent,/Estimated/);h.$('[data-pn="save"]').click();await until(()=>h.$('.pn-message')?.textContent.includes('Saved'));
   const p=h.store.read().seasons[2026].weeks[2].picks.Gotch;assert.equal(p.quote.line,base.line+1);assert.equal(p.quote.estimated,true);assert.notEqual(p.quote.odds,base.odds);
@@ -60,8 +60,30 @@ test('member adjusts a spread without odds entry, saves it, reloads it and sees 
   reopened=await app({backend:h});reopened.$('[data-l1="parlay"]').click();await until(()=>reopened.$('.pn-saved'));
   assert.match(reopened.$('.pn-saved').textContent,/spread fixed · Estimated odds/);
   reopened.$('[data-pn="edit"]').click();assert.equal(reopened.$('output[aria-label="Selected spread"]').textContent,side+' '+(p.quote.line>0?'+':'')+p.quote.line);
-  reopened.$('[data-pn="spread-down"]').click();reopened.$('[data-pn="spread-reset"]').click();reopened.$('[data-pn="save"]').click();
+  reopened.$('[data-pn="line-down"]').click();reopened.$('[data-pn="line-reset"]').click();reopened.$('[data-pn="save"]').click();
   await until(()=>reopened.$('.pn-message')?.textContent.includes('Saved'));assert.equal(h.store.read().seasons[2026].weeks[2].picks.Gotch.adjustedSpread,undefined);
+ }finally{if(reopened)await reopened.close();await h.close();}
+});
+for(const side of ['over','under'])test(`member buys points on ${side}, saves, reopens and resets the total with automatic payout`,async()=>{
+ const h=await app();let reopened;try{
+  h.$('[data-l1="parlay"]').click();await until(()=>h.$('[data-pn="select"]'));
+  const select=h.$(`[data-pn="select"][data-market="total"][data-side="${side}"]`),gameId=select.dataset.game;
+  const base=h.store.read().seasons[2026].weeks[2].games.find(g=>g.id===gameId).markets.find(q=>q.market==='total'&&q.side===side);
+  const direction=side==='over'?-1:1,action=direction<0?'line-down':'line-up',title=side==='over'?'Over':'Under';
+  select.click();assert.equal(h.$('.pn-draft input'),null);
+  h.$(`[data-pn="${action}"]`).click();h.$(`[data-pn="${action}"]`).click();
+  assert.equal(h.$('output[aria-label="Selected total"]').textContent,`${title} ${base.line+direction}`);
+  h.$('[data-pn="save"]').click();await until(()=>h.$('.pn-message')?.textContent.includes('Saved'));
+  const p=h.store.read().seasons[2026].weeks[2].picks.Gotch;
+  assert.equal(p.quote.line,base.line+direction);assert.equal(p.adjustedTotal,true);assert.equal(p.quote.estimated,true);
+  const profit=n=>n>0?n/100:100/-n;assert.ok(profit(p.quote.odds)<profit(base.odds));
+  assert.match(h.$('.pn-saved').textContent,/total fixed · Estimated odds/);
+  h.$('[data-tab="ticket"]').click();assert.match(h.$('.pn-ticket-summary').textContent,/Estimated odds/);assert.match(h.$('.pn-ticket-summary').textContent,/Est. return/);assert.match(h.$('#lg-body').textContent,/Adjusted total · Estimated odds/);
+  reopened=await app({backend:h});reopened.$('[data-l1="parlay"]').click();await until(()=>reopened.$('.pn-saved'));
+  reopened.$('[data-pn="edit"]').click();assert.equal(reopened.$('output[aria-label="Selected total"]').textContent,`${title} ${p.quote.line}`);
+  reopened.$('[data-pn="line-reset"]').click();assert.equal(reopened.$('output[aria-label="Selected total"]').textContent,`${title} ${base.line}`);
+  reopened.$('[data-pn="save"]').click();await until(()=>reopened.$('.pn-message')?.textContent.includes('Saved'));
+  const reset=h.store.read().seasons[2026].weeks[2].picks.Gotch;assert.equal(reset.adjustedTotal,undefined);assert.equal(reset.quote.estimated,undefined);assert.equal(reset.quote.odds,base.odds);
  }finally{if(reopened)await reopened.close();await h.close();}
 });
 test('delayed parlay configuration never overwrites History after navigating away',async()=>{

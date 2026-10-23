@@ -24,14 +24,28 @@ test('half-point controls require backend support and submit only the chosen spr
   const h=harness(true,'before',{supportsAdjustedSpreads:supported});await h.window.LeagueParlay.paint(h.host);
   const g=h.data.weeks.find(w=>w.week===2).games.find(g=>!h.data.weeks.find(w=>w.week===2).ticket.legs.some(p=>p.gameId===g.id)),q=g.markets.find(q=>q.market==='spread');
   await h.click({pn:'select',game:g.id,market:'spread',side:q.side});
-  assert.equal(h.host.innerHTML.includes('data-pn="spread-up"'),supported);
+  assert.equal(h.host.innerHTML.includes('data-pn="line-up"'),supported);
   if(supported){
-   await h.click({pn:'spread-up'});await h.click({pn:'spread-up'});assert.match(h.host.innerHTML,/Odds estimated automatically/);
+   await h.click({pn:'line-up'});await h.click({pn:'line-up'});assert.match(h.host.innerHTML,/Odds estimated automatically/);
    await h.click({pn:'save'});const request=h.requests.find(r=>r.url.endsWith('/pick')),body=JSON.parse(request.options.body);
    assert.equal(body.adjustedLine,q.line+1);assert.equal(body.odds,undefined);
-   await h.click({pn:'select',game:g.id,market:'spread',side:q.side});await h.click({pn:'spread-down'});await h.click({pn:'spread-reset'});
+   await h.click({pn:'select',game:g.id,market:'spread',side:q.side});await h.click({pn:'line-down'});await h.click({pn:'line-reset'});
    await h.click({pn:'save'});assert.equal(JSON.parse(h.requests.filter(r=>r.url.endsWith('/pick')).at(-1).options.body).adjustedLine,undefined);
   }
+ }
+});
+test('total controls use their own capability and submit only the selected total, never odds',async()=>{
+ for(const supportsAdjustedSpreads of [false,true])for(const supportsAdjustedTotals of [false,true])for(const side of ['over','under']){
+  const h=harness(true,'before',{supportsAdjustedSpreads,supportsAdjustedTotals});await h.window.LeagueParlay.paint(h.host);
+  const w=h.data.weeks.find(w=>w.week===2),g=w.games.find(g=>!w.ticket.legs.some(p=>p.gameId===g.id)),q=g.markets.find(q=>q.market==='total'&&q.side===side);
+  await h.click({pn:'select',game:g.id,market:'total',side});
+  assert.equal(h.host.innerHTML.includes('aria-label="Selected total"'),supportsAdjustedTotals);
+  const direction=side==='over'?-1:1;
+  await h.click({pn:direction<0?'line-down':'line-up'});
+  if(supportsAdjustedTotals){assert.match(h.host.innerHTML,/Total stays fixed/);assert.match(h.host.innerHTML,new RegExp(`Selected total">${side==='over'?'Over':'Under'} ${q.line+direction*.5}<`));}
+  await h.click({pn:'save'});const body=JSON.parse(h.requests.filter(r=>r.url.endsWith('/pick')).at(-1).options.body);
+  assert.equal(body.adjustedLine,supportsAdjustedTotals?q.line+direction*.5:undefined);assert.equal(body.odds,undefined);
+  await h.click({pn:'select',game:g.id,market:'ml',side:g.home});assert.doesNotMatch(h.host.innerHTML,/data-pn="line-up"/);
  }
 });
 test('enabled UI renders all six market choices, tab order and ticket/season navigation',async()=>{const h=harness();await h.window.LeagueParlay.paint(h.host);const html=h.host.innerHTML;assert.ok(html.indexOf('data-tab="picks"')<html.indexOf('data-tab="ticket"'));assert.ok(html.indexOf('data-tab="ticket"')<html.indexOf('data-tab="season"'));assert.match(html,/Spread/);assert.match(html,/Moneyline/);assert.match(html,/data-side="over"/);assert.match(html,/data-side="under"/);assert.equal((html.match(/data-pn="select"/g)||[]).length%6,0);assert.doesNotMatch(html,/data-pn="manage"/);

@@ -4,10 +4,10 @@
 /* Keep adjustments and save beside the selected game, without covering the app. */
 .pn .pn-draft{margin-top:10px;padding-top:10px;border-top:1px solid var(--tr2)}
 .pn .pn-draft>.pn-primary{width:100%;margin-top:8px}
-.pn .pn-spread-controls{display:grid;grid-template-columns:64px minmax(0,1fr) 64px;align-items:center;gap:6px;margin:8px 0}
-.pn .pn-spread-controls output{text-align:center;font-weight:700;font-size:18px}
-.pn .pn-spread-controls button{padding:8px 6px;font-weight:700}
-.pn .pn-spread-reset{font-size:12px;padding:6px 8px}
+.pn .pn-line-controls{display:grid;grid-template-columns:64px minmax(0,1fr) 64px;align-items:center;gap:6px;margin:8px 0}
+.pn .pn-line-controls output{text-align:center;font-weight:700;font-size:18px}
+.pn .pn-line-controls button{padding:8px 6px;font-weight:700}
+.pn .pn-line-reset{font-size:12px;padding:6px 8px}
 .pn .pn-draft>.pn-row>small{flex:1 1 150px}
 
 /* Compact shared summaries; native disclosures retain full-row touch targets. */

@@ -102,13 +102,42 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   even then the old hash stays valid until he says otherwise. Generate nothing
   that would require anyone to open a new link.
 
+## v138 — Buy points on Parlay totals
+
+Over and Under now use the same compact −0.5 / +0.5 controls as spreads,
+including Change and a one-tap Market reset. Move up to 10 points from the
+current total before the normal ticket lock; totals must stay positive and
+at most 200. No odds entry is required. Shared controls retain 44px tap targets.
+
+The existing `spread-pricing.js` browser/server helper now also prices totals
+with `total-step-v1`. Each favorable half-point (lower Over or higher Under)
+multiplies the risk/profit ratio by 1.10; the reverse move divides it by 1.10.
+Totals do not use the spread premiums at 3 or 7. Start from the observed price,
+round only the final American odds, and label the result Estimated. This is a
+tracking heuristic, not a sportsbook quote. Spread estimates stay unchanged.
+
+The server accepts only the selected `adjustedLine`, calculates its own price,
+and saves `adjustedTotal`, `baseQuote` and estimate provenance. The chosen total
+and estimate remain fixed through feed updates, kickoff and reset history;
+Over/Under grading uses that exact line, including whole-point pushes. Market
+reset restores normal quote updates. Ticket payout and Season estimates include
+adjusted totals; actual placed-ticket odds still override calculated totals.
+
+Preview and Supabase advertise `supportsAdjustedTotals` separately from spread
+support. Older backends retain normal total selection without adjustment
+controls. Deploy `league-parlay` with the existing custom session auth
+(`verify_jwt=false`) before the v138 frontend. No schema, private-link or live
+pick changes. Tests cover both directions, price anchors, invalid input, API
+capabilities, save/edit/reset, refresh/lock paths, grading and retained history.
+
 ## v137 — Adjustable Parlay spreads with automatic estimated odds
 
 Selecting a spread opens compact −0.5 / +0.5 controls in that game card, with
 one tap to return to the market line. Change reopens the saved spread. Members
 and organizers can move up to 10 points in either direction before the normal
-ticket lock; no odds entry is required. Moneylines, totals and write-in props
-keep their existing flow. The save bar is now inline instead of covering the
+ticket lock; no odds entry is required. ⚠️ **SUPERSEDED in v138 for totals:**
+they now have the same controls with side-aware estimates. Moneylines and
+write-in props keep their existing flow. The save bar is now inline instead of covering the
 bottom of the app.
 
 `spread-pricing.js` supplies one shared browser/server estimate from the observed
@@ -827,7 +856,7 @@ All legacy parlay sections below continue to describe the currently active app.
   record. These are placement terms, not a confirmed settlement/payment; pushes
   or voids can change the actual payout. Past tickets retain the entry.
 - Source: DraftKings **via ESPN**, not a direct/live-guaranteed DraftKings feed.
-  ⚠️ **SUPERSEDED in v137 for adjusted spreads:** explicit estimates are anchored
+  ⚠️ **SUPERSEDED in v137 for adjusted spreads and v138 for totals:** explicit estimates are anchored
   to the observed market price and labeled Estimated; normal feed prices stay exact.
   No invented prices when the market anchor is missing. Props/missing data need explicit review. Tracker amounts
   are not the actual placed ticket; Zach places the bet outside the app.
@@ -1058,7 +1087,7 @@ superseded. No model run happens in a member's Rankings view: these are snapshot
 
 ## Files
 
-- `spread-pricing.js` — shared, deterministic adjusted-spread price estimate for
+- `spread-pricing.js` — shared, deterministic adjusted-spread/total price estimates for
   the static Parlay UI and Edge backend; anchored to observed market odds.
 
 - `index.html` — the members' app. Header (brand · **?** · who-you-are chip),
@@ -1801,7 +1830,7 @@ Oracle retains its last valid full result snapshot under `lh:oracle-results:2026
 
 ### v115 — Cache rollover and reset-attempt recovery
 Oracle and Rankings follow the latest published week after cache refresh unless the reader deliberately selected history. Parlay follows the current server week on refresh and tab entry, preserving explicit history selection while that view stays open. Oracle rejects older or incomplete results responses that would remove confirmed finals without renewing cache freshness.
-⚠️ **SUPERSEDED in v137 for adjusted spreads:** their selected line and estimated price stay fixed from save through grading. Ordinary selections retain the refresh behavior below.
+⚠️ **SUPERSEDED in v137 for adjusted spreads and v138 for totals:** their selected line and estimated price stay fixed from save through grading. Ordinary selections retain the refresh behavior below.
 
 Reset-time ticket snapshots remain immutable. Separate tracking selections (lazily initialized for existing reset attempts) keep receiving kickoff quotes, locks, final scores and prop box scores; public history and season totals derive from these updated selections. No private links, capabilities, sessions, routes or configuration are changed. This supersedes v114's fetch-failure-only result protection.
 

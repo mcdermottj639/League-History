@@ -7,12 +7,13 @@ export const failure=(message,status=400)=>Object.assign(new Error(message),{sta
 export function ensure(state,year,week){const s=state.seasons[year]??={weeks:{},current:week};return s.weeks[week]??={year,week,stake:STAKE,games:[],picks:{},revisions:{},unmapped:[],imported:false,audit:[],updatedAt:0,payer:{status:'pending'}};}
 // Keep the reset-time snapshot immutable; track its selections separately.
 function trackedPicks(w){for(const r of w.resets||[])r.picks??=structuredClone(r.ticket?.legs||[]);return weekPicks(w);}
+const adjustedPick=p=>p.adjustedSpread||p.adjustedTotal;
 function freezePick(p,kick,now){
- const source=p.adjustedSpread?p.baseQuote:p.quote;
+ const source=adjustedPick(p)?p.baseQuote:p.quote;
  p.lockedAt=now;p.scheduledKick=kick;
  p.missingQuote=p.market!=='prop'&&(!source||source.provider!=='DraftKings via ESPN'||!Number.isFinite(source.observedAt)||source.observedAt>=kick);
  // Adjusted lines deliberately keep their save-time price estimate.
- p.staleQuote=!p.adjustedSpread&&!!source?.observedAt&&kick-source.observedAt>120000;
+ p.staleQuote=!adjustedPick(p)&&!!source?.observedAt&&kick-source.observedAt>120000;
 }
 export function ingest(store,year,week,payload,now=Date.now()){
  const incoming=parseScoreboard(payload,now);if(!incoming.length)throw failure('Empty scoreboard',502);
@@ -24,7 +25,7 @@ export function ingest(store,year,week,payload,now=Date.now()){
    for(const p of trackedPicks(w).filter(p=>p.gameId===game.id)){
     if(p.lockedAt)continue;
     if(locked(game,now)||(old&&locked(old,now)))freezePick(p,old?.kick||game.kick,now);
-    else if(!p.adjustedSpread){const q=quoteFor(game,p);if(q)p.quote={...q};}
+    else if(!adjustedPick(p)){const q=quoteFor(game,p);if(q)p.quote={...q};}
    }
   }
   lockDue(w,now);w.updatedAt=now;w.feedError=null;return w;
@@ -78,18 +79,17 @@ export function savePick(store,year,week,actor,input,now=Date.now()){
   const market=input.market,side=input.side,q=tracking?trackingQuote(g,input,now):market==='prop'?null:quoteFor(g,{market,side});
   if(market!=='prop'&&!q)throw failure('That DraftKings market is unavailable.',409);
   const adjusted=input.adjustedLine!==undefined;
-  if(adjusted&&(tracking||market!=='spread'||!globalThis.LeagueSpreadPricing.valid(q?.line,input.adjustedLine)))throw failure('Adjust a spread in half-point steps, up to 10 points from the market line.');
+  if(adjusted&&(tracking||!globalThis.LeagueSpreadPricing.valid(q?.line,input.adjustedLine,market)))throw failure('Adjust a spread or total in half-point steps, up to 10 points from the market line. Totals must be greater than zero.');
   const description=String(input.description||'').trim();
   if(market==='prop'&&(!description||description.length>120||(String(input.odds??'').trim()!==''&&odds(input.odds)===null)))throw failure('Enter the player prop. Odds are optional, but must be valid if supplied.');
   let quote=q?{...q}:{label:description,odds:odds(input.odds),line:null,observedAt:now,provider:'Member-entered prop'};
-  const adjustedSpread=adjusted;
-  if(adjustedSpread){
-   const price=globalThis.LeagueSpreadPricing.estimate(q.line,q.odds,input.adjustedLine);
+  if(adjusted){
+   const pricing=globalThis.LeagueSpreadPricing,price=pricing.estimate(q.line,q.odds,input.adjustedLine,market,side);
    if(price===null)throw failure('This market price cannot be estimated. Refresh the board.',409);
-   quote={...q,line:input.adjustedLine,odds:price,label:label(g,market,side,input.adjustedLine),provider:'Estimated from DraftKings via ESPN',estimated:true,estimateModel:globalThis.LeagueSpreadPricing.model};
+   quote={...q,line:input.adjustedLine,odds:price,label:label(g,market,side,input.adjustedLine),provider:'Estimated from DraftKings via ESPN',estimated:true,estimateModel:market==='total'?pricing.totalModel:pricing.model};
   }
   const p={member,gameId:g.id,market,side:market==='prop'?'':side,description:market==='prop'?description:'',original:{...quote},quote,createdAt:old?.createdAt||now,updatedAt:now,revision,addedBy:actor.role==='organizer'?'organizer':member};
-  if(adjustedSpread)Object.assign(p,{adjustedSpread:true,baseQuote:{...q}});
+  if(adjusted)Object.assign(p,{[market==='total'?'adjustedTotal':'adjustedSpread']:true,baseQuote:{...q}});
   if(tracking)Object.assign(p,{trackingEntry:true,lockedAt:now,scheduledKick:g.kick,missingQuote:false,staleQuote:false});
   if(w.placedTicket?.legCount){w.placedTicket.legsConfirmed=false;w.ticketOddsRevision=(w.ticketOddsRevision||0)+1;}
   if(w.replacementSlots)delete w.replacementSlots[member];
