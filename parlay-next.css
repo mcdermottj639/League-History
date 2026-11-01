@@ -25,3 +25,4 @@
 /* v136: compact navigation, retaining touch targets and selected state. */
 .pn .pn-tabs{padding:2px;margin:4px 0 6px;gap:2px;border-radius:10px}
 .pn .pn-tabs button{min-height:44px;padding:5px 6px;border-radius:8px;font-size:13px;line-height:1.2}
+.pn .pn-fix summary{min-height:44px;cursor:pointer}.pn .pn-fix summary small{font-weight:400;font-size:13px;color:var(--gy);margin-top:2px}.pn .pn-fix[open] summary{margin-bottom:6px}

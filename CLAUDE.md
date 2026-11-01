@@ -102,6 +102,32 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   even then the old hash stays valid until he says otherwise. Generate nothing
   that would require anyone to open a new link.
 
+## v139 — Organizer fixes a write-in prop (odds or full player name)
+
+Owner, on Wolff's locked "Kyren ATTD · —": *"I need to be able to add odds or
+a last name."* Parlay → Manage picks now shows **Fix this prop** under a saved
+write-in prop (organizer only, any week up to the current one, before or after
+kickoff). It edits the prop text and the optional odds; blank odds stay null.
+
+- Why the last name matters: box-score grading matches a single-word player
+  by **last name** (`findPlayer`), so "Kyren ATTD" stays "not in box score"
+  forever while "Kyren Williams anytime TD" grades automatically.
+- `editPick` (engine.mjs) is the one write path, used by both runtimes via
+  `POST /api/parlay/edit-pick`. Organizer session required; props only
+  (spread/total/ML odds come from DraftKings); member pick revision must
+  match and is bumped; lock, game, category, manual review result and
+  `p.original` (the member's first entry) are untouched. The previous
+  label/odds go to the audit (`edit-pick`). Quote provider becomes
+  "Organizer-corrected prop".
+- UI is gated by `supportsPickEdit`; deploy `league-parlay` with the updated
+  shared engine before the frontend relies on it. Typing is kept in `S.fix`
+  (memory only) and the 20-second refresh pauses while the box is open.
+- No schema, private-link, capability or session change. Tests: engine
+  (organizer/revision/props-only/odds validation/audit/grading with the full
+  name), Edge API (401/403/409/200 + capability) and frontend (organizer-only,
+  revision-bound request). The revision guard and the organizer UI gate were
+  fault-injected.
+
 ## v138 — Buy points on Parlay totals
 
 Over and Under now use the same compact −0.5 / +0.5 controls as spreads,

@@ -96,6 +96,31 @@ export function savePick(store,year,week,actor,input,now=Date.now()){
   w.revisions[member]=revision;w.picks[member]=p;w.unmapped=w.unmapped.filter(p=>p.member!==member);w.audit.push({at:now,action:tracking?'tracking-entry':old?'replace':'save',member,by:p.addedBy});return {ok:true,pick:p};
  });
 }
+// Organizer correction of a write-in prop: fix the player text (so the box
+// score can find them) and/or the odds, even after kickoff. Lock, game,
+// category and result review are untouched; the member's first entry stays in
+// p.original and the previous values go to the audit.
+export function editPick(store,year,week,actor,input,now=Date.now()){
+ if(actor.role!=='organizer')throw failure('Organizer access required',403);
+ return store.transact(state=>{
+  const season=state.seasons[year],w=season?.weeks[week];
+  if(!w||week>season.current)throw failure('Unknown ticket',404);
+  const member=input.member;if(!ROSTER.includes(member))throw failure('Choose a league member.');
+  const p=w.picks[member];if(!p)throw failure('This member has no pick to edit.',409);
+  if(p.market!=='prop')throw failure('Only write-in props can be edited. Spread, total and moneyline odds come from DraftKings.',409);
+  if(Number(input.revision)!==Number(w.revisions?.[member]??p.revision??0))throw failure('This pick changed on another device. Refresh before editing it.',409);
+  const description=String(input.description??'').replace(/\s+/g,' ').trim(),raw=String(input.odds??'').trim().replace(/[\u2212\u2013]/g,'-'),price=raw===''?null:odds(raw);
+  if(!description||description.length>120)throw failure('Enter the player prop (120 characters or less).');
+  if(raw!==''&&price===null)throw failure('Enter American odds such as +150 or -110, or leave odds blank.');
+  const previous={label:p.quote?.label??p.description,odds:p.quote?.odds??null};
+  if(previous.label===description&&(previous.odds??null)===price)throw failure('Nothing changed.');
+  p.description=description;p.quote={...(p.quote||{}),label:description,odds:price,provider:'Organizer-corrected prop'};
+  w.revisions??={};const revision=Number(w.revisions[member]??p.revision??0)+1;w.revisions[member]=revision;p.revision=revision;
+  p.editedAt=now;p.editedBy='organizer';p.updatedAt=now;
+  w.audit.push({at:now,action:'edit-pick',member,by:'organizer',previous,label:description,odds:price});
+  return {ok:true,pick:p};
+ });
+}
 // An unplaced selection is retained for audit, never graded as a wager.
 export function resetPick(store,year,week,actor,input,now=Date.now()){
  if(actor.role!=='organizer')throw failure('Organizer access required',403);

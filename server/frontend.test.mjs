@@ -271,3 +271,18 @@ test('carried picks count once in individual season records',async()=>{
  await h.window.LeagueParlay.paint(h.host);await h.click({pn:'tab',tab:'season'});
  assert.match(h.host.innerHTML,/1–0 · 100%/);assert.doesNotMatch(h.host.innerHTML,/2–0 · 100%/);
 });
+
+test('organizer can fix a locked prop’s text and odds from Manage picks; members never see it',async()=>{
+ const asProp=data=>{const w=data.weeks.find(w=>w.week===2),l=w.ticket.legs.find(p=>p.member==='McD');Object.assign(l,{market:'prop',description:'Kyren ATTD',quote:{...l.quote,label:'Kyren ATTD',odds:null}});return data;};
+ const h=harness(true,'live',{supportsPickEdit:true},true);asProp(h.data);await h.window.LeagueParlay.paint(h.host);
+ assert.doesNotMatch(h.host.innerHTML,/data-pn="fix-prop"/);
+ await h.click({pn:'manage'});
+ assert.match(h.host.innerHTML,/data-pn="fix-prop"/);assert.match(h.host.innerHTML,/value="Kyren ATTD"/);
+ const values={'#pn-fix-text':'Kyren Williams anytime TD','#pn-fix-odds':'+150'};
+ h.host.querySelector=sel=>({value:values[sel]??'',removeAttribute(){}});
+ await h.click({pn:'fix-prop'});
+ const req=h.requests.find(r=>r.url.endsWith('/edit-pick'));assert.ok(req);const body=JSON.parse(req.options.body);
+ assert.equal(body.member,'McD');assert.equal(body.description,'Kyren Williams anytime TD');assert.equal(body.odds,'+150');assert.equal(body.week,2);
+ assert.equal(body.revision,h.data.weeks.find(w=>w.week===2).ticket.legs.find(p=>p.member==='McD').revision);assert.equal(req.options.headers.Authorization,'Bearer test');
+ for(const [organizer,support] of [[false,true],[true,false]]){const o=harness(true,'live',{supportsPickEdit:support},organizer);asProp(o.data);await o.window.LeagueParlay.paint(o.host);await o.click({pn:'manage'});assert.doesNotMatch(o.host.innerHTML,/data-pn="fix-prop"/);}
+});

@@ -199,3 +199,19 @@ test('Edge selective Thursday reset forwards scope and preserves another member'
  assert.deepEqual(b.store.read().seasons[2026].weeks[1].picks.McD,kept);assert.equal(b.store.read().seasons[2026].weeks[1].picks.Hurd,undefined);
  const state=await(await b.request('api/parlay/state')).json();assert.equal(state.supportsSelectiveThursdayReset,true);
 });
+
+test('edit-pick API: organizer-only prop correction after kickoff, advertised capability',async()=>{
+ const b=await backend();activate(b.store);
+ const admin=await(await b.request('api/parlay/session',{key:'test-private-key'})).json(),regular=await b.session('McD');
+ const g=b.store.read().seasons[2026].weeks[1].games[0];
+ assert.equal((await b.request('api/parlay/pick',{year:2026,week:1,member:'McD',gameId:g.id,market:'prop',description:'Kyren ATTD',odds:'',revision:0},regular.token)).status,200);
+ b.store.transact(s=>{const x=s.seasons[2026].weeks[1].games[0];x.kick=T-1000;x.state='in';s.seasons[2026].weeks[1].picks.McD.lockedAt=T-1000;});
+ const state=await(await b.request('api/parlay/state')).json();assert.equal(state.supportsPickEdit,true);
+ const request={year:2026,week:1,member:'McD',revision:1,description:'Kyren Williams anytime TD',odds:'+150'};
+ assert.equal((await b.request('api/parlay/edit-pick',request)).status,401);
+ assert.equal((await b.request('api/parlay/edit-pick',request,regular.token)).status,403);
+ assert.equal((await b.request('api/parlay/edit-pick',{...request,week:2},admin.token)).status,400);
+ assert.equal((await b.request('api/parlay/edit-pick',{...request,revision:0},admin.token)).status,409);
+ assert.equal((await b.request('api/parlay/edit-pick',request,admin.token)).status,200);
+ const p=b.store.read().seasons[2026].weeks[1].picks.McD;assert.equal(p.quote.label,'Kyren Williams anytime TD');assert.equal(p.quote.odds,150);assert.equal(p.lockedAt,T-1000);assert.equal(p.original.label,'Kyren ATTD');
+});

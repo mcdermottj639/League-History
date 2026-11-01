@@ -379,3 +379,34 @@ test('selective Thursday reset archives the loss and preserves other picks, revi
   assert.equal(s.read().seasons[2026].weeks[2].replacementSlots.McD,undefined);
  }finally{s.close();}
 });
+
+test('organizer can fix a locked write-in prop: full player name and odds, revision-bound and audited',async()=>{
+ const {editPick}=await import('./engine.mjs');const s=setup(),organizer={role:'organizer',member:'Zach'},now=K+1000;
+ try{
+  savePick(s,2026,2,member('McD'),{member:'McD',gameId:'g1',market:'prop',description:'Kyren ATTD',odds:'',revision:0},T);
+  savePick(s,2026,2,member('Hurd'),pick('Hurd'),T);
+  ingest(s,2026,2,payload(),now);
+  const before=s.read().seasons[2026].weeks[2];assert.ok(before.picks.McD.lockedAt);assert.equal(before.picks.McD.quote.odds,null);
+  const request={member:'McD',revision:1,description:'Kyren Williams anytime TD',odds:'+150'};
+  assert.throws(()=>editPick(s,2026,2,member('McD'),request,now),/Organizer/);
+  assert.throws(()=>editPick(s,2026,2,organizer,{...request,revision:0},now),/changed/);
+  assert.throws(()=>editPick(s,2026,2,organizer,{...request,member:'Hurd'},now),/Only write-in props/);
+  assert.throws(()=>editPick(s,2026,2,organizer,{...request,odds:'+50'},now),/American odds/);
+  assert.throws(()=>editPick(s,2026,2,organizer,{...request,description:'  '},now),/player prop/);
+  assert.throws(()=>editPick(s,2026,2,organizer,{...request,member:'Slemp'},now),/no pick/);
+  // Short first-name-only text cannot be found in a box score; the full name can.
+  const box={players:[{id:'1',displayName:'Kyren Williams',rushTd:1,recTd:0,returnTd:0,defTd:0}],scoringPlays:[]},final={completed:true,status:'STATUS_FINAL'};
+  assert.equal(gradeProp(parseProp('Kyren ATTD'),box,final).result,'pending');
+  editPick(s,2026,2,organizer,request,now);
+  const w=s.read().seasons[2026].weeks[2],p=w.picks.McD;
+  assert.equal(p.description,'Kyren Williams anytime TD');assert.equal(p.quote.label,'Kyren Williams anytime TD');assert.equal(p.quote.odds,150);
+  assert.equal(p.original.label,'Kyren ATTD');assert.equal(p.lockedAt,before.picks.McD.lockedAt);assert.equal(p.gameId,'g1');
+  assert.equal(w.revisions.McD,2);assert.equal(p.revision,2);assert.deepEqual(w.picks.Hurd,before.picks.Hurd);
+  assert.deepEqual(w.audit.at(-1),{at:now,action:'edit-pick',member:'McD',by:'organizer',previous:{label:'Kyren ATTD',odds:null},label:'Kyren Williams anytime TD',odds:150});
+  assert.equal(gradeProp(parseProp(p.description),box,final).result,'hit');
+  assert.equal(publicWeek(w,now).ticket.legs.find(l=>l.member==='McD').quote.odds,150);
+  assert.throws(()=>editPick(s,2026,2,organizer,{...request,revision:2},now),/Nothing changed/);
+  editPick(s,2026,2,organizer,{...request,revision:2,odds:''},now);assert.equal(s.read().seasons[2026].weeks[2].picks.McD.quote.odds,null);
+  assert.throws(()=>editPick(s,2026,3,organizer,{...request,revision:3},now),/Unknown ticket/);
+ }finally{s.close();}
+});
