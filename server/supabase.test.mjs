@@ -215,3 +215,8 @@ test('edit-pick API: organizer-only prop correction after kickoff, advertised ca
  assert.equal((await b.request('api/parlay/edit-pick',request,admin.token)).status,200);
  const p=b.store.read().seasons[2026].weeks[1].picks.McD;assert.equal(p.quote.label,'Kyren Williams anytime TD');assert.equal(p.quote.odds,150);assert.equal(p.lockedAt,T-1000);assert.equal(p.original.label,'Kyren ATTD');
 });
+test('collector downloads the board once per run unless a concurrent save forces a fresh read',async()=>{
+ const b=await backend();let reads=0;const counted=async(op,args)=>{if(op==='read')reads++;return b.rpc(op,args);};
+ const result=await collect(counted,b.config,{clock:()=>T,fetchJSON:async()=>{throw Error('offline');}});
+ assert.equal(result.ok,false);assert.equal(reads,1);
+});
