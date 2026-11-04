@@ -6,6 +6,14 @@ export async function getJSON(url,fetcher=fetch){const r=await fetcher(url,{sign
 export async function collect(rpc,config,{clock=Date.now,fetchJSON=getJSON,managerFor=()=>''}={}){
  const lease=randomToken();if(!await rpc('lease',{owner:lease}))return {ok:true,busy:true};
  const baseRPC=rpc;rpc=(op,args={})=>baseRPC(op,op==='commit'?{...args,lease}:args);
+ // Egress guard (Nov 2026 Supabase quota): the leased collector reuses the state it last read or
+ // committed instead of downloading the full board on every read. A failed compare-and-swap drops
+ // the copy, so a concurrent member save still forces a fresh read before the retry.
+ let cached=null;const leasedRPC=rpc;rpc=async(op,args={})=>{
+  if(op==='read'){if(!cached)cached=await leasedRPC('read');return structuredClone(cached);}
+  if(op==='commit'){const ok=await leasedRPC('commit',args);cached=ok?{revision:Number(args.revision)+1,state:structuredClone(args.state)}:null;return ok;}
+  return leasedRPC(op,args);
+ };
  const year=config.year,now=clock();
  try{
   await transaction(rpc,store=>store.transact(s=>{ensure(s,year,config.launch_week);Object.values(s.seasons[year].weeks).forEach(w=>lockDue(w,now));}));
