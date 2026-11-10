@@ -262,6 +262,10 @@
     const rng = rngOf(spec.seed == null ? 1 : spec.seed);
     const gauss = gaussOf(rng);
     const made = new Float64Array(N);
+    /* 🚽 Cum Bowl seeding, counted off the SAME ranked seasons: the bottom two
+       seeds play it. Counters only — no extra random draws — so adding them
+       cannot move a single playoff percentage for a published week. */
+    const bowl = new Float64Array(N);
     /* Conditionals, taken off the SAME sim set rather than by re-running:
        one pass gives every "if you win this one" answer, and they stay
        mutually consistent because they are the same ten thousand seasons. */
@@ -323,6 +327,7 @@
         p = q;
       }
       for (let k = 0; k < pt; k++) made[arr[k]]++;
+      if (N >= 2) { bowl[arr[N - 1]]++; bowl[arr[N - 2]]++; }
       if (meIdx >= 0) {
         const iMade = arr.indexOf(meIdx) < pt ? 1 : 0;
         byWins[myWins]++; byWinsMade[myWins] += iMade;
@@ -334,6 +339,8 @@
 
     const odds = {};
     teams.forEach((t, i) => { odds[t.id] = (made[i] / sims) * 100; });
+    const cumBowl = {};
+    teams.forEach((t, i) => { cumBowl[t.id] = (bowl[i] / sims) * 100; });
 
     /* What each remaining game is worth: the same ten thousand seasons, split
        by whether the reader won that week. */
@@ -360,7 +367,7 @@
       sos = mean(myGames.map((g) => est.mu[g.opp])) - est.lgMean;
     }
 
-    return { odds, est, wp, myGames, swings, need, sos, meIdx, sims };
+    return { odds, cumBowl, est, wp, myGames, swings, need, sos, meIdx, sims };
   }
 
   window.LeagueOdds = {
