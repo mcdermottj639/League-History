@@ -575,6 +575,19 @@
   display: grid; grid-template-columns: 18px auto 1fr;
   align-items: center; gap: 9px; padding: 8px 0; font-size: 12.5px; }
 :root[data-palette] .ls-tr + .ls-tr { border-top: 1px solid var(--tr); }
+/* v141 — standings and playoff odds in one row: the standings body (name over
+   record line) plus the two forecast columns. Column count follows the data:
+   the header and rows emit only the forecasts that exist. */
+:root[data-palette] .ls-so {
+  display: grid; grid-template-columns: 18px auto 1fr repeat(2, 38px);
+  align-items: center; gap: 8px; padding: 8px 0; font-size: 12.5px; }
+:root[data-palette] .ls-so + .ls-so { border-top: 1px solid var(--tr); }
+/* Names wrap here instead of clipping: the v58 fault, not repeated. */
+:root[data-palette] .ls-so .ls-tr-t { white-space: normal; overflow: visible; text-overflow: clip; }
+:root[data-palette] .ls-so.ls-oh { padding: 0 0 7px; font-size: 9.5px; }
+:root[data-palette] .ls-so.ls-cut { border-bottom: 2px solid var(--ac7); }
+:root[data-palette] .ls-so.lg-mine {
+  background: rgba(var(--acRGB), .09); margin: 0 -14px; padding-left: 14px; padding-right: 14px; }
 :root[data-palette] .ls-tr-b { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 :root[data-palette] .ls-tr-n { font: 800 11px/1 Archivo, system-ui, sans-serif; color: var(--mu); text-align: center; }
 :root[data-palette] .ls-tr-t {
@@ -601,6 +614,7 @@
 @media (max-width: 380px) {
   :root[data-palette] .ls-odd { grid-template-columns: 16px auto 1fr 38px 34px; gap: 4px; font-size: 12px; }
   :root[data-palette] .ls-odd.ls-cb { grid-template-columns: 16px auto 1fr 38px; }
+  :root[data-palette] .ls-so { grid-template-columns: 16px auto 1fr repeat(2, 34px); gap: 5px; }
   :root[data-palette] .ls-sw { grid-template-columns: 38px 1fr 44px 44px; gap: 5px; }
 }
 

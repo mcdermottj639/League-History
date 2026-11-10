@@ -480,6 +480,19 @@
       ${rows || '<div class="ffp-card"><div class="ffp-empty"><b>No matchups on file for this week.</b>The schedule that came with this snapshot doesn\'t cover it.</div></div>'}`;
   }
 
+  /* The odds caption, shared by the stand-alone odds card (preseason) and the
+     combined standings card (v141) — one copy of the words, two homes. */
+  function oddsCapHTML(d, o, ours, gaps, BIG) {
+    return ours ? `<p class="ffp-cap"><b>Ours</b> plays the rest of the schedule out ${o.sims.toLocaleString()} times. Completed results count toward the standings. Future scoring estimates blend this season’s scores with manager scoring history; a good or bad record alone does not establish team strength. ${o.est.lambda > 0
+        ? `After ${spell(d.wp)} week${d.wp === 1 ? '' : 's'} the scoring estimate weights this season’s results <b>${Math.round(o.est.lambda * 100)}%</b> and the historical prior the rest. The model estimates weekly scoring variation of ${one(o.est.sigma)} points, so early results carry substantial uncertainty.`
+        : 'With no games played it is thirteen years of scoring history and nothing else.'}<br><br>⚠️ <b>Different models can reasonably produce different probabilities.</b> ESPN\'s comes with the league data and is the number their app shows. Neither has been proven better here — that takes seasons of keeping score, not one page.${gaps.length
+        ? (gaps.length > 3
+          ? ` Right now they are at least ${BIG} percentage points apart on <b>${spell(gaps.length)} of the ${spell(d.teams.length)}</b>.`
+          : ` Right now they are at least ${BIG} percentage points apart on <b>${gaps.map((t) => esc(t.n)).join(', ')}</b>.`)
+        : ''}</p>`
+        : `<p class="ffp-cap">⚑ <b>ESPN\'s numbers, not this app\'s.</b> They come through with the league data and are the same percentages the ESPN app shows.</p>`;
+  }
+
   function oddsHTML(d, cr, me) {
     const o = ourOdds(d);
     if (!o && !d.teams.some((t) => t.pct != null)) return '';
@@ -517,14 +530,44 @@
           </div>`;
         }).join('')}
       </div>
-      ${ours ? `<p class="ffp-cap"><b>Ours</b> plays the rest of the schedule out ${o.sims.toLocaleString()} times. Completed results count toward the standings. Future scoring estimates blend this season’s scores with manager scoring history; a good or bad record alone does not establish team strength. ${o.est.lambda > 0
-        ? `After ${spell(d.wp)} week${d.wp === 1 ? '' : 's'} the scoring estimate weights this season’s results <b>${Math.round(o.est.lambda * 100)}%</b> and the historical prior the rest. The model estimates weekly scoring variation of ${one(o.est.sigma)} points, so early results carry substantial uncertainty.`
-        : 'With no games played it is thirteen years of scoring history and nothing else.'}<br><br>⚠️ <b>Different models can reasonably produce different probabilities.</b> ESPN\'s comes with the league data and is the number their app shows. Neither has been proven better here — that takes seasons of keeping score, not one page.${gaps.length
-        ? (gaps.length > 3
-          ? ` Right now they are at least ${BIG} percentage points apart on <b>${spell(gaps.length)} of the ${spell(d.teams.length)}</b>.`
-          : ` Right now they are at least ${BIG} percentage points apart on <b>${gaps.map((t) => esc(t.n)).join(', ')}</b>.`)
-        : ''}</p>`
-        : `<p class="ffp-cap">⚑ <b>ESPN\'s numbers, not this app\'s.</b> They come through with the league data and are the same percentages the ESPN app shows.</p>`}
+      ${oddsCapHTML(d, o, ours, gaps, BIG)}
+      ${hingeHTML(d, o, me)}`;
+  }
+
+  /* ══ 📊 STANDINGS + PLAYOFF ODDS, ONE CARD (v141) ══════════════════════
+     Owner: "since we're adding a new card it seems like standings and playoff
+     odds could be combined." Both were twelve-row tables of the same teams,
+     so in season they are one: standings order, the record line under the
+     name, and the two playoff forecasts on the right. Preseason there are no
+     standings, so the odds card stands alone as before (oddsHTML). */
+  function standOddsHTML(d, cr, me) {
+    const o = ourOdds(d);
+    const ours = o ? o.odds : null;
+    const pct0 = (v) => (v == null ? '—' : Math.round(v) + '%');
+    const BIG = 12;
+    const hasEspn = d.teams.some((t) => t.pct != null);
+    const gaps = ours ? d.table.filter((t) => t.pct != null && Math.abs(ours[t.id] - t.pct) >= BIG) : [];
+    return `<h2 class="section-title">📊 Standings & playoff odds</h2>
+      <p class="fh-lead">After ${spell(d.wp)} week${d.wp === 1 ? '' : 's'}, in standings order. ${ours ? '<b>Ours</b> and <b>ESPN</b> are' : '<b>ESPN</b> is'} each team's chance of making the playoffs. <b>All-play</b> is every team against the whole league each week, so it is the one number here a kind schedule cannot flatter.</p>
+      <div class="ffp-card">
+        <div class="ls-so ls-oh"><span></span><span></span><span>Team</span>${ours ? '<span>Ours</span>' : ''}${hasEspn ? '<span>ESPN</span>' : ''}</div>
+        ${d.table.map((t) => {
+          const mine = ours ? ours[t.id] : null;
+          const gap = mine == null || t.pct == null ? 0 : mine - t.pct;
+          return `<div class="ls-so${mineCls(t, me)}${t.seed === d.pt ? ' ls-cut' : ''}">
+            <span class="ls-tr-n">${t.seed}</span>
+            ${crestOf(cr, t, 32)}
+            <div class="ls-tr-b">
+              <span class="ls-tr-t">${esc(t.n)}${youTag(t, me)}</span>
+              <span class="ls-tr-s">${t.w}-${t.l}${t.ti ? `-${t.ti}` : ''} · ${Math.round(t.pf)} PF · ${t.apw}-${t.apl} all-play</span>
+            </div>
+            ${ours ? `<span class="ls-odd-v mono">${pct0(mine)}</span>` : ''}
+            ${hasEspn ? `<span class="ls-odd-e mono${ours && Math.abs(gap) >= BIG ? ' ls-gap' : ''}">${pct0(t.pct)}</span>` : ''}
+          </div>`;
+        }).join('')}
+      </div>
+      <p class="ffp-cap">The line falls after ${ordN(d.pt)} — ${spell(d.pt)} teams make the bracket. This table sorts by wins, then points. The odds simulation also applies its head-to-head tiebreak when projecting playoff qualification.</p>
+      ${oddsCapHTML(d, o, ours, gaps, BIG)}
       ${hingeHTML(d, o, me)}`;
   }
 
@@ -656,8 +699,13 @@
     }
     const d = derive(S.snap);
     const me = LH.me();
-    host.innerHTML = headHTML(d) + meHTML(d, cr, me) + oddsHTML(d, cr, me) + cumBowlHTML(d, cr, me)
-      + weekHTML(d, cr, me) + tableHTML(d, cr, me) + schedHTML(d, cr, me);
+    /* v141: in season, standings and playoff odds are one card. Preseason
+       keeps the odds card and the "nobody has played" standings note. */
+    host.innerHTML = d.pre
+      ? headHTML(d) + meHTML(d, cr, me) + oddsHTML(d, cr, me) + cumBowlHTML(d, cr, me)
+        + weekHTML(d, cr, me) + tableHTML(d, cr, me) + schedHTML(d, cr, me)
+      : headHTML(d) + meHTML(d, cr, me) + standOddsHTML(d, cr, me) + cumBowlHTML(d, cr, me)
+        + weekHTML(d, cr, me) + schedHTML(d, cr, me);
   }
 
   /* Ask the backend behind the reader, never in front of them. Throttled so
@@ -716,6 +764,7 @@
     _hingeHTML: hingeHTML,
     _oddsHTML: oddsHTML,
     _cumBowlHTML: cumBowlHTML,
+    _standOddsHTML: standOddsHTML,
     _schedHTML: schedHTML,
   };
 })();

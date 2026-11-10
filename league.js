@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v140';
+  const APP_VERSION = 'v141';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -686,7 +686,7 @@
     const plain = label.replace(/^[^\p{L}\p{N}]+/u, '').trim();
     const names = {
       'Your season': 'Season', 'What yours hinges on': 'Key factors',
-      'Your schedule': 'Schedule', 'The trophy case': 'Trophy case',
+      'Your schedule': 'Schedule', 'Standings & playoff odds': 'Standings', 'The trophy case': 'Trophy case',
       'The luck index': 'Luck index', 'The record book': 'Record book',
       "The champion's curse": "Champion's curse",
       'All-time playoff PPG': 'Playoff PPG', 'All-time standings': 'Standings',

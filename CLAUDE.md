@@ -102,6 +102,27 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   even then the old hash stays valid until he says otherwise. Generate nothing
   that would require anyone to open a new link.
 
+## v141 — Standings and playoff odds are one card
+
+Owner: *"since we're adding a new card it seems like standings and playoff
+odds could be combined."* In season, the Season tab now shows **📊 Standings &
+playoff odds**: standings order, the record · PF · all-play line under each
+name, and the Ours / ESPN playoff percentages on the right (gap marker kept).
+"What yours hinges on" follows it, then Cum Bowl odds. Page order: head · your
+season · standings & odds · hinge · Cum Bowl odds · week · schedule.
+
+- `season.js` `standOddsHTML` renders it; `oddsCapHTML` is the odds caption
+  lifted out so both homes share one copy of the words. Both captions are
+  kept under the card unchanged.
+- **Preseason is unchanged**: no standings exist, so `oddsHTML` (sorted by
+  odds) and the "Nobody has played a game" standings note still render.
+  ⚠️ SUPERSEDED for in-season only: the separate 🎯 Playoff odds and
+  📊 Standings cards described in v39/v40 and later entries.
+- Names WRAP in this card rather than clipping (0 clipped at 320 and 390px),
+  which closes the `.ls-odd-t` half of the clipped-names item in Open / next
+  for in-season readers. `.ls-sw-n` and `.ls-sc-n` are untouched.
+- Jump label is "Standings". No simulation, data, backend or link change.
+
 ## v140 — Cum Bowl odds on the Season tab
 
 Owner: *"In the season tab for league history can we get a cum bowl odds
@@ -113,7 +134,8 @@ season in the bottom two.
 - `odds.js` `build()` returns `cumBowl` (id → percent) beside `odds`. It is
   two counters on the ranking the simulation already produces — **no extra
   random draws**, so the playoff percentages for a published week are
-  byte-identical to v139 (verified by diffing both builds on the live data).
+  byte-identical to v139 (verified by diffing both builds on the bundled
+  `season/current.json` snapshot).
 - `season.js` `cumBowlHTML` renders it: sorted most-likely first, a rule after
   the top two, a neutral bar under the team name plus a whole percent ("<1%" for a non-zero value
   that rounds to 0). No ESPN column: ESPN publishes nothing comparable.
