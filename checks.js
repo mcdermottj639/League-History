@@ -1038,6 +1038,20 @@ function oddsLaws() {
   if (Object.keys(r.odds).some((k) => r.odds[k] !== again.odds[k])) {
     fail('the simulation is not deterministic — two runs of the same week disagree');
   }
+
+  /* 🚽 CUM BOWL ODDS (v140). Exactly two teams — the bottom two seeds — land
+     in it every simulated season, so the twelve must total 200. And nobody
+     can be in the playoff field and the Cum Bowl in the same season, so a
+     team's two numbers can never pass 100 between them. */
+  const cbSum = Object.keys(r.cumBowl).reduce((x, k) => x + r.cumBowl[k], 0);
+  if (Math.abs(cbSum - 200) > 1e-6) fail(`Cum Bowl odds sum to ${cbSum.toFixed(3)}, must be 200`);
+  Object.keys(r.cumBowl).forEach((k) => {
+    if (!(r.cumBowl[k] >= 0 && r.cumBowl[k] <= 100)) fail(`team ${k} has an impossible Cum Bowl probability: ${r.cumBowl[k]}`);
+    if (r.odds[k] + r.cumBowl[k] > 100 + 1e-6) fail(`team ${k}: playoff + Cum Bowl odds exceed 100`);
+  });
+  if (Object.keys(r.cumBowl).some((k) => r.cumBowl[k] !== again.cumBowl[k])) {
+    fail('Cum Bowl odds are not deterministic');
+  }
   const other = LO.build(Object.assign(mk(5), { seed: 99 }));
   if (Object.keys(r.odds).every((k) => r.odds[k] === other.odds[k])) {
     fail('changing the seed changed nothing — the RNG is not being used');

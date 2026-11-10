@@ -528,6 +528,38 @@
       ${hingeHTML(d, o, me)}`;
   }
 
+  /* ══ 🚽 CUM BOWL ODDS (v140) ═══════════════════════════════════════════
+     Owner: "In the season tab … can we get a cum bowl odds tracker as well."
+     The Cum Bowl is the 11-seed v the 12-seed (history.js, `GmC3`), so this
+     is the share of the SAME simulated seasons in which a team finishes the
+     regular season in the bottom two. It is a seeding number only: it says
+     who plays the game, never who loses it. No ESPN column — ESPN publishes
+     nothing comparable. */
+  function cumBowlHTML(d, cr, me) {
+    const o = ourOdds(d);
+    if (!o || !o.cumBowl || d.teams.length < 2) return '';
+    const cb = o.cumBowl;
+    const N = d.teams.length;
+    const rows = [...d.teams].sort((a, b) => cb[b.id] - cb[a.id] || (a.pct || 0) - (b.pct || 0) || a.pf - b.pf);
+    const pct0 = (v) => (v == null ? '—' : v > 0 && v < 0.5 ? '<1%' : Math.round(v) + '%');
+    const top = rows[0];
+    const topTeams = rows.filter((t) => Math.round(cb[t.id]) === Math.round(cb[top.id]));
+    const topNames = topTeams.map((t) => esc(t.n)).join(', ');
+    return `<h2 class="section-title">🚽 Cum Bowl odds</h2>
+      <p class="fh-lead"><b>${topNames} ${pct0(cb[top.id])}</b> — ${topTeams.length > 1 ? 'joint most likely' : 'most likely'} to land in the Cum Bowl. The ${ordN(N - 1)} and ${ordN(N)} seeds play it, so the unrounded probabilities add up to 200%.</p>
+      <div class="ffp-card">
+        <div class="ls-odd ls-cb ls-oh"><span></span><span></span><span>Team</span><span>In it</span></div>
+        ${rows.map((t, i) => `<div class="ls-odd ls-cb${mineCls(t, me)}${i === 1 ? ' ls-cut' : ''}">
+            <span class="ls-odd-n">${i + 1}</span>
+            ${crestOf(cr, t, 28)}
+            <span class="ls-cb-t"><span class="ls-odd-t">${esc(t.n)}${youTag(t, me)}</span>
+              <span class="ls-cb-bar" aria-hidden="true"><i style="width:${Math.max(0, Math.min(100, cb[t.id])).toFixed(1)}%"></i></span></span>
+            <span class="ls-odd-v mono">${pct0(cb[t.id])}</span>
+          </div>`).join('')}
+      </div>
+      <p class="ffp-cap">Read off the same ${o.sims.toLocaleString()} simulated seasons as the playoff odds: how often a team finishes the regular season ${ordN(N - 1)} or ${ordN(N)}. The line falls after the two most likely. This is seeding only — it does not predict who loses the game.</p>`;
+  }
+
   /* ══ WHAT THE READER'S OWN NUMBER RESTS ON ═════════════════════════════
      🚨 THE PART ESPN DOES NOT DO. A percentage on its own is unarguable and
      therefore uninteresting: it cannot be checked, and it does not tell you
@@ -624,7 +656,7 @@
     }
     const d = derive(S.snap);
     const me = LH.me();
-    host.innerHTML = headHTML(d) + meHTML(d, cr, me) + oddsHTML(d, cr, me)
+    host.innerHTML = headHTML(d) + meHTML(d, cr, me) + oddsHTML(d, cr, me) + cumBowlHTML(d, cr, me)
       + weekHTML(d, cr, me) + tableHTML(d, cr, me) + schedHTML(d, cr, me);
   }
 
@@ -683,6 +715,7 @@
     _meHTML: meHTML,
     _hingeHTML: hingeHTML,
     _oddsHTML: oddsHTML,
+    _cumBowlHTML: cumBowlHTML,
     _schedHTML: schedHTML,
   };
 })();

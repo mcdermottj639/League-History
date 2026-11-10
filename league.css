@@ -509,6 +509,17 @@
 :root[data-palette] .ls-oh span { text-align: right; white-space: nowrap; }
 :root[data-palette] .ls-oh span:nth-child(3) { text-align: left; }
 :root[data-palette] .ls-odd-e { text-align: right; font-size: 11.5px; color: var(--mu); }
+/* 🚽 Cum Bowl odds (v140): same row as the playoff table, with a bar where
+   ESPN's column would be — there is no second forecaster to compare. Neutral
+   ink, not --neg: the bar is a quantity, and the game is a joke, not a fault. */
+:root[data-palette] .ls-odd.ls-cb { grid-template-columns: 18px auto 1fr 40px; }
+/* The bar sits UNDER the name, not beside it: a bar column put long team
+   names back into truncation at 390px (the v58 fault), and the name matters
+   more than the bar. */
+:root[data-palette] .ls-cb-t { display: grid; gap: 5px; min-width: 0; }
+:root[data-palette] .ls-cb-bar { display: block; height: 5px; border-radius: 3px; background: var(--tr); overflow: hidden; }
+:root[data-palette] .ls-cb-bar i { display: block; height: 100%; border-radius: 3px; background: var(--gy); }
+:root[data-palette] .ls-cb.lg-mine .ls-cb-bar i { background: var(--ac7); }
 :root[data-palette] .ls-odd-e.ls-gap { color: var(--ac7); font-weight: 800; }
 
 /* ── what your odds hinge on ───────────────────────────────────────────── */
@@ -589,6 +600,7 @@
 
 @media (max-width: 380px) {
   :root[data-palette] .ls-odd { grid-template-columns: 16px auto 1fr 38px 34px; gap: 4px; font-size: 12px; }
+  :root[data-palette] .ls-odd.ls-cb { grid-template-columns: 16px auto 1fr 38px; }
   :root[data-palette] .ls-sw { grid-template-columns: 38px 1fr 44px 44px; gap: 5px; }
 }
 

@@ -102,6 +102,28 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   even then the old hash stays valid until he says otherwise. Generate nothing
   that would require anyone to open a new link.
 
+## v140 — Cum Bowl odds on the Season tab
+
+Owner: *"In the season tab for league history can we get a cum bowl odds
+tracker as well."* A **🚽 Cum Bowl odds** card now follows Playoff odds (and
+"What yours hinges on"). The Cum Bowl is the 11-seed v the 12-seed, so the
+number is the share of simulated seasons in which a team finishes the regular
+season in the bottom two.
+
+- `odds.js` `build()` returns `cumBowl` (id → percent) beside `odds`. It is
+  two counters on the ranking the simulation already produces — **no extra
+  random draws**, so the playoff percentages for a published week are
+  byte-identical to v139 (verified by diffing both builds on the live data).
+- `season.js` `cumBowlHTML` renders it: sorted most-likely first, a rule after
+  the top two, a neutral bar under the team name plus a whole percent ("<1%" for a non-zero value
+  that rounds to 0). No ESPN column: ESPN publishes nothing comparable.
+  Renders nothing if the simulation is unavailable.
+- Seeding only. It does not predict who LOSES the game; simulating the game
+  itself would consume random draws and move the playoff numbers.
+- `checks.js` laws: the twelve total 200, each is 0–100, playoff + Cum Bowl
+  never exceeds 100 for a team, and the result is deterministic.
+- Frontend only; no backend, data, link or capability change.
+
 ## v139 — Organizer fixes a write-in prop (odds or full player name)
 
 Owner, on Wolff's locked "Kyren ATTD · —": *"I need to be able to add odds or
