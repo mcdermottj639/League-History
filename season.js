@@ -548,7 +548,7 @@
     const hasEspn = d.teams.some((t) => t.pct != null);
     const gaps = ours ? d.table.filter((t) => t.pct != null && Math.abs(ours[t.id] - t.pct) >= BIG) : [];
     return `<h2 class="section-title">📊 Standings & playoff odds</h2>
-      <p class="fh-lead">After ${spell(d.wp)} week${d.wp === 1 ? '' : 's'}, in standings order. ${ours ? '<b>Ours</b> and <b>ESPN</b> are' : '<b>ESPN</b> is'} each team's chance of making the playoffs. <b>All-play</b> is every team against the whole league each week, so it is the one number here a kind schedule cannot flatter.</p>
+      <p class="fh-lead">After ${spell(d.wp)} week${d.wp === 1 ? '' : 's'}. ${ours ? '<b>Ours</b> and <b>ESPN</b> are' : '<b>ESPN</b> is'} playoff odds.</p>
       <div class="ffp-card">
         <div class="ls-so ls-oh"><span></span><span></span><span>Team</span>${ours ? '<span>Ours</span>' : ''}${hasEspn ? '<span>ESPN</span>' : ''}</div>
         ${d.table.map((t) => {
@@ -566,7 +566,7 @@
           </div>`;
         }).join('')}
       </div>
-      <p class="ffp-cap">The line falls after ${ordN(d.pt)} — ${spell(d.pt)} teams make the bracket. This table sorts by wins, then points. The odds simulation also applies its head-to-head tiebreak when projecting playoff qualification.</p>
+      <p class="ffp-cap"><b>All-play</b> is every team against the whole league each week, so it is the one number here a kind schedule cannot flatter. The line falls after ${ordN(d.pt)} — ${spell(d.pt)} teams make the bracket. This table sorts by wins, then points. The odds simulation also applies its head-to-head tiebreak when projecting playoff qualification.</p>
       ${oddsCapHTML(d, o, ours, gaps, BIG)}
       ${hingeHTML(d, o, me)}`;
   }
@@ -589,7 +589,7 @@
     const topTeams = rows.filter((t) => Math.round(cb[t.id]) === Math.round(cb[top.id]));
     const topNames = topTeams.map((t) => esc(t.n)).join(', ');
     return `<h2 class="section-title">🚽 Cum Bowl odds</h2>
-      <p class="fh-lead"><b>${topNames} ${pct0(cb[top.id])}</b> — ${topTeams.length > 1 ? 'joint most likely' : 'most likely'} to land in the Cum Bowl. The ${ordN(N - 1)} and ${ordN(N)} seeds play it, so the unrounded probabilities add up to 200%.</p>
+      <p class="fh-lead"><b>${topNames} ${pct0(cb[top.id])}</b> — ${topTeams.length > 1 ? 'joint most likely' : 'most likely'} to land in the Cum Bowl.</p>
       <div class="ffp-card">
         <div class="ls-odd ls-cb ls-oh"><span></span><span></span><span>Team</span><span>In it</span></div>
         ${rows.map((t, i) => `<div class="ls-odd ls-cb${mineCls(t, me)}${i === 1 ? ' ls-cut' : ''}">
@@ -600,7 +600,7 @@
             <span class="ls-odd-v mono">${pct0(cb[t.id])}</span>
           </div>`).join('')}
       </div>
-      <p class="ffp-cap">Read off the same ${o.sims.toLocaleString()} simulated seasons as the playoff odds: how often a team finishes the regular season ${ordN(N - 1)} or ${ordN(N)}. The line falls after the two most likely. This is seeding only — it does not predict who loses the game.</p>`;
+      <p class="ffp-cap">The ${ordN(N - 1)} and ${ordN(N)} seeds play the Cum Bowl, so the unrounded probabilities add up to 200%. Read off the same ${o.sims.toLocaleString()} simulated seasons as the playoff odds: how often a team finishes the regular season ${ordN(N - 1)} or ${ordN(N)}. The line falls after the two most likely. This is seeding only — it does not predict who loses the game.</p>`;
   }
 
   /* ══ WHAT THE READER'S OWN NUMBER RESTS ON ═════════════════════════════
@@ -620,9 +620,9 @@
     const oppName = (id) => { const t = d.teams.find((x) => x.id === id); return t ? t.n : '?'; };
     return `<h2 class="section-title">🔑 What yours hinges on</h2>
       <p class="fh-lead">${o.need != null
-        ? `<b>${o.need === 0 ? 'Even with no more wins' : `With ${spell(o.need)} wins from your remaining ${spell(o.myGames.length)}`}</b>, at least half of the sufficiently sampled simulations reach the playoffs. This is an estimate, not a clinching scenario.`
-        : `<b>No reliable 50% win target yet.</b> The simulation did not find a sufficiently sampled remaining-win total at or above even odds. That does not establish elimination; the game-by-game estimates are below.`} ${o.sos != null
-        ? `The model rates your remaining opponents <b>${sgn(o.sos)} points a game</b> against its league baseline — ${o.sos > 1 ? 'a hard run' : o.sos < -1 ? 'a kind one' : 'about average'}.`
+        ? `<b>${o.need === 0 ? 'Even with no more wins' : `With ${spell(o.need)} wins from your remaining ${spell(o.myGames.length)}`}</b>, at least half of the simulations reach the playoffs.`
+        : `<b>No reliable 50% win target yet.</b> The game-by-game estimates are below.`} ${o.sos != null
+        ? `Remaining opponents: <b>${sgn(o.sos)} points a game</b> — ${o.sos > 1 ? 'a hard run' : o.sos < -1 ? 'a kind one' : 'about average'}.`
         : ''}</p>
       <div class="ffp-card">
         ${biggest && biggest.ifWin != null && biggest.ifLose != null ? `<p class="ls-hinge-h">The largest estimated swing is <b>${esc(oppName(biggest.opp))}</b> in week ${biggest.week} — <b>${pct0(biggest.ifWin)}</b> if you win it, <b>${pct0(biggest.ifLose)}</b> if you don't.</p>` : ''}
@@ -632,7 +632,9 @@
           <span class="ls-sw-v mono pos">${pct0(g.ifWin)}</span>
           <span class="ls-sw-v mono neg">${pct0(g.ifLose)}</span>
         </div>`).join('')}
-        <p class="ffp-cap">Each row is the same ${o.sims.toLocaleString()} simulated seasons split by whether you won that week — win on the left, lose on the right. They are read off one set of seasons rather than re-run per game, so the overall odds and these estimates share one simulation sample. Small differences between weeks may reflect sampling noise.</p>
+        <p class="ffp-cap">${o.need != null
+          ? 'The win target counts only sufficiently sampled simulations. It is an estimate, not a clinching scenario.'
+          : 'The simulation did not find a sufficiently sampled remaining-win total at or above even odds. That does not establish elimination.'}${o.sos != null ? ' Opponent strength is the model’s rating of your remaining opponents against its league baseline.' : ''} Each row is the same ${o.sims.toLocaleString()} simulated seasons split by whether you won that week — win on the left, lose on the right. They are read off one set of seasons rather than re-run per game, so the overall odds and these estimates share one simulation sample. Small differences between weeks may reflect sampling noise.</p>
       </div>`;
   }
 

@@ -974,3 +974,17 @@
   :root[data-palette] #lg-sub button { font-size: 12px; padding-inline: 1px; }
   :root[data-palette] #lg-sub2 button { font-size: 11px; padding-inline: 1px; }
 }
+
+/* ── fine print, folded (v142) ───────────────────────────────────────────
+   One quiet line under a card instead of a paragraph. The chevron is --gy,
+   not --mu2: it is the only "this opens" cue (the v73 contrast note). */
+:root[data-palette] .lg-fine { margin-top: 6px; }
+:root[data-palette] .lg-fine > summary {
+  display: flex; align-items: center; gap: 6px; min-height: 40px;
+  font: 700 11.5px/1.2 Archivo, system-ui, sans-serif; letter-spacing: .02em;
+  color: var(--gy); cursor: pointer; list-style: none; }
+:root[data-palette] .lg-fine > summary::-webkit-details-marker { display: none; }
+:root[data-palette] .lg-fine > summary i { font-style: normal; color: var(--gy); transition: transform .15s; }
+:root[data-palette] .lg-fine[open] > summary i { transform: rotate(180deg); }
+:root[data-palette] .lg-fine > .ffp-cap:first-of-type { margin-top: 0; }
+:root[data-palette] .lg-fine > .ffp-cap:last-child { margin-bottom: 8px; }

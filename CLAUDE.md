@@ -102,6 +102,35 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   even then the old hash stays valid until he says otherwise. Generate nothing
   that would require anyone to open a new link.
 
+## v142 — Fine print folds away, on every tab
+
+Owner, with a Season screenshot: *"I don't like these long blocks of text. If
+it's need to explain the card fine a little line at the top is fine but for
+the rest make these fine prints collapsed… Happens more than where I
+pictured."* **Standing preference: a card gets at most a short line above it;
+method notes and caveats sit closed under it.**
+
+- `league.js` `foldFinePrint` moves every `.ffp-cap` in `#lg-body` (History,
+  Season, legacy Parlay) inside a closed `<details class="lg-fine">` labelled
+  **How this is counted**. Consecutive captions share one disclosure. Nothing
+  is deleted or reworded by the fold — the nodes are moved whole.
+- It runs from `buildJump` (same tick as each paint, so nothing flashes) and
+  from a subtree observer for background repaints; it is idempotent. Open
+  disclosures are remembered per section heading in memory (`FINE_OPEN`).
+- **New captions need no extra work**: emit `.ffp-cap` as before and it folds.
+  Do not write a per-view copy of the disclosure.
+- Season leads shortened to one line, with the removed sentences MOVED into
+  that card's caption rather than cut: Standings (all-play explanation), Cum
+  Bowl odds (11/12 seeds, 200%), What yours hinges on ("sufficiently
+  sampled… estimate, not a clinching scenario" / "does not establish
+  elimination", opponent-strength baseline). ⚠️ SUPERSEDED: the v90 and v141
+  wording of those three leads. History leads are unchanged.
+- Parlay v2 (`.pn`), Oracle, Rankings and the Lab have no `.ffp-cap` and are
+  untouched. Summary rows are ≥40px; the chevron is `--gy`.
+- Verified in headless Chrome at 390 and 320px, signed in as McD: all five
+  History tabs and Season have 0 unfolded captions, no overflow, no page
+  errors; a tap opens the disclosure.
+
 ## v141 — Standings and playoff odds are one card
 
 Owner: *"since we're adding a new card it seems like standings and playoff

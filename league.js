@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v141';
+  const APP_VERSION = 'v142';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -651,6 +651,9 @@
   const JUMP_PAD = 68;   // the sticky header, so a target does not land under it
 
   function buildJump() {
+    /* v142: fold captions in the same tick as the paint, so nobody sees the
+       paragraphs flash open and close. The observer below catches repaints. */
+    foldFinePrint();
     const nav = $('#lg-jump'), body = $('#lg-body');
     if (!nav || !body) return;
     let items = [...body.querySelectorAll('.section-title')].map((h) => ({ el: h, label: labelOf(h) }));
@@ -672,6 +675,65 @@
   // destinations when the visible body's direct children change, so links
   // never point at headings removed by a late Season refresh.
   new MutationObserver(buildJump).observe($('#lg-body'), { childList: true });
+
+  /* ══ FINE PRINT FOLDS AWAY (v142) ══════════════════════════════════════
+     Owner, on the Season tab: "I don't like these long blocks of text… a
+     little line at the top is fine but for the rest make these fine prints
+     collapsed… Happens more than where I pictured." So every caption under a
+     card (`.ffp-cap`) is folded into one closed "How this is counted" line,
+     on every tab. The lead above a card stays.
+     ⚠️ Done HERE, once, off the rendered DOM — the same reason the jump nav
+     is DOM-derived: History, Season and the legacy Parlay each write their
+     own captions, and a per-view copy would miss the next one added.
+     ⚠️ Nothing is deleted or reworded. The caption nodes are moved, whole,
+     inside the <details>, so every caveat is one tap away.
+     A reader who opens one keeps it open across a background repaint: the
+     open set is keyed by the section heading it sits under (memory only). */
+  const FINE_OPEN = new Set();
+  function fineKey(el) {
+    let n = el;
+    while (n && n !== document.body) {
+      let p = n.previousElementSibling;
+      while (p) {
+        if (p.matches && p.matches('.section-title')) return labelOf(p);
+        p = p.previousElementSibling;
+      }
+      n = n.parentElement;
+    }
+    return '';
+  }
+  function foldFinePrint() {
+    const body = $('#lg-body');
+    if (!body) return;
+    const seen = {};
+    body.querySelectorAll('.ffp-cap').forEach((cap) => {
+      if (!cap.isConnected || cap.closest('.lg-fine')) return;
+      const run = [cap];
+      let nx = cap.nextElementSibling;
+      while (nx && nx.classList.contains('ffp-cap')) { run.push(nx); nx = nx.nextElementSibling; }
+      const box = document.createElement('details');
+      box.className = 'lg-fine';
+      const base = fineKey(cap);
+      seen[base] = (seen[base] || 0) + 1;
+      box.dataset.fine = base + '#' + seen[base];
+      if (FINE_OPEN.has(box.dataset.fine)) box.open = true;
+      const sum = document.createElement('summary');
+      sum.innerHTML = 'How this is counted <i aria-hidden="true">▾</i>';
+      box.appendChild(sum);
+      cap.parentNode.insertBefore(box, cap);
+      run.forEach((c) => box.appendChild(c));
+    });
+  }
+  /* `toggle` does not bubble, so it is caught on the way down. */
+  document.addEventListener('toggle', (e) => {
+    const d = e.target;
+    if (!d || !d.classList || !d.classList.contains('lg-fine')) return;
+    if (d.open) FINE_OPEN.add(d.dataset.fine); else FINE_OPEN.delete(d.dataset.fine);
+  }, true);
+  /* subtree, because views repaint cards in place; the fold is idempotent
+     (an already-folded caption is skipped), so its own moves settle at once. */
+  new MutationObserver(foldFinePrint).observe($('#lg-body'), { childList: true, subtree: true });
+  foldFinePrint();
 
   /* The badge and any control inside a heading are real content there and
      noise in a one-word chip — the same strip Sports-Hub's rail needs. */
