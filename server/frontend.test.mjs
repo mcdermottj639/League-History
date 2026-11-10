@@ -76,6 +76,20 @@ const oddsSeason=()=>({year:2026,current:2,preview:true,roster:['McD','Hurd','Sl
 ]});
 async function seasonView(dataOverride){const h=harness(true,'before',dataOverride);await h.window.LeagueParlay.paint(h.host);await h.click({pn:'tab',tab:'season'});return h.host.innerHTML;}
 
+test('season money counts every lost ticket, including a short-handed week (v143)',async()=>{
+ // Week 2 loses with only three of four members in; its $10 is still gone.
+ const d=oddsSeason();d.weeks[1].ticket=tk([leg('McD',-150),leg('Hurd',-120,'miss'),leg('Slemp',150)],400);
+ const short=d.weeks[1].ticket;short.full=false;short.status='lost';short.returned=0;short.net=-short.stake;
+ const html=await seasonView(d);
+ assert.match(html,/<strong>\$20\.00<\/strong><small>Settled stakes<\/small>/);
+ assert.match(html,/<strong>-\$20\.00<\/strong><small>Tracked net<\/small>/);
+ assert.match(html,/<strong>0<\/strong><small>Tracked wins<\/small>/);
+ // A short-handed week with no miss is NOT money yet: no outcome, not counted.
+ const e=oddsSeason();e.weeks[1].ticket=tk([leg('McD',-150),leg('Slemp',150)],400);
+ const open=e.weeks[1].ticket;open.full=false;open.miss=0;open.status='incomplete';open.returned=null;open.net=null;
+ assert.match(await seasonView(e),/<strong>\$10\.00<\/strong><small>Settled stakes<\/small>/);
+});
+
 test('season odds average decimal prices per member without multiplying',async()=>{
  const html=await seasonView(oddsSeason());
  // Identical favorite prices remain unchanged.

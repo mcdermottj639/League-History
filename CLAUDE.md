@@ -102,6 +102,32 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   even then the old hash stays valid until he says otherwise. Generate nothing
   that would require anyone to open a new link.
 
+## v143 — Parlay season money counts every lost ticket
+
+Owner, on Parlay → Season showing 8 tickets, 0 wins, **$10.00 settled stakes,
+-$10.00 net**: *"This settled stake and tracked net is not correct is it."*
+It was not. The money tiles summed only tickets that were `settled && full`
+(all twelve members in, every leg graded), so a losing week with 8–11 picks
+or an ungraded prop was left out of stakes, return and net. Only Week 6 (the
+one 12-pick week) counted.
+
+- `parlay-next.js`: `counted` is now every ticket whose shared ticket math has
+  an outcome (`returned !== null`: lost, won or refunded). One miss decides a
+  ticket however many members picked. Tracked wins and Closest call read the
+  same population.
+- **A win is unchanged**: it still needs a full, fully graded ticket — that
+  gate is in `domain.mjs` / `ticket-values.js`, untouched. An incomplete week
+  with no miss still counts for nothing.
+- Stake per ticket is the placed ticket's recorded stake when Zach entered
+  one, else $10 (existing `LeagueTicketValues.apply` behaviour).
+- Read-only check of production on 2026-11-10 (league_parlay.state, legs
+  graded in SQL from stored scores): weeks 2–9 each have at least one miss —
+  11, 10, 11, 11, 12, 10, 10 and 8 picks — and the Week 9 placed ticket
+  records a $20 stake, so the tiles should read **$90.00 / $0.00 / -$90.00**.
+- Frontend only; no backend deploy, data, link or capability change. Test in
+  `server/frontend.test.mjs` (short-handed loss counts; short-handed week with
+  no miss does not) — fails against the v142 code.
+
 ## v142 — Fine print folds away, on every tab
 
 Owner, with a Season screenshot: *"I don't like these long blocks of text. If
