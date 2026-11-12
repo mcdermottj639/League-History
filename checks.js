@@ -113,6 +113,13 @@ const T = [
   ['cum bowl has a winner (no tie)', cbScoreBad.length, 0],
   ['cum bowl is one game, not two definitions', cbMeetBad.length, 0],
   ['cum bowl meetings == cum bowls', cbMeet.length, CUMBOWL.length],
+  /* v144 (owner: consolation-bracket games "should not be counted", Cum Bowls
+     aside). GmC games other than GmC3 stay in PLAYOFF_GAMES as the record of
+     what was played, and must be in no count a reader sees. */
+  ['no consolation game is a head-to-head meeting', S.MEET.filter((g) => g.br === 'C' && g.rd !== 'GmC3').length, 0],
+  ['no consolation game is in the counted pool', S.COUNTED.filter((g) => g.br === 'C' && g.rd !== 'GmC3').length, 0],
+  ['counted pool drops only consolation games', S.COUNTED.length, PLAYOFF_GAMES.filter((g) => !(g.br === 'C' && g.rd !== 'GmC3')).length],
+  ['every Cum Bowl on file is still counted', S.COUNTED.filter((g) => g.rd === 'GmC3').length, PLAYOFF_GAMES.filter((g) => g.rd === 'GmC3').length],
   /* Places 1-4 ARE the final four in this format (the semi-final losers play
      for 3rd), so every season with placements contributes exactly four. */
   ['final fours', ALL.reduce((a, x) => a + x.f4, 0), SEASON.filter((s) => s.fin).length * 4 - exRows.filter((r) => r.place && r.place <= 4).length],

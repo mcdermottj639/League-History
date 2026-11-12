@@ -683,6 +683,18 @@
     const cmp = (pc(A) - pc(B)) || (A.pf - B.pf);
     return cmp >= 0 ? [A, B] : [B, A];
   };
+  /* ══ v144 — WHAT COUNTS (owner, 12 Nov 2026: consolation-bracket games
+     "should not be counted", Cum Bowls aside) ═══════════════════════════════
+     `PLAYOFF_GAMES` stays the complete record of what was played, and the
+     per-season bracket laws in `checks.js` still read all of it. But a GmC
+     game that is not the Cum Bowl (GmC3) is a game between teams already out
+     of everything, so it is in NO count the app shows: not a head-to-head
+     meeting, not a record-book row, not the playoff-game totals in the key.
+     `COUNTED` is the one pool every such number reads — title bracket (W),
+     placement games (WC) and the Cum Bowl. Do not read `PLAYOFF_GAMES`
+     directly for anything a reader sees as a count or a record. */
+  const isConsolation = (g) => g.br === 'C' && g.rd !== 'GmC3';
+  const COUNTED = PLAYOFF_GAMES.filter((g) => !isConsolation(g));
   const CUMBOWL = [...PLAYOFF_GAMES.filter((g) => g.rd === 'GmC3').map((g) => {
     const [hi, lo] = cbSeeded(g);
     const pts = (r) => (r.t === g.a ? g.as : g.bs);
@@ -980,15 +992,16 @@
      season contributes 17, and any placement or consolation stat covers 12 of
      the 13. The 2025 Cum Bowl is reconstructed from the week-15 scores of
      the two the owner named (v66) and is a real head-to-head that lives in
-     another field — fold it in so the h2h pool is everything the archive
-     knows.
+     another field — fold it in.
+     ⚠️ v144: the h2h pool is `COUNTED`, not everything on file — the GmC
+     consolation games other than the Cum Bowl are not meetings.
      🚨 Still PLAYOFF meetings only: there is no regular-season schedule
      anywhere in this data, and every view must say so. */
   const seen = new Set(PLAYOFF_GAMES.map((g) => g.yr + '|' + [g.a, g.b].sort().join('|')));
   /* ⚠️ `plc` (the placement ladder) used to be folded in with `brk`, so a
      5th-place game and a semi-final printed the same word on a head-to-head
      row. Every meeting still counts as a meeting; the label says which. */
-  const MEET = PLAYOFF_GAMES.map((g) => ({ ...g, kind: g.br === 'C' ? (g.rd === 'GmC3' ? 'cb' : 'con') : g.br === 'WC' ? 'plc' : g.rd === 'FINAL' ? 'fin' : g.rd === 'R2' ? 'f4' : 'r1' }));
+  const MEET = COUNTED.map((g) => ({ ...g, kind: g.br === 'C' ? 'cb' : g.br === 'WC' ? 'plc' : g.rd === 'FINAL' ? 'fin' : g.rd === 'R2' ? 'f4' : 'r1' }));
   /* ⚠️ Only the 2025 reconstruction can land here: every other Cum Bowl IS a
      `GmC3` row above and is already in `seen`.
      🚨 **THIS IS WHERE THE TWO DEFINITIONS WERE VISIBLY DISAGREEING, AND NO
@@ -1093,7 +1106,7 @@
   const tag = (k) => { const [c, l] = SRC[k]; return `<span class="fh-src ${c}">${l}</span>`; };
   /* Inline, for a row inside a table where a heading badge is too far away. */
   const dot = (k) => { const [c, l] = SRC[k]; return `<em class="fh-dot ${c}" title="${l}">${l}</em>`; };
-  const PO_YRS = new Set(PLAYOFF_GAMES.map((g) => g.yr)).size;
+  const PO_YRS = new Set(COUNTED.map((g) => g.yr)).size;
   /* ⚠️ "plus the 13 Cum Bowls" DOUBLE-COUNTED, and v66 is what made it
      visible. The Cum Bowl is a bracket game — `GmC3` — so twelve of the
      thirteen are already inside `PLAYOFF_GAMES.length`. ⚠️ This has been true
@@ -1104,7 +1117,7 @@
      a second hand-typed one that merely happened to duplicate the first.
      Only the 2025 reconstruction is genuinely extra. */
   const CB_EXTRA = CUMBOWL.filter((c) => c.recon).length;
-  const PO_NOTE = `⚠️ <b>Playoff games only.</b> The archive has final standings and playoff brackets — <b>no regular-season schedule</b> — so this covers the ${PLAYOFF_GAMES.length} bracket games across ${PO_YRS} seasons${CB_EXTRA ? `, plus ${CB_EXTRA} reconstructed Cum Bowl${CB_EXTRA === 1 ? '' : 's'}` : ''}. It is not a career record.`;
+  const PO_NOTE = `⚠️ <b>Playoff games only.</b> The archive has final standings and playoff brackets — <b>no regular-season schedule</b> — so this covers the ${COUNTED.length} playoff games across ${PO_YRS} seasons — the other consolation games are not counted${CB_EXTRA ? `, plus ${CB_EXTRA} reconstructed Cum Bowl${CB_EXTRA === 1 ? '' : 's'}` : ''}. It is not a career record.`;
 
   /* What the three badges mean. It was a card at the top of Honors; from v13
      it lives in the ? sheet in the header, where it is reachable from EVERY
@@ -1118,7 +1131,7 @@
   function keyHTML() {
     return `<div class="fh-key-r">${tag('fin')}<span>The <b>rank</b> in every table is where you finished after the playoffs.</span></div>
       <div class="fh-key-r">${tag('reg')}<span>Every <b>W-L and points total</b> is the regular season — that is what ESPN's standings hold.</span></div>
-      <div class="fh-key-r">${tag('po')}<span>Anything with this badge counts <b>playoff games only</b>: ${PLAYOFF_GAMES.length} bracket games from ${PO_YRS} of ${SEASON.length} seasons — every Cum Bowl among them${CB_EXTRA ? `, bar ${CB_EXTRA} taken from the two scores` : ''}. Small samples, and no regular-season schedule exists to widen them.</span></div>`;
+      <div class="fh-key-r">${tag('po')}<span>Anything with this badge counts <b>playoff games only</b>: ${COUNTED.length} games (title bracket, placement games and Cum Bowls; other consolation games are not counted) from ${PO_YRS} of ${SEASON.length} seasons — every Cum Bowl among them${CB_EXTRA ? `, bar ${CB_EXTRA} taken from the two scores` : ''}. Small samples, and no regular-season schedule exists to widen them.</span></div>`;
   }
 
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1351,7 +1364,7 @@
   /* ══ 📕 THE RECORD BOOK ═══════════════════════════════════════════════ */
   function recordHTML() {
     const pick = (arr, f, d) => [...arr].sort((a, b) => d * (f(a) - f(b)))[0];
-    const gm = PLAYOFF_GAMES.map((g) => ({ ...g, marg: Math.abs(g.as - g.bs), hi: Math.max(g.as, g.bs), lo: Math.min(g.as, g.bs) }));
+    const gm = COUNTED.map((g) => ({ ...g, marg: Math.abs(g.as - g.bs), hi: Math.max(g.as, g.bs), lo: Math.min(g.as, g.bs) }));
     const best = pick(allRows, (r) => r.pct, -1), worst = pick(allRows, (r) => r.pct, 1);
     const hiPpg = pick(allRows, (r) => r.ppg, -1), loPpg = pick(allRows, (r) => r.ppg, 1);
     const hiPa = pick(allRows, (r) => r.papg, -1);
@@ -1375,7 +1388,7 @@
       ${row('Biggest blowout', one(blow.marg), `${blow.yr} · ${esc(gName(blow.as > blow.bs ? blow.a : blow.b))} ${Math.max(blow.as, blow.bs)} – ${Math.min(blow.as, blow.bs)}`, 'po')}
       ${row('Best game score', one(hiG.hi), `${esc(gName(hiG.as > hiG.bs ? hiG.a : hiG.b))} · ${hiG.yr}`, 'po')}
       ${row('Worst game score', one(loG.lo), `${esc(gName(loG.as < loG.bs ? loG.a : loG.b))} · ${loG.yr}`, 'po')}
-      <p class="ffp-cap">The four <b>postseason</b> rows come from a different pool to the five regular-season ones — ${PLAYOFF_GAMES.length} bracket games across all ${SEASON.length} seasons, including placement and consolation. ⚠️ 2025 is the championship bracket only — Sleeper published no placement or consolation games, so it contributes 5 games where a full season contributes 17. Scoring records are <b>per game</b> — seasons were 13 games until 2021 and 14 since, so raw totals would not compare.</p>
+      <p class="ffp-cap">The four <b>postseason</b> rows come from a different pool to the five regular-season ones — ${COUNTED.length} playoff games across all ${SEASON.length} seasons: the title bracket, placement games and Cum Bowls. Other consolation games are not counted. ⚠️ 2025 is the championship bracket only — Sleeper published no placement games, so it contributes fewer games than a full season. Scoring records are <b>per game</b> — seasons were 13 games until 2021 and 14 since, so raw totals would not compare.</p>
     </div>`;
   }
 
@@ -1560,7 +1573,7 @@
         <span class="fh-fr-f">${a.f4 ? `${a.f4} final four${a.f4 > 1 ? 's' : ''}` : '<i>no final fours</i>'}${a.fin ? ` · ${a.fin} final${a.fin > 1 ? 's' : ''}` : ''}</span>
         <span class="fh-fr-g">${a.t1 ? `<span class="mono">${a.t1}</span> won` : '<i>none won</i>'}</span>
       </div>`).join('')}
-      <p class="ffp-cap"><b>The final four is places 1-4</b>: the two teams that lose in the final four play each other for 3rd, so the four left after round one <b>are</b> the top four finishers. Verified against every bracket on file — all ${SEASON.length} seasons.<br><br>Six teams make the playoffs, so getting to the last four is the cut that means something. This is a count of <b>finishes</b>, not a record: the championship-bracket <b>win-loss record</b> is a different population and lives on <b>Playoff appearances</b> on ${subName('rec')}. Placement games and the consolation ladder decide places rather than records — that is how 7th to 10th are settled, with the Cum Bowl taking 11th and 12th — and every game in them is kept as a meeting, never totalled into a W-L.</p>
+      <p class="ffp-cap"><b>The final four is places 1-4</b>: the two teams that lose in the final four play each other for 3rd, so the four left after round one <b>are</b> the top four finishers. Verified against every bracket on file — all ${SEASON.length} seasons.<br><br>Six teams make the playoffs, so getting to the last four is the cut that means something. This is a count of <b>finishes</b>, not a record: the championship-bracket <b>win-loss record</b> is a different population and lives on <b>Playoff appearances</b> on ${subName('rec')}. Placement games and the consolation ladder decide places rather than records — that is how 7th to 10th are settled, with the Cum Bowl taking 11th and 12th — and none of them is totalled into a W-L. Placement games and Cum Bowls are kept as head-to-head meetings; other consolation games are not counted.</p>
     </div>`;
   }
 
@@ -2435,7 +2448,7 @@
     ${h2hFor(ME).length ? `<h2 class="section-title">Your playoff head-to-head ${tag('po')}</h2>
     <div class="ffp-card">
       ${h2hFor(ME).map((v) => `<div class="fh-h2h">${tap(v.opp, `<b>${esc(nm(v.opp))}</b>`)}<i>${one(v.pf)}–${one(v.pa)}</i><span class="${v.w > v.l ? 'pos' : v.l > v.w ? 'neg' : ''}">${v.w}-${v.l}</span></div>`).join('')}
-      <p class="ffp-cap">⚠️ <b>Every playoff meeting, not a record.</b> This counts all ${h2hFor(ME).reduce((n, v) => n + v.n, 0)} games on file against these people — every bracket, including the placement games and the consolation ladder. Those games help determine placement; only championship-bracket games count in the playoff win-loss record. There is no regular-season schedule in the archive, so this is not a career head-to-head. Points are per-game averages.</p>
+      <p class="ffp-cap">⚠️ <b>Every playoff meeting, not a record.</b> This counts all ${h2hFor(ME).reduce((n, v) => n + v.n, 0)} games on file against these people — the title bracket, placement games and Cum Bowls. Other consolation games are not counted. Only championship-bracket games count in the playoff win-loss record. There is no regular-season schedule in the archive, so this is not a career head-to-head. Points are per-game averages.</p>
     </div>` : ''}
     <h2 class="section-title">Your franchises</h2>
     <div class="ffp-card"><div class="fh-fr-list">${[...new Set([...a.yrs].sort((x, y) => y.yr - x.yr).map((r) => r.t))].map((t) => `<span>${esc(t)}</span>`).join('')}</div></div>`;
@@ -2483,7 +2496,7 @@
     ${pairs.length ? `<h2 class="section-title">Playoff head-to-head ${tag('po')}</h2>
       <div class="ffp-card">
         ${pairs.map((v) => `<div class="fh-h2h">${tap(v.opp, `<b>${esc(nm(v.opp))}</b>`)}<i>${one(v.pf)}–${one(v.pa)}</i><span class="${v.w > v.l ? 'pos' : v.l > v.w ? 'neg' : ''}">${v.w}-${v.l}</span></div>`).join('')}
-        <p class="ffp-cap">⚠️ <b>Every playoff meeting, not a record.</b> All ${pairs.reduce((n, v) => n + v.n, 0)} games on file — every bracket, including the placement games and the consolation ladder, which decide where everyone below the final four finishes but are kept as meetings rather than totalled into a record. No regular-season schedule exists in the archive, so this is not a career head-to-head. Points are per-game averages.</p>
+        <p class="ffp-cap">⚠️ <b>Every playoff meeting, not a record.</b> All ${pairs.reduce((n, v) => n + v.n, 0)} games on file — the title bracket, placement games and Cum Bowls, kept as meetings rather than totalled into a record. Other consolation games are not counted. No regular-season schedule exists in the archive, so this is not a career head-to-head. Points are per-game averages.</p>
       </div>` : ''}
       <h2 class="section-title">Franchises</h2>
       <div class="ffp-card"><div class="fh-fr-list">${teams.map((t) => `<span>${esc(t)}</span>`).join('')}</div></div>
@@ -2535,7 +2548,7 @@
           <div class="fh-rv-n">${tap(w, `<b class="up">${esc(nm(w))}</b>`)}<span>owns</span>${tap(l, `<b>${esc(nm(l))}</b>`)}</div>
           <div class="fh-rv-s"><b class="pos">${n}–0</b><i>${fins ? `${fins} of them a final` : `${n} meetings`}</i></div>
         </div>`; }).join('')}` : ''}
-      <p class="ffp-cap">⚠️ <b>Every playoff meeting.</b> The archive has final standings and playoff brackets — <b>no regular-season schedule</b> — so these are championship, placement, consolation and Cum Bowl games, not career head-to-head. Sample sizes are ${Math.min(...PAIRS.map((p) => p.n))}–${Math.max(...PAIRS.map((p) => p.n))} games: read them as stories, not settled arguments.</p>
+      <p class="ffp-cap">⚠️ <b>Every playoff meeting.</b> The archive has final standings and playoff brackets — <b>no regular-season schedule</b> — so these are championship, placement and Cum Bowl games, not career head-to-head. Other consolation games are not counted. Sample sizes are ${Math.min(...PAIRS.map((p) => p.n))}–${Math.max(...PAIRS.map((p) => p.n))} games: read them as stories, not settled arguments.</p>
     </div>
     <details class="ffp-card fh-det">
       <summary><b>The full grid</b><span>every pair</span><i>▾</i></summary>
@@ -2657,7 +2670,7 @@
        notices. Any new sentence about a manager goes through it. */
     voice: { nm: (m) => nm(m), vb: (m, second, third) => vb(m, second, third) },
     /* Exposed for the repo's own checks — nothing in the app reads these. */
-    _stats: { SEASON, ALL, MEET, PAIRS, CUMBOWL, PLAYOFF_GAMES },
+    _stats: { SEASON, ALL, MEET, PAIRS, CUMBOWL, PLAYOFF_GAMES, COUNTED },
     _stories: () => stories(),
     _cardStories: () => pickStories(),
   };

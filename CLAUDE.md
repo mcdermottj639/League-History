@@ -102,6 +102,29 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   even then the old hash stays valid until he says otherwise. Generate nothing
   that would require anyone to open a new link.
 
+## v144 — Consolation-bracket games are not counted
+
+Owner, on being told the 96 non-Cum-Bowl consolation games were counted in
+head-to-head: *"Those should not be counted."* (He had already ruled out a
+consolation record in v14: *"consolation is meaningless besides cum bowl"*.)
+
+- `history.js` has one pool for anything a reader sees as a count or record:
+  `COUNTED` = `PLAYOFF_GAMES` minus the `C` games that are not `GmC3`. That is
+  the title bracket (65), placement games (36) and the Cum Bowls on file (12).
+- `MEET` (head-to-head, Rivalries, You → playoff head-to-head) is built from
+  `COUNTED`: **210 → 114 meetings, 63 → 54 pairs**. The `'con'` kind is gone.
+- The record book's four postseason rows and the ? sheet / `PO_NOTE` game
+  counts read `COUNTED` too (209 → 113 games).
+- `PLAYOFF_GAMES` is unchanged — still all 209 games — because the per-season
+  bracket laws in `checks.js` and final placings need the whole ladder.
+  ⚠️ Do not read it directly for a displayed count; use `COUNTED`.
+- Cum Bowl tab, championship-bracket record, playoff PPG and final fours never
+  used those games and are untouched.
+- `checks.js` laws: no consolation game is a meeting or in the counted pool;
+  the pool drops only those games; every Cum Bowl on file is still counted.
+- Older notes below that describe head-to-head as "every meeting including
+  consolation" are history, superseded by this entry.
+
 ## v143 — Parlay season money counts every lost ticket
 
 Owner, on Parlay → Season showing 8 tickets, 0 wins, **$10.00 settled stakes,
@@ -1381,7 +1404,8 @@ superseded. No model run happens in a member's Rankings view: these are snapshot
   - **🚨 THREE PLAYOFF RECORDS FOR ONE PERSON ON ONE PAGE.** `bw`/`bl` counted
     the title bracket AND the placement ladder (McD 11-4), the storyline
     beside it counted the title bracket alone (10-3), and the head-to-head
-    counted every meeting including consolation and Cum Bowls (22). Each was
+    counted every meeting including consolation and Cum Bowls (22; ⚠️ v144:
+    consolation games no longer count as meetings). Each was
     right; the page still lied, because nothing said which population each one
     counted. **This is the v3 fault, and it survived v3 because v3 fixed the
     display where it was looking.** One definition now: `bw`/`bl` is the title
