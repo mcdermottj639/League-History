@@ -254,6 +254,7 @@ console.log(`  ${apMark()} brackets == appearances     every playoff berth has i
       S.MONEY.forEach(g => { const se = SEASON.find(s => s.yr === g.yr); const m = t => (se.rows.find(r => r.t === t) || {}).mgr;
         const aw = g.as > g.bs; if (m(g.a) === a.m) { aw ? w++ : l++; } if (m(g.b) === a.m) { aw ? l++ : w++; } });
       if (a.bw !== w || a.bl !== l) { console.log(`  ❌ ${a.m}: playoff record ${a.bw}-${a.bl} but the games say ${w}-${l}`); bad++; }
+      if (w + l && !new RegExp(`<b>${w}-${l}</b><i>Playoff record</i>`).test(window.LeagueHistory.profile(a.m))) { console.log(`  ❌ ${a.m}: playoff record tile missing from the profile`); bad++; }
       if (w + l && !card.includes(` ${w}-${l} `)) { console.log(`  ❌ ${a.m}: ${w}-${l} missing from the Playoff standings card`); bad++; }
     });
   }

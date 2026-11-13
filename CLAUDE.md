@@ -117,6 +117,10 @@ as the small ⚑ note on the second line of Playoff appearances.
   label "Playoff W-L" (`league.js`).
 - `checks.js`: per manager, the record is recounted off `S.MONEY` and must be
   printed on the card; the card-order law includes the new card.
+- Career card (You page and every profile): the sixth tile was **Luck**; it is
+  now **Playoff record** (`bw-bl`). Owner: *"Instead of the luck card we have
+  there, just put the playoff record card for that person."* Luck still has
+  its League Lore card and the profile strip. Law: the tile is on every profile.
 
 ## v145 — Playoff stats are the money playoffs; the Cum Bowl keeps to its tab
 

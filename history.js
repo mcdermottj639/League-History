@@ -2541,7 +2541,10 @@
       </div>
       ${full ? `<div class="fh-you-g">
         ${[['Avg finish', one(a.avgPlace)], ['Playoff apps', `${a.po}/${a.seasons}`], ['Points/gm', one(a.ppg)],
-           ['vs league', sgn(relPpg(a))], ['Final fours', `${a.f4}/${a.seasons}`], ['Luck', sgn(a.luck)]]
+           ['vs league', sgn(relPpg(a))], ['Final fours', `${a.f4}/${a.seasons}`],
+           /* v146 (owner): the Luck tile is the playoff record now — luck keeps its
+              own card on League Lore and its place in the profile strip. */
+           ['Playoff record', a.bG ? `${a.bw}-${a.bl}` : '—']]
           .map(([k, v]) => `<div class="fh-you-t"><b>${v}</b><i>${k}</i></div>`).join('')}
       </div>` : ''}
       ${full ? '<p class="ffp-cap">Squares are the <b>playoff finish</b>; the totals under them are the <b>regular season</b>. <b>Final fours</b> is places 1-4 — the four teams left after round one, which the final placings give for every season.</p>' : ''}
