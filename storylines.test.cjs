@@ -27,14 +27,14 @@ assert.match(story('Riz', 'deep').head, /4 final fours from 4 playoff trips/);
 assert.match(story('Slemp', 'perfectfinals').head, /3 finals, 3 championships/);
 assert.match(story('Hurd', 'scorer').body, /2 finals, 5 final fours/);
 assert.ok(!story('Hurd', 'collapse'));
-assert.match(story('Christel', 'nopod').body, /2nd-highest championship-bracket score \(183.3\)/);
-assert.match(story('Hyman', 'poscore').body, /Next highest: 183.3/);
+assert.match(story('Christel', 'nopod').body, /3rd-highest money-playoff score \(183.3\)/);
+assert.match(story('Hyman', 'poscore').body, /Next highest: 184.7/); // v145: 2021 3rd-place game
 assert.ok(!stories.some(s => s.id === 'dynasty'));
 
 // Recalculate each displayed playoff row from original game/season records.
 const playoffHTML = H.view('rec').split('Playoff scoring lift')[1];
 for (const member of ALL) {
-  const samples = PLAYOFF_GAMES.filter(g => g.br === 'W').flatMap(g => {
+  const samples = H._stats.MONEY.flatMap(g => {
     const season = SEASON.find(s => s.yr === g.yr);
     return [[g.a,g.as],[g.b,g.bs]].flatMap(([name,score]) => {
       const team = season.rows.find(r => r.t === name);

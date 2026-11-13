@@ -110,16 +110,31 @@ Consolation is nowhere. And then the playoff records is the true money
 playoffs. And all playoff stats is like that."* Also: add Cum Bowl
 head-to-head to the Cum Bowl tab.
 
-- `history.js` `MONEY` = `PLAYOFF_GAMES` where `br === 'W'` (65 games, all 13
-  seasons). It replaces v144's `COUNTED`. **Every playoff number reads it**:
+- `history.js` `MONEY` = the title bracket (`W`) plus the 3rd-place game
+  (see below). It replaces v144's `COUNTED`. **Every playoff number reads it**:
   `MEET`/`PAIRS` (head-to-head, Rivalries, You and profile pages), the record
   book's four game rows, `PO_YRS`/`PO_NOTE` and the ? sheet key. The playoff
   W-L, playoff PPG, scoring lift, final fours and `poScores` were already W.
-- `MEET`: **114 → 65 meetings, 54 → 44 pairs**. The `cb` and `plc` kinds are
-  gone; the Cum Bowl is no longer folded into it.
-- ⚠️ **Placement games (WC, 3rd/5th place) are out of the playoff numbers
-  too** — "true money playoffs". They still exist in `PLAYOFF_GAMES` and the
-  final placings are unchanged.
+- `MEET`: the `cb`, `plc` and `con` kinds are gone; the Cum Bowl is no
+  longer folded into it.
+- 🥉 **The 3rd-place game is IN** (owner: *"Keep 3rd place games in there.
+  That's a medal match. Remove 5th"*). `rd` is blank on ESPN's `WC` rows, so
+  it is derived: the `WC` game whose two teams both lost in R2 that season,
+  tagged `rd: '3RD'` on the copy in `MONEY` (kind `p3` in `MEET`). 12 on file
+  (2013-24); 2025 has none (Sleeper capture was title bracket only) — not
+  reconstructed. `THIRD_YRS` holds the seasons that have one.
+- So `MONEY` = W + 3rd = **77 games**; meetings 114 → 77, pairs 54 → 50.
+  Playoff W-L, playoff PPG, scoring lift, `poScores`, seeds & upsets all read
+  `MONEY` now (they were W-only).
+- ⚠️ **"Losses = appearances − titles" is no longer true** — a final-four
+  loser plays the medal match. The law and the appearances caption now say
+  losses = appearances − titles + 3rd-place games lost (= 4th-place finishes
+  in `THIRD_YRS` seasons, counted off the placings). McD: 10 − 4 + 2 = 8.
+- 5th-place games (other `WC`) are out of every playoff number, like
+  consolation. Final placings are unchanged.
+- `storylines.test.cjs`: Christel's 183.3 is now the **3rd**-highest money
+  playoff score (2021 3rd-place game, 184.7, is 2nd); Hyman's "next highest"
+  is 184.7.
 - **Cum Bowl tab**: new "Cum Bowl head-to-head" card from `CB_PAIRS`, built
   from `CUMBOWL` (so it names the same 13 games as the tab, 2025 recon
   included). Games with an untracked manager go to `CB_UNPAIRED` (2) and the
@@ -131,13 +146,14 @@ head-to-head to the Cum Bowl tab.
 - `checks.js`: v144's COUNTED laws replaced — money pool is exactly the W
   games, no non-W game is a meeting, meetings == money games, Cum Bowl h2h
   covers every Cum Bowl (pairs + unpaired) and each pair adds up.
-- ⚠️ Rule from here: a number called "playoff" reads `MONEY`. The Cum Bowl
+- ⚠️ Rule from here: a number called "playoff" reads `MONEY` (title bracket +
+  3rd-place game). The Cum Bowl
   reads `CUMBOWL`/`CB_PAIRS` and appears only on its tab (plus its own
   storylines, badged `cb`). Consolation games appear nowhere.
 
 ## v144 — Consolation-bracket games are not counted
 
-⚠️ SUPERSEDED by v145: `COUNTED` is gone; playoff numbers read `MONEY`.
+⚠️ SUPERSEDED by v145: `COUNTED` is gone; playoff numbers read `MONEY` (title bracket + 3rd-place game).
 
 Owner, on being told the 96 non-Cum-Bowl consolation games were counted in
 head-to-head: *"Those should not be counted."* (He had already ruled out a

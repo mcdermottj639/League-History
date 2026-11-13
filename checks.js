@@ -87,8 +87,10 @@ const trackedTeam = (yr, t) => {
   const r = s && s.rows.find((x) => x.t === t);
   return !!(r && r.mgr);
 };
+/* v145: the playoff record is the money playoffs — title bracket + the
+   3rd-place game (S.MONEY). Counted straight off those games. */
 const WB = { w: 0, l: 0 };
-PLAYOFF_GAMES.filter((g) => g.br === 'W').forEach((g) => {
+S.MONEY.forEach((g) => {
   const aWon = g.as > g.bs;
   if (trackedTeam(g.yr, g.a)) { if (aWon) WB.w++; else WB.l++; }
   if (trackedTeam(g.yr, g.b)) { if (aWon) WB.l++; else WB.w++; }
@@ -117,8 +119,12 @@ const T = [
   ['cum bowl h2h pairs add up', cbPairBad.length, 0],
   /* v145 (owner: "the playoff records is the true money playoffs. And all
      playoff stats is like that... Consolation is nowhere."). */
-  ['money pool is the championship bracket', S.MONEY.length, PLAYOFF_GAMES.filter((g) => g.br === 'W').length],
-  ['no cum bowl, placement or consolation game is a playoff meeting', S.MEET.filter((g) => g.br !== 'W').length, 0],
+  ['money pool = title bracket + one 3rd-place game a season', S.MONEY.length, PLAYOFF_GAMES.filter((g) => g.br === 'W').length + S.THIRD_YRS.size],
+  ['every 3rd-place game decides 3rd v 4th', S.MONEY.filter((g) => g.rd === '3RD').filter((g) => { const se = SEASON.find((x) => x.yr === g.yr);
+    const p = (t) => (se.rows.find((r) => r.t === t) || {}).place; const w = g.as > g.bs ? g.a : g.b, l = g.as > g.bs ? g.b : g.a;
+    return p(w) !== 3 || p(l) !== 4; }).length, 0],
+  ['3rd-place game on file for every ESPN season', S.THIRD_YRS.size, SEASON.filter((x) => PLAYOFF_GAMES.some((g) => g.yr === x.yr && g.br === 'WC')).length],
+  ['no cum bowl, 5th-place or consolation game is a playoff meeting', S.MEET.filter((g) => !(g.br === 'W' || g.rd === '3RD')).length, 0],
   ['playoff meetings == money games', S.MEET.length, S.MONEY.length],
   /* Places 1-4 ARE the final four in this format (the semi-final losers play
      for 3rd), so every season with placements contributes exactly four. */
@@ -167,11 +173,16 @@ T.forEach(([k, got, want]) => { const ok = got === want; if (!ok) bad++;
    above stay ✅ and this names the two managers affected.
    ⚠️ Since v57 every season has a bracket, so `bA` is now each manager's
    playoff-appearance count and this law is the owner's own arithmetic in
-   full — losses == appearances − titles, for all twelve. */
+   full — losses == appearances − titles, for all twelve.
+   ⚠️ v145 added the 3rd-place game ("a medal match"), which a final-four
+   loser plays once more: losses == appearances − titles + 3rd-place games
+   lost. A 3rd-place loss IS a 4th-place finish in a season with that game on
+   file, so it is counted off the PLACINGS, independently of the games. */
 ALL.forEach((x) => {
   const won = x.yrs.filter((r) => r.place === 1 && BR_ON_FILE.has(r.yr)).length;
-  if (x.bl !== x.bA - won) {
-    console.log(`  ❌ ${x.m}: ${x.bl} bracket losses, but ${x.bA} brackets − ${won} title(s) = ${x.bA - won}`); bad++;
+  const fourth = x.yrs.filter((r) => r.place === 4 && S.THIRD_YRS.has(r.yr)).length;
+  if (x.bl !== x.bA - won + fourth) {
+    console.log(`  ❌ ${x.m}: ${x.bl} playoff losses, but ${x.bA} appearances − ${won} title(s) + ${fourth} 3rd-place loss(es) = ${x.bA - won + fourth}`); bad++;
   }
 });
 /* 🚨 THE CUM BOWL POINTS ARE PER MANAGER, AND THE SUMMED VERSION WAS WRITTEN
@@ -215,7 +226,7 @@ console.log(`  ${apMark()} brackets == appearances     every playoff berth has i
 {
   const mark = block();
   ALL.forEach(a => {
-    const scores = PLAYOFF_GAMES.filter(g => g.br === 'W').flatMap(g => {
+    const scores = S.MONEY.flatMap(g => {
       const season = SEASON.find(s => s.yr === g.yr);
       return [[g.a,g.as],[g.b,g.bs]].filter(([team]) => season.rows.some(r => r.t === team && r.mgr === a.m)).map(([,score]) => score);
     });

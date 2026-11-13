@@ -697,12 +697,20 @@
        · The Cum Bowl (GmC3) lives on the Cum Bowl tab only, with its own
          head-to-head (`CB_PAIRS`). It is not a playoff meeting.
        · The other consolation games (GmC) are shown and counted nowhere.
-       · ⚠️ The placement games (`WC`, 3rd and 5th place) are out of the
-         playoff numbers too: they are between teams already out of the title
-         race. Final PLACINGS still come from them via the standings.
+       · 🥉 The 3RD-PLACE GAME IS IN (owner, v145: *"Keep 3rd place games in
+         there. That's a medal match. Remove 5th"*). It is the `WC` game
+         between the two final-four losers — ESPN leaves `rd` blank on `WC`
+         rows, so it is DERIVED (both teams lost in R2 that season) and tagged
+         `rd: '3RD'` on the copy in `MONEY`. One per season 2013-2024; 2025
+         has none on file (Sleeper's capture was the title bracket only).
+       · The 5th-place games (the other `WC` rows) are out, like consolation.
      Do not read `PLAYOFF_GAMES` directly for anything a reader sees as a
      playoff count or record. (v144's `COUNTED` pool is gone.) */
-  const MONEY = PLAYOFF_GAMES.filter((g) => g.br === 'W');
+  const R2_LOSERS = {};
+  PLAYOFF_GAMES.forEach((g) => { if (g.br === 'W' && g.rd === 'R2') (R2_LOSERS[g.yr] = R2_LOSERS[g.yr] || new Set()).add(g.as > g.bs ? g.b : g.a); });
+  const isThird = (g) => g.br === 'WC' && !!R2_LOSERS[g.yr] && R2_LOSERS[g.yr].has(g.a) && R2_LOSERS[g.yr].has(g.b);
+  const MONEY = PLAYOFF_GAMES.filter((g) => g.br === 'W' || isThird(g)).map((g) => (g.br === 'WC' ? { ...g, rd: '3RD' } : g));
+  const THIRD_YRS = new Set(MONEY.filter((g) => g.rd === '3RD').map((g) => g.yr));
   const CUMBOWL = [...PLAYOFF_GAMES.filter((g) => g.rd === 'GmC3').map((g) => {
     const [hi, lo] = cbSeeded(g);
     const pts = (r) => (r.t === g.a ? g.as : g.bs);
@@ -1009,7 +1017,7 @@
   /* ⚠️ `plc` (the placement ladder) used to be folded in with `brk`, so a
      5th-place game and a semi-final printed the same word on a head-to-head
      row. Every meeting still counts as a meeting; the label says which. */
-  const MEET = MONEY.map((g) => ({ ...g, kind: g.rd === 'FINAL' ? 'fin' : g.rd === 'R2' ? 'f4' : 'r1' }));
+  const MEET = MONEY.map((g) => ({ ...g, kind: g.rd === '3RD' ? 'p3' : g.rd === 'FINAL' ? 'fin' : g.rd === 'R2' ? 'f4' : 'r1' }));
   /* ⚠️ Only the 2025 reconstruction can land here: every other Cum Bowl IS a
      `GmC3` row above and is already in `seen`.
      🚨 **THIS IS WHERE THE TWO DEFINITIONS WERE VISIBLY DISAGREEING, AND NO
@@ -1086,8 +1094,7 @@
   const BR_YRS = [...new Set(PLAYOFF_GAMES.filter((g) => g.br === 'W').map((g) => g.yr))].sort();
   const BR_SET = new Set(BR_YRS);
   const brSeen = {};
-  PLAYOFF_GAMES.forEach((g) => {
-    if (g.br !== 'W') return;
+  MONEY.forEach((g) => {   /* v145: the money playoffs — title bracket + 3rd-place game */
     const aWon = g.as > g.bs;
     [[mgrOf(g.a), aWon, g.as], [mgrOf(g.b), !aWon, g.bs]].forEach(([m, won, points]) => {
       const a = m && MGRS[m]; if (!a) return;
@@ -1143,7 +1150,7 @@
      a second hand-typed one that merely happened to duplicate the first.
      Only the 2025 reconstruction is genuinely extra. */
   const CB_EXTRA = CUMBOWL.filter((c) => c.recon).length;
-  const PO_NOTE = `⚠️ <b>Money playoffs only.</b> The archive has final standings and playoff brackets — <b>no regular-season schedule</b> — so this covers the ${MONEY.length} championship-bracket games across ${PO_YRS} seasons. Cum Bowls, placement and consolation games are not in it. It is not a career record.`;
+  const PO_NOTE = `⚠️ <b>Money playoffs only.</b> The archive has final standings and playoff brackets — <b>no regular-season schedule</b> — so this covers the ${MONEY.length} money-playoff games (title bracket + 3rd-place game) across ${PO_YRS} seasons. Cum Bowls, 5th-place and consolation games are not in it. It is not a career record.`;
 
   /* What the three badges mean. It was a card at the top of Honors; from v13
      it lives in the ? sheet in the header, where it is reachable from EVERY
@@ -1157,7 +1164,7 @@
   function keyHTML() {
     return `<div class="fh-key-r">${tag('fin')}<span>The <b>rank</b> in every table is where you finished after the playoffs.</span></div>
       <div class="fh-key-r">${tag('reg')}<span>Every <b>W-L and points total</b> is the regular season — that is what ESPN's standings hold.</span></div>
-      <div class="fh-key-r">${tag('po')}<span>Anything with this badge counts the <b>money playoffs only</b>: ${MONEY.length} championship-bracket games from ${PO_YRS} of ${SEASON.length} seasons — round one, the final four and the final. The Cum Bowl has its own tab and is not a playoff stat; placement and consolation games are not counted. Small samples, and no regular-season schedule exists to widen them.</span></div>
+      <div class="fh-key-r">${tag('po')}<span>Anything with this badge counts the <b>money playoffs only</b>: ${MONEY.length} games from ${PO_YRS} of ${SEASON.length} seasons — round one, the final four, the final and the 3rd-place medal match. The Cum Bowl has its own tab and is not a playoff stat; 5th-place and consolation games are not counted. Small samples, and no regular-season schedule exists to widen them.</span></div>
       <div class="fh-key-r">${tag('cb')}<span>The <b>Cum Bowl</b> — #11 v #12, which decides last place. It has its own tab and its own head-to-head, and is in no playoff number.</span></div>`;
   }
 
@@ -1325,7 +1332,7 @@
         <div class="fh-lx-bar"><span class="${lkCls(e.d)}" style="width:${mx ? (Math.abs(e.d) / mx) * 50 : 0}%;${e.d < 0 ? 'right' : 'left'}:50%"></span><em></em></div>
         <div class="fh-lx-v ${lkCls(e.d)}">${sgn(e.d)}</div>
       </div>`).join('')}
-      <p class="ffp-cap">${cap(plWord(up.length, 'manager'))} of the ${rows.length} score more in the championship bracket than their matched regular-season baseline.<br><br>Both averages use the <b>same season weights</b>: a season with three playoff games contributes three times to each side. Each row shows its playoff sample size. Placement and consolation games are excluded. This describes recorded results; it does not prove a repeatable playoff skill.</p>
+      <p class="ffp-cap">${cap(plWord(up.length, 'manager'))} of the ${rows.length} score more in the money playoffs than their matched regular-season baseline.<br><br>Both averages use the <b>same season weights</b>: a season with three playoff games contributes three times to each side. Each row shows its playoff sample size. Placement and consolation games are excluded. This describes recorded results; it does not prove a repeatable playoff skill.</p>
     </div>`;
   }
 
@@ -1384,7 +1391,7 @@
           <div class="fh-as-top"><span class="fh-as-r">${a.bG ? place(a) : '—'}</span><span class="fh-as-n">${tap(a.m, esc(a.name))}</span><span class="fh-as-w mono">${a.bG ? one(a.bPpg) : '—'} <small>PPG</small></span></div>
           <div class="fh-as-s">${a.bG} games · ${one(a.bPF)} total points · ${a.bA} playoff appearances</div>
         </div>`).join('')}
-        <p class="ffp-cap"><b>Total points ÷ games played.</b> Championship-bracket games only, across ${BR_YRS.length} seasons (${BR_YRS[0]}–${BR_YRS[BR_YRS.length-1]}). Placement games, consolation games and Cum Bowls are excluded. The sample is shown for every manager; these averages are not adjusted for scoring changes across seasons.</p>
+        <p class="ffp-cap"><b>Total points ÷ games played.</b> Money playoffs only — the title bracket plus the 3rd-place game — across ${BR_YRS.length} seasons (${BR_YRS[0]}–${BR_YRS[BR_YRS.length-1]}). 5th-place games, consolation games and Cum Bowls are excluded. The sample is shown for every manager; these averages are not adjusted for scoring changes across seasons.</p>
       </div>`;
   }
 
@@ -1415,7 +1422,7 @@
       ${row('Biggest blowout', one(blow.marg), `${blow.yr} · ${esc(gName(blow.as > blow.bs ? blow.a : blow.b))} ${Math.max(blow.as, blow.bs)} – ${Math.min(blow.as, blow.bs)}`, 'po')}
       ${row('Best game score', one(hiG.hi), `${esc(gName(hiG.as > hiG.bs ? hiG.a : hiG.b))} · ${hiG.yr}`, 'po')}
       ${row('Worst game score', one(loG.lo), `${esc(gName(loG.as < loG.bs ? loG.a : loG.b))} · ${loG.yr}`, 'po')}
-      <p class="ffp-cap">The four <b>playoff</b> rows are the <b>money playoffs only</b> — ${MONEY.length} championship-bracket games across all ${SEASON.length} seasons. Cum Bowls, placement and consolation games are not in them. Scoring records are <b>per game</b> — seasons were 13 games until 2021 and 14 since, so raw totals would not compare.</p>
+      <p class="ffp-cap">The four <b>playoff</b> rows are the <b>money playoffs only</b> — ${MONEY.length} games — the title bracket plus the 3rd-place game — across all ${SEASON.length} seasons. Cum Bowls, 5th-place and consolation games are not in them. Scoring records are <b>per game</b> — seasons were 13 games until 2021 and 14 since, so raw totals would not compare.</p>
     </div>`;
   }
 
@@ -1455,10 +1462,10 @@
        championship-bracket game — not "all twelve rows seeded". 2013-2017
        publish seeds for the bracket six only, and 7-12 are never read here. */
     const seeded = SEASON.filter((s) => {
-      const w = PLAYOFF_GAMES.filter((g) => g.yr === s.yr && g.br === 'W');
+      const w = MONEY.filter((g) => g.yr === s.yr);
       return w.length && w.every((g) => [g.a, g.b].every((t) => (s.rows.find((r) => r.t === t) || {}).seed));
     });
-    const wb = PLAYOFF_GAMES.filter((g) => g.br === 'W');
+    const wb = MONEY;
     const seedOf = (yr, t) => { const s = SEASON.find((x) => x.yr === yr); const r = s && s.rows.find((x) => x.t === t); return r && r.seed; };
     let better = 0, total = 0; const ups = [];
     wb.forEach((g) => {
@@ -1574,7 +1581,7 @@
           ? ` <span class="fh-po-br" title="Playoffs only — championship bracket"><b>${a.bw}-${a.bl}</b> from ${a.bA} bracket${a.bA === 1 ? '' : 's'}</span>`
           : ' <span class="fh-po-br none" title="Playoffs only — championship bracket">no brackets on file</span>'}</div>
       </div>`).join('')}
-      <p class="ffp-cap">The bar <b>is</b> the rate — a top-6 seed always finishes top 6 in this format, verified on every bracket, so this covers all ${SEASON.length} seasons.<br><br>✅ <b>Every season has a bracket on file now, so the arithmetic closes on every row.</b> A bracket is single elimination, so <b>losses are appearances minus titles</b> — and with no season missing, the bracket count beside each record <b>is</b> that manager's playoff appearances. Check any row: it works.<br><br>The ⚑ record counts the <b>championship bracket only</b> — ${PLAYOFF_GAMES.filter((g) => g.br === 'W').length} games, ${BR_YRS[0]}-${BR_YRS[BR_YRS.length - 1]} — never the placement ladder, the consolation bracket or the Cum Bowl. That is why it will never square with the ${MEET.length} meetings on the head-to-head pages.</p>
+      <p class="ffp-cap">The bar <b>is</b> the rate — a top-6 seed always finishes top 6 in this format, verified on every bracket, so this covers all ${SEASON.length} seasons.<br><br>✅ <b>Every season has a bracket on file now, so the arithmetic closes on every row.</b> The bracket count beside each record <b>is</b> that manager's playoff appearances, and <b>losses are appearances minus titles, plus every 3rd-place game lost</b> — the medal match is the one extra game a final-four loser plays. Check any row: it works.<br><br>The ⚑ record counts the <b>money playoffs</b> — ${MONEY.length} games, ${BR_YRS[0]}-${BR_YRS[BR_YRS.length - 1]}: the title bracket plus the 3rd-place game (${THIRD_YRS.size} on file; 2025's was not captured). Never the 5th-place game, the consolation bracket or the Cum Bowl. It matches the ${MEET.length} meetings on the head-to-head pages.</p>
     </div>
     </div>`;
   }
@@ -1600,7 +1607,7 @@
         <span class="fh-fr-f">${a.f4 ? `${a.f4} final four${a.f4 > 1 ? 's' : ''}` : '<i>no final fours</i>'}${a.fin ? ` · ${a.fin} final${a.fin > 1 ? 's' : ''}` : ''}</span>
         <span class="fh-fr-g">${a.t1 ? `<span class="mono">${a.t1}</span> won` : '<i>none won</i>'}</span>
       </div>`).join('')}
-      <p class="ffp-cap"><b>The final four is places 1-4</b>: the two teams that lose in the final four play each other for 3rd, so the four left after round one <b>are</b> the top four finishers. Verified against every bracket on file — all ${SEASON.length} seasons.<br><br>Six teams make the playoffs, so getting to the last four is the cut that means something. This is a count of <b>finishes</b>, not a record: the championship-bracket <b>win-loss record</b> is a different population and lives on <b>Playoff appearances</b> on ${subName('rec')}. Placement games and the consolation ladder decide places rather than records — that is how 7th to 10th are settled, with the Cum Bowl taking 11th and 12th — and none of them is a playoff game in any record or head-to-head here. The Cum Bowl has its own tab.</p>
+      <p class="ffp-cap"><b>The final four is places 1-4</b>: the two teams that lose in the final four play each other for 3rd, so the four left after round one <b>are</b> the top four finishers. Verified against every bracket on file — all ${SEASON.length} seasons.<br><br>Six teams make the playoffs, so getting to the last four is the cut that means something. This is a count of <b>finishes</b>, not a record: the playoff <b>win-loss record</b> is a different population and lives on <b>Playoff appearances</b> on ${subName('rec')}. Placement games and the consolation ladder decide places rather than records — that is how 7th to 10th are settled, with the Cum Bowl taking 11th and 12th — and none of them is a playoff game in any record or head-to-head here. The Cum Bowl has its own tab.</p>
     </div>`;
   }
 
@@ -1662,10 +1669,10 @@
       const best = Math.max(...s.rows.map((r) => r.ppg));
       s.rows.filter((r) => r.ppg === best && r.mgr).forEach((r) => { scoring[r.mgr] = (scoring[r.mgr] || 0) + 1; });
     });
-    // v90: playoff claims use W only, just like the playoff PPG card.
+    // v90/v145: playoff claims use the money playoffs (MONEY), like the playoff PPG card.
     // Match EACH playoff score to that season's regular-season PPG. Weighting
     // both halves by the same games prevents longer runs changing the era mix.
-    PLAYOFF_GAMES.filter((g) => g.br === 'W').forEach((g) => {
+    MONEY.forEach((g) => {
       [[g.a, g.as], [g.b, g.bs]].forEach(([t, v]) => {
         const r = SEASON.find((s) => s.yr === g.yr).rows.find((r) => r.t === t);
         const m = r && r.mgr; if (!m) return;
@@ -1802,7 +1809,7 @@
            two separate cards. */
         const bits = [];
         const pi = ST.poScores.findIndex((x) => x.m === a.m);
-        if (pi >= 0 && pi < 3) bits.push(`${ST.poScores.filter((x) => x.v === ST.poScores[pi].v).length > 1 ? 'a joint' : 'the'} ${ord(pi + 1)}-highest championship-bracket score (${one(ST.poScores[pi].v)})`);
+        if (pi >= 0 && pi < 3) bits.push(`${ST.poScores.filter((x) => x.v === ST.poScores[pi].v).length > 1 ? 'a joint' : 'the'} ${ord(pi + 1)}-highest money-playoff score (${one(ST.poScores[pi].v)})`);
         if (ST.cbScore.some((x) => x.m === a.m && x.v === ST.cbScore[0].v)) bits.push(`${ST.cbScore.filter((x) => x.v === ST.cbScore[0].v).length > 1 ? 'a share of' : 'the'} Cum Bowl scoring record (${one(ST.cbScore[0].v)})`);
         return { id: 'nopod', t: 'place', m: a.m, w: 75, src: 'fin',
           head: `${nm(a.m)} ${vb(a.m, 'have', 'has')} never finished in the top three.`,
@@ -1880,7 +1887,7 @@
           if (MGRS[m].seasons >= 8 && !MGRS[m].yrs.some((r) => r.place && r.place <= 3)) return;
           out.push({ id, t, m, w: id === 'poscore' ? 65 : 44, src: id === 'poscore' ? 'po' : 'cb',
             head: `${nm(m)} ${vb(m, 'hold', 'holds')} ${top.length > 1 ? 'a share of' : 'the'} ${label} scoring record: ${one(scores[0].v)}.`,
-            body: `${years.join(', ')}. ${id === 'poscore' ? 'Championship bracket only.' : 'The game between the bottom two seeds.'}${next ? ` Next highest: ${one(next.v)}.` : ''}` });
+            body: `${years.join(', ')}. ${id === 'poscore' ? 'Money playoffs: title bracket and 3rd-place game.' : 'The game between the bottom two seeds.'}${next ? ` Next highest: ${one(next.v)}.` : ''}` });
         });
       }
       return out;
@@ -2485,7 +2492,7 @@
     ${h2hFor(ME).length ? `<h2 class="section-title">Your playoff head-to-head ${tag('po')}</h2>
     <div class="ffp-card">
       ${h2hFor(ME).map((v) => `<div class="fh-h2h">${tap(v.opp, `<b>${esc(nm(v.opp))}</b>`)}<i>${one(v.pf)}–${one(v.pa)}</i><span class="${v.w > v.l ? 'pos' : v.l > v.w ? 'neg' : ''}">${v.w}-${v.l}</span></div>`).join('')}
-      <p class="ffp-cap"><b>Money playoffs only.</b> ${h2hFor(ME).reduce((n, v) => n + v.n, 0)} championship-bracket games against these people — the same games as your playoff record. Cum Bowl meetings are on ${subName('cb')}; placement and consolation games are not counted. There is no regular-season schedule in the archive, so this is not a career head-to-head. Points are per-game averages.</p>
+      <p class="ffp-cap"><b>Money playoffs only.</b> ${h2hFor(ME).reduce((n, v) => n + v.n, 0)} games against these people — title bracket and 3rd-place games, the same games as your playoff record. Cum Bowl meetings are on ${subName('cb')}; 5th-place and consolation games are not counted. There is no regular-season schedule in the archive, so this is not a career head-to-head. Points are per-game averages.</p>
     </div>` : ''}
     <h2 class="section-title">Your franchises</h2>
     <div class="ffp-card"><div class="fh-fr-list">${[...new Set([...a.yrs].sort((x, y) => y.yr - x.yr).map((r) => r.t))].map((t) => `<span>${esc(t)}</span>`).join('')}</div></div>`;
@@ -2509,7 +2516,7 @@
           .map(([k, v]) => `<div class="fh-you-t"><b>${v}</b><i>${k}</i></div>`).join('')}
       </div>` : ''}
       ${full ? '<p class="ffp-cap">Squares are the <b>playoff finish</b>; the totals under them are the <b>regular season</b>. <b>Final fours</b> is places 1-4 — the four teams left after round one, which the final placings give for every season.</p>' : ''}
-      ${full ? `<p class="ffp-cap"><b>All-time playoff PPG: ${a.bG ? one(a.bPpg) : '—'}</b> · ${a.bG} championship-bracket games. Placement and consolation excluded.</p>` : ''}
+      ${full ? `<p class="ffp-cap"><b>All-time playoff PPG: ${a.bG ? one(a.bPpg) : '—'}</b> · ${a.bG} money-playoff games (title bracket + 3rd-place game). 5th-place, consolation and Cum Bowl excluded.</p>` : ''}
       <div class="fh-car-f">
         <span><b>Best</b> ${bestPf.yr} · ${one(bestPf.ppg)} per game · finished ${bestPf.place ? ord(bestPf.place) : '?'}</span>
         <span><b>Worst</b> ${a.worst.yr} · ${ord(a.worst.place)} · ${rec(a.worst)}</span>
@@ -2533,7 +2540,7 @@
     ${pairs.length ? `<h2 class="section-title">Playoff head-to-head ${tag('po')}</h2>
       <div class="ffp-card">
         ${pairs.map((v) => `<div class="fh-h2h">${tap(v.opp, `<b>${esc(nm(v.opp))}</b>`)}<i>${one(v.pf)}–${one(v.pa)}</i><span class="${v.w > v.l ? 'pos' : v.l > v.w ? 'neg' : ''}">${v.w}-${v.l}</span></div>`).join('')}
-        <p class="ffp-cap"><b>Money playoffs only.</b> ${pairs.reduce((n, v) => n + v.n, 0)} championship-bracket games — the same games as the playoff record. Cum Bowl meetings are on ${subName('cb')}; placement and consolation games are not counted. No regular-season schedule exists in the archive, so this is not a career head-to-head. Points are per-game averages.</p>
+        <p class="ffp-cap"><b>Money playoffs only.</b> ${pairs.reduce((n, v) => n + v.n, 0)} games — title bracket and 3rd-place games, the same games as the playoff record. Cum Bowl meetings are on ${subName('cb')}; 5th-place and consolation games are not counted. No regular-season schedule exists in the archive, so this is not a career head-to-head. Points are per-game averages.</p>
       </div>` : ''}
       <h2 class="section-title">Franchises</h2>
       <div class="ffp-card"><div class="fh-fr-list">${teams.map((t) => `<span>${esc(t)}</span>`).join('')}</div></div>
@@ -2585,7 +2592,7 @@
           <div class="fh-rv-n">${tap(w, `<b class="up">${esc(nm(w))}</b>`)}<span>owns</span>${tap(l, `<b>${esc(nm(l))}</b>`)}</div>
           <div class="fh-rv-s"><b class="pos">${n}–0</b><i>${fins ? `${fins} of them a final` : `${n} meetings`}</i></div>
         </div>`; }).join('')}` : ''}
-      <p class="ffp-cap"><b>Money playoffs only.</b> Championship-bracket games — round one, the final four and the final. Cum Bowl meetings are on ${subName('cb')}; placement and consolation games are not counted. The archive has <b>no regular-season schedule</b>, so this is not career head-to-head. Sample sizes are ${Math.min(...PAIRS.map((p) => p.n))}–${Math.max(...PAIRS.map((p) => p.n))} games: read them as stories, not settled arguments.</p>
+      <p class="ffp-cap"><b>Money playoffs only.</b> Round one, the final four, the final and the 3rd-place game. Cum Bowl meetings are on ${subName('cb')}; 5th-place and consolation games are not counted. The archive has <b>no regular-season schedule</b>, so this is not career head-to-head. Sample sizes are ${Math.min(...PAIRS.map((p) => p.n))}–${Math.max(...PAIRS.map((p) => p.n))} games: read them as stories, not settled arguments.</p>
     </div>
     <details class="ffp-card fh-det">
       <summary><b>The full grid</b><span>every pair</span><i>▾</i></summary>
@@ -2707,7 +2714,7 @@
        notices. Any new sentence about a manager goes through it. */
     voice: { nm: (m) => nm(m), vb: (m, second, third) => vb(m, second, third) },
     /* Exposed for the repo's own checks — nothing in the app reads these. */
-    _stats: { SEASON, ALL, MEET, PAIRS, CUMBOWL, PLAYOFF_GAMES, MONEY, CB_PAIRS, CB_UNPAIRED },
+    _stats: { SEASON, ALL, MEET, PAIRS, CUMBOWL, PLAYOFF_GAMES, MONEY, THIRD_YRS, CB_PAIRS, CB_UNPAIRED },
     _stories: () => stories(),
     _cardStories: () => pickStories(),
   };
