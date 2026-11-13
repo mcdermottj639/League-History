@@ -30,15 +30,15 @@ assert.equal(ALL.find(a => a.m === 'Hurd').fin, 2);
 assert.equal(ALL.find(a => a.m === 'Hurd').f4, 5);
 assert.ok(!story('Hurd', 'collapse'));
 assert.match(story('Christel', 'playoff-explosion').head, /183.3/);
-assert.match(story('Christel', 'playoff-explosion').body, /2nd-highest score in championship-bracket history/);
-assert.ok(!/183.3/.test(story('Christel', 'nopod').body), 'the highlight is no longer buried in the drought');
-assert.match(story('Hyman', 'poscore').body, /Next highest: 183.3/);
+assert.match(story('Christel', 'playoff-explosion').body, /3rd-highest score in money-playoff history/);
+assert.ok(!/183.3/.test(story('Christel', 'nopod').body), 'the highlight is separate from the drought');
+assert.match(story('Hyman', 'poscore').body, /Next highest: 184.7/); // v145: 2021 3rd-place game
 assert.ok(!stories.some(s => s.id === 'dynasty'));
 
 // Recalculate each displayed playoff row from original game/season records.
 const playoffHTML = H.view('rec').split('Playoff scoring lift')[1];
 for (const member of ALL) {
-  const samples = PLAYOFF_GAMES.filter(g => g.br === 'W').flatMap(g => {
+  const samples = H._stats.MONEY.flatMap(g => {
     const season = SEASON.find(s => s.yr === g.yr);
     return [[g.a,g.as],[g.b,g.bs]].flatMap(([name,score]) => {
       const team = season.rows.find(r => r.t === name);
@@ -126,4 +126,4 @@ const ring = changedArchive('MGRS.McD.pct=0.9;');
 assert.ok(!/best in the league/.test(ring.find(s=>s.id==='ringless').body));
 const tiedRecord = changedArchive("PLAYOFF_GAMES.find(g=>g.yr===2018&&g.as===183.3).as=193.48;");
 assert.match(tiedRecord.find(s=>s.m==='Hyman'&&s.id==='poscore').head,/a share of/);
-console.log('✅ Narrative accuracy: all 12 readers, championship-only samples, Week 1/ties/missing data, cache identity, simulation language and future shared records.');
+console.log('✅ Narrative accuracy: all 12 readers, money-playoff samples, Week 1/ties/missing data, cache identity, simulation language and future shared records.');

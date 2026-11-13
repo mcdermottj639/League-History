@@ -102,7 +102,7 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   even then the old hash stays valid until he says otherwise. Generate nothing
   that would require anyone to open a new link.
 
-## v145 — Stories worth retelling
+## v146 — Stories worth retelling
 
 The archive now curates **distinct achievements and notable league lore**, rather
 than filling short profiles with whichever career ranking is furthest from the
@@ -124,8 +124,10 @@ other distinct accomplishments remain. Duplicate drought/last-place cards are
 combined, while four notable roast cards currently survive. The Luck Index and
 all record-book data remain intact. The league overview still gives every manager
 one distinct headline, independent of the reader's identity. Second-person voice,
-public access, private links, rankings, parlay logic and v144's COUNTED pool are
-unchanged. No archive facts were edited.
+public access, private links, rankings, parlay logic and v145's MONEY pool and Cum Bowl separation are
+unchanged. No archive facts were edited. Playoff scoring uses MONEY (title bracket plus
+the third-place game), never fifth-place or consolation. Historic-score stories
+recognize the top three performances; the third-place round is named explicitly.
 
 The v22 worst-stat `signature` fallback is retired. `storiesFor` orders the first
 two positive cards without removing the remaining stories. `evidence`, `claims`
@@ -137,7 +139,58 @@ Verification: `node checks.js`, `node storylines.test.cjs` and
 stranger, 168 profile/You renders, independent game evidence, retained roasts,
 event deduplication, ties and changed-fact scenarios. It runs in `npm test`.
 
+## v145 — Playoff stats are the money playoffs; the Cum Bowl keeps to its tab
+
+Owner: *"remove Cumbles from the playoff records that we have, because those
+are not really playoff records. Keep the Cumble just to the Cumble.
+Consolation is nowhere. And then the playoff records is the true money
+playoffs. And all playoff stats is like that."* Also: add Cum Bowl
+head-to-head to the Cum Bowl tab.
+
+- `history.js` `MONEY` = the title bracket (`W`) plus the 3rd-place game
+  (see below). It replaces v144's `COUNTED`. **Every playoff number reads it**:
+  `MEET`/`PAIRS` (head-to-head, Rivalries, You and profile pages), the record
+  book's four game rows, `PO_YRS`/`PO_NOTE` and the ? sheet key. The playoff
+  W-L, playoff PPG, scoring lift, final fours and `poScores` were already W.
+- `MEET`: the `cb`, `plc` and `con` kinds are gone; the Cum Bowl is no
+  longer folded into it.
+- 🥉 **The 3rd-place game is IN** (owner: *"Keep 3rd place games in there.
+  That's a medal match. Remove 5th"*). `rd` is blank on ESPN's `WC` rows, so
+  it is derived: the `WC` game whose two teams both lost in R2 that season,
+  tagged `rd: '3RD'` on the copy in `MONEY` (kind `p3` in `MEET`). 12 on file
+  (2013-24); 2025 has none (Sleeper capture was title bracket only) — not
+  reconstructed. `THIRD_YRS` holds the seasons that have one.
+- So `MONEY` = W + 3rd = **77 games**; meetings 114 → 77, pairs 54 → 50.
+  Playoff W-L, playoff PPG, scoring lift, `poScores`, seeds & upsets all read
+  `MONEY` now (they were W-only).
+- ⚠️ **"Losses = appearances − titles" is no longer true** — a final-four
+  loser plays the medal match. The law and the appearances caption now say
+  losses = appearances − titles + 3rd-place games lost (= 4th-place finishes
+  in `THIRD_YRS` seasons, counted off the placings). McD: 10 − 4 + 2 = 8.
+- 5th-place games (other `WC`) are out of every playoff number, like
+  consolation. Final placings are unchanged.
+- `storylines.test.cjs`: Christel's 183.3 is now the **3rd**-highest money
+  playoff score (2021 3rd-place game, 184.7, is 2nd); Hyman's "next highest"
+  is 184.7.
+- **Cum Bowl tab**: new "Cum Bowl head-to-head" card from `CB_PAIRS`, built
+  from `CUMBOWL` (so it names the same 13 games as the tab, 2025 recon
+  included). Games with an untracked manager go to `CB_UNPAIRED` (2) and the
+  caption says so. The tab heading lost its ⚑ badge — it is not a playoff stat.
+- New provenance badge `cb` ("Cum Bowl"): the `cbking` and `cbscore`
+  storylines wear it instead of ⚑; the ? sheet key has a row for it.
+- `league.js` HELP.cb rewritten: it still described the Cum Bowl as the last
+  game of the consolation ladder, which v79 corrected to round one (#11 v #12).
+- `checks.js`: v144's COUNTED laws replaced — money pool is exactly the W
+  games, no non-W game is a meeting, meetings == money games, Cum Bowl h2h
+  covers every Cum Bowl (pairs + unpaired) and each pair adds up.
+- ⚠️ Rule from here: a number called "playoff" reads `MONEY` (title bracket +
+  3rd-place game). The Cum Bowl
+  reads `CUMBOWL`/`CB_PAIRS` and appears only on its tab (plus its own
+  storylines, badged `cb`). Consolation games appear nowhere.
+
 ## v144 — Consolation-bracket games are not counted
+
+⚠️ SUPERSEDED by v145: `COUNTED` is gone; playoff numbers read `MONEY` (title bracket + 3rd-place game).
 
 Owner, on being told the 96 non-Cum-Bowl consolation games were counted in
 head-to-head: *"Those should not be counted."* (He had already ruled out a
@@ -1073,7 +1126,7 @@ All legacy parlay sections below continue to describe the currently active app.
 
 ## v90 — Accurate season narratives and member storylines
 
-⚠️ Member-story selection and prose are superseded by v145; the season-data and scoring-scope accuracy rules still apply.
+⚠️ Member-story selection and prose are superseded by v146; the season-data and scoring-scope accuracy rules still apply.
 
 Season write-ups describe observed results, never extrapolate a one-game record
 to 0–14 or 14–0. Week 1 compares the actual score with all other teams (including
@@ -1441,7 +1494,7 @@ superseded. No model run happens in a member's Rankings view: these are snapshot
   - **🚨 THREE PLAYOFF RECORDS FOR ONE PERSON ON ONE PAGE.** `bw`/`bl` counted
     the title bracket AND the placement ladder (McD 11-4), the storyline
     beside it counted the title bracket alone (10-3), and the head-to-head
-    counted every meeting including consolation and Cum Bowls (22; ⚠️ v144:
+    counted every meeting including consolation and Cum Bowls (22; ⚠️ v145: playoff head-to-head is now the money playoffs only, v144:
     consolation games no longer count as meetings). Each was
     right; the page still lied, because nothing said which population each one
     counted. **This is the v3 fault, and it survived v3 because v3 fixed the
@@ -1671,7 +1724,7 @@ superseded. No model run happens in a member's Rankings view: these are snapshot
     pronoun in a template; and one fact rendered as two separate cards.
   - **Coverage was the real design problem.** The detectors found ten of twelve
     managers; the other two would have opened their own page and found nothing.
-    ⚠️ SUPERSEDED in v145: `curateStories` replaces `signature` with earned positive coverage; checks still guard against missing managers.
+    ⚠️ SUPERSEDED in v146: `curateStories` replaces `signature` with earned positive coverage; checks still guard against missing managers.
   - Placed in three spots rather than a sixth tab (five already crowd 390px):
     the top of **Records** (⚠️ **SUPERSEDED in v13 — they open Honours now**,
     where the badge key used to sit — ⚠️ **and RE-SUPERSEDED in v44, which put
