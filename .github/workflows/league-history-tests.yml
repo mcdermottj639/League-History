@@ -1,0 +1,24 @@
+name: League history checks
+on:
+  push:
+    branches: [main, codex/league-stories-v145]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: node checks.js
+      - run: node storylines.test.cjs
+      - name: Storyline selection tests
+        run: if [ -f storylines-balance.test.cjs ]; then node storylines-balance.test.cjs; fi
