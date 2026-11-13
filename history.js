@@ -1672,8 +1672,8 @@
     : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
   const alsoTxt = (others) => (others.length ? ` — tied with ${listTxt(others)}` : '');
 
-  /* The floor `signature` tops every manager up to (v22). One card stops a
-     page being blank; two is what makes it worth opening. */
+  /* Two distinct positive stories lead each established career (v145).
+     Droughts and roasts remain additional stories, never coverage fillers. */
   const WANT = 2;
 
   const DETECT = [
@@ -1923,205 +1923,202 @@
 
   ];
 
-  /* ── nobody gets an empty page ───────────────────────────────────────
-     🚨 The detectors above look for extremes, so a manager who has never
-     been extreme at anything gets NOTHING — and on this app that means
-     three people open their own You page and find a blank space where
-     everyone else has a story. That is the one outcome the whole feature
-     exists to avoid.
-
-     So: for anyone still short, find the stat they ARE most notable at —
-     best or worst, whichever is further from the middle — and state it.
-     Last, not first, and low-weighted, so it never displaces a real find.
-
-     🚨 IT TOPS UP TO **TWO**, NOT TO ONE (v22, owner's call: *"Make sure
-     everyone has at least 2 storylines"*). One card was the floor that
-     stopped a page being blank; it is not the floor that makes a page worth
-     opening. Eight of the twelve had exactly one, so eight people's own
-     page was a single line — and, as ever, the eight were the ones the
-     extreme-hunting detectors had least to say about.
-     ⚠️ **It counts what each manager HAS, not whether they have anything.**
-     The old test was `covered.has(m)` — a boolean, which cannot answer "how
-     many", and which is why "at least one" was the only floor expressible.
-
-     🚨 AND A TOP-UP MUST NOT RE-ARGUE THE CARD ABOVE IT. Every detector now
-     declares a `t` topic beside its `src`, and a claim is skipped when that
-     manager already holds a story on the same topic — so the manager whose
-     story is "never on the podium" does not get "worst average finish" as
-     their second card, which is one fact, twice, with the reader counting
-     it as two. That is the v2/v15/v16 fault, and the shape it keeps coming
-     back in is always a second card making the SAME case in a duller way.
-     ⚠️ A detector with no `t` suppresses nothing, which fails safe — a
-     possible repeat rather than a thrown error or a missing card. */
-  function signature(held) {
-    const pool = ALL.filter((a) => a.seasons >= 4 && (held[a.m] ? held[a.m].n : 0) < WANT);
-    if (!pool.length) return [];
-    const N = ALL.length;
-    /* Ranked on each stat; the manager's best claim is wherever they sit
-       furthest from the middle of the twelve. */
-    /* 🚨 COMPETITION RANK, AND IT MUST KNOW ABOUT TIES (v58). This was
-       `findIndex` on a sorted array, which is pure ARRAY POSITION: four
-       managers on 5 final fours got 2nd, 3rd, 4th and 5th handed out in
-       `ALL` order, and the card printed "2nd of 12" as sole possession. The
-       same value produced a different sentence depending on who was reading.
-       **The app's oldest storyline rule is that a superlative which fires
-       twice is just wrong** (v2, which is why every real detector goes
-       through `leaders()`/`alsoTxt()`) — the ordinals in this backstop were
-       the one place it was never enforced.
-       ⚠️ THE NEW BRACKET DATA IS WHAT EXPOSED IT: `f4` moved for eight
-       managers in v56/v57 and created three fresh multi-way ties, exactly at
-       the ranks this backstop fills. It was latent and wrong before; it is
-       visible and wrong now. Rank is `1 + how many are strictly better`, so
-       a tie shares the better rank, and `tiedOn` says whether to admit it. */
-    const rankOf = (val, hiGood) => {
-      const better = (x, y) => (hiGood ? val(x) > val(y) : val(x) < val(y));
-      return (m) => { const me = ALL.find((x) => x.m === m);
-        return 1 + ALL.filter((x) => better(x, me)).length; };
-    };
-    const tiedOn = (val) => (m) => { const me = ALL.find((x) => x.m === m);
-      return ALL.filter((x) => val(x) === val(me)).length > 1; };
-    /* ⚠️ And the rank FROM THE BOTTOM, for the same reason (v59). v57 says a
-       bottom-three rank from the bottom ("second-worst"), keyed on `N - r`.
-       With competition ranks a tie GROUP at the bottom shares the top of its
-       range — three managers on 3 final fours are all "9th of 12" — so
-       `N - r` is 3 for all of them and none reads as bottom-three, though
-       together they ARE the bottom three. Counted from the bottom they are
-       joint second-worst, which is both true and how a person says it. */
-    const rankBottom = (val, hiGood) => {
-      const worse = (x, y) => (hiGood ? val(x) < val(y) : val(x) > val(y));
-      return (m) => { const me = ALL.find((x) => x.m === m);
-        return 1 + ALL.filter((x) => worse(x, me)).length; };
-    };
-    /* 🚨 THE HEADLINE IS THE CLAIM. v7 shipped these as
-       "Gotch, in one line." — a label, not a sentence — while the actual
-       finding (11-1 in the consolation bracket, the best in the league) sat
-       buried mid-body behind a comma. Every other card on the screen states
-       its fact in the heading, so these four read as filler beside them:
-       the reader scanning headings learned nothing about four of the twelve.
-       **A card whose heading does not carry its finding is a card the reader
-       skips.** So each claim writes its own heading, and the body is career
-       context only — never a second copy of the number above it. */
-    /* 🚨 A RANK NEAR THE BOTTOM IS SAID FROM THE BOTTOM (v57). "The 11th-best
-       rate of the 12" is how a generator talks and "second-worst" is how a
-       person does — and the clumsy form is what produced a real fault: Riz's
-       card read "made the playoffs in 4 of 11 seasons" over "The 11th-best
-       rate of the 12", **two different elevens, a season count and a rank,
-       colliding on one card**. `checks.js` caught it (a numeral ≥3 in both
-       heading and body) the moment the 2025 bracket shifted the rankings.
-       ⚠️ Fixed in the two rank HELPERS, not in the card that failed — every
-       claim's heading and note reads a rank through these, so the same
-       collision was available to all of them. The v16 rule: fix the rule, not
-       the instance. It is the v17 fault in a new costume too — two numerals
-       that must not be read as one. */
-    const WORSTISH = { 0: 'worst', 1: 'second-worst', 2: 'third-worst' };
-    /* ⚠️ "joint" rather than "tied for": it slots in front of the word it
-       qualifies without re-ordering the sentence, so every heading that
-       already fits keeps fitting. */
-    /* `rb` is the rank from the bottom; untied it equals `N + 1 - r`, so the
-       wording is unchanged wherever nobody shares a value. */
-    const bestish = (r, tie, rb = N + 1 - r) => { const b = r === 1 ? 'best'
-      : WORSTISH[rb - 1] !== undefined ? WORSTISH[rb - 1] : `${ord(r)}-best`;
-      return !tie ? b : r === 1 ? 'joint-best' : `joint ${b}`; };
-    const rk = (r, tie, rb = N + 1 - r) => (r === 1 ? `the ${tie ? 'joint-' : ''}best in the league`
-      : WORSTISH[rb - 1] !== undefined ? `the ${tie ? 'joint ' : ''}${WORSTISH[rb - 1]} in the league`
-      : `${tie ? 'joint ' : ''}${ord(r)} of ${N}`);
-    const CLAIMS = [
-      { t: 'pct', val: (a) => a.pct, hi: true,
-        head: (a, r, tie, rb) => `${nm(a.m)} ${vb(a.m, 'have', 'has')} the ${bestish(r, tie, rb)} win% in the league, ${(a.pct * 100).toFixed(1)}%.`,
-        /* 🚨 BEST BY RECORD, NOT `a.best` — which is the best FINISH, and on a
-           card about win% "the best of those seasons was 7-7" is simply a
-           false sentence. Zach's best finish is 2nd in 2024 at 7-7; his best
-           record is 9-4 in 2019, three places lower. The two disagree
-           constantly in this league, which is the whole point of the archive
-           (the rank is the playoff finish, the record beside it is the
-           regular season) — so a card must say which one it means. */
-        note: (a) => { const b = [...a.yrs].sort((x, y) => y.pct - x.pct || y.w - x.w)[0];
-          return b ? `The best of those seasons was ${b.w}-${b.l} in ${b.yr}.` : ''; } },
-      /* 🚨 vs the league IN THE SEASONS THEY PLAYED, never a raw career ppg.
-         Scoring has climbed over thirteen years, so a raw average ranks a
-         manager by which era they were in — a nine-season career that
-         started late tops the all-time list without ever outscoring a
-         single opponent. Same fault as comparing two different denominators
-         in the luck card. That qualifier will not fit in a heading, so the
-         heading states the margin and the body says what it is measured
-         against — the caveat is never dropped, only moved. */
-      { t: 'score', val: (a) => relPpg(a), hi: true,
-        head: (a) => `${nm(a.m)} ${vb(a.m, 'have', 'has')} ${relPpg(a) >= 0 ? 'outscored' : 'trailed'} the league by ${one(Math.abs(relPpg(a)))} a game.`,
-        note: (a, r, tie, rb) => `Measured against the league in the seasons ${vb(a.m, 'you', nm(a.m))} played, which is ${rk(r, tie, rb)}.` },
-      /* `seasons: true` = the heading already stated the season count, so the
-         body must not state it again. "…in 6 of 9 seasons" over "9 seasons,
-         63-59" is one fact printed twice on one card, which is the fault the
-         dedupe filter below catches for decimals and cannot see for whole
-         numbers. */
-      { t: 'po', val: (a) => a.poRate, hi: true, seasons: true,
-        head: (a) => `${nm(a.m)} ${vb(a.m, 'have', 'has')} made the playoffs in ${a.po} of ${a.seasons} seasons.`,
-        note: (a, r, tie, rb) => (r === 1 && !tie ? 'The highest appearance rate in the archive.'
-          : rb === 1 && !tie ? 'The lowest appearance rate in the archive.'
-          : `The ${bestish(r, tie, rb)} rate of the ${N}.`) + (a.t2 ? ` Runner-up in ${a.yrs.filter((r) => r.place === 2).map((r) => r.yr).sort().join(', ')}.` : '') },
-      { t: 'place', val: (a) => a.avgPlace, hi: false,
-        head: (a, r, tie, rb) => `${nm(a.m)} ${vb(a.m, 'have', 'has')} the ${bestish(r, tie, rb)} average finish, ${one(a.avgPlace)}.`,
-        note: (a) => (a.best && a.worst
-          ? `Best ${ord(a.best.place)} in ${a.best.yr}, worst ${ord(a.worst.place)} in ${a.worst.yr}.` : '') },
-      /* 🚨 THE CONSOLATION CLAIM IS GONE (v14, owner's call): "11-1 in the
-         consolation bracket, the best in the league" is nine games between
-         teams that were already eliminated, and putting it in a heading beside
-         four titles asks the reader to weigh them against each other. The one
-         consolation result anybody cares about is the Cum Bowl, and that has
-         its own tab. Final fours replace it: knowable for all 13 seasons
-         (places 1-4 ARE the final four in this format) and worth something. */
-      { t: 'f4', val: (a) => a.f4, hi: true,
-        head: (a, r, tie, rb) => (a.f4
-          ? `${nm(a.m)} ${vb(a.m, 'have', 'has')} ${pl(a.f4, 'final four')}, ${rk(r, tie, rb)}.`
-          : `${nm(a.m)} ${vb(a.m, 'have', 'has')} never reached the final four.`),
-        note: (a) => `From ${pl(a.po, 'playoff appearance')}.` },
-    ];
-    /* The career line under the claim. Identical for every card about one
-       manager, so only the FIRST top-up carries it — repeating "13 seasons,
-       93-81, with 3 titles" under two cards on one page is the same fact
-       printed twice, which is the thing this whole file keeps catching.
-
-       🚨 AND IT DROPS ANY CLAUSE THE READER ALREADY HAS. The floor card says
-       "with 2 finals and no title" and this one said "with 2 finals but no
-       title" directly beneath it; the worst-to-first card says "2 of the 3
-       titles" and this one added "with 3 titles". Both were invisible to the
-       dedupe in `stories()`, which fingerprints DECIMALS and cannot see a
-       whole number. So each clause is tested against the text of that
-       manager's kept cards and dropped when it is already on the page —
-       which is why `held` carries `txt` and not just a count. */
-    const careerLine = (a, c, prior) => {
-      const fresh = (bit) => { const n = /^\d+\s+\S+/.exec(bit); return !n || !prior.includes(n[0]); };
-      const extra = [];
-      if (a.t1) extra.push(pl(a.t1, 'title'));
-      else if (a.fin) extra.push(`${pl(a.fin, 'final')} but no title`);
-      if (a.cb) extra.push(`${pl(a.cb, 'Cum Bowl')} lost`);
-      const kept = extra.filter(fresh);
-      const span = pl(a.seasons, 'season');
-      const lead = c.seasons ? `${a.w}-${a.l} all told`
-        : prior.includes(span) ? `${a.w}-${a.l}` : `${span}, ${a.w}-${a.l}`;
-      return `${lead}${kept.length ? `, with ${kept.join(' and ')}` : ''}.`;
-    };
+  /* v145: choose stories, not whichever ranking is furthest from the middle.
+     Two independent achievements lead each profile. Notable droughts stay;
+     two cards retelling one season, or one recurring failure, do not.
+     All criteria are league-wide. No manager-specific overrides or prose. */
+  function curateStories(detected) {
+    const exact = (v) => Number(v.toFixed(2)).toString();
+    const seasonClaim = (yr) => `season:${yr}`;
+    const history = [...SEASON].sort((a, b) => a.yr - b.yr);
+    const rowAt = (yr, m) => SEASON.find((s) => s.yr === yr)?.rows.find((r) => r.mgr === m);
+    const games = PLAYOFF_GAMES.filter((g) => g.br === 'W').flatMap((g) =>
+      [[g.a, g.as, g.b, g.bs], [g.b, g.bs, g.a, g.as]].flatMap(([team, score, opponent, against]) => {
+        const m = mgrAt(g.yr, team), opp = mgrAt(g.yr, opponent);
+        return m && MGRS[m] ? [{ m, opp, opponent, yr: g.yr, rd: g.rd, score, against,
+          won: score > against, margin: +(score - against).toFixed(2),
+          key: `${g.yr}|${g.rd}|${[g.a, g.b].sort().join('|')}` }] : [];
+      }));
+    const opponentName = (g) => g.opp ? nm(g.opp) : realNm(mgrRaw(g.opponent) || g.opponent);
+    const round = (rd) => rd === 'R1' ? 'opening round' : rd === 'R2' ? 'semifinal' : 'final';
+    const chronological = (list) => [...list].sort((a, b) =>
+      a.yr - b.yr || ['R1', 'R2', 'FINAL'].indexOf(a.rd) - ['R1', 'R2', 'FINAL'].indexOf(b.rd));
+    const positives = new Set(['w2f', 'floor', 'rises', 'deep', 'perfectfinals', 'scorer', 'poscore']);
     const out = [];
-    pool.forEach((a) => {
-      const taken = new Set(held[a.m] ? held[a.m].t : []);
-      const ranked = CLAIMS
-        .filter((c) => !c.t || !taken.has(c.t))
-        .map((c) => { const r = rankOf(c.val, c.hi)(a.m);
-          return { c, r, tie: tiedOn(c.val)(a.m), rb: rankBottom(c.val, c.hi)(a.m), edge: Math.max(N + 1 - r, r) }; })   // distance from the middle
-        .sort((x, y) => y.edge - x.edge);
-      const need = WANT - (held[a.m] ? held[a.m].n : 0);
-      ranked.slice(0, need).forEach((b, i) => {
-        const note = b.c.note ? b.c.note(a, b.r, b.tie, b.rb) : '';
-        const career = i === 0 ? careerLine(a, b.c, (held[a.m] && held[a.m].txt) || '') : '';
-        out.push({ id: i ? 'sig2' : 'sig', t: b.c.t, m: a.m,
-          /* Strictly below the first, so a manager's own page opens on
-             their better claim and the roll-call is unaffected — every
-             real detector starts at 40 and these top out at 32. */
-          w: 20 + b.edge - i * 2, src: 'mix',
-          head: b.c.head(a, b.r, b.tie, b.rb),
-          body: `${note ? note + ' ' : ''}${career}`.trim() });
-      });
+    detected.forEach((old) => {
+      const a = MGRS[old.m];
+      // The Luck Index still owns these diagnostics. They are not a punchline.
+      if (['lucky', 'unlucky'].includes(old.id)) return;
+      if (old.id === 'stuck' && detected.some((x) => x.m === old.m && x.id === 'cbking')) return;
+      if (old.id === 'nofinal' && detected.some((x) => x.m === old.m && x.id === 'ringless')) return;
+      const s = { ...old, tone: positives.has(old.id) ? 'positive' : 'roast',
+        claims: [`career:${old.t || old.id}:${old.id}`], evidence: { kind: old.id } };
+      if (s.id === 'w2f') {
+        const years = a.yrs.filter((r) => r.place === 1 && rowAt(r.yr - 1, a.m)?.place >=
+          (SEASON.find((x) => x.yr === r.yr - 1)?.rows.length || Infinity) - 3).map((r) => r.yr);
+        s.claims = years.map(seasonClaim); s.evidence.years = years;
+      }
+      if (s.id === 'scorer') {
+        const years = history.filter((season) => {
+          const mine = season.rows.find((r) => r.mgr === a.m);
+          return mine && mine.ppg === Math.max(...season.rows.map((r) => r.ppg));
+        }).map((x) => x.yr);
+        s.head = `${nm(a.m)}: ${pl(years.length, 'scoring title')}. Plenty of receipts.`;
+        s.body = `Led the regular season in points per game in ${listTxt(years.map(String))}. ` +
+          (Object.values(ST.scoring).filter((n) => n === years.length).length > 1 ? 'Joint-most in the archive.' : 'The most in the archive.');
+        s.w = 74; s.evidence.years = years;
+      }
+      if (s.id === 'deep' && detected.some((x) => x.m === s.m && x.id === 'perfectfinals')) {
+        s.body = `Only ${plWord(a.po - a.f4, 'playoff trip')} ended short of the semifinals.`;
+      }
+      if (s.id === 'floor') {
+        s.body = `Across ${pl(a.seasons, 'season')}. Championship appearances in ${listTxt(a.yrs.filter((r) => r.place <= 2).map((r) => String(r.yr)).sort())}.`;
+        if (!a.fin) s.body = `Across ${pl(a.seasons, 'season')}. The basement has never been part of the itinerary.`;
+      }
+      if (s.id === 'poscore') {
+        const peak = ST.poScores.find((x) => x.m === a.m);
+        const g = peak && games.find((x) => x.m === a.m && x.yr === peak.yr && x.score === peak.v);
+        if (g) {
+          s.claims = [seasonClaim(g.yr)]; s.evidence = { kind: 'playoff-score', game: g.key, score: g.score, year: g.yr };
+          const shared = ST.poScores.filter((x) => x.v === peak.v).length > 1;
+          if (!shared && g.won && g.opp) {
+            s.head = `${nm(a.m)}: ${exact(g.score)}. ${nm(g.opp)} ${vb(g.opp, 'were', 'was')} also there.`;
+            const next = ST.poScores.find((x) => x.v < g.score);
+            s.body = `${g.yr} ${round(g.rd)}: a ${exact(g.margin)}-point win and the championship-bracket scoring record.` +
+              (next ? ` Next highest: ${exact(next.v)}.` : '');
+          }
+          s.w = 94;
+        }
+      }
+      if (s.id === 'cbking') {
+        s.head = `${nm(a.m)}: the Cum Bowl has a regular.`;
+        const most = leaders(ALL.filter((x) => x.cbA), (x) => x.cbA);
+        const losses = leaders(ALL.filter((x) => x.cb), (x) => x.cb);
+        s.body = `${pl(a.cbA, 'appearance')} and ${pl(a.cb, 'loss', 'losses')}. ` +
+          `${most.length > 1 ? 'Joint-most appearances' : 'The appearance record'}` +
+          (losses.some((x) => x.m === a.m) ? `, ${losses.length > 1 ? 'joint-most losses' : 'and the loss record'}.` : '.');
+        s.claims = ['roast:basement'];
+      }
+      if (s.id === 'nopod') {
+        s.head = `${nm(a.m)}: the podium is still playing hard to get.`;
+        s.body = old.body.split('. ')[0] + (old.body.includes('. ') ? '.' : '');
+        s.claims = ['roast:podium'];
+      }
+      if (s.id === 'ringless') {
+        s.head = `${nm(a.m)}: ${a.w} wins. Still no parade.`;
+        const top = leaders(ALL, (x) => x.pct);
+        s.body = `${(a.pct * 100).toFixed(1)}% regular-season wins` +
+          (top.some((x) => x.m === a.m) ? ` — ${top.length > 1 ? 'joint-best' : 'best'} in the league.` : ', leading the titleless managers.') +
+          ` ${pl(a.f4, 'final four')}, ${pl(a.fin, 'final')}. The championship is still outstanding.`;
+        s.claims = ['roast:title-drought'];
+      }
+      if (s.id === 'collapse') s.head = `${nm(a.m)}: December keeps changing the password.`;
+      out.push(s);
     });
-    return out;
+
+    const moments = [], supporting = [];
+    const add = (list, a, id, weight, head, body, years, evidence, claims) => list.push({
+      id, m: a.m, t: 'moment', w: weight,
+      src: evidence.kind === 'statement-season' ? 'reg' : ['playoff-score', 'title-escape'].includes(evidence.kind) ? 'po' : 'mix',
+      tone: 'positive', head, body,
+      claims: claims || years.map(seasonClaim), evidence: { ...evidence, years }
+    });
+    ALL.forEach((a) => {
+      const mine = games.filter((g) => g.m === a.m);
+      // A historic playoff explosion stands on its own, not inside a drought.
+      const peak = [...mine].filter((g) => g.won).sort((x, y) => y.score - x.score || x.yr - y.yr)[0];
+      if (peak && !out.some((x) => x.m === a.m && x.id === 'poscore')) {
+        const rank = 1 + ST.poScores.filter((x) => x.v > peak.score).length;
+        const shared = ST.poScores.filter((x) => x.v === peak.score).length > 1;
+        if (rank <= 2) add(moments, a, 'playoff-explosion', 93,
+          `${nm(a.m)} dropped ${exact(peak.score)} when it counted.`,
+          `${peak.yr} ${round(peak.rd)}: beat ${opponentName(peak)} by ${exact(peak.margin)}. ` +
+          `${shared ? 'Joint ' : ''}${ord(rank)}-highest score in championship-bracket history.`,
+          [peak.yr], { kind: 'playoff-score', game: peak.key, score: peak.score, rank });
+      }
+      a.yrs.filter((r) => r.place <= 2).forEach((r) => {
+        const run = chronological(mine.filter((g) => g.yr === r.yr));
+        const final = run.find((g) => g.rd === 'FINAL');
+        if (!final) return; // A finish is not evidence of an unseen game.
+        const wins = run.filter((g) => g.won);
+        const previous = rowAt(r.yr - 1, a.m);
+        const priorCB = CUMBOWL.find((c) => c.yr === r.yr - 1 && [c.s11, c.s12].some((t) => mgrAt(c.yr, t) === a.m));
+        if (r.place === 1 && final.won) {
+          const narrow = [...wins].filter((g) => g.rd !== 'FINAL' && g.margin > 0 && g.margin <= 1)
+            .sort((x, y) => x.margin - y.margin)[0];
+          if (narrow) add(moments, a, 'title-escape', 99,
+            `${nm(a.m)}: a title run saved by ${narrow.margin.toFixed(2)} points.`,
+            `${r.yr}: edged ${opponentName(narrow)} ${exact(narrow.score)}–${exact(narrow.against)} in the ${round(narrow.rd)}, ` +
+            `then beat ${opponentName(final)} ${exact(final.score)}–${exact(final.against)} for the title.`,
+            [r.yr], { kind: 'title-escape', game: narrow.key, margin: narrow.margin, final: final.key });
+          if (r.seed === 6 && wins.length === 3) add(moments, a, 'six-seed-title', 98,
+            `${nm(a.m)}: the six-seed heist.`,
+            `${r.yr}: entered ${r.w}-${r.l}, then beat ${listTxt(wins.map(opponentName))}. ` +
+            `The championship was settled ${exact(final.score)}–${exact(final.against)}.`,
+            [r.yr], { kind: 'six-seed-title', wins: wins.map((g) => g.key), seed: r.seed });
+          if (final.margin >= 35) add(moments, a, 'final-fireworks', 92,
+            `${nm(a.m)} won the final by ${exact(final.margin)}. No suspense.`,
+            `${r.yr}: ${exact(final.score)}–${exact(final.against)} against ${opponentName(final)}.` +
+            (previous?.place === 1 ? ' Back-to-back championships, signed and sealed.' : ' A championship game without the late drama.'),
+            [r.yr], { kind: 'final-fireworks', game: final.key, margin: final.margin });
+        }
+        if (r.place === 2 && !final.won) {
+          if (priorCB) add(moments, a, 'bowl-to-final', 87,
+            `${nm(a.m)}: different bowl. Different year.`,
+            `${r.yr - 1}: ${priorCB.recon ? 'the reconstructed Cum Bowl' : 'the Cum Bowl'}. ` +
+            `${r.yr}: a ${r.w}-${r.l} regular season and a place in the championship game.`,
+            [r.yr - 1, r.yr], { kind: 'bowl-to-final', final: final.key });
+          if (r.seed === 6 && wins.length === 2) add(moments, a, 'six-seed-final', 89,
+            `${nm(a.m)}: the six seed was not a courtesy invite.`,
+            `${r.yr}: entered ${r.w}-${r.l}, then knocked out ${listTxt(wins.map(opponentName))} to reach the championship game.`,
+            [r.yr], { kind: 'six-seed-final', seed: r.seed, wins: wins.map((g) => g.key), final: final.key });
+        }
+      });
+
+      // Strong career chapters supply coverage, never a bottom-ranked fallback.
+      const best = [...a.yrs].filter((r) => r.w + r.l > 0)
+        .sort((x, y) => y.pct - x.pct || y.w - x.w || x.yr - y.yr)[0];
+      if (best && best.pct >= 0.7) {
+        const whole = SEASON.flatMap((s) => s.rows);
+        const highest = Math.max(...whole.map((r) => r.pct));
+        const ties = whole.filter((r) => r.pct === highest).length;
+        add(supporting, a, 'statement-season', 63 + (best.pct === highest ? 5 : 0),
+          `${nm(a.m)} went ${best.w}-${best.l}. This was not a drill.`,
+          `${best.yr}` + (best.seed ? `: the No. ${best.seed} seed.` : ': a standout regular season.') +
+          (best.pct === highest ? ` ${ties > 1 ? 'Joint-best' : 'Best'} regular-season win rate in the archive.` :
+            ` Won ${(best.pct * 100).toFixed(1)}% of the regular-season games.`),
+          [best.yr], { kind: 'statement-season', wins: best.w, losses: best.l });
+      }
+      const runs = []; let current = [];
+      [...a.yrs].sort((x, y) => x.yr - y.yr).forEach((r) => {
+        if (r.place && r.place <= PO_CUT) {
+          if (current.length && r.yr !== current[current.length - 1].yr + 1) { runs.push(current); current = []; }
+          current.push(r);
+        } else { if (current.length) runs.push(current); current = []; }
+      });
+      if (current.length) runs.push(current);
+      const streak = runs.sort((x, y) => y.length - x.length || x[0].yr - y[0].yr)[0];
+      if (streak?.length >= 4) {
+        const first = streak[0].yr, last = streak[streak.length - 1].yr;
+        add(supporting, a, 'playoff-streak', 69,
+          `${nm(a.m)} booked ${WORD[streak.length] || streak.length} straight playoff trips.`,
+          `${first}–${last}: a postseason place every year, with a combined ${streak.reduce((n, r) => n + r.w, 0)}–${streak.reduce((n, r) => n + r.l, 0)} regular-season record.`,
+          streak.map((r) => r.yr), { kind: 'playoff-streak', count: streak.length }, [`streak:${first}:${last}`]);
+      }
+    });
+    const rank = (x, y) => y.w - x.w || x.id.localeCompare(y.id) || x.m.localeCompare(y.m);
+    const overlaps = (s, kept) => kept.some((x) => x.m === s.m && x.claims.some((k) => s.claims.includes(k)));
+    // One signature playoff moment per manager, beyond existing distinct finds.
+    // This is a topic rule, not a cap on the total number of profile stories.
+    ALL.forEach((a) => {
+      const moment = moments.filter((x) => x.m === a.m && !overlaps(x, out)).sort(rank)[0];
+      if (moment) out.push(moment);
+      for (const s of supporting.filter((x) => x.m === a.m).sort(rank)) {
+        if (out.filter((x) => x.m === a.m && x.tone === 'positive').length >= WANT) break;
+        if (!overlaps(s, out)) out.push(s);
+      }
+    });
+    return out.sort(rank);
   }
 
   /* 🚨 Built PER READER, not once at load — and this is the second time this
@@ -2133,7 +2130,7 @@
      **A value derived at init cannot answer a question asked later.** The
      detectors themselves are pure over the archive; it is only the SENTENCES
      that depend on who is reading, so the whole set is rebuilt when the reader
-     changes and memoised until they do. Cheap: eighteen strings. */
+     changes and memoised until they do. The curated stories keep their evidence in every voice. */
   let _stCache = null, _stFor = '\u0000';
   function stories() {
     if (_stCache && _stFor === ME) return _stCache;
@@ -2142,7 +2139,7 @@
       return o.sort((a, b) => b.w - a.w); };
 
     // Deduplicate claims, not coincidentally equal decimal numbers.
-    // bigScores explicitly omits records already carried by noPodium.
+    // The curator separates achievements from droughts and joins their evidence.
     const seen = new Set();
     const keep = (list) => list.filter((x) => {
       const key = `${x.m}|${x.id}`;
@@ -2150,31 +2147,17 @@
       seen.add(key); return true;
     });
 
-    /* 🚨 TWO PHASES, AND THE ORDER IS THE WHOLE POINT (v22). `signature` is
-       the coverage backstop, so it has to count what a reader will SEE — and
-       that is the list AFTER claim deduplication, not what the detectors emitted.
-       Christel proved it: `cbscore` fired for him, so he counted as covered,
-       and then the dedupe dropped it (its 153.6 was already quoted inside his
-       zero-podium card) and left him on one card with the backstop none the
-       wiser. **Assert what renders — and derive from what renders too.**
-       ⚠️ This also retires `DETECT.slice(0, -1)`, which meant "every detector
-       except the backstop" only for as long as the backstop stayed last in
-       the array. Appending one detector below it would have silently broken
-       coverage with nothing to catch it. */
-    const real = keep(emit(DETECT));
-    const held = {};
-    real.forEach((x) => {
-      const h = held[x.m] = held[x.m] || { n: 0, t: new Set(), txt: '' };
-      h.n++; h.txt += ' ' + x.head + ' ' + x.body;
-      if (x.t) h.t.add(x.t);
-    });
-    const top = keep(emit([() => signature(held)]));
-
+    // Curate after detection, with facts and event identities still attached.
+    // No worst-stat fallback: a roast never satisfies achievement coverage.
+    _stCache = curateStories(keep(emit(DETECT)));
     _stFor = ME;
-    _stCache = real.concat(top).sort((a, b) => b.w - a.w);
     return _stCache;
   }
-  const storiesFor = (m) => stories().filter((x) => x.m === m);
+  const storiesFor = (m) => {
+    const all = stories().filter((x) => x.m === m);
+    const lead = all.filter((x) => x.tone === 'positive').slice(0, WANT);
+    return lead.concat(all.filter((x) => !lead.includes(x)));
+  };
 
   /* 🚨 THE DEDUPE KEY MUST NOT DEPEND ON WHO IS READING (v81).
      `pickStories` skips a manager whose claim another manager has already

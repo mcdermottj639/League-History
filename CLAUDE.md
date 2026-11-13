@@ -102,6 +102,41 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   even then the old hash stays valid until he says otherwise. Generate nothing
   that would require anyone to open a new link.
 
+## v145 — Stories worth retelling
+
+The archive now curates **distinct achievements and notable league lore**, rather
+than filling short profiles with whichever career ranking is furthest from the
+middle. Every currently tracked manager has at least two fact-backed positive
+stories. Profiles and the You page lead with those two; memorable droughts and
+roasts remain visible immediately afterward. Tone labels are internal metadata,
+not badges or explanations in the members' app.
+
+`curateStories` in `history.js` consumes the existing detectors and the same
+season/game archive. New shapes include six-seed title/final runs, narrow escapes
+on the way to a title, decisive finals, historic playoff scores, Cum-Bowl-to-final
+turnarounds, strong regular seasons and consecutive playoff qualifications.
+It contains no manager-specific exceptions. Counts, opponents, years, scores,
+seeds, ties and sample scopes are derived, never hand-maintained copy.
+
+Event claim keys stop one postseason being counted as two achievements. One
+signature playoff moment per manager is a topic rule, not a total card cap;
+other distinct accomplishments remain. Duplicate drought/last-place cards are
+combined, while four notable roast cards currently survive. The Luck Index and
+all record-book data remain intact. The league overview still gives every manager
+one distinct headline, independent of the reader's identity. Second-person voice,
+public access, private links, rankings, parlay logic and v144's COUNTED pool are
+unchanged. No archive facts were edited.
+
+The v22 worst-stat `signature` fallback is retired. `storiesFor` orders the first
+two positive cards without removing the remaining stories. `evidence`, `claims`
+and `tone` make the selection testable. Do not satisfy coverage with fake praise,
+a consolation record, a relabeled loss, or two versions of the same season.
+
+Verification: `node checks.js`, `node storylines.test.cjs` and
+`node storylines-balance.test.cjs`; the latter covers all twelve managers and a
+stranger, 168 profile/You renders, independent game evidence, retained roasts,
+event deduplication, ties and changed-fact scenarios. It runs in `npm test`.
+
 ## v144 — Consolation-bracket games are not counted
 
 Owner, on being told the 96 non-Cum-Bowl consolation games were counted in
@@ -1036,7 +1071,9 @@ All legacy parlay sections below continue to describe the currently active app.
   query scoped to Sports-Hub was also blocked by automatic approval review; it
   was not retried. Separate hosting needs explicit approval. See release gates.
 
-## v90 — Accurate season narratives and member storylines (current state)
+## v90 — Accurate season narratives and member storylines
+
+⚠️ Member-story selection and prose are superseded by v145; the season-data and scoring-scope accuracy rules still apply.
 
 Season write-ups describe observed results, never extrapolate a one-game record
 to 0–14 or 14–0. Week 1 compares the actual score with all other teams (including
@@ -1634,7 +1671,7 @@ superseded. No model run happens in a member's Rankings view: these are snapshot
     pronoun in a template; and one fact rendered as two separate cards.
   - **Coverage was the real design problem.** The detectors found ten of twelve
     managers; the other two would have opened their own page and found nothing.
-    `signature` closes that, and `checks.js` now fails if it ever reopens.
+    ⚠️ SUPERSEDED in v145: `curateStories` replaces `signature` with earned positive coverage; checks still guard against missing managers.
   - Placed in three spots rather than a sixth tab (five already crowd 390px):
     the top of **Records** (⚠️ **SUPERSEDED in v13 — they open Honours now**,
     where the badge key used to sit — ⚠️ **and RE-SUPERSEDED in v44, which put
