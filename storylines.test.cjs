@@ -25,9 +25,13 @@ const stories = H._stories();
 const story = (m, id) => stories.find(s => s.m === m && s.id === id);
 assert.match(story('Riz', 'deep').head, /4 final fours from 4 playoff trips/);
 assert.match(story('Slemp', 'perfectfinals').head, /3 finals, 3 championships/);
-assert.match(story('Hurd', 'scorer').body, /2 finals, 5 final fours/);
+assert.match(story('Hurd', 'scorer').body, /2013, 2016 and 2018/);
+assert.equal(ALL.find(a => a.m === 'Hurd').fin, 2);
+assert.equal(ALL.find(a => a.m === 'Hurd').f4, 5);
 assert.ok(!story('Hurd', 'collapse'));
-assert.match(story('Christel', 'nopod').body, /3rd-highest money-playoff score \(183.3\)/);
+assert.match(story('Christel', 'playoff-explosion').head, /183.3/);
+assert.match(story('Christel', 'playoff-explosion').body, /3rd-highest score in money-playoff history/);
+assert.ok(!/183.3/.test(story('Christel', 'nopod').body), 'the highlight is separate from the drought');
 assert.match(story('Hyman', 'poscore').body, /Next highest: 184.7/); // v145: 2021 3rd-place game
 assert.ok(!stories.some(s => s.id === 'dynasty'));
 
@@ -122,4 +126,4 @@ const ring = changedArchive('MGRS.McD.pct=0.9;');
 assert.ok(!/best in the league/.test(ring.find(s=>s.id==='ringless').body));
 const tiedRecord = changedArchive("PLAYOFF_GAMES.find(g=>g.yr===2018&&g.as===183.3).as=193.48;");
 assert.match(tiedRecord.find(s=>s.m==='Hyman'&&s.id==='poscore').head,/a share of/);
-console.log('✅ Narrative accuracy: all 12 readers, championship-only samples, Week 1/ties/missing data, cache identity, simulation language and future shared records.');
+console.log('✅ Narrative accuracy: all 12 readers, money-playoff samples, Week 1/ties/missing data, cache identity, simulation language and future shared records.');
