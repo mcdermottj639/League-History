@@ -102,7 +102,7 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   even then the old hash stays valid until he says otherwise. Generate nothing
   that would require anyone to open a new link.
 
-## v146 — Stories worth retelling
+## v147 — Stories worth retelling
 
 The archive now curates **distinct achievements and notable league lore**, rather
 than filling short profiles with whichever career ranking is furthest from the
@@ -125,7 +125,8 @@ combined, while four notable roast cards currently survive. The Luck Index and
 all record-book data remain intact. The league overview still gives every manager
 one distinct headline, independent of the reader's identity. Second-person voice,
 public access, private links, rankings, parlay logic and v145's MONEY pool and Cum Bowl separation are
-unchanged. No archive facts were edited. Playoff scoring uses MONEY (title bracket plus
+unchanged. No archive facts were edited. The v146 playoff standings and career-card
+playoff-record tile are also preserved. Playoff scoring uses MONEY (title bracket plus
 the third-place game), never fifth-place or consolation. Historic-score stories
 recognize the top three performances; the third-place round is named explicitly.
 
@@ -138,6 +139,26 @@ Verification: `node checks.js`, `node storylines.test.cjs` and
 `node storylines-balance.test.cjs`; the latter covers all twelve managers and a
 stranger, 168 profile/You renders, independent game evidence, retained roasts,
 event deduplication, ties and changed-fact scenarios. It runs in `npm test`.
+
+## v146 — Playoff standings card (the playoff W-L as a headline)
+
+Owner: *"include total playoff record as a stat at the header of playoff
+standings. I don't feel like we have that anywhere."* The record existed only
+as the small ⚑ note on the second line of Playoff appearances.
+
+- `history.js` `playoffStandingsHTML()`: a ranked table laid out like All-time
+  standings — rank · name · **W-L** as the headline, then win rate ·
+  appearances · titles · PPG. Ranked by playoff win rate, wins break ties.
+  Reads `bw`/`bl`/`bG`/`bA`/`bPpg` (all `MONEY`); nothing new is computed.
+- Record Book order: Standings · Record book · **Playoff standings** ·
+  Playoff PPG · Playoff appearances · Final fours · Scoring lift. Jump chip
+  label "Playoff W-L" (`league.js`).
+- `checks.js`: per manager, the record is recounted off `S.MONEY` and must be
+  printed on the card; the card-order law includes the new card.
+- Career card (You page and every profile): the sixth tile was **Luck**; it is
+  now **Playoff record** (`bw-bl`). Owner: *"Instead of the luck card we have
+  there, just put the playoff record card for that person."* Luck still has
+  its League Lore card and the profile strip. Law: the tile is on every profile.
 
 ## v145 — Playoff stats are the money playoffs; the Cum Bowl keeps to its tab
 
@@ -1126,7 +1147,7 @@ All legacy parlay sections below continue to describe the currently active app.
 
 ## v90 — Accurate season narratives and member storylines
 
-⚠️ Member-story selection and prose are superseded by v146; the season-data and scoring-scope accuracy rules still apply.
+⚠️ Member-story selection and prose are superseded by v147; season-data and scoring-scope accuracy rules still apply.
 
 Season write-ups describe observed results, never extrapolate a one-game record
 to 0–14 or 14–0. Week 1 compares the actual score with all other teams (including
@@ -1724,7 +1745,7 @@ superseded. No model run happens in a member's Rankings view: these are snapshot
     pronoun in a template; and one fact rendered as two separate cards.
   - **Coverage was the real design problem.** The detectors found ten of twelve
     managers; the other two would have opened their own page and found nothing.
-    ⚠️ SUPERSEDED in v146: `curateStories` replaces `signature` with earned positive coverage; checks still guard against missing managers.
+    ⚠️ SUPERSEDED in v147: `curateStories` replaces `signature` with earned positive coverage; checks still guard against missing managers.
   - Placed in three spots rather than a sixth tab (five already crowd 390px):
     the top of **Records** (⚠️ **SUPERSEDED in v13 — they open Honours now**,
     where the badge key used to sit — ⚠️ **and RE-SUPERSEDED in v44, which put

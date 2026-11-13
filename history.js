@@ -1379,6 +1379,35 @@
     </div>`;
   }
 
+  /* ══ 🏆 PLAYOFF STANDINGS (v146, owner: *"include total playoff record as a
+     stat at the header of playoff standings. I don't feel like we have that
+     anywhere."*) ══════════════════════════════════════════════════════════
+     The playoff W-L existed only as a small second-line note on the Playoff
+     appearances card, which is sorted by berth rate. This is the same number
+     (`bw`/`bl`, the money playoffs — `MONEY`) as its own ranked table, laid
+     out exactly like All-time standings so the two read as a pair. Ranked by
+     playoff win rate, wins breaking ties; nobody is left off — a manager with
+     no playoff game shows a dash and sorts last. Nothing new is computed. */
+  function playoffStandingsHTML() {
+    const pr = (a) => (a.bG ? a.bw / a.bG : -1);
+    const rows = [...ALL].sort((a, b) => pr(b) - pr(a) || b.bw - a.bw || a.bl - b.bl);
+    const place = (a) => 1 + ALL.filter((x) => x.bG && (pr(x) > pr(a) || (pr(x) === pr(a) && x.bw > a.bw))).length;
+    const tw = ALL.reduce((n, a) => n + a.bw, 0), tl = ALL.reduce((n, a) => n + a.bl, 0);
+    return `<h2 class="section-title">🏆 Playoff standings ${tag('po')}</h2>
+    <div class="ffp-card">
+      <p class="fh-lead">Every money-playoff game since ${BR_YRS[0]}, added together. <b>Ranked by playoff win rate.</b></p>
+      ${rows.map((a) => `<div class="fh-as${isMe(a.m) ? ' you' : ''}">
+        <div class="fh-as-top">
+          <span class="fh-as-r">${a.bG ? place(a) : '—'}</span>
+          <span class="fh-as-n">${tap(a.m, esc(a.name))}</span>
+          <span class="fh-as-w mono">${a.bG ? `${a.bw}-${a.bl}` : '—'}</span>
+        </div>
+        <div class="fh-as-s">${a.bG ? `<b>${pct1(a.bw / a.bG)}</b> · ` : ''}${a.bA} playoff appearance${a.bA === 1 ? '' : 's'} · ${a.t1 ? `<b>${a.t1}</b> title${a.t1 === 1 ? '' : 's'}` : 'no titles'}${a.bG ? ` · ${one(a.bPpg)} a game` : ''}</div>
+      </div>`).join('')}
+      <p class="ffp-cap"><b>Money playoffs only</b> — round one, the final four, the final and the 3rd-place game: ${MONEY.length} games across ${BR_YRS.length} seasons. Cum Bowls, 5th-place and consolation games are not in it. The twelve tracked managers total ${tw}-${tl}; the wins and losses differ because two untracked managers played in some of these games.</p>
+    </div>`;
+  }
+
   /* Career scoring in the title bracket, from the same games as bw/bl.
      It is a weighted average over games, never an average of season averages. */
   function playoffScoringHTML() {
@@ -1706,7 +1735,7 @@
     : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
   const alsoTxt = (others) => (others.length ? ` — tied with ${listTxt(others)}` : '');
 
-  /* Two distinct positive stories lead each established career (v146).
+  /* Two distinct positive stories lead each established career (v147).
      Droughts and roasts remain additional stories, never coverage fillers. */
   const WANT = 2;
 
@@ -1957,7 +1986,7 @@
 
   ];
 
-  /* v146: choose stories, not whichever ranking is furthest from the middle.
+  /* v147: choose stories, not whichever ranking is furthest from the middle.
      Two independent achievements lead each profile. Notable droughts stay;
      two cards retelling one season, or one recurring failure, do not.
      All criteria are league-wide. No manager-specific overrides or prose. */
@@ -2495,7 +2524,10 @@
       </div>
       ${full ? `<div class="fh-you-g">
         ${[['Avg finish', one(a.avgPlace)], ['Playoff apps', `${a.po}/${a.seasons}`], ['Points/gm', one(a.ppg)],
-           ['vs league', sgn(relPpg(a))], ['Final fours', `${a.f4}/${a.seasons}`], ['Luck', sgn(a.luck)]]
+           ['vs league', sgn(relPpg(a))], ['Final fours', `${a.f4}/${a.seasons}`],
+           /* v146 (owner): the Luck tile is the playoff record now — luck keeps its
+              own card on League Lore and its place in the profile strip. */
+           ['Playoff record', a.bG ? `${a.bw}-${a.bl}` : '—']]
           .map(([k, v]) => `<div class="fh-you-t"><b>${v}</b><i>${k}</i></div>`).join('')}
       </div>` : ''}
       ${full ? '<p class="ffp-cap">Squares are the <b>playoff finish</b>; the totals under them are the <b>regular season</b>. <b>Final fours</b> is places 1-4 — the four teams left after round one, which the final placings give for every season.</p>' : ''}
@@ -2626,7 +2658,7 @@
        v88 removes the artificial Records/Leaders split. The order reads like
        a sports record book: career standings, league records, playoff scoring,
        playoff access/record, postseason finishes, then postseason performance. */
-    rec: () => standingsHTML() + recordHTML() + playoffScoringHTML() + playoffHTML() + finalFoursHTML() + januaryHTML(),
+    rec: () => standingsHTML() + recordHTML() + playoffStandingsHTML() + playoffScoringHTML() + playoffHTML() + finalFoursHTML() + januaryHTML(),
     /* 📌 LEAGUE LORE — what the archive turns up rather than the raw ranked
        numbers: generated storylines, schedule luck and playoff rivalries. */
     lore: () => storiesHTML() + luckHTML() + rivalsHTML(),

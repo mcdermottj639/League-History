@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v146';
+  const APP_VERSION = 'v147';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -293,7 +293,7 @@
     oracle: 'Hurdstradamus — Hurd’s weekly matchup calls, projected scores, and the prophecy record.',
     hon: 'Championships and achievement — the trophy case, every champion, who is still waiting, seeds and upsets, and the champion\'s curse.',
     you: 'Your thirteen seasons — medals, Cum Bowls, your best and worst years.',
-    rec: 'The league\'s numbers in one place — career standings, season and game records, playoff PPG, playoff appearances, final fours, and postseason scoring.',
+    rec: 'The league\'s numbers in one place — career standings, season and game records, playoff standings, playoff PPG, playoff appearances, final fours, and postseason scoring.',
     lore: 'The stories behind the numbers — generated storylines, the luck index, rivalries, streaks and historical oddities.',
     cb: "The game that decides the league's worst: #11 v #12, straight off the regular season. The winner takes 11th, the loser is last. Every Cum Bowl, the records and the Cum Bowl head-to-head live here, and nowhere else.",
   };
@@ -752,6 +752,7 @@
       'The luck index': 'Luck index', 'The record book': 'Record book',
       "The champion's curse": "Champion's curse",
       'All-time playoff PPG': 'Playoff PPG', 'All-time standings': 'Standings',
+      'Playoff standings': 'Playoff W-L',
       'Playoff scoring lift': 'Scoring lift', 'Playoff appearances': 'Playoff berths',
       'Your playoff head-to-head': 'Playoff H2H', 'Playoff head-to-head': 'Playoff H2H',
       'Your career': 'Career', 'Your storylines': 'Storylines',
