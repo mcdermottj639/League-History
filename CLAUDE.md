@@ -102,6 +102,22 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   even then the old hash stays valid until he says otherwise. Generate nothing
   that would require anyone to open a new link.
 
+## v146 — Playoff standings card (the playoff W-L as a headline)
+
+Owner: *"include total playoff record as a stat at the header of playoff
+standings. I don't feel like we have that anywhere."* The record existed only
+as the small ⚑ note on the second line of Playoff appearances.
+
+- `history.js` `playoffStandingsHTML()`: a ranked table laid out like All-time
+  standings — rank · name · **W-L** as the headline, then win rate ·
+  appearances · titles · PPG. Ranked by playoff win rate, wins break ties.
+  Reads `bw`/`bl`/`bG`/`bA`/`bPpg` (all `MONEY`); nothing new is computed.
+- Record Book order: Standings · Record book · **Playoff standings** ·
+  Playoff PPG · Playoff appearances · Final fours · Scoring lift. Jump chip
+  label "Playoff W-L" (`league.js`).
+- `checks.js`: per manager, the record is recounted off `S.MONEY` and must be
+  printed on the card; the card-order law includes the new card.
+
 ## v145 — Playoff stats are the money playoffs; the Cum Bowl keeps to its tab
 
 Owner: *"remove Cumbles from the playoff records that we have, because those

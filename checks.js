@@ -245,6 +245,18 @@ console.log(`  ${apMark()} brackets == appearances     every playoff berth has i
   if (!book.includes('All-time playoff PPG') || /GOAT argument/.test(window.LeagueHistory.profile('McD'))) {
     console.log('  ❌ requested playoff scoring or storyline change is missing'); bad++;
   }
+  /* v146: the Playoff standings card prints each manager's money-playoff W-L
+     as its headline — recounted here straight off S.MONEY, per manager. */
+  {
+    const card = (book.split('Playoff standings')[1] || '').split('All-time playoff PPG')[0].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+    ALL.forEach(a => {
+      let w = 0, l = 0;
+      S.MONEY.forEach(g => { const se = SEASON.find(s => s.yr === g.yr); const m = t => (se.rows.find(r => r.t === t) || {}).mgr;
+        const aw = g.as > g.bs; if (m(g.a) === a.m) { aw ? w++ : l++; } if (m(g.b) === a.m) { aw ? l++ : w++; } });
+      if (a.bw !== w || a.bl !== l) { console.log(`  ❌ ${a.m}: playoff record ${a.bw}-${a.bl} but the games say ${w}-${l}`); bad++; }
+      if (w + l && !card.includes(` ${w}-${l} `)) { console.log(`  ❌ ${a.m}: ${w}-${l} missing from the Playoff standings card`); bad++; }
+    });
+  }
   console.log(`  ${mark()} playoff PPG: each career, visible scoring, requested card locations and no GOAT story`);
 }
 /* v88 taxonomy: five reader questions, with the numerical and narrative cards
@@ -265,7 +277,7 @@ console.log(`  ${apMark()} brackets == appearances     every playoff berth has i
   if (!hasInOrder('hon', ['The trophy case','Champions','Still waiting','Seeds & upsets',"The champion's curse"])) {
     console.log('  ❌ Trophy Case is missing a card or its approved order'); bad++;
   }
-  if (!hasInOrder('rec', ['All-time standings','The record book','All-time playoff PPG','Playoff appearances','Final fours','Playoff scoring lift'])) {
+  if (!hasInOrder('rec', ['All-time standings','The record book','Playoff standings','All-time playoff PPG','Playoff appearances','Final fours','Playoff scoring lift'])) {
     console.log('  ❌ Record Book is missing a numerical card or its approved order'); bad++;
   }
   if (!hasInOrder('lore', ['Storylines','The luck index','Rivalries'])) {
