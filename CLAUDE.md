@@ -102,7 +102,42 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   even then the old hash stays valid until he says otherwise. Generate nothing
   that would require anyone to open a new link.
 
+## v145 — Playoff stats are the money playoffs; the Cum Bowl keeps to its tab
+
+Owner: *"remove Cumbles from the playoff records that we have, because those
+are not really playoff records. Keep the Cumble just to the Cumble.
+Consolation is nowhere. And then the playoff records is the true money
+playoffs. And all playoff stats is like that."* Also: add Cum Bowl
+head-to-head to the Cum Bowl tab.
+
+- `history.js` `MONEY` = `PLAYOFF_GAMES` where `br === 'W'` (65 games, all 13
+  seasons). It replaces v144's `COUNTED`. **Every playoff number reads it**:
+  `MEET`/`PAIRS` (head-to-head, Rivalries, You and profile pages), the record
+  book's four game rows, `PO_YRS`/`PO_NOTE` and the ? sheet key. The playoff
+  W-L, playoff PPG, scoring lift, final fours and `poScores` were already W.
+- `MEET`: **114 → 65 meetings, 54 → 44 pairs**. The `cb` and `plc` kinds are
+  gone; the Cum Bowl is no longer folded into it.
+- ⚠️ **Placement games (WC, 3rd/5th place) are out of the playoff numbers
+  too** — "true money playoffs". They still exist in `PLAYOFF_GAMES` and the
+  final placings are unchanged.
+- **Cum Bowl tab**: new "Cum Bowl head-to-head" card from `CB_PAIRS`, built
+  from `CUMBOWL` (so it names the same 13 games as the tab, 2025 recon
+  included). Games with an untracked manager go to `CB_UNPAIRED` (2) and the
+  caption says so. The tab heading lost its ⚑ badge — it is not a playoff stat.
+- New provenance badge `cb` ("Cum Bowl"): the `cbking` and `cbscore`
+  storylines wear it instead of ⚑; the ? sheet key has a row for it.
+- `league.js` HELP.cb rewritten: it still described the Cum Bowl as the last
+  game of the consolation ladder, which v79 corrected to round one (#11 v #12).
+- `checks.js`: v144's COUNTED laws replaced — money pool is exactly the W
+  games, no non-W game is a meeting, meetings == money games, Cum Bowl h2h
+  covers every Cum Bowl (pairs + unpaired) and each pair adds up.
+- ⚠️ Rule from here: a number called "playoff" reads `MONEY`. The Cum Bowl
+  reads `CUMBOWL`/`CB_PAIRS` and appears only on its tab (plus its own
+  storylines, badged `cb`). Consolation games appear nowhere.
+
 ## v144 — Consolation-bracket games are not counted
+
+⚠️ SUPERSEDED by v145: `COUNTED` is gone; playoff numbers read `MONEY`.
 
 Owner, on being told the 96 non-Cum-Bowl consolation games were counted in
 head-to-head: *"Those should not be counted."* (He had already ruled out a
@@ -1404,7 +1439,7 @@ superseded. No model run happens in a member's Rankings view: these are snapshot
   - **🚨 THREE PLAYOFF RECORDS FOR ONE PERSON ON ONE PAGE.** `bw`/`bl` counted
     the title bracket AND the placement ladder (McD 11-4), the storyline
     beside it counted the title bracket alone (10-3), and the head-to-head
-    counted every meeting including consolation and Cum Bowls (22; ⚠️ v144:
+    counted every meeting including consolation and Cum Bowls (22; ⚠️ v145: playoff head-to-head is now the money playoffs only, v144:
     consolation games no longer count as meetings). Each was
     right; the page still lied, because nothing said which population each one
     counted. **This is the v3 fault, and it survived v3 because v3 fixed the

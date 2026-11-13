@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = 'v144';
+  const APP_VERSION = 'v145';
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -295,7 +295,7 @@
     you: 'Your thirteen seasons — medals, Cum Bowls, your best and worst years.',
     rec: 'The league\'s numbers in one place — career standings, season and game records, playoff PPG, playoff appearances, final fours, and postseason scoring.',
     lore: 'The stories behind the numbers — generated storylines, the luck index, rivalries, streaks and historical oddities.',
-    cb: "The other bracket, and the one that decides the league's worst: the last game of the consolation ladder, where the winner takes 11th and the loser is the worst in the league. Every final standing since 2013 is underneath it.",
+    cb: "The game that decides the league's worst: #11 v #12, straight off the regular season. The winner takes 11th, the loser is last. Every Cum Bowl, the records and the Cum Bowl head-to-head live here, and nowhere else.",
   };
 
   function helpTabHTML(label, desc, subs) {
