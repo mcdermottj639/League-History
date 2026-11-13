@@ -2327,15 +2327,27 @@
      stays a plain div: it is the one card with nowhere else to go.
      ⚠️ Nothing inside may be a button now — a button inside a button is
      invalid and the inner one is what a browser gives the tap to. */
-  function storyCardHTML(s) {
+  /* v148: the personal page already identifies its manager. Only shorten
+     that leading subject; keep opponents, evidence and league-overview voice. */
+  function personalStoryHead(s) {
+    const subject = nm(s.m);
+    let head = s.head;
+    if (head.startsWith(subject + ': ')) head = head.slice(subject.length + 2);
+    else if (head.startsWith(subject + ' ')) {
+      head = head.slice(subject.length + 1).replace(/^(?:have|has|went)\s+/, '');
+    }
+    return cap(head);
+  }
+
+  function storyCardHTML(s, personal = false) {
     const inner = `<span class="fh-story-c">${crest(s.m, 34)}</span>
       <span class="fh-story-b">
-        <b class="fh-story-h">${esc(s.head)}${tag(s.src)}</b>
+        <b class="fh-story-h">${esc(personal ? personalStoryHead(s) : s.head)}${tag(s.src)}</b>
         ${s.body ? `<span class="fh-story-p">${esc(s.body)}</span>` : ''}
       </span>`;
     return isMe(s.m)
-      ? `<div class="fh-story fh-story-me">${inner}</div>`
-      : `<button type="button" class="fh-story fh-story-go" data-mgr="${esc(s.m)}">${inner}<span class="fh-story-x">›</span></button>`;
+      ? `<div class="fh-story fh-story-me" data-story-id="${esc(s.m + "/" + s.id)}">${inner}</div>`
+      : `<button type="button" class="fh-story fh-story-go" data-mgr="${esc(s.m)}" data-story-id="${esc(s.m + "/" + s.id)}">${inner}<span class="fh-story-x">›</span></button>`;
   }
 
   /* ⚠️ These re-derive on every load, so the numbers in them are never stale —
@@ -2348,7 +2360,7 @@
        lines of preamble between the reader and the first story. */
     return `<h2 class="section-title">📌 Storylines</h2>
     <div class="ffp-card fh-stories">
-      ${pickStories().map(storyCardHTML).join('')}
+      ${pickStories().map((s) => storyCardHTML(s)).join('')}
     </div>`;
   }
 
@@ -2500,7 +2512,7 @@
     return `<h2 class="section-title">${mascot(ME)} Your career ${tag('mix')}</h2>
     ${careerCard(a, true)}
     ${mine.length ? `<h2 class="section-title">📌 Your storylines</h2>
-    <div class="ffp-card fh-stories">${mine.map(storyCardHTML).join('')}</div>` : ''}
+    <div class="ffp-card fh-stories">${mine.map((s) => storyCardHTML(s, true)).join('')}</div>` : ''}
     ${h2hFor(ME).length ? `<h2 class="section-title">Your playoff head-to-head ${tag('po')}</h2>
     <div class="ffp-card">
       ${h2hFor(ME).map((v) => `<div class="fh-h2h">${tap(v.opp, `<b>${esc(nm(v.opp))}</b>`)}<i>${one(v.pf)}–${one(v.pa)}</i><span class="${v.w > v.l ? 'pos' : v.l > v.w ? 'neg' : ''}">${v.w}-${v.l}</span></div>`).join('')}
@@ -2551,7 +2563,7 @@
       <div class="fh-prof-m"><span>${a.t1} 🥇 · ${a.t2} 🥈 · ${a.t3} 🥉 · ${a.cb} 🚽 · ${a.po} playoffs · ${sgn(a.luck)} luck</span></div>
       ${careerCard(a, true)}
       ${storiesFor(m).length ? `<h2 class="section-title">📌 Storylines</h2>
-    <div class="ffp-card fh-stories">${storiesFor(m).map(storyCardHTML).join('')}</div>` : ''}
+    <div class="ffp-card fh-stories">${storiesFor(m).map((s) => storyCardHTML(s, true)).join('')}</div>` : ''}
     ${pairs.length ? `<h2 class="section-title">Playoff head-to-head ${tag('po')}</h2>
       <div class="ffp-card">
         ${pairs.map((v) => `<div class="fh-h2h">${tap(v.opp, `<b>${esc(nm(v.opp))}</b>`)}<i>${one(v.pf)}–${one(v.pa)}</i><span class="${v.w > v.l ? 'pos' : v.l > v.w ? 'neg' : ''}">${v.w}-${v.l}</span></div>`).join('')}

@@ -631,13 +631,13 @@ owned.forEach((x) => {
   if (window.LeagueHistory._cardStories().some((c) => c.id === x.id && c.m === x.m)) {
     console.log(`  ❌ own-page story "${x.id}/${x.m}" is on the league card`); bad++;
   }
-  if (!window.LeagueHistory.profile(x.m).includes(x.head)) {
+  if (!window.LeagueHistory.profile(x.m).includes(`data-story-id="${x.m}/${x.id}"`)) {
     console.log(`  ❌ own-page story "${x.id}/${x.m}" is missing from that profile`); bad++;
   }
   window.LeagueHistory.setMe(x.m);
   /* the heading re-voices for the reader, so re-derive it in their voice */
   const theirs = (window.LeagueHistory._stories().find((y) => y.id === x.id && y.m === x.m) || {}).head;
-  if (!theirs || !window.LeagueHistory.view('you').includes(theirs)) {
+  if (!theirs || !window.LeagueHistory.view('you').includes(`data-story-id="${x.m}/${x.id}"`)) {
     console.log(`  ❌ own-page story "${x.id}/${x.m}" is missing from that You page`); bad++;
   }
   window.LeagueHistory.setMe(null);
@@ -675,13 +675,13 @@ console.log(`  ${ownMark()} own-page stories: ${owned.length} kept off the card,
     window.LeagueHistory.setMe(null);
     const prof = window.LeagueHistory.profile(r.m);
     const asThem = window.LeagueHistory._stories().filter((x) => x.m === r.m);
-    const onProf = asThem.filter((x) => prof.includes(x.head)).length;
+    const onProf = asThem.filter((x) => prof.includes(`data-story-id="${x.m}/${x.id}"`)).length;
     if (onProf < WANT2) { console.log(`  ❌ ${r.name}'s profile renders ${onProf} storyline(s), want ${WANT2}`); bad++; }
 
     window.LeagueHistory.setMe(r.m);
     const you = window.LeagueHistory.view('you');
     const mine = window.LeagueHistory._stories().filter((x) => x.m === r.m);
-    const onYou = mine.filter((x) => you.includes(x.head)).length;
+    const onYou = mine.filter((x) => you.includes(`data-story-id="${x.m}/${x.id}"`)).length;
     if (onYou < WANT2) { console.log(`  ❌ ${r.name}'s You page renders ${onYou} storyline(s), want ${WANT2}`); bad++; }
     LHIST.setMe(null);
   });
