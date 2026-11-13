@@ -102,6 +102,21 @@ Live URL: **https://mcdermottj639.github.io/League-History/**
   even then the old hash stays valid until he says otherwise. Generate nothing
   that would require anyone to open a new link.
 
+## v148 — Personal storyline headlines start with the story
+
+Personal storyline headings on the You page and manager profiles omit the
+redundant leading subject: "The six-seed heist." rather than "You: the six-seed
+heist." The league-wide overview keeps its named/reader-aware headings so each
+card is still identifiable. Body copy and opponent references keep their voice.
+
+`personalStoryHead` is presentation-only: it removes the exact leading subject
+and optional auxiliary wording, never names elsewhere in a sentence. The
+story engine, selection, ordering, evidence, archive and all four notable roasts
+are unchanged. Cards carry stable `data-story-id` attributes so coverage tests
+verify their presence independently of the display heading. Tests cover all
+12 manager profiles in 13 reader states, own pages, overview attribution and
+opponent references. `storylines-headlines.test.cjs` runs in `npm test`.
+
 ## v147 — Stories worth retelling
 
 The archive now curates **distinct achievements and notable league lore**, rather

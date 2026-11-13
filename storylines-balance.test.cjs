@@ -41,7 +41,7 @@ for (const reader of [null, ...ALL.map(a => a.m)]) {
       assert.ok(s.body.length <= 360, `${s.m}/${s.id}: keep cards scannable`);
     }
     for (const html of [H.profile(a.m), ...(reader === a.m ? [H.view('you')] : [])]) {
-      const order = stories.map(s => ({s, at:html.indexOf(esc(s.head))})).sort((x,y) => x.at-y.at);
+      const order = stories.map(s => ({s, at:html.indexOf(`data-story-id="${esc(s.m + "/" + s.id)}"`)})).sort((x,y) => x.at-y.at);
       assert.ok(order.every(x => x.at >= 0), 'detected cards must actually render');
       assert.ok(order.slice(0, 2).every(x => x.s.tone === 'positive'), 'highlights lead; roasts remain visible after them');
       renderChecks++;

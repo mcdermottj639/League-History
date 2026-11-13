@@ -16,7 +16,7 @@ for (const member of ALL) {
   H.setMe(member.m);
   const stories = H._stories().filter(s => s.m === member.m);
   assert.ok(stories.length >= 2, member.m);
-  assert.ok(stories.every(s => H.view('you').includes(s.head)));
+  assert.ok(stories.every(s => H.view('you').includes(`data-story-id="${s.m}/${s.id}"`)));
   assert.equal(H._cardStories().length, 12);
   assert.ok(!/pure luck|unluckiest team|won nothing|then disappear/.test(stories.map(s => s.head+s.body).join(' ')));
 }
