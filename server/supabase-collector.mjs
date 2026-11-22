@@ -1,6 +1,6 @@
 import {ensure,ingest,lockDue,payerFromFantasy,writable,attachBoxscore,parseBoxscore} from './engine.mjs';
 import {transaction,randomToken} from './supabase-store.mjs';
-import {parseScoreboard,nflBettingWeek} from './domain.mjs';
+import {parseScoreboard,nflBettingWeek,memberFor,ROSTER} from './domain.mjs';
 import {gamesNeedingBoxscore,boxscoreURL} from './props.mjs';
 export async function getJSON(url,fetcher=fetch){const r=await fetcher(url,{signal:AbortSignal.timeout(10000),headers:{Accept:'application/json','User-Agent':'League-History/Parlay'}});if(!r.ok)throw Error('Source HTTP '+r.status);return r.json();}
 export async function collect(rpc,config,{clock=Date.now,fetchJSON=getJSON,managerFor=()=>''}={}){
@@ -47,7 +47,7 @@ export async function collect(rpc,config,{clock=Date.now,fetchJSON=getJSON,manag
   if(now-(snapshot.collector?.lastFantasy||0)>=3600000&&snapshot.current>1){
    try{
     const p=await fetchJSON('https://sports-hub-fantasy-api.onrender.com/api/fantasy/football/season');
-    await transaction(rpc,store=>store.transact(s=>{const season=s.seasons[year];for(const w of Object.values(season.weeks)){const prev=season.weeks[w.week-1];if(!prev?.games.length||!prev.games.every(g=>g.completed&&g.status==='STATUS_FINAL'))continue;const payer=payerFromFantasy(p,year,w.week,managerFor,now);if(payer.status!=='pending')w.payer={...payer,observedAt:now};}season.collector.lastFantasy=now;delete season.collector.lastFantasyError;}));
+    await transaction(rpc,store=>store.transact(s=>{const season=s.seasons[year];for(const w of Object.values(season.weeks)){const prev=season.weeks[w.week-1];if(!prev?.games.length||!prev.games.every(g=>g.completed&&g.status==='STATUS_FINAL'))continue;const payer=payerFromFantasy(p,year,w.week,(n,t)=>memberFor(n,t,managerFor),now);if(payer.status!=='pending')w.payer={...payer,observedAt:now};}season.collector.lastFantasy=now;delete season.collector.lastFantasyError;const unmapped=(p.teams||[]).filter(t=>!ROSTER.includes(memberFor(t.team,p.teams,managerFor))).map(t=>String(t.team??'').slice(0,60));if(unmapped.length)season.collector.payerUnmapped=unmapped;else delete season.collector.payerUnmapped;}));
    }catch(e){await transaction(rpc,store=>store.transact(s=>{s.seasons[year].collector.lastFantasyError=String(e.message).slice(0,140);}));}
   }
   const final=(await rpc('read')).state.seasons[year],current=final.weeks[final.current];

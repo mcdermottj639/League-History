@@ -2,6 +2,18 @@
 import {gradePick} from './props.mjs';
 export const ROSTER = ['McD','CC','Hurd','Hyman','Christel','Woods','Zach','Buley','Wolff','Riz','Slemp','Gotch'];
 export const STAKE = 10;
+/* ESPN franchise teamId -> member (league 993612, 2026; from the published
+   season/current.json, owner column verified). teamId survives a team rename,
+   the team name does not. The parlay collector runs on Supabase, where the
+   browser's learned teamId map (localStorage) does not exist, so a member who
+   renames their ESPN team used to leave the weekly $10 payer stuck on
+   "Awaiting the prior week's final fantasy scores." */
+export const TEAM_IDS = {'1':'Hurd','2':'Christel','3':'Slemp','4':'Woods','5':'Buley','6':'Zach','7':'McD','10':'CC','11':'Wolff','12':'Gotch','13':'Riz','14':'Hyman'};
+export function memberFor(name,teams,byName=()=>''){
+ const m=byName(name,teams);if(ROSTER.includes(m))return m;
+ const t=(teams||[]).find(x=>String(x.team??'').toLowerCase().trim()===String(name??'').toLowerCase().trim());
+ return (t&&TEAM_IDS[String(t.teamId)])||m||'';
+}
 /* 2026 NFL betting week. Week 1 opened Tue Sep 8 at 4:00 AM America/New_York.
    Later weeks open on that same clock, every Tuesday at 4 AM ET, even if ESPN
    is still showing last week's completed scoreboard. Never moves backwards. */

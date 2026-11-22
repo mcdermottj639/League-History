@@ -169,6 +169,18 @@ test('payer accepts the current no-year fantasy feed only with final complete pr
  const tie=structuredClone(p);tie.teams[0].scores[0]=70.9;assert.equal(get(tie).status,'tie');
 });
 
+test('payer still resolves a member who renamed their ESPN team (teamId fallback)',async()=>{
+ const {memberFor,TEAM_IDS}=await import('./domain.mjs');
+ const ids=Object.keys(TEAM_IDS);
+ const teams=ids.map((id,i)=>({teamId:Number(id),team:i===0?'Brand New Name ':'known '+id,scores:[70+i,80+i],outcomes:['W','L']}));
+ const byName=(n)=>String(n).startsWith('known ')?TEAM_IDS[String(n).slice(6)]:'';
+ assert.equal(memberFor('Brand New Name ',teams,byName),TEAM_IDS[ids[0]]);
+ assert.equal(memberFor('Nobody',teams,byName),'');
+ const p={week:3,teams};
+ assert.deepEqual(payerFromFantasy(p,2026,3,(n,t)=>memberFor(n,t,byName),T),{status:'ready',members:[TEAM_IDS[ids[0]]],score:80,previousWeek:2});
+ assert.equal(payerFromFantasy(p,2026,3,byName,T).status,'pending');
+});
+
 function boxPayload({td=0,rushTd=0,passTd=0,recYds=52,first}={}){
  return {boxscore:{players:[
   {team:{abbreviation:'CHI'},statistics:[
