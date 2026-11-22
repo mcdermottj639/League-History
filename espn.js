@@ -32,7 +32,7 @@
     // ── 2026 names (ESPN season, owner column verified) ──────────────────────
     'aarogant fraudgers': 'Hurd',        'mortal wombats': 'Christel',
     'slob on my cobb': 'Slemp',          'morning woods': 'Woods',
-    'gregs morning dew dew': 'Buley',    'jared goff hits women': 'Zach',
+    'gregs morning dew dew': 'Buley',    'jared goff hits women': 'Zach', 'justin wolff hits women': 'Zach',
     'death dont hurts very long': 'McD', 'joe sleepin on dee teetees': 'CC',
     'puka atta adonai': 'Wolff',         'thurgood marshall': 'Gotch',
     'jefferson airplane': 'Riz',         'pepperoni tds': 'Hyman',
