@@ -96,6 +96,14 @@ function statLabel(stat,n){
 }
 function shortName(player){return player.displayName||'Player';}
 function finished(g){return !!(g&&g.completed&&g.status==='STATUS_FINAL');}
+/* A last name alone ("Williams") can match several players in one game:
+   DAL's Javonte Williams plus defenders on both sides. A yardage/TD prop is
+   about the one who touched the ball, so when exactly one of the matches has
+   offensive stats, grade him; otherwise stay pending and say why. */
+const OFFENSE=['passYds','passTd','rushYds','rushTd','recYds','recTd','receptions','completions'];
+function sameName(query,players){const q=nameTokens(query);if(!q.length)return [];return [...new Map((players||[]).filter(p=>{const n=nameTokens(p.displayName);return n.length&&(q.length===1?n.at(-1)===q[0]:q.every(t=>n.includes(t)));}).map(p=>[p.id||p.displayName,p])).values()];}
+function sameNameCount(query,players){return sameName(query,players).length;}
+export function offensiveMatch(query,players){const m=sameName(query,players).filter(p=>OFFENSE.some(k=>Number(p[k])>0));return m.length===1?m[0]:null;}
 export function gradeProp(parsed,box,game={}){
  if(!parsed)return {result:'pending',progress:'Result requires review',irreversible:false};
  const final=finished(game);
@@ -109,8 +117,8 @@ export function gradeProp(parsed,box,game={}){
   if(!known&&!final)return {result:'pending',progress:`First TD: ${first.scorer}`,irreversible:false};
   return {result:'miss',progress:`First TD: ${first.scorer}`,irreversible:true};
  }
- const player=findPlayer(parsed.player,box?.players||[]);
- if(!player)return {result:'pending',progress:`${parsed.player} not in box score`,irreversible:false};
+ const players=box?.players||[],player=findPlayer(parsed.player,players)||offensiveMatch(parsed.player,players);
+ if(!player){const n=sameNameCount(parsed.player,players);return {result:'pending',progress:n>1?`${parsed.player}: ${n} players match · needs full name`:`${parsed.player} not in box score`,irreversible:false};}
  if(parsed.kind==='attd'){
   const tds=(player.rushTd||0)+(player.recTd||0)+(player.returnTd||0)+(player.defTd||0);
   return {result:tds>0?'hit':final?'miss':'pending',progress:`${shortName(player)} ${tds} TD${tds===1?'':'s'}`,irreversible:tds>0||final,actual:tds};

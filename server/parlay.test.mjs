@@ -169,6 +169,19 @@ test('payer accepts the current no-year fantasy feed only with final complete pr
  const tie=structuredClone(p);tie.teams[0].scores[0]=70.9;assert.equal(get(tie).status,'tie');
 });
 
+test('a last-name prop picks the one ball carrier when several players share the name',async()=>{
+ const {gradeProp,parseProp}=await import('./props.mjs');
+ const P=(id,team,displayName,o={})=>({id,team,displayName,passYds:0,passTd:0,rushYds:0,rushTd:0,recYds:0,recTd:0,receptions:0,returnTd:0,defTd:0,completions:0,...o});
+ const live={state:'in',completed:false,status:'STATUS_IN_PROGRESS'};
+ const box={players:[P('1','TEN','Joshua Williams'),P('2','DAL','Javonte Williams',{rushYds:18,rushTd:1}),P('3','DAL','Quinnen Williams')],scoringPlays:[]};
+ const g=gradeProp(parseProp('Williams ATTD'),box,live);
+ assert.equal(g.result,'hit');assert.match(g.progress,/Javonte Williams 1 TD/);
+ const early={players:box.players.map(p=>({...p,rushYds:0,rushTd:0})),scoringPlays:[]};
+ const e=gradeProp(parseProp('Williams ATTD'),early,live);
+ assert.equal(e.result,'pending');assert.match(e.progress,/3 players match/);
+ assert.equal(gradeProp(parseProp('Javonte Williams ATTD'),box,live).result,'hit');
+});
+
 function boxPayload({td=0,rushTd=0,passTd=0,recYds=52,first}={}){
  return {boxscore:{players:[
   {team:{abbreviation:'CHI'},statistics:[
